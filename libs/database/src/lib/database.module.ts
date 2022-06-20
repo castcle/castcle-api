@@ -98,7 +98,6 @@ import {
   createCastcleMeta,
   getRelationship,
   getSocialPrefix,
-  validateObjectId,
 } from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
@@ -282,5 +281,4 @@ export {
   UserService,
   UserServiceV2,
   UxEngagementService,
-  validateObjectId,
 };

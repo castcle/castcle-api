@@ -131,7 +131,7 @@ describe('CommentControllerV2', () => {
       });
 
       const comments = await commentController.getAllComment(
-        content._id,
+        content.id,
         credential,
         { hasRelationshipExpansion: false },
       );
@@ -162,8 +162,8 @@ describe('CommentControllerV2', () => {
       });
 
       const replyComments = await commentController.getAllReplyComment(
-        content._id,
-        comment._id,
+        content.id,
+        comment.id,
         credential,
         { hasRelationshipExpansion: false },
       );

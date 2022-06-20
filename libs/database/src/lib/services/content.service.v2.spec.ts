@@ -290,12 +290,16 @@ describe('ContentServiceV2', () => {
     describe('#createContentFarming', () => {
       let contentFarming: ContentFarming;
       beforeAll(async () => {
-        expect(await taccountService._transactionModel.count()).toEqual(1);
+        expect(
+          await taccountService._transactionModel.countDocuments(),
+        ).toEqual(1);
         contentFarming = await service.createContentFarming(
           testContents[0].id,
           mockFarmingUsers[1].user.id,
         );
-        expect(await taccountService._transactionModel.count()).toEqual(2);
+        expect(
+          await taccountService._transactionModel.countDocuments(),
+        ).toEqual(2);
       });
       it('should be able to create content farming instance if have balance > 5% total', async () => {
         expect(String(contentFarming.content)).toEqual(testContents[0].id);
@@ -768,10 +772,6 @@ describe('ContentServiceV2', () => {
   });
 
   afterAll(async () => {
-    await (service as any).repository.contentModel.deleteMany({});
-    await (service as any).repository.userModel.deleteMany({});
-    await (service as any).repository.notificationModel.deleteMany({});
-    await (service as any).repository.engagementModel.deleteMany({});
     await app.close();
     await mongod.stop();
   });

@@ -329,7 +329,7 @@ describe('AdsService', () => {
     beforeAll(async () => {
       //remove all adsCampaign
       await service._adsCampaignModel.remove({});
-      expect(await service._adsCampaignModel.count()).toEqual(0);
+      expect(await service._adsCampaignModel.countDocuments()).toEqual(0);
       const mockRelevanceScores = [
         0.1, 0.3, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.15, 0.22, 0.23, 0.34, 0.67,
         0.87,

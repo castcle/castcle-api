@@ -162,57 +162,6 @@ describe('NotificationService', () => {
       },
       device: 'iPhone',
     });
-    // jest
-    //   .spyOn(service, 'generateNotificationToMessage')
-    //   .mockImplementation(async (userOwner, notify, language): Promise<any> => {
-    //     const userIds = notify.sourceUserId.reverse().slice(0, 2);
-
-    //     const users: User[] = await (service as any)._userModel
-    //       .find({
-    //         _id: { $in: userIds },
-    //       })
-    //       .exec();
-
-    //     if (!notify && !users.length) return;
-
-    //     const userSort: User[] = [];
-
-    //     users.forEach((user) => {
-    //       const index = userIds.indexOf(user._id);
-    //       if (index > -1) userSort[index] = user;
-    //     });
-
-    //     let countOther: number;
-    //     if (notify.sourceUserId.length > 2)
-    //       countOther = await (service as any)._userModel.countDocuments({
-    //         $and: [
-    //           { _id: { $in: notify.sourceUserId } },
-    //           { _id: { $nin: users } },
-    //         ],
-    //       });
-
-    //     let message: string[] = [
-    //       users
-    //         .map((user) => user.displayName)
-    //         .join(',')
-    //         .replace(/,/g, ':'),
-    //     ];
-
-    //     message = [
-    //       ...message,
-    //       countOther
-    //         ? await notifyService.translate('and 2 people', language)
-    //         : '',
-    //       await notifyService.translate(
-    //         `like ${
-    //           userOwner.type === NotificationSource.Page ? 'page' : 'you'
-    //         }`,
-    //         language
-    //       ),
-    //     ].filter((item) => item);
-
-    //     return message.join(',').replace(/,/g, ' ').replace(/:/g, ', ');
-    //   });
   });
 
   afterAll(async () => {

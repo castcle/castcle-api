@@ -35,7 +35,7 @@ import {
 import { ContentType, EntityVisibility, SortDirection } from '../dtos';
 import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
-import { QueueName, UserVerified } from '../models';
+import { QueueName } from '../models';
 import { Account, Comment, Content, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
@@ -192,7 +192,7 @@ describe('ContentService', () => {
         mobile: false,
         official: false,
         social: false,
-      } as UserVerified);
+      });
     });
     it('should create a hashtag stat', async () => {
       const shortPayload: ShortPayload = {
@@ -295,11 +295,7 @@ describe('ContentService', () => {
   });
   describe('#getContentsFromUser()', () => {
     it('should return Content[] from author', async () => {
-      await new Promise<void>((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 100);
-      });
+      jest.setSystemTime(Date.now() + 100);
       const shortPayload1: ShortPayload = {
         message: 'Order 1',
       };
@@ -308,11 +304,7 @@ describe('ContentService', () => {
         payload: shortPayload1,
         castcleId: user.displayId,
       });
-      await new Promise<void>((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 100);
-      });
+      jest.setSystemTime(Date.now() + 100);
       const shortPayload2: ShortPayload = {
         message: 'Order 2',
       };

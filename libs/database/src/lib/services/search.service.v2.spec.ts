@@ -308,8 +308,6 @@ describe('SearchServiceV2', () => {
   });
 
   afterAll(async () => {
-    await (service as any).repository.hashtagModel.deleteMany({});
-    await (service as any).repository.userModel.deleteMany({});
     await app.close();
     await mongod.stop();
   });

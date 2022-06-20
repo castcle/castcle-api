@@ -6,8 +6,6 @@ import {
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
-import { getQueueToken } from '@nestjs/bull';
-import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
@@ -17,71 +15,92 @@ import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.cl
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
   AnalyticService,
-  AuthenticationService,
   AuthenticationServiceV2,
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '../database.module';
-import { AcceptPlatform, EntityVisibility } from '../dtos';
-import { MockUserDetail, generateMockUsers } from '../mocks';
-import { QueueName } from '../models';
+import { AcceptPlatform, OwnerResponse } from '../dtos';
 import { Repository } from '../repositories';
-import { Account, AccountActivationV1, Credential } from '../schemas';
-import { SignupRequirements } from './authentication.service';
-import { CampaignService } from './campaign.service';
-import { ContentService } from './content.service';
-import { HashtagService } from './hashtag.service';
-import { UserService } from './user.service';
+import { Account } from '../schemas';
 
 describe('Authentication Service', () => {
   let mongod: MongoMemoryReplSet;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: AuthenticationServiceV2;
-  let serviceV1: AuthenticationService;
-  let userService: UserService;
+  let repository: Repository;
+
+  let loginResponse = {} as {
+    account: Account;
+    accessToken: string;
+    refreshToken: string;
+    profile: OwnerResponse;
+    pages: OwnerResponse[];
+  };
 
   beforeAll(async () => {
     mongod = await MongoMemoryReplSet.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
-        CacheModule.register(),
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
       providers: [
-        AnalyticService,
         AuthenticationServiceV2,
-        AuthenticationService,
-        UserService,
-        ContentService,
-        HashtagService,
-        Repository,
-        { provide: CampaignService, useValue: {} },
+        AnalyticService,
         { provide: FacebookClient, useValue: FacebookClientMock },
         { provide: GoogleClient, useValue: GoogleClientMock },
-        { provide: TwitterClient, useValue: TwitterClientMock },
         { provide: TwilioClient, useValue: TwilioClientMock },
-        { provide: Mailer, useValue: {} },
-        {
-          provide: getQueueToken(QueueName.CONTENT),
-          useValue: { add: jest.fn() },
-        },
-        {
-          provide: getQueueToken(QueueName.USER),
-          useValue: { add: jest.fn() },
-        },
+        { provide: TwitterClient, useValue: TwitterClientMock },
+        { provide: Mailer, useValue: { sendRegistrationEmail: jest.fn() } },
+        Repository,
       ],
     }).compile();
 
-    service = app.get(AuthenticationServiceV2);
-    serviceV1 = app.get(AuthenticationService);
-    userService = app.get(UserService);
+    service = moduleRef.get(AuthenticationServiceV2);
+    repository = moduleRef.get(Repository);
+
+    const { accessToken } = await service.guestLogin({
+      device: 'iPhone01',
+      deviceUUID: '83b696d7-320b-4402-a412-d9cee10fc6a3',
+      languagesPreferences: ['en'],
+      header: {
+        platform: 'iOs',
+      },
+    });
+
+    loginResponse = {
+      ...loginResponse,
+      ...(await service.registerWithEmail(
+        await repository.findCredential({ accessToken }),
+        {
+          email: 'tester@castcle.com',
+          password: '2@HelloWorld',
+          displayName: 'Tester',
+          castcleId: 'tester',
+          hostUrl: 'https://www.castcle.com',
+          ip: '::1',
+        },
+      )),
+    };
+    const user = await repository.findUser({ _id: loginResponse.profile.id });
+    loginResponse.account = await repository.findAccount({
+      _id: user.ownerAccount,
+    });
+  });
+
+  afterAll(async () => {
+    await Promise.all([moduleRef.close(), mongod.stop()]);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+    expect(repository).toBeDefined();
   });
 
   describe('#guestLogin()', () => {
-    it('should return accesstoken and refreshtoken after guestLogin', async () => {
+    it('should return access token and refresh token after guestLogin', async () => {
       const tokenResponse = await service.guestLogin({
         device: 'iPhone01',
         deviceUUID: '83b696d7-320b-4402-a412-d9cee10fc6a3',
@@ -95,185 +114,87 @@ describe('Authentication Service', () => {
     });
   });
 
-  describe('#Exist', () => {
-    let signupResult: AccountActivationV1;
-    let createAccountResult: {
-      accountDocument: Account;
-      credentialDocument: Credential;
+  describe('#getExistedUserFromCastcleId()', () => {
+    it('should create an accountActivation', () => {
+      expect(loginResponse).toBeDefined();
+    });
+
+    it('should return null if user does not exist', async () => {
+      const id = 'undefined';
+      const findUser = await service.getExistedUserFromCastcleId(id);
+      expect(findUser).toBeNull();
+    });
+
+    it('should return existing user', async () => {
+      const id = loginResponse.profile.castcleId;
+      const findUser = await service.getExistedUserFromCastcleId(id);
+      expect(findUser).not.toBeNull();
+    });
+  });
+
+  describe('#getAccountFromEmail()', () => {
+    it('should return null for non-existent email', async () => {
+      const email = 'non-existent-email';
+      const account = await service.getAccountFromEmail(email);
+      expect(account).toBeNull();
+    });
+
+    it('should found an account that have email match', async () => {
+      const email = loginResponse.profile.email;
+      const account = await service.getAccountFromEmail(email);
+      expect(account._id).toEqual(loginResponse.account._id);
+    });
+  });
+
+  describe('#createAccountDevice', () => {
+    const androidDevice = {
+      uuid: 'uuid-android',
+      firebaseToken: 'firebase-token',
+      platform: AcceptPlatform.Android,
     };
-    const newDeviceUUID = '83b696d7-320b-4402-a412-d9cee10fc6a3';
-    const signupRequirements: SignupRequirements = {
-      displayId: 'people',
-      displayName: 'People',
-      email: 'sompopdude@dudedude.com',
-      password: '2@HelloWorld',
+
+    const iosDevice = {
+      uuid: 'uuid-ios',
+      firebaseToken: 'firebase-token',
+      platform: AcceptPlatform.IOS,
     };
 
     beforeAll(async () => {
-      createAccountResult = await serviceV1.createAccount({
-        device: 'iPhone01',
-        deviceUUID: newDeviceUUID,
-        languagesPreferences: ['en', 'en'],
-        header: {
-          platform: 'iOs',
-        },
-      });
-
-      signupResult = await serviceV1.signupByEmail(
-        createAccountResult.accountDocument,
-        {
-          displayId: 'people',
-          displayName: 'People',
-          email: signupRequirements.email,
-          password: signupRequirements.password,
-        },
-      );
+      await service.createAccountDevice(androidDevice, loginResponse.account);
     });
 
-    describe('#getExistedUserFromCastcleId()', () => {
-      it('should create an accountActivation', () => {
-        expect(signupResult).toBeDefined();
-      });
-      it('should return exist user is null', async () => {
-        const id = 'undefined';
-        const findUser = await service.getExistedUserFromCastcleId(id);
-        expect(findUser).toBeNull();
-      });
-      it('should return exist user not null', async () => {
-        const id = 'people';
-        const findUser = await service.getExistedUserFromCastcleId(id);
-        expect(findUser).not.toBeNull();
-      });
-      it('should set statuses of user all to deleted', async () => {
-        const id = 'people';
-        const findUser = await service.getExistedUserFromCastcleId(id);
-        findUser.visibility = EntityVisibility.Deleted;
-        expect(findUser.visibility).toEqual(EntityVisibility.Deleted);
-      });
+    it('should create a new device if platform does not exist', () => {
+      expect(loginResponse.account.devices).toHaveLength(1);
+      expect(loginResponse.account.devices[0]).toMatchObject(androidDevice);
     });
 
-    describe('#getAccountFromEmail()', () => {
-      it('should return null for non exist email in account', async () => {
-        const testEmail = 'yotest@gmail.com';
-        const result = await service.getAccountFromEmail(testEmail);
-        expect(result).toBeNull();
-      });
+    it('should append a new device to devices if platform does not exist', async () => {
+      await service.createAccountDevice(iosDevice, loginResponse.account);
 
-      it('should found an account that have email match', async () => {
-        const newlyInsertEmail = `${Math.ceil(
-          Math.random() * 1000,
-        )}@testinsert.com`;
-        const newAccount = new (service as any).repository.accountModel({
-          email: newlyInsertEmail,
-          password: 'sompop2@Hello',
-          isGuest: true,
-          preferences: {
-            languages: ['en', 'en'],
-          },
-        });
-        const newAccountResult = await newAccount.save();
-        const result = await service.getAccountFromEmail(newlyInsertEmail);
-        expect(result._id).toEqual(newAccountResult._id);
-      });
+      expect(loginResponse.account.devices).toHaveLength(2);
+      expect(loginResponse.account.devices[0]).toMatchObject(androidDevice);
+      expect(loginResponse.account.devices[1]).toMatchObject(iosDevice);
     });
 
-    describe('Account Devices', () => {
-      let mocksUsers: MockUserDetail[];
-      beforeAll(async () => {
-        mocksUsers = await generateMockUsers(1, 0, {
-          userService: userService,
-          accountService: serviceV1,
-        });
-      });
-      describe('#createAccountDevice', () => {
-        it('should create firebase token devices is not exists', async () => {
-          await service.createAccountDevice(
-            {
-              uuid: 'testuuidios',
-              firebaseToken: 'testfrebasetoken',
-              platform: AcceptPlatform.IOS,
-            },
-            mocksUsers[0].account,
-          );
+    it('should update the device token if platform already exists', async () => {
+      androidDevice.firebaseToken = 'new-firebase-token';
+      await service.createAccountDevice(androidDevice, loginResponse.account);
 
-          const account = await (service as any).repository.findAccount({
-            _id: mocksUsers[0].account._id,
-          });
-          mocksUsers[0].account = account;
-
-          expect(account.devices).toHaveLength(1);
-        });
-
-        it('should create firebase token devices is exists', async () => {
-          await service.createAccountDevice(
-            {
-              uuid: 'testuuidandroid',
-              firebaseToken: 'testfrebasetoken',
-              platform: AcceptPlatform.Android,
-            },
-            mocksUsers[0].account,
-          );
-
-          const account = await (service as any).repository.findAccount({
-            _id: mocksUsers[0].account._id,
-          });
-          mocksUsers[0].account = account;
-
-          expect(account.devices).toHaveLength(2);
-        });
-
-        it('should create new firebase token platform android', async () => {
-          const newToken = 'testfrebasetokennew';
-          await service.createAccountDevice(
-            {
-              uuid: 'testuuidandroid',
-              firebaseToken: newToken,
-              platform: AcceptPlatform.Android,
-            },
-            mocksUsers[0].account,
-          );
-
-          const account = await (service as any).repository.findAccount({
-            _id: mocksUsers[0].account._id,
-          });
-
-          const device = account.devices.find(
-            (device) => device.platform === AcceptPlatform.Android,
-          );
-
-          expect(device.uuid).toEqual('testuuidandroid');
-          expect(device.firebaseToken).toEqual(newToken);
-        });
-      });
-      describe('#deleteAccountDevice', () => {
-        it('should delete devices ios platform', async () => {
-          await service.deleteAccountDevice(
-            {
-              uuid: 'testuuidios',
-              firebaseToken: 'testfrebasetoken',
-              platform: AcceptPlatform.IOS,
-            },
-            mocksUsers[0].account,
-          );
-
-          const account = await (service as any).repository.findAccount({
-            _id: mocksUsers[0].account._id,
-          });
-
-          expect(account.devices).toHaveLength(1);
-        });
-      });
+      expect(loginResponse.account.devices).toHaveLength(2);
+      expect(loginResponse.account.devices[0]).toMatchObject(androidDevice);
+      expect(loginResponse.account.devices[1]).toMatchObject(iosDevice);
     });
 
-    afterAll(async () => {
-      await app.close();
-      await mongod.stop();
-    });
+    describe('#deleteAccountDevice', () => {
+      it('should delete device ios platform', async () => {
+        await service.deleteAccountDevice(androidDevice, loginResponse.account);
 
-    it('should be defined', () => {
-      expect(service).toBeDefined();
-      expect(serviceV1).toBeDefined();
-      expect(userService).toBeDefined();
+        loginResponse.account = await repository.findAccount({
+          _id: loginResponse.account._id,
+        });
+
+        expect(loginResponse.account.devices).toHaveLength(1);
+      });
     });
   });
 });
