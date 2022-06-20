@@ -20,35 +20,44 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { GetUserParam, UserServiceV2 } from '@castcle-api/database';
+import {
+  AddressBookService,
+  GetAccountParam,
+  GetShortcutParam,
+  GetUserParam,
+  ShortcutInternalDto,
+  ShortcutSortDto,
+  UserServiceV2,
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
   CastcleAuth,
+  CastcleBasicAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { CastcleException } from '@castcle-api/utils/exception';
-import { Get, Param, Query } from '@nestjs/common';
-import { Types } from 'mongoose';
+import {
+  Body,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { WalletHistoryQueryDto } from '../dtos/wallet.dto';
-
 import { WalletService } from '../services/wallet.service';
 
 @CastcleControllerV2({ path: 'wallets' })
 export class WalletController {
-  private logger = new CastLogger(WalletController.name);
   constructor(
     private userServiceV2: UserServiceV2,
     private walletService: WalletService,
+    private addressBookService: AddressBookService,
   ) {}
-
-  private validateObjectId(id: string) {
-    this.logger.log(`Validate is object id: ${id}`);
-    const ObjectId = Types.ObjectId;
-    if (!ObjectId.isValid(id)) throw CastcleException.CONTENT_NOT_FOUND;
-  }
 
   @CastcleAuth(CacheKeyName.Users)
   @Get(':userId')
@@ -75,5 +84,54 @@ export class WalletController {
       : await this.userServiceV2.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
     return this.walletService.getWalletHistory(user, query);
+  }
+
+  @CastcleBasicAuth()
+  @Post(':accountId/shortcuts/castcle')
+  @HttpCode(HttpStatus.CREATED)
+  async createWalletShortcut(
+    @Auth() authorizer: Authorizer,
+    @Param() { accountId }: GetAccountParam,
+    @Body() body: ShortcutInternalDto,
+  ) {
+    authorizer.requestAccessForAccount(accountId);
+
+    return this.addressBookService.createWalletShortcut(body, accountId);
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get(':accountId/shortcuts')
+  async getWalletShortcut(
+    @Auth() authorizer: Authorizer,
+    @Param() { accountId }: GetAccountParam,
+  ) {
+    authorizer.requestAccessForAccount(accountId);
+
+    return this.addressBookService.getWalletShortcut(accountId);
+  }
+
+  @CastcleBasicAuth()
+  @Delete(':accountId/shortcuts/:shortcutId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteWalletShortcut(
+    @Auth() authorizer: Authorizer,
+    @Param() { accountId, shortcutId }: GetShortcutParam,
+  ) {
+    authorizer.requestAccessForAccount(accountId);
+
+    await this.addressBookService.deleteWalletShortcut(accountId, shortcutId);
+  }
+
+  @CastcleBasicAuth()
+  @Put(':accountId/shortcuts/sort')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async sortWalletShortcut(
+    @Auth() authorizer: Authorizer,
+    @Param() { accountId }: GetAccountParam,
+    @Body() { payload }: ShortcutSortDto,
+  ) {
+    authorizer.requestAccessForAccount(accountId);
+
+    await this.addressBookService.sortWalletShortcut(payload, accountId);
   }
 }

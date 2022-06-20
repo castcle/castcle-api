@@ -247,4 +247,7 @@ export class Environment {
   static PDPA_ACCEPT_DATES = (process.env.PDPA_ACCEPT_DATE || '')
     .split(',')
     .sort((a, b) => b.localeCompare(a));
+
+  // Chain internal
+  static CHAIN_INTERNAL = process.env.CHAIN_INTERNAL || '';
 }

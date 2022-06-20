@@ -62,11 +62,13 @@ import {
   TransactionSchema,
   UserSchemaFactory,
   UxEngagementSchema,
+  WalletShortcutSchema,
 } from './schemas';
 import { AccountDeviceSchema } from './schemas/account-device.schema';
 import { AdsPlacementSchema } from './schemas/ads-placement.schema';
 import { CAccountSchema } from './schemas/caccount.schema';
 import { DefaultContentSchema } from './schemas/default-content.schema';
+import { AddressBookService } from './services/address-book.service';
 import { AdsService } from './services/ads.service';
 import { AnalyticService } from './services/analytic.service';
 import { AuthenticationService } from './services/authentication.service';
@@ -111,6 +113,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Analytic', schema: AnalyticSchema },
   { name: 'CAccount', schema: CAccountSchema },
   { name: 'Campaign', schema: CampaignSchema },
+  { name: 'ContentFarming', schema: ContentFarmingSchema },
   { name: 'Country', schema: CountrySchema },
   { name: 'DefaultContent', schema: DefaultContentSchema },
   { name: 'DsContentReach', schema: DsContentReachSchema },
@@ -120,9 +123,9 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Notification', schema: NotificationSchema },
   { name: 'Otp', schema: OtpSchema },
   { name: 'Queue', schema: QueueSchema },
-  { name: 'UxEngagement', schema: UxEngagementSchema },
-  { name: 'ContentFarming', schema: ContentFarmingSchema },
   { name: 'Reporting', schema: ReportingSchema },
+  { name: 'UxEngagement', schema: UxEngagementSchema },
+  { name: 'WalletShortcut', schema: WalletShortcutSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -190,6 +193,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UtilsClientsModule,
   ],
   providers: [
+    AddressBookService,
     AdsService,
     AnalyticService,
     AuthenticationService,
@@ -220,6 +224,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UxEngagementService,
   ],
   exports: [
+    AddressBookService,
     AdsService,
     AnalyticService,
     AuthenticationService,
@@ -252,6 +257,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
 export class DatabaseModule {}
 
 export {
+  AddressBookService,
   AdsService,
   AnalyticService,
   AuthenticationService,

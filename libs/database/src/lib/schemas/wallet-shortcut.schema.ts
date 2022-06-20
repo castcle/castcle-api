@@ -21,31 +21,36 @@
  * or have any questions.
  */
 
-export * from './account.dto';
-export * from './ads.dto';
-export * from './authentications.dto.v2';
-export * from './comment.dto.v2';
-export * from './comment.dto';
-export * from './common.dto';
-export * from './content.dto.v2';
-export * from './content.dto';
-export * from './country.dto';
-export * from './feed.dto.v2';
-export * from './feed.dto';
-export * from './follow.dto';
-export * from './guest-feed-item.dto';
-export * from './hashtag.dto';
-export * from './language.dto';
-export * from './link-preview.dto';
-export * from './notification.dto';
-export * from './pagination.dto';
-export * from './query.dto';
-export * from './response.dto';
-export * from './search.dto.v2';
-export * from './search.dto';
-export * from './sync-social.dto';
-export * from './token.dto';
-export * from './user.dto.v2';
-export * from './user.dto';
-export * from './ux.engagement.dto';
-export * from './wallet.dto';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes } from 'mongoose';
+import { Account } from './account.schema';
+import { CastcleBase } from './base.schema';
+
+@Schema({ timestamps: true })
+export class WalletShortcut extends CastcleBase {
+  @Prop({ type: String, required: true })
+  chainId: string;
+
+  @Prop({ type: String, required: true, index: true })
+  address: string;
+
+  @Prop({
+    ref: 'Account',
+    type: SchemaTypes.ObjectId,
+    required: true,
+    index: true,
+  })
+  account: Account;
+
+  @Prop({ type: String })
+  displayName?: string;
+
+  @Prop({ type: Number, default: 999 })
+  order?: number;
+
+  @Prop({ type: String })
+  memo?: string;
+}
+
+export const WalletShortcutSchema =
+  SchemaFactory.createForClass<WalletShortcut>(WalletShortcut);
