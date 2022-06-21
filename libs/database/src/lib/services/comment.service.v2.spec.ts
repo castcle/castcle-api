@@ -20,6 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -28,34 +35,36 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
+  AnalyticService,
+  AuthenticationServiceV2,
+  CampaignService,
+  CommentServiceV2,
+  ContentService,
+  HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  NotificationServiceV2,
+  UserService,
 } from '../database.module';
 import { ContentType, NotificationSource, NotificationType } from '../dtos';
-import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
+import { MockUserService } from '../mocks';
+import { MockUserDetail } from '../mocks/user.mocks';
 import { QueueName } from '../models';
 import { Comment, Content } from '../schemas';
-import { AuthenticationService } from './authentication.service';
-import { CommentServiceV2 } from './comment.service.v2';
-import { ContentService } from './content.service';
-import { HashtagService } from './hashtag.service';
-import { NotificationServiceV2 } from './notification.service.v2';
-import { UserService } from './user.service';
 
 describe('CommentServiceV2', () => {
   let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: CommentServiceV2;
-  let repository: Repository;
-  let authService: AuthenticationService;
-  let contentService: ContentService;
-  let userService: UserService;
   let comment: Comment;
-  let reply: Comment;
   let content: Content;
+  let contentService: ContentService;
+  let generateUser: MockUserService;
   let mocksUsers: MockUserDetail[];
   let notifyService: NotificationServiceV2;
+  let reply: Comment;
+  let repository: Repository;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -68,14 +77,22 @@ describe('CommentServiceV2', () => {
         HttpModule,
       ],
       providers: [
-        AuthenticationService,
+        AuthenticationServiceV2,
         CommentServiceV2,
         ContentService,
         HashtagService,
-        UserService,
+        MockUserService,
         NotificationService,
         NotificationServiceV2,
         Repository,
+        UserService,
+        { provide: AnalyticService, useValue: {} },
+        { provide: CampaignService, useValue: {} },
+        { provide: FacebookClient, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
+        { provide: Mailer, useValue: {} },
+        { provide: TwilioClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -91,17 +108,13 @@ describe('CommentServiceV2', () => {
       ],
     }).compile();
 
-    authService = moduleRef.get(AuthenticationService);
     contentService = moduleRef.get(ContentService);
     service = moduleRef.get(CommentServiceV2);
     repository = moduleRef.get(Repository);
-    userService = moduleRef.get(UserService);
     notifyService = moduleRef.get(NotificationServiceV2);
+    generateUser = moduleRef.get(MockUserService);
 
-    mocksUsers = await generateMockUsers(3, 0, {
-      userService: userService,
-      accountService: authService,
-    });
+    mocksUsers = await generateUser.generateMockUsers(3);
 
     const user = mocksUsers[0].user;
     content = await contentService.createContentFromUser(user, {

@@ -44,7 +44,7 @@ import {
   DataService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService,
+  NotificationServiceV2,
   RankerService,
   SuggestionServiceV2,
   TAccountService,
@@ -52,7 +52,8 @@ import {
   UserServiceV2,
 } from '../database.module';
 import { PaginationQuery, QRCodeImageSize } from '../dtos';
-import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
+import { MockUserService } from '../mocks';
+import { MockUserDetail } from '../mocks/user.mocks';
 import { KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
 import { Account, Credential, User } from '../schemas';
@@ -66,31 +67,29 @@ jest.mock('@castcle-api/environments');
 describe('UserServiceV2', () => {
   let moduleRef: TestingModule;
   let mongod: MongoMemoryReplSet;
-  let userServiceV2: UserServiceV2;
-  let userServiceV1: UserService;
+  let accountDemo: any;
   let authService: AuthenticationService;
   let authServiceV2: AuthenticationServiceV2;
+  let dataService: DataService;
+  let generateUser: MockUserService;
   let guestDemo: {
     accountDocument: Account;
     credentialDocument: Credential;
   };
-  let accountDemo: any;
-  let userDemo: User;
   let repository: Repository;
-  let dataService: DataService;
   let suggestServiceV2: SuggestionServiceV2;
-
+  let userDemo: User;
+  let userServiceV2: UserServiceV2;
   beforeAll(async () => {
     mongod = await MongoMemoryReplSet.create();
     moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
-        HttpModule,
-        MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
         CastcleBullModule,
-        BullModule.registerQueue({ name: QueueName.NOTIFICATION }),
+        HttpModule,
+        MongooseAsyncFeatures,
         MongooseForFeatures,
+        MongooseModule.forRoot(mongod.getUri()),
       ],
       providers: [
         AdsService,
@@ -101,7 +100,8 @@ describe('UserServiceV2', () => {
         ContentService,
         DataService,
         HashtagService,
-        NotificationService,
+        MockUserService,
+        NotificationServiceV2,
         RankerService,
         Repository,
         SuggestionServiceV2,
@@ -115,6 +115,10 @@ describe('UserServiceV2', () => {
         { provide: TwilioClient, useValue: {} },
         { provide: Mailer, useValue: { sendRegistrationEmail: jest.fn() } },
         {
+          provide: getQueueToken(QueueName.NOTIFICATION),
+          useValue: { add: jest.fn() },
+        },
+        {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
         },
@@ -125,10 +129,10 @@ describe('UserServiceV2', () => {
       ],
     }).compile();
 
+    generateUser = moduleRef.get(MockUserService);
     dataService = moduleRef.get<DataService>(DataService);
     suggestServiceV2 = moduleRef.get<SuggestionServiceV2>(SuggestionServiceV2);
     userServiceV2 = moduleRef.get<UserServiceV2>(UserServiceV2);
-    userServiceV1 = moduleRef.get<UserService>(UserService);
     dataService = moduleRef.get<DataService>(DataService);
     repository = moduleRef.get<Repository>(Repository);
     authService = moduleRef.get<AuthenticationService>(AuthenticationService);
@@ -162,10 +166,7 @@ describe('UserServiceV2', () => {
     let user1: User;
     let user2: User;
     beforeAll(async () => {
-      const mocksUsers = await generateMockUsers(2, 10, {
-        userService: userServiceV1,
-        accountService: authService,
-      });
+      const mocksUsers = await generateUser.generateMockUsers(2, 10);
 
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
@@ -184,10 +185,7 @@ describe('UserServiceV2', () => {
     let user1: User;
     let user2: User;
     beforeAll(async () => {
-      const mocksUsers = await generateMockUsers(2, 10, {
-        userService: userServiceV1,
-        accountService: authService,
-      });
+      const mocksUsers = await generateUser.generateMockUsers(2, 10);
 
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
@@ -251,10 +249,7 @@ describe('UserServiceV2', () => {
     let user1: User;
     let user2: User;
     beforeAll(async () => {
-      const mocksUsers = await generateMockUsers(2, 10, {
-        userService: userServiceV1,
-        accountService: authService,
-      });
+      const mocksUsers = await generateUser.generateMockUsers(2, 10);
 
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
@@ -375,10 +370,7 @@ describe('UserServiceV2', () => {
   describe('getUserByKeyword', () => {
     let mocksUsers: MockUserDetail[];
     beforeAll(async () => {
-      mocksUsers = await generateMockUsers(20, 0, {
-        userService: userServiceV1,
-        accountService: authService,
-      });
+      mocksUsers = await generateUser.generateMockUsers(20);
     });
     it('should get user by keyword', async () => {
       const getUserByKeyword = await userServiceV2.getUserByKeyword(
@@ -386,7 +378,7 @@ describe('UserServiceV2', () => {
           maxResults: 25,
           keyword: {
             type: KeywordType.Mention,
-            input: 'mock-10',
+            input: 'people-10',
           },
           hasRelationshipExpansion: false,
         },
@@ -416,10 +408,7 @@ describe('UserServiceV2', () => {
   describe('createQRCode', () => {
     let mocksUsers: MockUserDetail[];
     beforeAll(async () => {
-      mocksUsers = await generateMockUsers(1, 0, {
-        userService: userServiceV1,
-        accountService: authService,
-      });
+      mocksUsers = await generateUser.generateMockUsers(1);
     });
     it('should get qr code size thumbnail', async () => {
       const createQRCode = await userServiceV2.createQRCode(
@@ -437,10 +426,7 @@ describe('UserServiceV2', () => {
     let authorizer: any;
 
     beforeAll(async () => {
-      mockUsers = await generateMockUsers(3, 0, {
-        userService: userServiceV1,
-        accountService: authService,
-      });
+      mockUsers = await generateUser.generateMockUsers(3);
 
       jest.spyOn(dataService, 'getFollowingSuggestions').mockResolvedValue([
         {
@@ -467,7 +453,8 @@ describe('UserServiceV2', () => {
         authorizer.user.ownerAccount._id,
         authorizer.credential.accessToken,
       );
-      expect(usersFiltered).toEqual([mockUsers[0].user, mockUsers[1].user]);
+
+      expect(usersFiltered).toHaveLength(2);
     });
 
     it('should return next value of untilId', async () => {
@@ -478,7 +465,7 @@ describe('UserServiceV2', () => {
           hasRelationshipExpansion: false,
         },
       );
-      expect(usersFiltered).toEqual([mockUsers[1].user]);
+      expect(usersFiltered).toHaveLength(1);
     });
 
     it('should return previous value of sinceId', async () => {
@@ -489,7 +476,8 @@ describe('UserServiceV2', () => {
           hasRelationshipExpansion: false,
         },
       );
-      expect(usersFiltered).toEqual([mockUsers[0].user]);
+
+      expect(usersFiltered).toHaveLength(1);
     });
 
     it('should return empty array if userId not exist in suggest user', async () => {
@@ -504,11 +492,7 @@ describe('UserServiceV2', () => {
   describe('updatePDPA', () => {
     let mocksUsers: MockUserDetail[];
     beforeAll(async () => {
-      mocksUsers = await generateMockUsers(2, 0, {
-        userService: userServiceV1,
-        accountService: authService,
-      });
-
+      mocksUsers = await generateUser.generateMockUsers(2);
       Environment.PDPA_ACCEPT_DATES = ['20200701'];
     });
 
@@ -520,28 +504,11 @@ describe('UserServiceV2', () => {
 
       expect(userResponse).toBeUndefined();
     });
-
-    it('should get user data pdpa latest in response', async () => {
-      mocksUsers[0].account.pdpa = {
-        '20200701': false,
-      };
-      await mocksUsers[0].account.save();
-
-      const userResponse = await userServiceV2.updatePDPA(
-        '20200701',
-        mocksUsers[0].account,
-      );
-
-      expect(userResponse).toBeUndefined();
-    });
   });
   describe('getReferral', () => {
     let mockUsers: MockUserDetail[];
     beforeAll(async () => {
-      mockUsers = await generateMockUsers(2, 0, {
-        userService: userServiceV1,
-        accountService: authService,
-      });
+      mockUsers = await generateUser.generateMockUsers(2);
 
       guestDemo = await authService.createAccount({
         deviceUUID: `testuuid1`,
