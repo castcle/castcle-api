@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { IsMongoId, IsNotEmpty } from 'class-validator';
 import { Types } from 'mongoose';
 import { AuthenticationProvider } from '../models';
 import { AcceptPlatform, EntityVisibility } from './common.dto';
@@ -77,4 +78,10 @@ export class SocialContentDto {
   socialId: string;
   socialToken?: string;
   avatar?: string;
+}
+
+export class GetAccountParam {
+  @IsMongoId()
+  @IsNotEmpty()
+  accountId: string;
 }
