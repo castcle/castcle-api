@@ -20,23 +20,23 @@ export class AuthenticationService {
   ) {}
 
   async getAccountFromEmail(email: string, password: string) {
-    const findStaff = await this.findStaff({
+    const staff = await this.findStaff({
       email: CastcleRegExp.fromString(email),
       status: StatusUser.ACTIVE,
     });
-    if (findStaff) {
-      if (Password.verify(password, findStaff.password)) {
+    if (staff) {
+      if (Password.verify(password, staff.password)) {
         const token = this.generateAccessToken({
-          id: findStaff._id,
-          email: findStaff.email,
-          firstName: findStaff.firstName,
-          lastName: findStaff.lastName,
-          status: findStaff.status,
-          role: findStaff.role,
+          id: staff._id,
+          email: staff.email,
+          firstName: staff.firstName,
+          lastName: staff.lastName,
+          status: staff.status,
+          role: staff.role,
         });
-        findStaff.loginAt.push(new Date());
-        findStaff.accessToken = token.accessToken;
-        await findStaff.save();
+        staff.loginAt.push(new Date());
+        staff.accessToken = token.accessToken;
+        await staff.save();
 
         return token;
       }
@@ -96,14 +96,12 @@ export class AuthenticationService {
     try {
       const newPassword = generatePassword();
       const staff = await this.findStaff({ _id: Types.ObjectId(id) });
-
       if (staff) {
         Object.assign(staff, { password: Password.create(newPassword) });
         await staff.save();
         await this.mailService.sendPasswordToStaff(staff.email, newPassword);
         return { password: newPassword };
       }
-
       throw new CastcleException('STAFF_NOT_FOUND');
     } catch (error) {
       throw new CastcleException('STAFF_NOT_FOUND');
