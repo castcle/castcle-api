@@ -46,7 +46,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 
 describe('WalletShortcutService', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: WalletShortcutService;
   let userServiceV1: UserService;
   let authService: AuthenticationService;
@@ -55,7 +55,7 @@ describe('WalletShortcutService', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register(),
@@ -63,7 +63,6 @@ describe('WalletShortcutService', () => {
         MongooseForFeatures,
         HttpModule,
       ],
-      controllers: [],
       providers: [
         AuthenticationService,
         WalletShortcutService,
@@ -86,14 +85,18 @@ describe('WalletShortcutService', () => {
       ],
     }).compile();
 
-    service = app.get<WalletShortcutService>(WalletShortcutService);
-    userServiceV1 = app.get<UserService>(UserService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
+    service = moduleRef.get<WalletShortcutService>(WalletShortcutService);
+    userServiceV1 = moduleRef.get<UserService>(UserService);
+    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
 
     mocksUsers = await generateMockUsers(3, 0, {
       userService: userServiceV1,
       accountService: authService,
     });
+  });
+
+  afterAll(async () => {
+    await Promise.all([moduleRef?.close(), mongod.stop()]);
   });
 
   describe('createWalletShortcut', () => {
@@ -136,7 +139,7 @@ describe('WalletShortcutService', () => {
   });
 
   describe('sortWalletShortcut', () => {
-    it('should update order wallet shortcut', async () => {
+    beforeAll(async () => {
       await service.createWalletShortcut(
         {
           chainId: 'castcle',
@@ -152,6 +155,8 @@ describe('WalletShortcutService', () => {
         },
         mocksUsers[1].account._id,
       );
+    });
+    it('should update order wallet shortcut', async () => {
       const shortcuts = await (service as any).repository.findWallerShortcuts({
         accountId: mocksUsers[1].account._id,
       });
@@ -172,9 +177,5 @@ describe('WalletShortcutService', () => {
       expect(payloadShortcut.shortcuts[0].order).toEqual(1);
       expect(payloadShortcut.shortcuts[1].order).toEqual(2);
     });
-  });
-
-  afterAll(async () => {
-    await Promise.all([app?.close(), mongod.stop()]);
   });
 });
