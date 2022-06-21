@@ -26,6 +26,7 @@ import { CastLogger } from '@castcle-api/logger';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import { Test, TestingModule } from '@nestjs/testing';
 import { XMLParser } from 'fast-xml-parser';
+import { Types } from 'mongoose';
 import { PublishedContent, SubscriptionContent } from '../models';
 import { YoutubeWebhookService } from './youtube-webhook.service';
 
@@ -42,7 +43,7 @@ describe('Youtube Webhook Service', () => {
   >;
 
   const author = {
-    id: '1234567890',
+    id: Types.ObjectId(),
     type: 'page',
     castcleId: 'castcleId',
     displayName: 'Castcle',
@@ -50,7 +51,7 @@ describe('Youtube Webhook Service', () => {
 
   const syncAccount = {
     active: true,
-    author,
+    user: author.id,
     socialId: '1234567890',
     save: jest.fn(),
   } as any;
@@ -173,7 +174,7 @@ describe('Youtube Webhook Service', () => {
 
       jest
         .spyOn(contentService, 'getAuthorFromId')
-        .mockResolvedValueOnce(syncAccount.author);
+        .mockResolvedValueOnce(author as any);
 
       jest
         .spyOn(contentService, 'createContentsFromAuthor')

@@ -61,8 +61,6 @@ import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 
-jest.mock('@castcle-api/environments');
-
 describe('UserServiceV2', () => {
   let moduleRef: TestingModule;
   let mongod: MongoMemoryReplSet;
@@ -156,6 +154,7 @@ describe('UserServiceV2', () => {
 
   afterAll(async () => {
     await Promise.all([moduleRef.close(), mongod.stop()]);
+    jest.spyOn(dataService, 'getFollowingSuggestions').mockRestore();
   });
 
   describe('#getUserRelationships', () => {

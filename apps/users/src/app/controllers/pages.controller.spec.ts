@@ -62,11 +62,11 @@ describe('PageController', () => {
   let socialSyncService: SocialSyncService;
   const pageDto: PageDto = {
     displayName: 'Super Page',
-    castcleId: 'pageyo',
+    castcleId: 'page-1',
   };
   const pageDto2: PageDto = {
     displayName: 'Super Page2',
-    castcleId: 'pageyo2',
+    castcleId: 'page-2',
   };
   beforeAll(async () => {
     const DownloaderProvider = {
@@ -328,8 +328,8 @@ describe('PageController', () => {
       expect(newPageResponse.payload[1].socialSyncs).toBeDefined();
       expect(syncSocial1.length).toEqual(1);
       expect(syncSocial2.length).toEqual(1);
-      expect(syncSocial1[0].author.id).toEqual(page1.id);
-      expect(syncSocial2[0].author.id).toEqual(page2.id);
+      expect(syncSocial1[0].user).toEqual(page1._id);
+      expect(syncSocial2[0].user).toEqual(page2._id);
     });
 
     it('should return Exception when use duplicate social id', async () => {

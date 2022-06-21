@@ -22,29 +22,28 @@
  */
 
 import { getQueueToken } from '@nestjs/bull';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Types, connect, disconnect, model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   CampaignService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '../database.module';
 import { CampaignType, QueueName } from '../models';
-import { Campaign, CampaignSchema } from '../schemas';
+import { Campaign } from '../schemas';
 import { TAccountService } from './taccount.service';
 
 describe('Campaign Service', () => {
   let moduleRef: TestingModule;
   let mongo: MongoMemoryServer;
   let campaignService: CampaignService;
-  const campaignModel = model('Campaign', CampaignSchema);
+  let campaignModel: Model<Campaign>;
   const accountId = Types.ObjectId().toString();
 
   beforeAll(async () => {
     mongo = await MongoMemoryServer.create();
-    connect(mongo.getUri('test'));
     moduleRef = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongo.getUri()),
@@ -62,12 +61,12 @@ describe('Campaign Service', () => {
     }).compile();
 
     campaignService = moduleRef.get(CampaignService);
+    campaignModel = moduleRef.get(getModelToken('Campaign'));
   });
 
   afterAll(async () => {
-    await mongo.stop();
-    await disconnect();
     await moduleRef.close();
+    await mongo.stop();
   });
 
   it('should be defined', () => {
