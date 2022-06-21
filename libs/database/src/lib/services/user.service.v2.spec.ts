@@ -31,7 +31,7 @@ import {
 } from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
-import { BullModule, getQueueToken } from '@nestjs/bull';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
