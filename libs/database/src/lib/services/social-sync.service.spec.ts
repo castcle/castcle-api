@@ -99,7 +99,7 @@ describe('SocialSyncService', () => {
 
       expect(resultData).toBeDefined();
       expect(resultData.provider).toEqual(SocialProvider.Facebook);
-      expect(resultData.author.id).toEqual(mocksUser.id);
+      expect(resultData.user).toEqual(mocksUser._id);
       expect(resultData.socialId).toEqual('12345678');
     });
   });

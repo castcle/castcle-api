@@ -965,7 +965,7 @@ describe('UsersControllerV2', () => {
         active: true,
         autoPost: false,
         account: mocksUsers[0].user.ownerAccount,
-        author: { id: mocksUsers[0].user.id },
+        user: mocksUsers[0].user._id,
         visibility: EntityVisibility.Publish,
       }).save();
 

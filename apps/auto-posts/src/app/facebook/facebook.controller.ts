@@ -100,12 +100,12 @@ export class FacebookController {
       }
 
       const author = await this.contentService.getAuthorFromId(
-        syncAccount.author.id,
+        String(syncAccount.user),
       );
 
       if (!author) {
         this.logger.error(
-          `authorId: ${syncAccount.author.id}`,
+          `authorId: ${syncAccount.user}`,
           'handleWebhook:author-not-found',
         );
         continue;

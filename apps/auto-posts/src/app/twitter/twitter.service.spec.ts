@@ -25,6 +25,7 @@ import { ContentService, SocialSyncService } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Types } from 'mongoose';
 import {
   ReferencedTweetV2,
   TweetEntitiesV2,
@@ -50,7 +51,7 @@ describe('Twitter Service', () => {
   let twitterService: Union<TwitterService, PrivateTwitterService>;
 
   const author = {
-    id: '1234567890',
+    id: Types.ObjectId(),
     type: 'page',
     castcleId: 'castcleId',
     displayName: 'Castcle',
@@ -58,7 +59,7 @@ describe('Twitter Service', () => {
 
   const syncAccount = {
     active: true,
-    author,
+    user: author.id,
     socialId: '1234567890',
     save: jest.fn(),
   } as any;
@@ -174,7 +175,7 @@ describe('Twitter Service', () => {
 
       jest
         .spyOn(contentService, 'getAuthorFromId')
-        .mockResolvedValueOnce(syncAccount.author);
+        .mockResolvedValueOnce(author as any);
 
       jest
         .spyOn(contentService, 'createContentsFromAuthor')
@@ -208,7 +209,7 @@ describe('Twitter Service', () => {
 
     it('should filter quoted tweets', async () => {
       const contents = await twitterService.convertTimelineToContents(
-        author.id,
+        author.id.toString(),
         timeline,
       );
 
@@ -217,7 +218,7 @@ describe('Twitter Service', () => {
 
     it('should replace links with expanded urls and push all preview links to payload', async () => {
       const contents = await twitterService.convertTimelineToContents(
-        author.id,
+        author.id.toString(),
         {
           data: [
             {
