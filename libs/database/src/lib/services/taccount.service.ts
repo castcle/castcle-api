@@ -171,7 +171,6 @@ export class TAccountService {
           .reduce((sumCredit, now) => now.debit.value + sumCredit, 0)
       );
     }, 0);
-    console.log(caccountNo, 'txs', txs.length, allDebit, allCredit);
     if (caccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
     else return allCredit - allDebit;
   }

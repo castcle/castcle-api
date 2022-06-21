@@ -455,10 +455,7 @@ export class AuthenticationServiceV2 {
     const session = await this.repository.accountSession();
     session.startTransaction();
     try {
-      const account = await this.repository.createAccount(requestOption, {
-        session,
-      });
-
+      const account = await this.repository.createAccount(requestOption);
       const { accessToken, accessTokenExpireDate } =
         this.repository.generateAccessToken({
           id: String(account._id),
@@ -494,8 +491,7 @@ export class AuthenticationServiceV2 {
         },
       );
 
-      if (!account.credentials) account.credentials = [];
-      account.credentials.push({
+      (account.credentials ??= []).push({
         _id: Types.ObjectId(credential._id),
         deviceUUID: credential.deviceUUID,
       });
@@ -943,19 +939,16 @@ export class AuthenticationServiceV2 {
     ]);
   }
 
-  async createAccountDevice(body: RegisterFirebaseDto, account: Account) {
+  async createAccountDevice(
+    { firebaseToken, platform, uuid }: RegisterFirebaseDto,
+    account: Account,
+  ) {
     const device = account.devices?.find(
-      (device) =>
-        body.uuid === device.uuid && body.platform === device.platform,
+      (device) => uuid === device.uuid && platform === device.platform,
     );
 
-    if (device) device.firebaseToken = body.firebaseToken;
-    else
-      (account.devices ||= []).push({
-        uuid: body.uuid,
-        platform: body.platform,
-        firebaseToken: body.firebaseToken,
-      });
+    if (device) device.firebaseToken = firebaseToken;
+    else (account.devices ||= []).push({ uuid, platform, firebaseToken });
 
     account.markModified('devices');
     await account.save();

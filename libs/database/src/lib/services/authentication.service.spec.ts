@@ -52,13 +52,13 @@ import {
 
 describe('Authentication Service', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: AuthenticationService;
   let userService: UserService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
@@ -81,8 +81,8 @@ describe('Authentication Service', () => {
       ],
     }).compile();
 
-    service = app.get(AuthenticationService);
-    userService = app.get(UserService);
+    service = moduleRef.get(AuthenticationService);
+    userService = moduleRef.get(UserService);
 
     jest.spyOn(service, 'embedAuthentication').mockImplementation(async () => {
       console.log('embed authentication.');
@@ -90,7 +90,7 @@ describe('Authentication Service', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 

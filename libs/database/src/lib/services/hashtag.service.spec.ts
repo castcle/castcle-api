@@ -35,12 +35,12 @@ import { HashtagService } from './hashtag.service';
 
 describe('HashtagService', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: HashtagService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
@@ -49,11 +49,11 @@ describe('HashtagService', () => {
       providers: [HashtagService],
     }).compile();
 
-    service = app.get<HashtagService>(HashtagService);
+    service = moduleRef.get<HashtagService>(HashtagService);
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 

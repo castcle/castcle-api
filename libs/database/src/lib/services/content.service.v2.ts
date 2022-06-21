@@ -976,7 +976,7 @@ export class ContentServiceV2 {
       userId,
       WalletType.FARM_LOCKED,
     );
-    const totalContentFarming = await this.contentFarmingModel.count({
+    const totalContentFarming = await this.contentFarmingModel.countDocuments({
       user: userId,
     });
     return new ContentFarmingReponse(

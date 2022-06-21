@@ -51,7 +51,7 @@ export class CastcleImage {
           url: `${env.ASSETS_HOST}/${image[size]}`,
           expires: DateTime.now()
             .plus({ milliseconds: EXPIRE_TIME })
-            .toSeconds(),
+            .toMillis(),
         }),
       })),
     );

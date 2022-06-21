@@ -15,7 +15,7 @@ import { UserService } from './user.service';
 
 describe('CommentService', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: CommentService;
   let authService: AuthenticationService;
   let contentService: ContentService;
@@ -26,7 +26,7 @@ describe('CommentService', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
@@ -50,10 +50,10 @@ describe('CommentService', () => {
       ],
     }).compile();
 
-    authService = app.get(AuthenticationService);
-    contentService = app.get(ContentService);
-    service = app.get(CommentService);
-    userService = app.get(UserService);
+    authService = moduleRef.get(AuthenticationService);
+    contentService = moduleRef.get(ContentService);
+    service = moduleRef.get(CommentService);
+    userService = moduleRef.get(UserService);
 
     const result = await authService.createAccount({
       deviceUUID: 'test-uuid',
@@ -82,7 +82,7 @@ describe('CommentService', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 
