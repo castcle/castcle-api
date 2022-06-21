@@ -7,7 +7,7 @@ export class AccountDto {
   @IsNotEmpty()
   email: string;
 
-  password: string;
+  password?: string;
 
   @IsNotEmpty()
   firstName: string;
