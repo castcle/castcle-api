@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { Environment } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
   CallHandler,
@@ -44,19 +45,20 @@ export class CredentialInterceptor implements NestInterceptor {
     request.$language = getLanguageFromRequest(request);
     request.$token = getTokenFromRequest(request);
 
-    request.$credential = await this.authService.accessTokenValid(
+    request.$credential = Token.isTokenValid(
       request.$token,
+      Environment.BACKOFFICE_JWT_ACCESS_SECRET,
     );
 
     request.$payload = Token.decodeToken(request.$token);
 
     if (request.$payload) {
-      const userValid = await this.authService.decodeTokenValid(
-        request.$payload,
+      const isAccessTokenExist = await this.authService.findByAccessToken(
+        request.$token,
       );
-      if (request.$credential && userValid) {
-        return next.handle();
-      }
+
+      if (request.$credential && isAccessTokenExist) return next.handle();
+
       throw CastcleException.INVALID_ACCESS_TOKEN;
     }
 

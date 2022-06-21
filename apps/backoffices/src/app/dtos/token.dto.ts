@@ -25,6 +25,8 @@ export interface AccessTokenPayload {
   email: string;
   firstName: string;
   lastName: string;
+  role: string;
+  status: string;
   accessTokenExpiresTime?: string;
   session?: string;
 }

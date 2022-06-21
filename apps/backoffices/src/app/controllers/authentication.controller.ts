@@ -1,27 +1,23 @@
 import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
-import { CastcleException } from '@castcle-api/utils/exception';
-import {
-  CredentialRequest,
-  HeadersInterceptor,
-} from '@castcle-api/utils/interceptors';
+import { HeadersInterceptor } from '@castcle-api/utils/interceptors';
 import {
   Body,
+  Delete,
   Get,
+  Headers,
   HttpCode,
+  Param,
   Post,
-  Req,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import {
-  ExpiredDto,
-  LoginDto,
-  LogoutDto,
-  ResetPasswordDto,
-} from '../dtos/authentication.dto';
-import { AccountDto, StaffSearchDto } from '../dtos/user.dto';
+import { LoginDto } from '../dtos/authentication.dto';
+import { AccountDto, RoleUser } from '../dtos/user.dto';
+import { RoleGuard, Roles } from '../guards/role.guard';
 import { CredentialInterceptor } from '../interceptors/credential.interceptor';
 import { HeaderBackofficeInterceptor } from '../interceptors/header-backoffice.interceptor';
 import { AuthenticationService } from '../services/authentication.service';
+import { Token } from '../utils/token';
 
 @CastcleControllerV2({ path: 'backoffices' })
 export class AuthenticationController {
@@ -34,60 +30,48 @@ export class AuthenticationController {
     return await this.authService.getAccountFromEmail(email, password);
   }
 
-  @UseInterceptors(CredentialInterceptor)
-  @Post('create')
+  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
+  @Post('logout')
+  @HttpCode(200)
+  async logout(@Headers('Authorization') auth: string) {
+    const payload = Token.decodeToken<AccountDto>(
+      auth.replace(/Bearer\s+/, ''),
+    );
+    return await this.authService.removeToken(payload.id);
+  }
+
+  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
+  @UseGuards(RoleGuard)
+  @Roles([RoleUser.ADMINISTRATOR])
+  @Post('staff')
   @HttpCode(201)
-  async createAccount(@Body() body: AccountDto) {
+  async createStaff(@Body() body: AccountDto) {
     return await this.authService.createAccountFromEmail(body);
   }
 
   @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
-  @Post('staff-list')
+  @UseGuards(RoleGuard)
+  @Roles([RoleUser.ADMINISTRATOR])
+  @Get('staff')
   @HttpCode(200)
-  async staffList(@Body() body: StaffSearchDto) {
-    return await this.authService.getStaffList(body);
+  async getStaffs() {
+    return await this.authService.getStaffs();
+  }
+  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
+  @UseGuards(RoleGuard)
+  @Roles([RoleUser.ADMINISTRATOR])
+  @Post('staff/:staffId/reset/password')
+  @HttpCode(200)
+  async resetPassword(@Param('staffId') staffId: string) {
+    return await this.authService.resetPassword(staffId);
   }
 
   @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
-  @Post('logout')
+  @UseGuards(RoleGuard)
+  @Roles([RoleUser.ADMINISTRATOR])
+  @Delete('staff/:staffId')
   @HttpCode(200)
-  async logout(@Body() { uid }: LogoutDto) {
-    const deleteSession: any = await this.authService.deleteSession(uid);
-    if (deleteSession.deleteCount) {
-      return { delete: deleteSession.deleteCount };
-    }
-    throw CastcleException.INTERNAL_SERVER_ERROR;
-  }
-
-  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
-  @Post('reset-password')
-  @HttpCode(200)
-  async resetPassword(@Body() { uid }: ResetPasswordDto) {
-    return await this.authService.resetPassword(uid);
-  }
-
-  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
-  @Post('update')
-  @HttpCode(204)
-  async updateAccount(@Body() body: AccountDto) {
-    await this.authService.updateAccount(body);
-  }
-
-  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
-  @Get('session')
-  @HttpCode(200)
-  async checkSession(@Req() req: CredentialRequest) {
-    const session = await this.authService.checkSession(req['$payload']);
-    if (session) return { session };
-    throw CastcleException.INVALID_ACCESS_TOKEN;
-  }
-
-  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
-  @Post('expired')
-  @HttpCode(200)
-  async expired(@Body() { id }: ExpiredDto) {
-    const deleteSession: any = await this.authService.deleteSessionOne(id);
-    if (deleteSession.deleteCount) return { delete: deleteSession.deleteCount };
-    throw CastcleException.INTERNAL_SERVER_ERROR;
+  async deleteStaff(@Param('staffId') staffId: string) {
+    return await this.authService.deleteStaff(staffId);
   }
 }

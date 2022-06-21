@@ -1,4 +1,4 @@
-import { IsEmail, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -34,9 +34,7 @@ export class LogoutDto {
 
 export class ResetPasswordDto {
   @IsString()
-  @IsNotEmpty()
-  @IsMongoId()
-  uid: string;
+  staffId: string;
 }
 
 export class ExpiredDto {

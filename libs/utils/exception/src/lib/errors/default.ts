@@ -336,4 +336,9 @@ export const DefaultErrors = {
     code: '8001',
     message: 'Invalid transaction data',
   },
+  STAFF_NOT_FOUND: {
+    statusCode: '400',
+    code: '9001',
+    message: 'Staff not found.',
+  },
 };
