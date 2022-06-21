@@ -1,3 +1,4 @@
+import { Token } from '@castcle-api/utils/commons';
 import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
 import { HeadersInterceptor } from '@castcle-api/utils/interceptors';
 import {
@@ -16,9 +17,7 @@ import { AccountDto, RoleUser } from '../dtos/user.dto';
 import { RoleGuard, Roles } from '../guards/role.guard';
 import { CredentialInterceptor } from '../interceptors/credential.interceptor';
 import { HeaderBackofficeInterceptor } from '../interceptors/header-backoffice.interceptor';
-import { AccountDocument } from '../schemas/account.schema';
 import { AuthenticationService } from '../services/authentication.service';
-import { Token } from '../utils/token';
 
 @CastcleControllerV2({ path: 'backoffices' })
 export class AuthenticationController {

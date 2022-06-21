@@ -51,4 +51,17 @@ const isTokenExpire = (token: string, secret: string) => {
   });
 };
 
-export const Token = { generateToken, isTokenValid, isTokenExpire };
+const decodeToken = <T = any>(token: string) => {
+  try {
+    return jwt.decode(token) as T;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+export const Token = {
+  generateToken,
+  isTokenValid,
+  isTokenExpire,
+  decodeToken,
+};

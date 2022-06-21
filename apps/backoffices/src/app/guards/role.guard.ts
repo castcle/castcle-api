@@ -1,3 +1,4 @@
+import { Token } from '@castcle-api/utils/commons';
 import {
   CanActivate,
   ExecutionContext,
@@ -9,7 +10,6 @@ import { Observable } from 'rxjs';
 import { RoleUser } from '../dtos/user.dto';
 import { Account } from '../schemas/account.schema';
 import { getTokenFromRequest } from '../utils/interceptors';
-import { Token } from '../utils/token';
 
 @Injectable()
 export class RoleGuard implements CanActivate {

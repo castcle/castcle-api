@@ -22,6 +22,7 @@
  */
 
 import { Environment } from '@castcle-api/environments';
+import { Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
   CallHandler,
@@ -34,7 +35,6 @@ import {
   getLanguageFromRequest,
   getTokenFromRequest,
 } from '../utils/interceptors';
-import { Token } from '../utils/token';
 
 @Injectable()
 export class CredentialInterceptor implements NestInterceptor {
