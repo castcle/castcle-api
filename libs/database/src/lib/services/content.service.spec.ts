@@ -35,7 +35,7 @@ import {
 import { ContentType, EntityVisibility, SortDirection } from '../dtos';
 import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
-import { QueueName, UserVerified } from '../models';
+import { QueueName } from '../models';
 import { Account, Comment, Content, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
@@ -44,7 +44,7 @@ import { UserService } from './user.service';
 
 describe('ContentService', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: ContentService;
   let commentService: CommentService;
   let userService: UserService;
@@ -112,7 +112,7 @@ describe('ContentService', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
@@ -136,10 +136,10 @@ describe('ContentService', () => {
       ],
     }).compile();
 
-    service = app.get<ContentService>(ContentService);
-    commentService = app.get(CommentService);
-    userService = app.get<UserService>(UserService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
+    service = moduleRef.get<ContentService>(ContentService);
+    commentService = moduleRef.get(CommentService);
+    userService = moduleRef.get<UserService>(UserService);
+    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -167,7 +167,7 @@ describe('ContentService', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 
@@ -192,7 +192,7 @@ describe('ContentService', () => {
         mobile: false,
         official: false,
         social: false,
-      } as UserVerified);
+      });
     });
     it('should create a hashtag stat', async () => {
       const shortPayload: ShortPayload = {
@@ -295,11 +295,7 @@ describe('ContentService', () => {
   });
   describe('#getContentsFromUser()', () => {
     it('should return Content[] from author', async () => {
-      await new Promise<void>((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 100);
-      });
+      jest.setSystemTime(Date.now() + 100);
       const shortPayload1: ShortPayload = {
         message: 'Order 1',
       };
@@ -308,11 +304,7 @@ describe('ContentService', () => {
         payload: shortPayload1,
         castcleId: user.displayId,
       });
-      await new Promise<void>((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 100);
-      });
+      jest.setSystemTime(Date.now() + 100);
       const shortPayload2: ShortPayload = {
         message: 'Order 2',
       };

@@ -24,7 +24,6 @@ import {
   CommentServiceV2,
   ContentService,
   PaginationQuery,
-  validateObjectId,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -36,6 +35,7 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Get, Param, Query } from '@nestjs/common';
+import { isMongoId } from 'class-validator';
 
 @CastcleControllerV2({ path: 'contents' })
 export class CommentControllerV2 {
@@ -47,7 +47,7 @@ export class CommentControllerV2 {
 
   private validateId(id: string) {
     this.logger.log(`Validate is object id: ${id}`);
-    if (!validateObjectId(id)) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!isMongoId(id)) throw CastcleException.CONTENT_NOT_FOUND;
   }
 
   @CastcleAuth(CacheKeyName.Comments)

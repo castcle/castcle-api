@@ -25,7 +25,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
@@ -58,6 +58,7 @@ import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
 
 describe('User Service', () => {
+  let moduleRef: TestingModule;
   let mongod: MongoMemoryReplSet;
   let service: UserService;
   let authService: AuthenticationService;
@@ -72,10 +73,10 @@ describe('User Service', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryReplSet.create();
-    const module = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
-        MongooseModule.forRoot(mongod.getUri(), { useCreateIndex: true }),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
@@ -96,12 +97,12 @@ describe('User Service', () => {
       ],
     }).compile();
 
-    service = module.get<UserService>(UserService);
+    service = moduleRef.get<UserService>(UserService);
     accountModel = (service as any)._accountModel;
     transactionModel = (service as any).transactionModel;
-    authService = module.get<AuthenticationService>(AuthenticationService);
-    contentService = module.get<ContentService>(ContentService);
-    commentService = module.get(CommentService);
+    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
+    contentService = moduleRef.get<ContentService>(ContentService);
+    commentService = moduleRef.get(CommentService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -120,7 +121,7 @@ describe('User Service', () => {
   });
 
   afterAll(async () => {
-    await mongod.stop();
+    await Promise.all([moduleRef.close(), mongod.stop()]);
   });
 
   describe('#getUserFromCredential()', () => {

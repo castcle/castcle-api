@@ -54,7 +54,7 @@ import { UserService } from './user.service';
 
 describe('AdsService', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: AdsService;
   let authService: AuthenticationService;
   let userService: UserService;
@@ -66,7 +66,7 @@ describe('AdsService', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         HttpModule,
@@ -103,12 +103,12 @@ describe('AdsService', () => {
         },
       ],
     }).compile();
-    service = app.get<AdsService>(AdsService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
-    userService = app.get<UserService>(UserService);
-    contentService = app.get<ContentService>(ContentService);
-    taccountService = app.get<TAccountService>(TAccountService);
-    dataService = app.get<DataService>(DataService);
+    service = moduleRef.get<AdsService>(AdsService);
+    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
+    userService = moduleRef.get<UserService>(UserService);
+    contentService = moduleRef.get<ContentService>(ContentService);
+    taccountService = moduleRef.get<TAccountService>(TAccountService);
+    dataService = moduleRef.get<DataService>(DataService);
     mocks = await generateMockUsers(2, 1, {
       accountService: authService,
       userService: userService,
@@ -123,7 +123,7 @@ describe('AdsService', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
   describe('#createAds', () => {
@@ -329,7 +329,7 @@ describe('AdsService', () => {
     beforeAll(async () => {
       //remove all adsCampaign
       await service._adsCampaignModel.remove({});
-      expect(await service._adsCampaignModel.count()).toEqual(0);
+      expect(await service._adsCampaignModel.countDocuments()).toEqual(0);
       const mockRelevanceScores = [
         0.1, 0.3, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.15, 0.22, 0.23, 0.34, 0.67,
         0.87,

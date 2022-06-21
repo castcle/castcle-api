@@ -40,7 +40,7 @@ import { UxEngagementService } from './uxengagement.service';
 
 describe('UxEngagement Service', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: UxEngagementService;
   let authService: AuthenticationService;
   let result: {
@@ -50,7 +50,7 @@ describe('UxEngagement Service', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
@@ -73,8 +73,8 @@ describe('UxEngagement Service', () => {
         },
       ],
     }).compile();
-    service = app.get<UxEngagementService>(UxEngagementService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
+    service = moduleRef.get<UxEngagementService>(UxEngagementService);
+    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -93,7 +93,7 @@ describe('UxEngagement Service', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 
