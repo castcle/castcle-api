@@ -215,8 +215,6 @@ describe('FeedsControllerV2', () => {
     });
   });
   afterAll(async () => {
-    await (contentServiceV2 as any).repository.hashtagModel.deleteMany({});
-    await (contentServiceV2 as any).repository.userModel.deleteMany({});
     await app.close();
     await mongod.stop();
   });

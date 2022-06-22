@@ -710,10 +710,6 @@ describe('ContentService', () => {
     });
 
     it('should report content by sending email to Castcle admin', async () => {
-      jest
-        .spyOn((service as any).transporter, 'sendMail')
-        .mockReturnValueOnce({ messageId: 1 });
-
       await service.reportContent(user, content, reportingMessage);
 
       const reportedContent = await service.getContentFromId(content._id);

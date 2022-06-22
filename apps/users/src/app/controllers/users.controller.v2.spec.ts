@@ -202,9 +202,6 @@ describe('UsersControllerV2', () => {
       });
     });
 
-    afterAll(async () => {
-      await (service as any).userModel.deleteMany({});
-    });
     it('createComment() should be able to create a comment content', async () => {
       const user = mocksUsers[1].user;
       const authorizer = new Authorizer(
@@ -965,7 +962,7 @@ describe('UsersControllerV2', () => {
         active: true,
         autoPost: false,
         account: mocksUsers[0].user.ownerAccount,
-        author: { id: mocksUsers[0].user.id },
+        user: mocksUsers[0].user._id,
         visibility: EntityVisibility.Publish,
       }).save();
 
