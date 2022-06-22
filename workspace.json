@@ -5,6 +5,7 @@
     "authentications": "apps/authentications",
     "auto-posts": "apps/auto-posts",
     "backgrounds": "apps/backgrounds",
+    "backoffices": "apps/backoffices",
     "database": "libs/database",
     "e2e": "libs/e2e",
     "environments": "libs/environments",
