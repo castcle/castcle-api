@@ -43,6 +43,7 @@ export class CastcleImage {
 
   static sign(image: CastcleImage) {
     if (!image || !env.CLOUDFRONT_PRIVATE_KEY) return image;
+
     return Object.assign(
       {},
       ...Object.keys(image).map((size) => ({

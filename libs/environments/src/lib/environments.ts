@@ -244,11 +244,6 @@ export class Environment {
   // Generate QRCode
   static QR_CODE_REDIRECT_URL = process.env.QR_CODE_REDIRECT_URL || '';
 
-  //Backoffice
-  static DB_DATABASE_NAME_BACKOFFICE =
-    process.env.DB_DATABASE_NAME_BACKOFFICE || '';
-  static DB_URI_BACKOFFICE = `${Environment.DB_FORMAT}://${Environment.DB_AUTHENTICATION}${Environment.DB_HOST}/${Environment.DB_DATABASE_NAME_BACKOFFICE}?retryWrites=true&w=majority`;
-
   /** List of dates for each PDPA version (latest first) */
   static PDPA_ACCEPT_DATES = (process.env.PDPA_ACCEPT_DATE || '')
     .split(',')
@@ -273,6 +268,5 @@ export class Environment {
     Environment.BACKOFFICE_DB_USERNAME && Environment.BACKOFFICE_DB_PASSWORD
       ? `${Environment.BACKOFFICE_DB_USERNAME}:${Environment.BACKOFFICE_DB_PASSWORD}@`
       : '';
-
   static BACKOFFICE_DB_URI = `${Environment.DB_FORMAT}://${Environment.BACKOFFICE_DB_AUTHENTICATION}${Environment.BACKOFFICE_DB_HOST}/${Environment.BACKOFFICE_DB_DATABASE_NAME}?retryWrites=true&w=majority`;
 }

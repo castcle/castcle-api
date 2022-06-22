@@ -111,21 +111,6 @@ export class Mailer {
       this.logger.error(error, `sendReportUserEmail:${targetUser}`);
     }
   }
-
-  async sendPasswordToStaff(email: string, password: string) {
-    try {
-      const info = await this.transporter.sendMail({
-        from: 'castcle-noreply" <no-reply@castcle.com>',
-        subject: `Password for login backoffice of Castcle.`,
-        to: email,
-        text: `Your password to login backoffice is ${password}`,
-      });
-
-      this.logger.log(`Password has been submitted ${info.messageId}`);
-    } catch (error) {
-      this.logger.error(error, `sendPasswordToStaff:${email}`);
-    }
-  }
 }
 
 type UserReport = {

@@ -316,11 +316,6 @@ export const DefaultErrors = {
     code: '5011',
     message: 'You already said that',
   },
-  SLUG_ALREADY_EXISTS: {
-    statusCode: '400',
-    code: '5012',
-    message: 'Slug is exist.',
-  },
   '6001': {
     statusCode: '400',
     code: '6001',
@@ -335,10 +330,5 @@ export const DefaultErrors = {
     statusCode: '400',
     code: '8001',
     message: 'Invalid transaction data',
-  },
-  STAFF_NOT_FOUND: {
-    statusCode: '400',
-    code: '9001',
-    message: 'Staff not found.',
   },
 };
