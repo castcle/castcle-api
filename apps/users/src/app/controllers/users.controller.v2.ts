@@ -82,7 +82,6 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { Types } from 'mongoose';
 import {
   DeleteUserDto,
   ReportingContentDto,
@@ -107,12 +106,6 @@ export class UsersControllerV2 {
     private suggestionServiceV2: SuggestionServiceV2,
     private userService: UserServiceV2,
   ) {}
-
-  private validateObjectId(id: string) {
-    this.logger.log(`Validate is object id: ${id}`);
-    const ObjectId = Types.ObjectId;
-    if (!ObjectId.isValid(id)) throw CastcleException.CONTENT_NOT_FOUND;
-  }
 
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Delete('me')
@@ -279,7 +272,6 @@ export class UsersControllerV2 {
       : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
-    this.validateObjectId(sourceCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     if (!comment || String(comment.author._id) !== String(user.id))
       throw CastcleException.CONTENT_NOT_FOUND;
@@ -306,7 +298,6 @@ export class UsersControllerV2 {
     const user = isMe
       ? authorizer.user
       : await this.userService.getUser(userId);
-    this.validateObjectId(sourceCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     if (!comment || String(comment.author._id) !== String(user.id))
       throw CastcleException.FORBIDDEN;
@@ -330,7 +321,6 @@ export class UsersControllerV2 {
       : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
-    this.validateObjectId(sourceCommentId);
 
     const comment = await this.contentService.getCommentById(sourceCommentId);
     if (!comment) throw CastcleException.CONTENT_NOT_FOUND;
@@ -385,8 +375,6 @@ export class UsersControllerV2 {
       : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
-    this.validateObjectId(sourceCommentId);
-    this.validateObjectId(replyCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     const replyComment = await this.contentService.getCommentById(
       replyCommentId,
@@ -426,8 +414,6 @@ export class UsersControllerV2 {
     const user = isMe
       ? authorizer.user
       : await this.userService.getUser(userId);
-
-    this.validateObjectId(sourceCommentId);
 
     const comment = await this.contentService.getCommentById(sourceCommentId);
     const replyComment = await this.contentService.getCommentById(
@@ -554,7 +540,6 @@ export class UsersControllerV2 {
       : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
-    this.validateObjectId(sourceCommentId);
     await this.commentService.unlikeCommentCast(sourceCommentId, user);
   }
 

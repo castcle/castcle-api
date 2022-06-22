@@ -42,7 +42,7 @@ import { UserService } from './user.service';
 
 describe('Ranker Service', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: RankerService;
   let serviceV2: RankerServiceV2;
   let contentService: ContentService;
@@ -59,7 +59,7 @@ describe('Ranker Service', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         HttpModule,
@@ -87,11 +87,11 @@ describe('Ranker Service', () => {
       ],
     }).compile();
 
-    service = app.get<RankerService>(RankerService);
-    serviceV2 = app.get<RankerServiceV2>(RankerServiceV2);
-    contentService = app.get<ContentService>(ContentService);
-    userService = app.get<UserService>(UserService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
+    service = moduleRef.get<RankerService>(RankerService);
+    serviceV2 = moduleRef.get<RankerServiceV2>(RankerServiceV2);
+    contentService = moduleRef.get<ContentService>(ContentService);
+    userService = moduleRef.get<UserService>(UserService);
+    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -134,7 +134,7 @@ describe('Ranker Service', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 

@@ -90,9 +90,10 @@ import { UsersControllerV2 } from './users.controller.v2';
 
 describe('UsersControllerV2', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let appController: UsersControllerV2;
   let service: UserServiceV2;
+  let repository: Repository;
   let authService: AuthenticationService;
   let authServiceV2: AuthenticationServiceV2;
   let contentService: ContentService;
@@ -111,7 +112,7 @@ describe('UsersControllerV2', () => {
     };
 
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register({
@@ -171,13 +172,14 @@ describe('UsersControllerV2', () => {
         },
       ],
     }).compile();
-    service = app.get<UserServiceV2>(UserServiceV2);
-    userServiceV1 = app.get<UserService>(UserService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
-    authServiceV2 = app.get<AuthenticationServiceV2>(AuthenticationServiceV2);
-    socialSyncService = app.get<SocialSyncServiceV2>(SocialSyncServiceV2);
-    contentService = app.get<ContentService>(ContentService);
-    appController = app.get<UsersControllerV2>(UsersControllerV2);
+    service = moduleRef.get(UserServiceV2);
+    repository = moduleRef.get(Repository);
+    userServiceV1 = moduleRef.get(UserService);
+    authService = moduleRef.get(AuthenticationService);
+    authServiceV2 = moduleRef.get(AuthenticationServiceV2);
+    socialSyncService = moduleRef.get(SocialSyncServiceV2);
+    contentService = moduleRef.get(ContentService);
+    appController = moduleRef.get(UsersControllerV2);
   });
 
   describe('#Comment()', () => {
@@ -200,9 +202,6 @@ describe('UsersControllerV2', () => {
       });
     });
 
-    afterAll(async () => {
-      await (service as any).userModel.deleteMany({});
-    });
     it('createComment() should be able to create a comment content', async () => {
       const user = mocksUsers[1].user;
       const authorizer = new Authorizer(
@@ -737,7 +736,7 @@ describe('UsersControllerV2', () => {
             } as GetUserParam,
           );
 
-          const engagement = await (service as any).repository.findEngagement({
+          const engagement = await repository.findEngagement({
             user: mocksUsers[1].user._id,
             targetRef: {
               $ref: 'content',
@@ -778,12 +777,12 @@ describe('UsersControllerV2', () => {
             sourceContentId: content._id,
           } as GetSourceContentParam);
 
-          const findContent = await (service as any).repository.findContent({
+          const findContent = await repository.findContent({
             originalPost: content._id,
             author: mocksUsers[2].user._id,
           });
 
-          const engagement = await (service as any).repository.findEngagement({
+          const engagement = await repository.findEngagement({
             user: mocksUsers[2].user._id,
             itemId: recast.payload.id,
             type: EngagementType.Recast,
@@ -830,7 +829,7 @@ describe('UsersControllerV2', () => {
         } as GetUserParam,
       );
 
-      const engagement = await (service as any).repository.findEngagement({
+      const engagement = await repository.findEngagement({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'content',
@@ -963,7 +962,7 @@ describe('UsersControllerV2', () => {
         active: true,
         autoPost: false,
         account: mocksUsers[0].user.ownerAccount,
-        author: { id: mocksUsers[0].user.id },
+        user: mocksUsers[0].user._id,
         visibility: EntityVisibility.Publish,
       }).save();
 

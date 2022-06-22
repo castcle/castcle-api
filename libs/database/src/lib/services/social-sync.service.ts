@@ -25,7 +25,7 @@ import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isBoolean } from 'class-validator';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { EntityVisibility, SocialSyncDeleteDto, SocialSyncDto } from '../dtos';
 import { SocialProvider } from '../models';
 import { SocialSync, User } from '../schemas';
@@ -105,9 +105,8 @@ export class SocialSyncService {
    * @returns {SocialSync} return new social sync document
    * */
   create = (user: User, socialSync: SocialSyncDto): Promise<SocialSync> => {
-    this.logger.log('save social sync.');
     const newSocialSync = new this.socialSyncModel({
-      author: { id: user.id },
+      user: user._id,
       provider: socialSync.provider,
       socialId: socialSync.socialId,
       userName: socialSync.userName,
@@ -129,16 +128,10 @@ export class SocialSyncService {
    * */
   getSocialSyncByUser = (...users: User[]) => {
     return this.socialSyncModel
-      .find()
-      .and([
-        { 'author.id': { $in: users.map((user) => user.id) } },
-        {
-          $or: [
-            { visibility: { $exists: false } },
-            { visibility: EntityVisibility.Publish },
-          ],
-        },
-      ])
+      .find({
+        user: { $in: users.map((user) => user._id) },
+        visibility: EntityVisibility.Publish,
+      })
       .exec();
   };
 
@@ -150,16 +143,7 @@ export class SocialSyncService {
    * */
   getSocialSyncByPageId = (id: string) => {
     return this.socialSyncModel
-      .find()
-      .and([
-        { 'author.id': id as any },
-        {
-          $or: [
-            { visibility: { $exists: false } },
-            { visibility: EntityVisibility.Publish },
-          ],
-        },
-      ])
+      .find({ user: Types.ObjectId(id), visibility: EntityVisibility.Publish })
       .exec();
   };
 
@@ -168,11 +152,11 @@ export class SocialSyncService {
    * @returns {SocialSync} page Document
    */
   getPageByPageIdAndAccountId = (
-    { author }: SocialSync,
+    { user }: SocialSync,
     { ownerAccount }: User,
   ): Promise<User> => {
     return this.userModel
-      .findOne({ _id: author.id, ownerAccount: ownerAccount })
+      .findOne({ _id: user, ownerAccount: ownerAccount })
       .exec();
   };
 
@@ -230,7 +214,7 @@ export class SocialSyncService {
     }
 
     this.logger.log('update social sync.');
-    if (updateSocialSync.castcleId && user) socialSync.author.id = user.id;
+    if (updateSocialSync.castcleId && user) socialSync.user = user._id;
     if (updateSocialSync.provider)
       socialSync.provider = updateSocialSync.provider;
     if (updateSocialSync.socialId)

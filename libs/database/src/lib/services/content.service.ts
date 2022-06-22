@@ -214,7 +214,7 @@ export class ContentService {
     return contents;
   }
 
-  async getAuthorFromId(authorId: string) {
+  async getAuthorFromId(authorId: string | Types.ObjectId) {
     const user = await this._userModel.findById(authorId);
 
     return this._getAuthorFromUser(user);

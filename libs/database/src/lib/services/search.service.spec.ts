@@ -32,13 +32,13 @@ import { SearchService } from './search.service';
 
 describe('SearchService', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let hashtagService: HashtagService;
   let service: SearchService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
@@ -47,8 +47,8 @@ describe('SearchService', () => {
       providers: [HashtagService, SearchService],
     }).compile();
 
-    hashtagService = app.get<HashtagService>(HashtagService);
-    service = app.get<SearchService>(SearchService);
+    hashtagService = moduleRef.get<HashtagService>(HashtagService);
+    service = moduleRef.get<SearchService>(SearchService);
 
     const mockUser = async (name, type, follow) => {
       const user = new service._userModel({
@@ -111,7 +111,7 @@ describe('SearchService', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 

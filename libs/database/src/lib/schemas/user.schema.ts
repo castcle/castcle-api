@@ -378,7 +378,7 @@ export const UserSchemaFactory = (
 
     if (dto?.expansionFields.includes(UserField.SyncSocial)) {
       response.syncSocial = {};
-      const socialSyncs = await socialSyncModel.find({ 'author.id': this._id });
+      const socialSyncs = await socialSyncModel.find({ user: this._id });
       socialSyncs.forEach((sync) => {
         response.syncSocial[sync.provider] =
           sync?.toSocialSyncPayload() || null;
