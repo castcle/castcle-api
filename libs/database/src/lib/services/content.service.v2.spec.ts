@@ -62,18 +62,19 @@ import { UserService } from './user.service';
 
 describe('ContentServiceV2', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: ContentServiceV2;
+  let repository: Repository;
   let authService: AuthenticationService;
   let contentService: ContentService;
   let userService: UserService;
-  let taccountService: TAccountService;
+  let tAccountService: TAccountService;
   let content: Content;
   let mocksUsers: MockUserDetail[];
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         HttpModule,
@@ -111,11 +112,12 @@ describe('ContentServiceV2', () => {
       ],
     }).compile();
 
-    authService = app.get(AuthenticationService);
-    contentService = app.get(ContentService);
-    service = app.get(ContentServiceV2);
-    userService = app.get(UserService);
-    taccountService = app.get(TAccountService);
+    authService = moduleRef.get(AuthenticationService);
+    contentService = moduleRef.get(ContentService);
+    service = moduleRef.get(ContentServiceV2);
+    repository = moduleRef.get(Repository);
+    userService = moduleRef.get(UserService);
+    tAccountService = moduleRef.get(TAccountService);
 
     mocksUsers = await generateMockUsers(5, 0, {
       userService: userService,
@@ -173,7 +175,7 @@ describe('ContentServiceV2', () => {
         mocksUsers[1].user,
         mocksUsers[1].account,
       );
-      const engagement = await (service as any).repository.findEngagement({
+      const engagement = await repository.findEngagement({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'content',
@@ -191,7 +193,7 @@ describe('ContentServiceV2', () => {
   describe('#unlikeCast()', () => {
     it('should delete unlike cast.', async () => {
       await service.unlikeCast(content._id, mocksUsers[1].user);
-      const engagement = await (service as any).repository.findEngagement({
+      const engagement = await repository.findEngagement({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'content',
@@ -221,13 +223,13 @@ describe('ContentServiceV2', () => {
 
   describe('#undoRecast()', () => {
     it('should delete cast.', async () => {
-      const recast = await (service as any).repository.findContent({
+      const recast = await repository.findContent({
         author: mocksUsers[1].user._id,
         originalPost: content._id,
       });
 
       await service.undoRecast(content._id, mocksUsers[1].user);
-      const engagement = await (service as any).repository.findEngagement({
+      const engagement = await repository.findEngagement({
         user: mocksUsers[1].user._id,
         itemId: recast._id,
         type: EngagementType.Recast,
@@ -277,9 +279,9 @@ describe('ContentServiceV2', () => {
       await mockDeposit(
         mockFarmingUsers[1].user,
         initialBalance,
-        taccountService._transactionModel,
+        tAccountService._transactionModel,
       );
-      const balance = await taccountService.getAccountBalance(
+      const balance = await tAccountService.getAccountBalance(
         mockFarmingUsers[1].user.id,
         WalletType.PERSONAL,
       );
@@ -290,12 +292,16 @@ describe('ContentServiceV2', () => {
     describe('#createContentFarming', () => {
       let contentFarming: ContentFarming;
       beforeAll(async () => {
-        expect(await taccountService._transactionModel.count()).toEqual(1);
+        expect(
+          await tAccountService._transactionModel.countDocuments(),
+        ).toEqual(1);
         contentFarming = await service.createContentFarming(
           testContents[0].id,
           mockFarmingUsers[1].user.id,
         );
-        expect(await taccountService._transactionModel.count()).toEqual(2);
+        expect(
+          await tAccountService._transactionModel.countDocuments(),
+        ).toEqual(2);
       });
       it('should be able to create content farming instance if have balance > 5% total', async () => {
         expect(String(contentFarming.content)).toEqual(testContents[0].id);
@@ -305,7 +311,7 @@ describe('ContentServiceV2', () => {
         expect(contentFarming.status).toEqual(ContentFarmingStatus.Farming);
       });
       it('should have 95% balance of %initialBalance', async () => {
-        const currentBalance = await taccountService.getAccountBalance(
+        const currentBalance = await tAccountService.getAccountBalance(
           mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
@@ -317,7 +323,7 @@ describe('ContentServiceV2', () => {
             testContents[i].id,
             mockFarmingUsers[1].user.id,
           );
-          const currentBalance = await taccountService.getAccountBalance(
+          const currentBalance = await tAccountService.getAccountBalance(
             mockFarmingUsers[1].user.id,
             WalletType.PERSONAL,
           );
@@ -329,7 +335,7 @@ describe('ContentServiceV2', () => {
 
     describe('#unfarm', () => {
       it('should get balance back once unfarm and the farm status of that should be farmed', async () => {
-        const currentBalance = await taccountService.getAccountBalance(
+        const currentBalance = await tAccountService.getAccountBalance(
           mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
@@ -337,7 +343,7 @@ describe('ContentServiceV2', () => {
           testContents[0].id,
           mockFarmingUsers[1].user.id,
         );
-        const afterBalance = await taccountService.getAccountBalance(
+        const afterBalance = await tAccountService.getAccountBalance(
           mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
@@ -353,7 +359,7 @@ describe('ContentServiceV2', () => {
     });
     describe('#updateContentFarming', () => {
       it('should change status from farmed to farming', async () => {
-        const currentBalance = await taccountService.getAccountBalance(
+        const currentBalance = await tAccountService.getAccountBalance(
           mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
@@ -367,7 +373,7 @@ describe('ContentServiceV2', () => {
         expect(updateFarmingResult.status).toEqual(
           ContentFarmingStatus.Farming,
         );
-        const recentBalance = await taccountService.getAccountBalance(
+        const recentBalance = await tAccountService.getAccountBalance(
           mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
@@ -380,7 +386,7 @@ describe('ContentServiceV2', () => {
 
     describe('#expire', () => {
       it('should return all tokens to users and all status should be farmed', async () => {
-        const currentBalance = await taccountService.getAccountBalance(
+        const currentBalance = await tAccountService.getAccountBalance(
           mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
@@ -392,13 +398,13 @@ describe('ContentServiceV2', () => {
             mockFarmingUsers[1].user.id,
           );
           start += unfarmResult.farmAmount;
-          const recentBalance = await taccountService.getAccountBalance(
+          const recentBalance = await tAccountService.getAccountBalance(
             mockFarmingUsers[1].user.id,
             WalletType.PERSONAL,
           );
           expect(recentBalance).toEqual(currentBalance + start);
         }
-        const latestBalance = await taccountService.getAccountBalance(
+        const latestBalance = await tAccountService.getAccountBalance(
           mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
@@ -422,13 +428,13 @@ describe('ContentServiceV2', () => {
             finalTestContents[i].id,
             mockFarmingUsers[1].user.id,
           );
-          const currentBalance = await taccountService.getAccountBalance(
+          const currentBalance = await tAccountService.getAccountBalance(
             mockFarmingUsers[1].user.id,
             WalletType.PERSONAL,
           );
           expect(currentBalance).toEqual(expectedBalances[i]);
         }
-        const recentBalance = await taccountService.getAccountBalance(
+        const recentBalance = await tAccountService.getAccountBalance(
           mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
@@ -439,7 +445,7 @@ describe('ContentServiceV2', () => {
       it('should return all token after wait for 2 seconds(default is 1 secs)', async () => {
         await new Promise((r) => setTimeout(r, 2000));
         await service.expireAllFarmedToken();
-        const recentBalance = await taccountService.getAccountBalance(
+        const recentBalance = await tAccountService.getAccountBalance(
           mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
@@ -647,7 +653,7 @@ describe('ContentServiceV2', () => {
       );
       await service.deleteContent(contentResp.payload.id, mocksUsers[3].user);
 
-      const content = await (service as any).repository.findContent({
+      const content = await repository.findContent({
         _id: contentResp.payload.id,
       });
 
@@ -725,7 +731,7 @@ describe('ContentServiceV2', () => {
 
   describe('#getSearchTrends()', () => {
     beforeAll(async () => {
-      const contents = await (service as any).repository.findContents(
+      const contents = await repository.findContents(
         {
           keyword: {
             type: KeywordType.Word,
@@ -733,7 +739,7 @@ describe('ContentServiceV2', () => {
           },
           maxResults: 1000,
           decayDays: 7,
-          executeAuthor: [],
+          excludeAuthor: [],
         },
         { projection: { _id: 1 } },
       );
@@ -768,11 +774,7 @@ describe('ContentServiceV2', () => {
   });
 
   afterAll(async () => {
-    await (service as any).repository.contentModel.deleteMany({});
-    await (service as any).repository.userModel.deleteMany({});
-    await (service as any).repository.notificationModel.deleteMany({});
-    await (service as any).repository.engagementModel.deleteMany({});
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 });

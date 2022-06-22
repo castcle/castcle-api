@@ -23,7 +23,7 @@
 
 import { getQueueToken } from '@nestjs/bull';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Types, connect, disconnect, model } from 'mongoose';
 import {
@@ -36,6 +36,7 @@ import { Campaign, CampaignSchema } from '../schemas';
 import { TAccountService } from './taccount.service';
 
 describe('Campaign Service', () => {
+  let moduleRef: TestingModule;
   let mongo: MongoMemoryServer;
   let campaignService: CampaignService;
   const campaignModel = model('Campaign', CampaignSchema);
@@ -44,9 +45,9 @@ describe('Campaign Service', () => {
   beforeAll(async () => {
     mongo = await MongoMemoryServer.create();
     connect(mongo.getUri('test'));
-    const moduleRef = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
-        MongooseModule.forRoot(mongo.getUri(), { useCreateIndex: true }),
+        MongooseModule.forRoot(mongo.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
@@ -66,6 +67,7 @@ describe('Campaign Service', () => {
   afterAll(async () => {
     await mongo.stop();
     await disconnect();
+    await moduleRef.close();
   });
 
   it('should be defined', () => {

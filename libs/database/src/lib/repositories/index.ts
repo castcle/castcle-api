@@ -229,7 +229,6 @@ export class Repository {
     @InjectModel('AccountDevice') private deviceModel: Model<AccountDeviceV1>,
     /** @deprecated */
     @InjectModel('AccountReferral') private referralModel: Model<Referral>,
-    /** @deprecated */
     @InjectModel('Account') private accountModel: Model<Account>,
     @InjectModel('AdsCampaign') private adsCampaignModel: Model<AdsCampaign>,
     @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,

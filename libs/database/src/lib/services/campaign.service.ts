@@ -187,7 +187,7 @@ export class CampaignService {
     const account = await this.accountModel.findById(accountId);
 
     if (campaignType === CampaignType.VERIFY_MOBILE) {
-      const claimedMobileNumber = await this.queueModel.count({
+      const claimedMobileNumber = await this.queueModel.countDocuments({
         'payload.mobile': account?.mobile,
       });
 

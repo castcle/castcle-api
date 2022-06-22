@@ -33,14 +33,14 @@ import { LanguagePayloadDto } from '../dtos';
 import { Repository } from '../repositories';
 import { MetadataServiceV2 } from './metadata.service.v2';
 describe('LanguageService', () => {
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let metadataServiceV2: MetadataServiceV2;
   let mongod: MongoMemoryServer;
   let service: LanguageService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
@@ -49,12 +49,12 @@ describe('LanguageService', () => {
       ],
       providers: [LanguageService, MetadataServiceV2, Repository],
     }).compile();
-    service = app.get<LanguageService>(LanguageService);
-    metadataServiceV2 = app.get<MetadataServiceV2>(MetadataServiceV2);
+    service = moduleRef.get<LanguageService>(LanguageService);
+    metadataServiceV2 = moduleRef.get<MetadataServiceV2>(MetadataServiceV2);
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 

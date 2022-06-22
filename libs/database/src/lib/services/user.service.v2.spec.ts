@@ -34,7 +34,7 @@ import { HttpModule } from '@nestjs/axios';
 import { BullModule, getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
   AdsService,
@@ -64,6 +64,7 @@ import { HashtagService } from './hashtag.service';
 jest.mock('@castcle-api/environments');
 
 describe('UserServiceV2', () => {
+  let moduleRef: TestingModule;
   let mongod: MongoMemoryReplSet;
   let userServiceV2: UserServiceV2;
   let userServiceV1: UserService;
@@ -81,11 +82,11 @@ describe('UserServiceV2', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryReplSet.create();
-    const module = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         HttpModule,
-        MongooseModule.forRoot(mongod.getUri(), { useCreateIndex: true }),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         CastcleBullModule,
         BullModule.registerQueue({ name: QueueName.NOTIFICATION }),
@@ -124,17 +125,17 @@ describe('UserServiceV2', () => {
       ],
     }).compile();
 
-    dataService = module.get<DataService>(DataService);
-    suggestServiceV2 = module.get<SuggestionServiceV2>(SuggestionServiceV2);
-    userServiceV2 = module.get<UserServiceV2>(UserServiceV2);
-    userServiceV1 = module.get<UserService>(UserService);
-    dataService = module.get<DataService>(DataService);
-    repository = module.get<Repository>(Repository);
-    authService = module.get<AuthenticationService>(AuthenticationService);
-    authServiceV2 = module.get<AuthenticationServiceV2>(
+    dataService = moduleRef.get<DataService>(DataService);
+    suggestServiceV2 = moduleRef.get<SuggestionServiceV2>(SuggestionServiceV2);
+    userServiceV2 = moduleRef.get<UserServiceV2>(UserServiceV2);
+    userServiceV1 = moduleRef.get<UserService>(UserService);
+    dataService = moduleRef.get<DataService>(DataService);
+    repository = moduleRef.get<Repository>(Repository);
+    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
+    authServiceV2 = moduleRef.get<AuthenticationServiceV2>(
       AuthenticationServiceV2,
     );
-    suggestServiceV2 = module.get<SuggestionServiceV2>(SuggestionServiceV2);
+    suggestServiceV2 = moduleRef.get<SuggestionServiceV2>(SuggestionServiceV2);
     guestDemo = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -151,6 +152,10 @@ describe('UserServiceV2', () => {
     });
 
     userDemo = await authService.getUserFromAccount(accountDemo.account);
+  });
+
+  afterAll(async () => {
+    await Promise.all([moduleRef.close(), mongod.stop()]);
   });
 
   describe('#getUserRelationships', () => {
@@ -588,9 +593,5 @@ describe('UserServiceV2', () => {
   it('should be defined', () => {
     expect(repository).toBeDefined();
     expect(userServiceV2).toBeDefined();
-  });
-
-  afterAll(async () => {
-    await mongod.stop();
   });
 });

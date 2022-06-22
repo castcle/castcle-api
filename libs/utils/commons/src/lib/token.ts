@@ -21,34 +21,24 @@
  * or have any questions.
  */
 
-import * as jwt from 'jsonwebtoken';
-const generateToken = (payload: any, secret: string, expireIn: number) =>
-  jwt.sign(payload, secret, {
-    expiresIn: expireIn,
-    header: {
-      alg: 'HS256',
-      typ: 'JWT',
-    },
-  });
+import { sign, verify } from 'jsonwebtoken';
 
-const isTokenValid = (token: string, secret: string) => {
-  try {
-    jwt.verify(token, secret);
-    return true;
-  } catch (error) {
-    console.error('error', error);
-    return false;
-  }
-};
+export const Token = {
+  generateToken: (payload: any, secret: string, expireIn: number) =>
+    sign(payload, secret, {
+      expiresIn: expireIn,
+      header: { alg: 'HS256', typ: 'JWT' },
+    }),
 
-const isTokenExpire = (token: string, secret: string) => {
-  return new Promise<boolean>((resolve) => {
-    jwt.verify(token, secret, (error) => {
-      if (error && error.name === 'TokenExpiredError') {
-        resolve(true);
-      } else resolve(false);
-    });
-  });
+  isTokenValid: (token: string, secret: string) => {
+    try {
+      verify(token, secret);
+      return true;
+    } catch (error) {
+      console.error('error', error);
+      return false;
+    }
+  },
 };
 
 const decodeToken = <T = any>(token: string) => {
