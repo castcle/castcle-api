@@ -31,29 +31,10 @@ import {
 import { Environment } from '@castcle-api/environments';
 import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleTracingModule } from '@castcle-api/tracing';
-import { Mailer } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AdsController } from './controllers/ads.controller';
-import { AuthenticationController } from './controllers/authentication.controller';
-import { CampaignTypeController } from './controllers/campaign-type.controller';
-import { ReportController } from './controllers/report.controller';
-import { AccountSchema } from './schemas/account.schema';
-import { CampaignTypeSchema } from './schemas/campaign-type.schema';
-import { SessionSchema } from './schemas/session.schema';
-import { AdsCampaignService } from './services/ads-campaign.service';
-import { AuthenticationService } from './services/authentication.service';
-import { CampaignTypeService } from './services/campaign-type.service';
-import { ReportService } from './services/report.service';
-
-export const MongooseForFeaturesBO = MongooseModule.forFeature(
-  [
-    { name: 'Staff', schema: AccountSchema },
-    { name: 'StaffSession', schema: SessionSchema },
-    { name: 'CampaignType', schema: CampaignTypeSchema },
-  ],
-  Environment.BACKOFFICE_DB_DATABASE_NAME,
-);
+import { AppController } from './controllers/app.controller';
+import { AppService } from './services/app.service';
 
 export const MongooseForFeaturesApp = MongooseModule.forFeature(
   [
@@ -69,28 +50,11 @@ export const MongooseForFeaturesApp = MongooseModule.forFeature(
   imports: [
     CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
     CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
-    DatabaseModule,
-    MongooseForFeaturesApp,
-    MongooseForFeaturesBO,
-    MongooseModule.forRoot(Environment.BACKOFFICE_DB_URI, {
-      connectionName: Environment.BACKOFFICE_DB_DATABASE_NAME,
-    }),
     MongooseModule.forRoot(Environment.DB_URI, {
       connectionName: Environment.DB_DATABASE_NAME,
     }),
   ],
-  controllers: [
-    AdsController,
-    AuthenticationController,
-    CampaignTypeController,
-    ReportController,
-  ],
-  providers: [
-    AdsCampaignService,
-    AuthenticationService,
-    CampaignTypeService,
-    ReportService,
-    Mailer,
-  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
