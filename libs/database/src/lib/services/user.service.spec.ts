@@ -933,10 +933,6 @@ describe('User Service', () => {
     });
 
     it('should report user by sending email to Castcle admin', async () => {
-      jest
-        .spyOn((service as any).transporter, 'sendMail')
-        .mockReturnValueOnce({ messageId: 1 });
-
       await service.reportUser(user1, user2, 'message');
       expect((service as any).logger.log).toBeCalled();
       expect((service as any).transporter.sendMail).toBeCalled();

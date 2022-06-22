@@ -179,8 +179,8 @@ describe('TAccount Service', () => {
   });
 
   afterAll(async () => {
-    await mongod.stop();
     await moduleRef.close();
+    await mongod.stop();
   });
 
   describe('getLedgers()', () => {

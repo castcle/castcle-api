@@ -44,7 +44,7 @@ export class SocialSyncServiceV2 {
       account: user.ownerAccount,
       provider: socialSyncDto.provider,
       visibility: EntityVisibility.Publish,
-      $or: [{ 'author.id': user.id }, { socialId: socialSyncDto.socialId }],
+      $or: [{ user: user._id }, { socialId: socialSyncDto.socialId }],
     });
 
     if (socialSync) await this.unsync(socialSync);
@@ -63,7 +63,7 @@ export class SocialSyncServiceV2 {
       socialSync: await new this.socialSyncModel({
         ...socialSyncDto,
         account: user.ownerAccount,
-        author: { id: user.id },
+        user: user._id,
         visibility: EntityVisibility.Publish,
       }).save(),
     };
@@ -85,7 +85,7 @@ export class SocialSyncServiceV2 {
   async setAutoPost(syncSocialId: string, userId: string, isAutoPost: boolean) {
     const socialSync = await this.repository.findSocialSync({
       _id: syncSocialId,
-      authorId: String(userId),
+      user: String(userId),
     });
 
     if (!socialSync) throw CastcleException.FORBIDDEN;
@@ -108,7 +108,7 @@ export class SocialSyncServiceV2 {
   async disconnectSocialSync(syncSocialId: string, userId: string) {
     const socialSync = await this.repository.findSocialSync({
       _id: syncSocialId,
-      authorId: userId,
+      user: userId,
     });
 
     if (!socialSync) throw CastcleException.FORBIDDEN;

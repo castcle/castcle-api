@@ -83,15 +83,14 @@ export class YoutubeWebhookService {
     );
 
     const [author, shortContent] = await Promise.all([
-      this.contentService.getAuthorFromId(syncAccount.author.id),
-      await this.convertFeedToShortContent(feed, syncAccount.author.id),
+      this.contentService.getAuthorFromId(syncAccount.user),
+      await this.convertFeedToShortContent(feed, syncAccount.user.toString()),
     ]);
 
     await this.contentService.createContentsFromAuthor(new Author(author), [
       shortContent,
     ]);
 
-    syncAccount.author = author;
     syncAccount.displayName = feed.entry.author.name;
     syncAccount.latestSyncId = feed.entry.id;
     syncAccount.latestSyncDate = feed.entry.published;
