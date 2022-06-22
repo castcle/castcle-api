@@ -24,7 +24,6 @@
 import {
   AdsCampaignSchema,
   ContentSchema,
-  DatabaseModule,
   ReportingSchema,
   UserSchema,
 } from '@castcle-api/database';
