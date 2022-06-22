@@ -22,17 +22,16 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { Author } from '../dtos';
-import { SocialSyncDto } from '../dtos/user.dto';
+import { SchemaTypes, Types } from 'mongoose';
+import { SocialSyncDto } from '../dtos';
 import { SocialProvider } from '../models';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })
 class SocialSyncDocument extends CastcleBase {
-  @Prop({ required: true, type: Object })
-  author: Author;
+  @Prop({ ref: 'User', type: SchemaTypes.ObjectId })
+  user: Types.ObjectId;
 
   @Prop({ ref: 'Account', type: SchemaTypes.ObjectId })
   account: Account;

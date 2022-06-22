@@ -204,16 +204,10 @@ export class UserService {
 
     let syncPage = undefined;
     if (userFields?.includes(UserField.SyncSocial)) {
-      const page = await this.getPagesFromAccountId(accountId);
-      syncPage = (
-        await Promise.all(
-          page.map(async (p) => {
-            return await this._socialSyncModel
-              .find({ 'author.id': p.id })
-              .exec();
-          }),
-        )
-      ).flat();
+      const pages = await this.getPagesFromAccountId(accountId);
+      syncPage = await this._socialSyncModel.find({
+        user: { $in: pages.map((page) => page._id) },
+      });
     }
 
     const content = userFields?.includes(UserField.Casts)
@@ -276,7 +270,7 @@ export class UserService {
     return Promise.all(
       users.map(async (u) => {
         const syncSocial = userFields?.includes(UserField.SyncSocial)
-          ? await this._socialSyncModel.findOne({ 'author.id': u.id }).exec()
+          ? await this._socialSyncModel.findOne({ user: u._id }).exec()
           : undefined;
 
         const content = userFields?.includes(UserField.Casts)

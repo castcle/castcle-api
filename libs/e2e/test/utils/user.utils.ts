@@ -1,4 +1,4 @@
-import * as mongoose from 'mongoose';
+import { Types } from 'mongoose';
 import { User } from '../models';
 import { AuthenticationsRequest } from '../requests';
 import { accountActivationModel, userModel } from '../variables';
@@ -19,7 +19,7 @@ export const registerMockUser = async (user: User) => {
     });
 
   const userData = await userModel.findOne({
-    _id: mongoose.Types.ObjectId(user.id),
+    _id: Types.ObjectId(user.id),
   });
   user.accountId = userData.ownerAccount as unknown as string;
   const activateAccount = await accountActivationModel.findOne({

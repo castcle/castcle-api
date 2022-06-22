@@ -85,8 +85,11 @@ export class TwitterService {
       if (!timeline?.meta?.result_count) return;
 
       const [author, contents] = await Promise.all([
-        this.contentService.getAuthorFromId(syncAccount.author.id),
-        this.convertTimelineToContents(syncAccount.author.id, timeline.data),
+        this.contentService.getAuthorFromId(syncAccount.user),
+        this.convertTimelineToContents(
+          syncAccount.user.toString(),
+          timeline.data,
+        ),
       ]);
 
       await this.contentService.createContentsFromAuthor(
@@ -94,7 +97,6 @@ export class TwitterService {
         contents,
       );
 
-      syncAccount.author = author;
       syncAccount.displayName = timeline.includes?.users?.[0]?.name;
       syncAccount.latestSyncId = timeline.data.data[0].id;
       syncAccount.latestSyncDate = new Date();

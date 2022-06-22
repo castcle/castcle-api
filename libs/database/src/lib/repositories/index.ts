@@ -215,7 +215,7 @@ type HashtagQuery = {
 
 type SocialSyncQuery = {
   _id?: string;
-  authorId?: string;
+  user?: string;
 };
 
 @Injectable()
@@ -459,11 +459,9 @@ export class Repository {
 
   private getSocialSyncQuery(filter: SocialSyncQuery) {
     const query: FilterQuery<SocialSync> = {};
-    if (filter._id)
-      query._id = isString(filter._id)
-        ? Types.ObjectId(filter._id)
-        : filter._id;
-    if (filter.authorId) query['author.id'] = filter.authorId;
+
+    if (filter._id) query._id = Types.ObjectId(filter._id);
+    if (filter.user) query.user = filter.user as any;
 
     return query;
   }
@@ -1240,7 +1238,7 @@ export class Repository {
         this.deleteComments({ 'author._id': pageId }, { session }),
         this.deleteFeedItems({ author: pageId }, { session }),
         this.deleteRevisions({ author: pageId }, { session }),
-        this.deleteSocialSyncs({ 'author.id': pageId }, { session }),
+        this.deleteSocialSyncs({ user: pageId }, { session }),
         this.deleteNotifications({ user: pageId }, { session }),
       ]);
       await session.commitTransaction();
