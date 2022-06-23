@@ -24,3 +24,4 @@
 export * from './user.mocks';
 export * from './content.mocks';
 export * from './taccount.mocks';
+export * from './user.v2.mock';

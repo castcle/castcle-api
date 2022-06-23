@@ -226,6 +226,11 @@ export const DefaultErrors = {
     code: '3028',
     message: 'This email has been verified.',
   },
+  '3029': {
+    statusCode: '400',
+    code: '3029',
+    message: 'Wallet shortcut is already exists.',
+  },
   '4001': {
     statusCode: '404',
     code: '4001',
