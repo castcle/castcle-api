@@ -27,7 +27,10 @@ import {
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
-import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
+import {
+  HeadersInterceptor,
+  HttpCacheSharedInterceptor,
+} from '@castcle-api/utils/interceptors';
 import {
   CacheKey,
   CacheTTL,
@@ -59,6 +62,18 @@ export class MetaDataControllerV2 {
 
     return ResponseDto.ok({
       payload: countries.map((country) => country.toCountryPayload()),
+    });
+  }
+
+  @UseInterceptors(HeadersInterceptor, HttpCacheSharedInterceptor)
+  @Get('report-subjects')
+  async getReportSubjects() {
+    const reportSubjects = await this.metadataService.getReportSubjects();
+
+    return ResponseDto.ok({
+      payload: reportSubjects.map((subject) =>
+        subject.toReportingSubjectPayload(),
+      ),
     });
   }
 }

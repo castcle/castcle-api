@@ -100,6 +100,7 @@ import {
   AccountReferral as Referral,
   Relationship,
   Reporting,
+  ReportingSubject,
   Revision,
   SocialSync,
   Transaction,
@@ -225,6 +226,10 @@ type WalletShortcutQuery = {
   accountId?: string;
 };
 
+type ReportingSubjectQuery = {
+  slug?: string;
+};
+
 @Injectable()
 export class Repository {
   constructor(
@@ -252,12 +257,14 @@ export class Repository {
     @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Queue') private queueModel: Model<Queue>,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
+    @InjectModel('Reporting') private reportingModel: Model<Reporting>,
+    @InjectModel('ReportingSubject')
+    private reportingSubjectModel: Model<ReportingSubject>,
     @InjectModel('Revision') private revisionModel: Model<Revision>,
     @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
     @InjectModel('UxEngagement') private uxEngagementModel: Model<UxEngagement>,
-    @InjectModel('Reporting') private reportingModel: Model<Reporting>,
     @InjectModel('WalletShortcut')
     private walletShortcutModel: Model<WalletShortcut>,
     private httpService: HttpService,
@@ -627,7 +634,6 @@ export class Repository {
 
     return new this.userModel(user).save();
   }
-
   private getUserQuery(filter: UserQuery) {
     const query: FilterQuery<User> = {
       visibility: EntityVisibility.Publish,
@@ -680,6 +686,14 @@ export class Repository {
         sinceId: filter.sinceId,
         untilId: filter.untilId,
       });
+
+    return query;
+  }
+
+  private getReportingSubjectQuery(filter: ReportingSubjectQuery) {
+    const query: FilterQuery<ReportingSubject> = {};
+
+    if (filter.slug) query.slug = filter.slug;
 
     return query;
   }
@@ -1343,6 +1357,7 @@ export class Repository {
       .find(this.getWalletShortcutQuery(filter), {}, queryOptions)
       .exec();
   }
+
   updateWallerShortcut(
     filter: WalletShortcutQuery,
     updateQuery: UpdateQuery<WalletShortcut>,
@@ -1359,5 +1374,14 @@ export class Repository {
     return this.walletShortcutModel.deleteOne(
       this.getWalletShortcutQuery(filter),
     );
+  }
+
+  findReportingSubjects(
+    filter: ReportingSubjectQuery,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.reportingSubjectModel
+      .find(this.getReportingSubjectQuery(filter), {}, queryOptions)
+      .exec();
   }
 }
