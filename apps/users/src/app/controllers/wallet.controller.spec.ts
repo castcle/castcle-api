@@ -30,7 +30,7 @@ import {
   MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService,
+  NotificationServiceV2,
   QueueName,
   TAccountService,
   TLedger,
@@ -89,7 +89,7 @@ describe('WalletController', () => {
         { provide: CampaignService, useValue: {} },
         { provide: HashtagService, useValue: {} },
         { provide: Mailer, useValue: {} },
-        { provide: NotificationService, useValue: {} },
+        { provide: NotificationServiceV2, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },

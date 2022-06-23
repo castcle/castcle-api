@@ -20,7 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Mailer } from '@castcle-api/utils/clients';
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -29,6 +35,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   AnalyticService,
+  AuthenticationServiceV2,
   ContentServiceV2,
   DataService,
   MongooseAsyncFeatures,
@@ -36,10 +43,15 @@ import {
   NotificationService,
   UserServiceV2,
 } from '../database.module';
-import { ContentType, NotificationType, ShortPayload } from '../dtos';
+import {
+  ContentType,
+  NotificationType,
+  ResponseDto,
+  ShortPayload,
+} from '../dtos';
 import {
   MockUserDetail,
-  generateMockUsers,
+  MockUserService,
   mockContents,
   mockDeposit,
 } from '../mocks';
@@ -52,25 +64,20 @@ import {
 } from '../models';
 import { Repository } from '../repositories';
 import { Content, ContentFarming } from '../schemas';
-import { AuthenticationService } from './authentication.service';
 import { CampaignService } from './campaign.service';
-import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
 import { TAccountService } from './taccount.service';
-import { UserService } from './user.service';
 
 describe('ContentServiceV2', () => {
   let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: ContentServiceV2;
   let repository: Repository;
-  let authService: AuthenticationService;
-  let contentService: ContentService;
-  let userService: UserService;
   let tAccountService: TAccountService;
-  let content: Content;
+  let content: ResponseDto;
   let mocksUsers: MockUserDetail[];
+  let generateUser: MockUserService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -83,20 +90,23 @@ describe('ContentServiceV2', () => {
         MongooseForFeatures,
       ],
       providers: [
-        AuthenticationService,
+        AuthenticationServiceV2,
         ContentServiceV2,
-        ContentService,
+        DataService,
         HashtagService,
-        UserService,
+        MockUserService,
         NotificationService,
         NotificationServiceV2,
-        TAccountService,
         Repository,
-        DataService,
+        TAccountService,
         UserServiceV2,
         { provide: AnalyticService, useValue: {} },
         { provide: CampaignService, useValue: {} },
+        { provide: FacebookClient, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
         { provide: Mailer, useValue: {} },
+        { provide: TwilioClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -112,24 +122,22 @@ describe('ContentServiceV2', () => {
       ],
     }).compile();
 
-    authService = moduleRef.get(AuthenticationService);
-    contentService = moduleRef.get(ContentService);
-    service = moduleRef.get(ContentServiceV2);
+    generateUser = moduleRef.get(MockUserService);
     repository = moduleRef.get(Repository);
-    userService = moduleRef.get(UserService);
+    service = moduleRef.get(ContentServiceV2);
     tAccountService = moduleRef.get(TAccountService);
 
-    mocksUsers = await generateMockUsers(5, 0, {
-      userService: userService,
-      accountService: authService,
-    });
+    mocksUsers = await generateUser.generateMockUsers(5);
 
     const user = mocksUsers[0].user;
-    content = await contentService.createContentFromUser(user, {
-      payload: { message: 'content v2' },
-      type: ContentType.Short,
-      castcleId: user.displayId,
-    });
+    content = await service.createContent(
+      {
+        payload: { message: 'content v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      },
+      user,
+    );
   });
 
   describe('#toContentsResponses()', () => {
@@ -138,7 +146,7 @@ describe('ContentServiceV2', () => {
         service as any
       ).repository.aggregationContent({
         viewer: mocksUsers[2].user,
-        _id: content._id,
+        _id: content.payload.id,
         maxResults: 25,
       });
       const contentResp = await (service as any).toContentsResponses(
@@ -154,14 +162,14 @@ describe('ContentServiceV2', () => {
         service as any
       ).repository.aggregationContent({
         viewer: mocksUsers[2].user,
-        _id: content._id,
+        _id: content.payload.id,
         maxResults: 25,
       });
       const contentResp = await (service as any).toContentResponse(
         bundleContents,
       );
 
-      expect(contentResp.payload.id).toEqual(String(content._id));
+      expect(contentResp.payload.id).toEqual(String(content.payload.id));
       expect(contentResp.payload.message).toEqual(
         (content.payload as ShortPayload).message,
       );
@@ -171,7 +179,7 @@ describe('ContentServiceV2', () => {
   describe('#likeCast()', () => {
     it('should create like cast.', async () => {
       await service.likeCast(
-        content._id,
+        content.payload.id,
         mocksUsers[1].user,
         mocksUsers[1].account,
       );
@@ -179,25 +187,27 @@ describe('ContentServiceV2', () => {
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'content',
-          $id: content._id,
+          $id: content.payload.id,
         },
         type: EngagementType.Like,
       });
       expect(engagement).toBeTruthy();
       expect(String(engagement.user)).toEqual(String(mocksUsers[1].user._id));
-      expect(String(engagement.targetRef.oid)).toEqual(String(content._id));
+      expect(String(engagement.targetRef.oid)).toEqual(
+        String(content.payload.id),
+      );
       expect(engagement.type).toEqual(NotificationType.Like);
     });
   });
 
   describe('#unlikeCast()', () => {
     it('should delete unlike cast.', async () => {
-      await service.unlikeCast(content._id, mocksUsers[1].user);
+      await service.unlikeCast(content.payload.id, mocksUsers[1].user);
       const engagement = await repository.findEngagement({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'content',
-          $id: content._id,
+          $id: content.payload.id,
         },
         type: EngagementType.Like,
       });
@@ -207,7 +217,7 @@ describe('ContentServiceV2', () => {
   describe('#recast()', () => {
     it('should create recast.', async () => {
       const { recastContent, engagement } = await service.recast(
-        content._id,
+        content.payload.id,
         mocksUsers[1].user,
         mocksUsers[1].account,
       );
@@ -216,7 +226,7 @@ describe('ContentServiceV2', () => {
       expect(engagement).toBeTruthy();
 
       expect(String(engagement.user)).toEqual(String(mocksUsers[1].user._id));
-      expect(String(engagement.itemId)).toEqual(String(recastContent._id));
+      expect(String(engagement.itemId)).toEqual(String(recastContent.id));
       expect(engagement.type).toEqual(NotificationType.Recast);
     });
   });
@@ -225,10 +235,10 @@ describe('ContentServiceV2', () => {
     it('should delete cast.', async () => {
       const recast = await repository.findContent({
         author: mocksUsers[1].user._id,
-        originalPost: content._id,
+        originalPost: content.payload.id,
       });
 
-      await service.undoRecast(content._id, mocksUsers[1].user);
+      await service.undoRecast(content.payload.id, mocksUsers[1].user);
       const engagement = await repository.findEngagement({
         user: mocksUsers[1].user._id,
         itemId: recast._id,
@@ -241,7 +251,7 @@ describe('ContentServiceV2', () => {
   describe('#quoteCast()', () => {
     it('should create quote cast.', async () => {
       const { quoteContent, engagement } = await service.quoteCast(
-        content._id,
+        content.payload.id,
         'quote cast',
         mocksUsers[1].user,
         mocksUsers[1].account,
@@ -251,7 +261,7 @@ describe('ContentServiceV2', () => {
       expect(engagement).toBeTruthy();
 
       expect(String(engagement.user)).toEqual(String(mocksUsers[1].user._id));
-      expect(String(engagement.itemId)).toEqual(String(quoteContent._id));
+      expect(String(engagement.itemId)).toEqual(String(quoteContent.id));
       expect(engagement.type).toEqual(NotificationType.Quote);
     });
   });
@@ -264,10 +274,8 @@ describe('ContentServiceV2', () => {
       200, 150, 100, 50, 0,
     ];
     beforeAll(async () => {
-      mockFarmingUsers = await generateMockUsers(3, 1, {
-        accountService: authService,
-        userService,
-      });
+      mockFarmingUsers = await generateUser.generateMockUsers(3, 1);
+
       //user 0 create a content
       const user = mockFarmingUsers[0].user;
       testContents = await mockContents(user, (service as any).contentModel, {
@@ -458,22 +466,22 @@ describe('ContentServiceV2', () => {
   describe('#getEngagementCast()', () => {
     it('should create liking user on cast.', async () => {
       await service.likeCast(
-        content._id,
+        content.payload.id,
         mocksUsers[1].user,
         mocksUsers[1].account,
       );
       await service.likeCast(
-        content._id,
+        content.payload.id,
         mocksUsers[2].user,
         mocksUsers[2].account,
       );
       await service.likeCast(
-        content._id,
+        content.payload.id,
         mocksUsers[3].user,
         mocksUsers[3].account,
       );
       const likingResponse = await service.getEngagementCast(
-        content._id,
+        content.payload.id,
         mocksUsers[4].account,
         {
           maxResults: 25,
@@ -487,12 +495,12 @@ describe('ContentServiceV2', () => {
     });
     it('should create recast user on cast.', async () => {
       await service.recast(
-        content._id,
+        content.payload.id,
         mocksUsers[1].user,
         mocksUsers[1].account,
       );
       const recastResponse = await service.getEngagementCast(
-        content._id,
+        content.payload.id,
         mocksUsers[4].account,
         {
           maxResults: 25,
@@ -511,7 +519,7 @@ describe('ContentServiceV2', () => {
   describe('#getQuoteByCast()', () => {
     it('should create quote cast user on cast.', async () => {
       const quotecastResponse = await service.getQuoteByCast(
-        content._id,
+        content.payload.id,
         {
           maxResults: 25,
           hasRelationshipExpansion: true,
@@ -526,13 +534,13 @@ describe('ContentServiceV2', () => {
   describe('#getRecastPipeline()', () => {
     it('should get recast user on cast.', async () => {
       const newRecast = await service.recast(
-        content._id,
+        content.payload.id,
         mocksUsers[3].user,
         mocksUsers[3].account,
       );
 
       const recast = await service.getRecastPipeline(
-        newRecast.recastContent._id,
+        newRecast.recastContent.id,
         mocksUsers[3].user,
       );
 
@@ -547,14 +555,14 @@ describe('ContentServiceV2', () => {
   describe('#getQuoteCastPipeline()', () => {
     it('should get quote cast user on cast.', async () => {
       const newQuote = await service.quoteCast(
-        content._id,
+        content.payload.id,
         'quote cast',
         mocksUsers[4].user,
         mocksUsers[4].account,
       );
 
       const recast = await service.getQuoteCastPipeline(
-        newQuote.quoteContent._id,
+        newQuote.quoteContent.id,
         mocksUsers[3].user,
       );
 
@@ -569,12 +577,12 @@ describe('ContentServiceV2', () => {
   describe('#getContent()', () => {
     it('should get cast is exists.', async () => {
       const contentResp = await service.getContent(
-        content._id,
+        content.payload.id,
         mocksUsers[1].user,
         false,
       );
 
-      expect(contentResp.payload.id).toEqual(String(content._id));
+      expect(contentResp.payload.id).toEqual(String(content.payload.id));
       expect(contentResp.payload.message).toEqual(
         (content.payload as ShortPayload).message,
       );
@@ -664,25 +672,25 @@ describe('ContentServiceV2', () => {
   describe('#getParticipates()', () => {
     it('should get participates cast is exists.', async () => {
       await service.likeCast(
-        content._id,
+        content.payload.id,
         mocksUsers[4].user,
         mocksUsers[4].account,
       );
 
       await service.recast(
-        content._id,
+        content.payload.id,
         mocksUsers[4].user,
         mocksUsers[4].account,
       );
 
       await service.quoteCast(
-        content._id,
+        content.payload.id,
         'test',
         mocksUsers[4].user,
         mocksUsers[4].account,
       );
       const participates = await service.getParticipates(
-        content._id,
+        content.payload.id,
         mocksUsers[4].account,
       );
 
@@ -747,7 +755,7 @@ describe('ContentServiceV2', () => {
       const contentsObj = {};
 
       contents.forEach((content) => {
-        contentsObj[content._id] = Math.random();
+        contentsObj[content.id] = Math.random();
       });
 
       jest

@@ -30,6 +30,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  NotificationServiceV2,
   QRCodeImageSize,
   QueueName,
   UserService,
@@ -37,7 +38,6 @@ import {
   generateMockUsers,
 } from '@castcle-api/database';
 import { Mailer } from '@castcle-api/utils/clients';
-import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -70,6 +70,7 @@ describe('QRCodeControllerV2', () => {
         AnalyticService,
         AuthenticationService,
         ContentService,
+        NotificationServiceV2,
         Repository,
         UserService,
         UserServiceV2,
@@ -108,13 +109,7 @@ describe('QRCodeControllerV2', () => {
 
   describe('createQRCode', () => {
     it('should return QRCodeResponseDto', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
       const createQRCode = await appController.createQRCode(
-        authorizer,
         {
           chainId: 'test',
           userId: mocksUsers[0].user._id,

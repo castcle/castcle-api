@@ -50,7 +50,6 @@ export class HashtagService {
    * @returns {Hashtag} return new hashtag document
    */
   create = async (hashtag: CreateHashtag) => {
-    console.log('save hashtag');
     const newHashtag = {
       ...hashtag,
       aggregator: {
