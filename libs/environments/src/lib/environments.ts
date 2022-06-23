@@ -269,4 +269,7 @@ export class Environment {
       ? `${Environment.BACKOFFICE_DB_USERNAME}:${Environment.BACKOFFICE_DB_PASSWORD}@`
       : '';
   static BACKOFFICE_DB_URI = `${Environment.DB_FORMAT}://${Environment.BACKOFFICE_DB_AUTHENTICATION}${Environment.BACKOFFICE_DB_HOST}/${Environment.BACKOFFICE_DB_DATABASE_NAME}?retryWrites=true&w=majority`;
+
+  // Chain internal name
+  static CHAIN_INTERNAL = process.env.CHAIN_INTERNAL || '';
 }
