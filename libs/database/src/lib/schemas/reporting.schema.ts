@@ -21,28 +21,56 @@
  * or have any questions.
  */
 
-import { Size } from './lib/image';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes, Types } from 'mongoose';
+import { ReportStatus, ReportType } from '../models';
+import { CastcleBase } from './base.schema';
+import { Content } from './content.schema';
+import { User } from './user.schema';
 
-/** 2 days expiration time (in milliseconds)  */
-export const EXPIRE_TIME = 2 * 24 * 60 * 60 * 1000;
-export const IMAGE_BUCKET_FOLDER = 'images';
+@Schema({ timestamps: true })
+export class Reporting extends CastcleBase {
+  @Prop({
+    required: true,
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    index: true,
+  })
+  user: Types.ObjectId;
 
-export const AVATAR_SIZE_CONFIGS: Size[] = [
-  { name: 'thumbnail', width: 120, height: 120 },
-  { name: 'medium', width: 480, height: 480 },
-  { name: 'large', width: 1080, height: 1080 },
-  { name: 'fullHd', width: 1920, height: 1920 },
-];
+  @Prop({
+    required: true,
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    index: true,
+  })
+  by?: Types.ObjectId;
 
-export const COMMON_SIZE_CONFIGS: Size[] = [
-  { name: 'thumbnail', width: 640, height: 360 },
-  { name: 'medium', width: 960, height: 540 },
-  { name: 'large', width: 1280, height: 720 },
-  { name: 'fullHd', width: 1920, height: 1080 },
-];
+  @Prop({
+    required: true,
+    type: ReportType,
+    index: true,
+  })
+  type: ReportType;
 
-export const QRCODE_STANDARD_SIZE_CONFIGS: Size[] = [
-  { name: 'thumbnail', width: 250, height: 250 },
-  { name: 'medium', width: 690, height: 690 },
-  { name: 'large', width: 1024, height: 1024 },
-];
+  @Prop({
+    required: true,
+    type: Object,
+  })
+  payload: User | Content;
+
+  @Prop({
+    required: true,
+    type: String,
+    index: true,
+  })
+  message: string;
+
+  @Prop({
+    type: ReportStatus,
+    default: ReportStatus.REVIEWING,
+  })
+  status: ReportStatus;
+}
+
+export const ReportingSchema = SchemaFactory.createForClass(Reporting);

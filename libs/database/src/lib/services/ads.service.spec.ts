@@ -37,6 +37,7 @@ import {
 import { AdsQuery, AdsRequestDto, ContentType, ShortPayload } from '../dtos';
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import {
+  AdsBidType,
   AdsBoostStatus,
   AdsCpm,
   AdsObjective,
@@ -53,7 +54,7 @@ import { UserService } from './user.service';
 
 describe('AdsService', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: AdsService;
   let authService: AuthenticationService;
   let userService: UserService;
@@ -65,7 +66,7 @@ describe('AdsService', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         HttpModule,
@@ -102,12 +103,12 @@ describe('AdsService', () => {
         },
       ],
     }).compile();
-    service = app.get<AdsService>(AdsService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
-    userService = app.get<UserService>(UserService);
-    contentService = app.get<ContentService>(ContentService);
-    taccountService = app.get<TAccountService>(TAccountService);
-    dataService = app.get<DataService>(DataService);
+    service = moduleRef.get<AdsService>(AdsService);
+    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
+    userService = moduleRef.get<UserService>(UserService);
+    contentService = moduleRef.get<ContentService>(ContentService);
+    taccountService = moduleRef.get<TAccountService>(TAccountService);
+    dataService = moduleRef.get<DataService>(DataService);
     mocks = await generateMockUsers(2, 1, {
       accountService: authService,
       userService: userService,
@@ -122,7 +123,7 @@ describe('AdsService', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
   describe('#createAds', () => {
@@ -143,7 +144,7 @@ describe('AdsService', () => {
       const adsIput = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        userId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].id,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
@@ -180,7 +181,9 @@ describe('AdsService', () => {
         duration: 5,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
-      };
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
+      } as AdsRequestDto;
       const ads = await service.createAds(mocks[0].user, adsIput);
       expect(ads.detail.dailyBudget).toEqual(adsIput.dailyBudget);
       expect(ads.detail.duration).toEqual(adsIput.duration);
@@ -208,12 +211,14 @@ describe('AdsService', () => {
       const adsInput = {
         campaignName: 'Ads',
         campaignMessage: 'This is ads',
-        userId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].id,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
         paymentId: mocks[0].user.id,
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
       const adsCampaign = await service.lookupAds(
@@ -231,11 +236,13 @@ describe('AdsService', () => {
       const adsInput: AdsRequestDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        userId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].id,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
       };
       const adsUpdate: AdsRequestDto = {
         campaignName: 'Ads update',
@@ -244,6 +251,8 @@ describe('AdsService', () => {
         duration: 5,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
       await service.updateAdsById(ads.id, adsUpdate);
@@ -264,11 +273,13 @@ describe('AdsService', () => {
       const adsInput: AdsRequestDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        userId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].id,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
       await service.deleteAdsById(ads.id);
@@ -284,11 +295,13 @@ describe('AdsService', () => {
       const adsInput: AdsRequestDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        userId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].id,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
       await service._adsCampaignModel.updateOne(
@@ -316,7 +329,7 @@ describe('AdsService', () => {
     beforeAll(async () => {
       //remove all adsCampaign
       await service._adsCampaignModel.remove({});
-      expect(await service._adsCampaignModel.count()).toEqual(0);
+      expect(await service._adsCampaignModel.countDocuments()).toEqual(0);
       const mockRelevanceScores = [
         0.1, 0.3, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.15, 0.22, 0.23, 0.34, 0.67,
         0.87,
@@ -338,10 +351,11 @@ describe('AdsService', () => {
         campaignMessage: 'This is ads',
         contentId: adsContents[0].id,
         dailyBudget: 5,
-
         duration: 5,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
       };
       const c1 = await service.createAds(mocks[0].user, adsIput);
       c1.status = AdsStatus.Approved;
@@ -358,6 +372,8 @@ describe('AdsService', () => {
           duration: 5,
           objective: AdsObjective.Engagement,
           paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+          dailyBidType: AdsBidType.Auto,
+          dailyBidValue: 1,
         });
         adsCampaigns[i].status = AdsStatus.Approved;
         adsCampaigns[i].boostStatus = AdsBoostStatus.Running;
@@ -372,6 +388,8 @@ describe('AdsService', () => {
         duration: 5,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
       };
       const cLast = await service.createAds(mocks[0].user, adsIputLast);
       cLast.statistics.dailySpent = 5;

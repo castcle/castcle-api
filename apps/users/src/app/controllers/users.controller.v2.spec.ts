@@ -25,6 +25,7 @@ import {
   AdsService,
   AnalyticService,
   AuthenticationService,
+  AuthenticationServiceV2,
   CampaignService,
   Comment,
   CommentParam,
@@ -38,6 +39,7 @@ import {
   EntityVisibility,
   GetContentDto,
   GetContentQuery,
+  GetDateDto,
   GetSourceContentParam,
   GetUserParam,
   HashtagService,
@@ -62,8 +64,15 @@ import {
   UserServiceV2,
   generateMockUsers,
 } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
 import { Downloader } from '@castcle-api/utils/aws';
-import { FacebookClient, Mailer } from '@castcle-api/utils/clients';
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
@@ -76,14 +85,17 @@ import { DownloaderMock } from 'libs/utils/aws/src/lib/downloader.spec';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { SuggestionService } from '../services/suggestion.service';
+import { WalletService } from '../services/wallet.service';
 import { UsersControllerV2 } from './users.controller.v2';
 
 describe('UsersControllerV2', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let appController: UsersControllerV2;
   let service: UserServiceV2;
+  let repository: Repository;
   let authService: AuthenticationService;
+  let authServiceV2: AuthenticationServiceV2;
   let contentService: ContentService;
   let userServiceV1: UserService;
   let socialSyncService: SocialSyncServiceV2;
@@ -100,7 +112,7 @@ describe('UsersControllerV2', () => {
     };
 
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register({
@@ -116,6 +128,7 @@ describe('UsersControllerV2', () => {
         { provide: DataService, useValue: {} },
         UserServiceV2,
         AuthenticationService,
+        AuthenticationServiceV2,
         ContentService,
         HashtagService,
         SocialSyncServiceV2,
@@ -123,6 +136,7 @@ describe('UsersControllerV2', () => {
         CampaignService,
         TAccountService,
         SuggestionService,
+        WalletService,
         AdsService,
         AnalyticService,
         NotificationService,
@@ -135,7 +149,10 @@ describe('UsersControllerV2', () => {
         ContentServiceV2,
         NotificationServiceV2,
         Repository,
-        { provide: Mailer, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
+        { provide: TwilioClient, useValue: {} },
+        { provide: Mailer, useValue: { sendRegistrationEmail: jest.fn() } },
         { provide: DataService, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
@@ -155,12 +172,14 @@ describe('UsersControllerV2', () => {
         },
       ],
     }).compile();
-    service = app.get<UserServiceV2>(UserServiceV2);
-    userServiceV1 = app.get<UserService>(UserService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
-    socialSyncService = app.get<SocialSyncServiceV2>(SocialSyncServiceV2);
-    contentService = app.get<ContentService>(ContentService);
-    appController = app.get<UsersControllerV2>(UsersControllerV2);
+    service = moduleRef.get(UserServiceV2);
+    repository = moduleRef.get(Repository);
+    userServiceV1 = moduleRef.get(UserService);
+    authService = moduleRef.get(AuthenticationService);
+    authServiceV2 = moduleRef.get(AuthenticationServiceV2);
+    socialSyncService = moduleRef.get(SocialSyncServiceV2);
+    contentService = moduleRef.get(ContentService);
+    appController = moduleRef.get(UsersControllerV2);
   });
 
   describe('#Comment()', () => {
@@ -183,9 +202,6 @@ describe('UsersControllerV2', () => {
       });
     });
 
-    afterAll(async () => {
-      await (service as any).userModel.deleteMany({});
-    });
     it('createComment() should be able to create a comment content', async () => {
       const user = mocksUsers[1].user;
       const authorizer = new Authorizer(
@@ -720,7 +736,7 @@ describe('UsersControllerV2', () => {
             } as GetUserParam,
           );
 
-          const engagement = await (service as any).repository.findEngagement({
+          const engagement = await repository.findEngagement({
             user: mocksUsers[1].user._id,
             targetRef: {
               $ref: 'content',
@@ -761,12 +777,12 @@ describe('UsersControllerV2', () => {
             sourceContentId: content._id,
           } as GetSourceContentParam);
 
-          const findContent = await (service as any).repository.findContent({
+          const findContent = await repository.findContent({
             originalPost: content._id,
             author: mocksUsers[2].user._id,
           });
 
-          const engagement = await (service as any).repository.findEngagement({
+          const engagement = await repository.findEngagement({
             user: mocksUsers[2].user._id,
             itemId: recast.payload.id,
             type: EngagementType.Recast,
@@ -813,7 +829,7 @@ describe('UsersControllerV2', () => {
         } as GetUserParam,
       );
 
-      const engagement = await (service as any).repository.findEngagement({
+      const engagement = await repository.findEngagement({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'content',
@@ -946,7 +962,7 @@ describe('UsersControllerV2', () => {
         active: true,
         autoPost: false,
         account: mocksUsers[0].user.ownerAccount,
-        author: { id: mocksUsers[0].user.id },
+        user: mocksUsers[0].user._id,
         visibility: EntityVisibility.Publish,
       }).save();
 
@@ -983,6 +999,106 @@ describe('UsersControllerV2', () => {
       ).repository.findSocialSync({ _id: syncId });
 
       expect(socialSync).toBeNull();
+    });
+  });
+
+  describe('updatePDPA', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(2, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      Environment.PDPA_ACCEPT_DATES = ['20200701', '20200601'];
+    });
+
+    it('should get user data pdpa in response', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[0].account,
+        mocksUsers[0].user,
+        mocksUsers[0].credential,
+      );
+      const userResponse = await appController.updatePDPA(authorizer, {
+        date: '20200701',
+      } as GetDateDto);
+
+      expect(userResponse.pdpa).toBeTruthy();
+    });
+  });
+
+  describe('getReferee', () => {
+    let mocksUsers: MockUserDetail[];
+
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(1, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      const guestDemo = await authService.createAccount({
+        deviceUUID: `testuuid1`,
+        languagesPreferences: ['th', 'th'],
+        header: {
+          platform: 'ios',
+        },
+        device: `testdevice1`,
+      });
+
+      await authServiceV2.registerWithEmail(guestDemo.credentialDocument, {
+        hostUrl: 'http://test.com',
+        ip: '0.0.0.0',
+        email: `test1@gmail.com`,
+        password: '12345678Ab',
+        displayName: `Test1`,
+        castcleId: `test1`,
+        referral: mocksUsers[0].user.displayId,
+      });
+    });
+    it('should get user referee', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[0].account,
+        mocksUsers[0].user,
+        mocksUsers[0].credential,
+      );
+
+      const referee = await appController.getReferee(
+        authorizer,
+        {
+          userId: mocksUsers[0].user._id,
+        } as GetUserParam,
+        { hasRelationshipExpansion: false },
+      );
+
+      expect(referee.payload).toHaveLength(1);
+    });
+  });
+
+  describe('getReferrer', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(1, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+    });
+    it('should get user referrer', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[0].account,
+        mocksUsers[0].user,
+        mocksUsers[0].credential,
+      );
+      const referrer = await appController.getReferrer(
+        authorizer,
+        {
+          userId: mocksUsers[0].user._id,
+        } as GetUserParam,
+        {
+          hasRelationshipExpansion: false,
+        },
+      );
+
+      expect(referrer.payload).not.toBeNull();
     });
   });
 });

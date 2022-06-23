@@ -56,6 +56,7 @@ import {
   OtpSchema,
   QueueSchema,
   RelationshipSchema,
+  ReportingSchema,
   RevisionSchema,
   SocialSyncSchema,
   TransactionSchema,
@@ -79,9 +80,11 @@ import { CountryService } from './services/country.service';
 import { DataService } from './services/data.service';
 import { HashtagService } from './services/hashtag.service';
 import { LanguageService } from './services/language.service';
+import { MetadataServiceV2 } from './services/metadata.service.v2';
 import { NotificationService } from './services/notification.service';
 import { NotificationServiceV2 } from './services/notification.service.v2';
 import { RankerService } from './services/ranker.service';
+import { RankerServiceV2 } from './services/ranker.service.v2';
 import { SearchService } from './services/search.service';
 import { SearchServiceV2 } from './services/search.service.v2';
 import { SocialSyncService } from './services/social-sync.service';
@@ -95,7 +98,6 @@ import {
   createCastcleMeta,
   getRelationship,
   getSocialPrefix,
-  validateObjectId,
 } from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
@@ -117,10 +119,9 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Notification', schema: NotificationSchema },
   { name: 'Otp', schema: OtpSchema },
   { name: 'Queue', schema: QueueSchema },
-  { name: 'SocialSync', schema: SocialSyncSchema },
-  { name: 'Transaction', schema: TransactionSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'ContentFarming', schema: ContentFarmingSchema },
+  { name: 'Reporting', schema: ReportingSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -128,6 +129,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'FeedItem', useFactory: () => FeedItemSchema },
   { name: 'Relationship', useFactory: () => RelationshipSchema },
   { name: 'Revision', useFactory: () => RevisionSchema },
+  { name: 'SocialSync', useFactory: () => SocialSyncSchema },
+  { name: 'Transaction', useFactory: () => TransactionSchema },
   {
     name: 'Comment',
     useFactory: CommentSchemaFactory,
@@ -151,7 +154,11 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'User',
     useFactory: UserSchemaFactory,
-    inject: [getModelToken('Relationship')],
+    inject: [
+      getModelToken('Relationship'),
+      getModelToken('SocialSync'),
+      getModelToken('Transaction'),
+    ],
   },
   {
     name: 'Engagement',
@@ -177,8 +184,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
       { name: QueueName.USER },
     ),
     HttpModule,
-    MongooseAsyncFeatures,
     MongooseForFeatures,
+    MongooseAsyncFeatures,
     UtilsClientsModule,
   ],
   providers: [
@@ -195,9 +202,11 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     DataService,
     HashtagService,
     LanguageService,
+    MetadataServiceV2,
     NotificationService,
     NotificationServiceV2,
     RankerService,
+    RankerServiceV2,
     Repository,
     SearchService,
     SearchServiceV2,
@@ -223,9 +232,11 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     DataService,
     HashtagService,
     LanguageService,
+    MetadataServiceV2,
     NotificationService,
     NotificationServiceV2,
     RankerService,
+    RankerServiceV2,
     SearchService,
     SearchServiceV2,
     SocialSyncService,
@@ -256,9 +267,11 @@ export {
   getSocialPrefix,
   HashtagService,
   LanguageService,
+  MetadataServiceV2,
   NotificationService,
   NotificationServiceV2,
   RankerService,
+  RankerServiceV2,
   SearchService,
   SearchServiceV2,
   SocialSyncService,
@@ -268,5 +281,4 @@ export {
   UserService,
   UserServiceV2,
   UxEngagementService,
-  validateObjectId,
 };

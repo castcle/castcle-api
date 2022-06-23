@@ -35,3 +35,25 @@ export enum WalletType {
   EXTERNAL_MINT = 'external.mint',
   FARM_LOCKED = 'farm.locked',
 }
+
+export enum TransactionType {
+  //deposit, send, receive, withdraw, social, referral, airdrop, farming, unfarming, farmed
+  DEPOSIT = 'deposit',
+  SEND = 'send',
+  RECEIVE = 'receive',
+  WITHDRAW = 'withdraw',
+  SOCIAL = 'social',
+  REFERRAL = 'referral',
+  AIRDROP = 'airdrop',
+  FARMING = 'farming',
+  UNFARMING = 'unfarming',
+  FARMED = 'farmed',
+}
+
+export enum TransactionFilter {
+  WALLET_BALANCE = 'wallet-balance',
+  CONTENT_FARMING = 'content-farming',
+  SOCIAL_REWARD = 'social-rewards',
+  DEPOSIT_SEND = 'deposit-send',
+  AIRDROP_REFERAL = 'airdrop-referral',
+}

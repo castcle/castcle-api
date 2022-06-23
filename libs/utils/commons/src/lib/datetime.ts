@@ -22,7 +22,6 @@
  */
 
 import { DateTime, DateTimeUnit } from 'luxon';
-
 export class CastcleDate {
   /**
    * Convert a timezone string to a UTC offset.

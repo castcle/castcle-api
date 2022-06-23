@@ -22,6 +22,7 @@
  */
 import {
   Account,
+  AdsBidType,
   AdsBoostStatus,
   AdsCampaign,
   AdsObjective,
@@ -1252,15 +1253,6 @@ describe('AppController', () => {
         type: ContentType.Short,
       });
 
-      const adsInput = {
-        campaignName: 'Ads',
-        campaignMessage: 'This is ads',
-        contentId: content.id,
-        dailyBudget: 1,
-        duration: 5,
-        objective: AdsObjective.Engagement,
-        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
-      };
       await new taccountService._transactionModel({
         from: {
           type: WalletType.CASTCLE_TREASURY,
@@ -1274,7 +1266,16 @@ describe('AppController', () => {
           },
         ],
       }).save();
-      mockAds = await adsService.createAds(mocks[0].user, adsInput);
+      mockAds = await adsService.createAds(mocks[0].user, {
+        campaignName: 'Ads',
+        campaignMessage: 'This is ads',
+        contentId: content.id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+      });
     });
     it('should be able to get list ads exist.', async () => {
       const adsResponse = await appController.listAds(
@@ -1322,15 +1323,6 @@ describe('AppController', () => {
         type: ContentType.Short,
       });
 
-      const adsInput = {
-        campaignName: 'Ads',
-        campaignMessage: 'This is ads',
-        contentId: content.id,
-        dailyBudget: 1,
-        duration: 5,
-        objective: AdsObjective.Engagement,
-        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
-      };
       await new taccountService._transactionModel({
         from: {
           type: WalletType.CASTCLE_TREASURY,
@@ -1344,7 +1336,16 @@ describe('AppController', () => {
           },
         ],
       }).save();
-      mockAds = await adsService.createAds(mocks[0].user, adsInput);
+      mockAds = await adsService.createAds(mocks[0].user, {
+        campaignName: 'Ads',
+        campaignMessage: 'This is ads',
+        contentId: content.id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+      });
     });
     it('should be able to lookup ads detail exist.', async () => {
       const adsResponse = await appController.lookupAds(
@@ -1412,8 +1413,8 @@ describe('AppController', () => {
       expect(newPageResponse.payload[1].socialSyncs).toBeDefined();
       expect(syncSocial1.length).toEqual(1);
       expect(syncSocial2.length).toEqual(1);
-      expect(syncSocial1[0].author.id).toEqual(page1.id);
-      expect(syncSocial2[0].author.id).toEqual(page2.id);
+      expect(syncSocial1[0].user).toEqual(page1._id);
+      expect(syncSocial2[0].user).toEqual(page2._id);
     });
 
     it('should generate new user that has the duplicate info from SocialPageDto', async () => {
@@ -1460,8 +1461,8 @@ describe('AppController', () => {
       expect(newPageResponse.payload[1].socialSyncs).toBeDefined();
       expect(syncSocial1.length).toEqual(1);
       expect(syncSocial2.length).toEqual(1);
-      expect(syncSocial1[0].author.id).toEqual(page1.id);
-      expect(syncSocial2[0].author.id).toEqual(page2.id);
+      expect(syncSocial1[0].user).toEqual(page1._id);
+      expect(syncSocial2[0].user).toEqual(page2._id);
     });
 
     it('should return Exception when use guest account', async () => {
@@ -1546,11 +1547,12 @@ describe('AppController', () => {
       const adsInput: AdsRequestDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        userId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].id,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
       };
       await new taccountService._transactionModel({
         from: {
@@ -1576,6 +1578,7 @@ describe('AppController', () => {
           duration: 5,
           objective: AdsObjective.Engagement,
           paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+          dailyBidType: AdsBidType.Auto,
         };
         await adsService.updateAdsById(mockAds.id, adsUpdate);
         const adsCampaign = await adsService._adsCampaignModel
@@ -1596,11 +1599,12 @@ describe('AppController', () => {
         const adsInput: AdsRequestDto = {
           campaignName: 'Ads2',
           campaignMessage: 'This is ads2',
-          userId: mocks[0].pages[0].id,
+          castcleId: mocks[0].pages[0].id,
           dailyBudget: 1,
           duration: 5,
           objective: AdsObjective.Engagement,
           paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+          dailyBidType: AdsBidType.Auto,
         };
         ads = await adsService.createAds(mocks[0].pages[0], adsInput);
         await adsService._adsCampaignModel.updateOne(
@@ -1897,12 +1901,5 @@ describe('AppController', () => {
       expect(social.autoPost).toEqual(false);
       expect(social.active).toEqual(false);
     });
-  });
-
-  afterAll(() => {
-    service._userModel.deleteMany({});
-    (socialSyncService as any).socialSyncModel.deleteMany({});
-    service._userModel.deleteMany({});
-    (socialSyncService as any).socialSyncModel.deleteMany({});
   });
 });

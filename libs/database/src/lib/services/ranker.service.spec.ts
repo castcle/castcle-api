@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -27,19 +28,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, ShortPayload } from '../dtos';
+import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import { QueueName } from '../models';
-import { Account, Content, Credential, User } from '../schemas';
+import { Repository } from '../repositories';
+import { Account, Content, Credential, FeedItem, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { DataService } from './data.service';
 import { HashtagService } from './hashtag.service';
 import { RankerService } from './ranker.service';
+import { RankerServiceV2 } from './ranker.service.v2';
 import { UserService } from './user.service';
 
 describe('Ranker Service', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: RankerService;
+  let serviceV2: RankerServiceV2;
   let contentService: ContentService;
   let userService: UserService;
   let authService: AuthenticationService;
@@ -54,9 +59,10 @@ describe('Ranker Service', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
+        HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
@@ -66,6 +72,8 @@ describe('Ranker Service', () => {
         UserService,
         AuthenticationService,
         RankerService,
+        RankerServiceV2,
+        Repository,
         HashtagService,
         { provide: DataService, useValue: {} },
         {
@@ -79,10 +87,11 @@ describe('Ranker Service', () => {
       ],
     }).compile();
 
-    service = app.get<RankerService>(RankerService);
-    contentService = app.get<ContentService>(ContentService);
-    userService = app.get<UserService>(UserService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
+    service = moduleRef.get<RankerService>(RankerService);
+    serviceV2 = moduleRef.get<RankerServiceV2>(RankerServiceV2);
+    contentService = moduleRef.get<ContentService>(ContentService);
+    userService = moduleRef.get<UserService>(UserService);
+    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -125,7 +134,7 @@ describe('Ranker Service', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 
@@ -216,16 +225,44 @@ describe('Ranker Service', () => {
       );
     });
   });
-  //TODO !!! Have to add test later on
-  /*describe('#getMemberFeedItemsFromViewer', () => {
-    it('should be able to view normal feed', async() => {
 
-    })
-    it('should fill up content from guestFeed if not so much content right now', async() => {
+  describe('#offViewFeeds', () => {
+    const shortPayload: ShortPayload = {
+      message: 'this is test status',
+    };
 
-    })
-    it('should not be able to view called content', async () =>{
+    let mocksUsers: MockUserDetail[];
+    let userMock: User;
+    let feeds: any;
 
-    })
-  })*/
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(1, 10, {
+        userService,
+        accountService: authService,
+      });
+      userMock = mocksUsers[0].user;
+      contents[0] = await contentService.createContentFromUser(userMock, {
+        type: ContentType.Short,
+        payload: shortPayload,
+        castcleId: userMock.displayId,
+      });
+
+      jest.spyOn(service, 'getFeedItem').mockResolvedValue({
+        _id: '61ea8d13acc00343f70b52e7',
+        author: null,
+        content: null,
+        viewer: null,
+      } as FeedItem);
+
+      feeds = await service.getFeedItem(mocksUsers[0].account, contents[0]._id);
+    });
+
+    it('should off view feed return success', async () => {
+      const offView = await serviceV2.offViewFeedItem(
+        mocksUsers[0].account.id,
+        feeds._id,
+      );
+      expect(offView.ok).toEqual(1);
+    });
+  });
 });

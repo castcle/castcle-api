@@ -49,7 +49,6 @@ import {
   COMMON_SIZE_CONFIGS,
   Downloader,
   Image,
-  ImageUploadOptions,
 } from '@castcle-api/utils/aws';
 import {
   CastcleAuth,
@@ -92,9 +91,6 @@ export class PagesController {
     private socialSyncService: SocialSyncService,
     private download: Downloader,
   ) {}
-
-  _uploadImage = (base64: string, options?: ImageUploadOptions) =>
-    Image.upload(base64, options);
 
   _getOwnPageByIdOrCastcleId = async (
     idOrCastCleId: string,
@@ -185,7 +181,7 @@ export class PagesController {
     //TODO !!! performance issue
     if (body.images && body.images.avatar)
       page.profile.images.avatar = (
-        await this._uploadImage(body.images.avatar, {
+        await Image.upload(body.images.avatar, {
           filename: `page-avatar-${id}`,
           addTime: true,
           sizes: AVATAR_SIZE_CONFIGS,
@@ -194,7 +190,7 @@ export class PagesController {
       ).image;
     if (body.images && body.images.cover)
       page.profile.images.cover = (
-        await this._uploadImage(body.images.cover, {
+        await Image.upload(body.images.cover, {
           filename: `page-cover-${id}`,
           addTime: true,
           sizes: COMMON_SIZE_CONFIGS,
@@ -427,7 +423,7 @@ export class PagesController {
           );
 
           this.logger.log('upload avatar to s3');
-          const avatar = await this._uploadImage(imgAvatar, {
+          const avatar = await Image.upload(imgAvatar, {
             filename: `page-avatar-${sugguestDisplayId}`,
             addTime: true,
             sizes: AVATAR_SIZE_CONFIGS,
@@ -443,7 +439,7 @@ export class PagesController {
           const imgCover = await this.download.getImageFromUrl(syncBody.cover);
 
           this.logger.log('upload cover to s3');
-          const cover = await this._uploadImage(imgCover, {
+          const cover = await Image.upload(imgCover, {
             filename: `page-cover-${sugguestDisplayId}`,
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,

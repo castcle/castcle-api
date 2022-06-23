@@ -77,6 +77,7 @@ import {
 } from '../utils/common';
 import { HashtagService } from './hashtag.service';
 
+/** @deprecated */
 @Injectable()
 export class ContentService {
   private logger = new CastLogger(ContentService.name);
@@ -193,6 +194,11 @@ export class ContentService {
     const contentsToCreate = await Promise.all($contentsToCreate);
     const contents = await this._contentModel.insertMany(contentsToCreate);
 
+    await this._userModel.updateOne(
+      { _id: author.id },
+      { $inc: { casts: contents.length } },
+    );
+
     contents.forEach((content) => {
       this.contentQueue.add(
         {
@@ -208,7 +214,7 @@ export class ContentService {
     return contents;
   }
 
-  async getAuthorFromId(authorId: string) {
+  async getAuthorFromId(authorId: string | Types.ObjectId) {
     const user = await this._userModel.findById(authorId);
 
     return this._getAuthorFromUser(user);

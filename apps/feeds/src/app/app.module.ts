@@ -29,6 +29,7 @@ import { CastcleTracingModule } from '@castcle-api/tracing';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { Module } from '@nestjs/common';
+import { AdsController } from './controllers/ads.controller';
 import { CommentController } from './controllers/comment.controller';
 import { CommentControllerV2 } from './controllers/comment.controller.v2';
 import { ContentController } from './controllers/content.controller';
@@ -38,6 +39,7 @@ import { FeedsController } from './controllers/feeds.controller';
 import { FeedsControllerV2 } from './controllers/feeds.controller.v2';
 import { HashtagsController } from './controllers/hashtags.controller';
 import { LanguagesController } from './controllers/languages.controller';
+import { MetaDataControllerV2 } from './controllers/metadatas.controller.v2';
 import { SearchesController } from './controllers/searches.controller';
 import { SearchesControllerV2 } from './controllers/searches.controller.v2';
 import { AppService, SuggestionService } from './services';
@@ -53,16 +55,18 @@ import { AppService, SuggestionService } from './services';
     UtilsPipesModule,
   ],
   controllers: [
+    AdsController,
     CommentController,
+    CommentControllerV2,
     ContentController,
     ContentControllerV2,
     CountryController,
     FeedsController,
+    FeedsControllerV2,
     HashtagsController,
     LanguagesController,
+    MetaDataControllerV2,
     SearchesController,
-    CommentControllerV2,
-    FeedsControllerV2,
     SearchesControllerV2,
   ],
   providers: [AppService, SuggestionService],

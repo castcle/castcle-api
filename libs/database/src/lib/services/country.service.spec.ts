@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { HttpModule } from '@nestjs/axios';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -29,27 +30,32 @@ import {
   MongooseForFeatures,
 } from '../database.module';
 import { CountryPayloadDto, SortDirection } from '../dtos';
+import { Repository } from '../repositories';
+import { MetadataServiceV2 } from './metadata.service.v2';
 
 describe('CountryService', () => {
+  let moduleRef: TestingModule;
+  let metadataServiceV2: MetadataServiceV2;
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
   let service: CountryService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
+        HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
-      providers: [CountryService],
+      providers: [CountryService, MetadataServiceV2, Repository],
     }).compile();
-    service = app.get<CountryService>(CountryService);
+    service = moduleRef.get<CountryService>(CountryService);
+    metadataServiceV2 = moduleRef.get<MetadataServiceV2>(MetadataServiceV2);
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 
@@ -100,6 +106,76 @@ describe('CountryService', () => {
       });
       expect(result).toBeDefined();
       expect(result[0].dialCode).toEqual('+1');
+    });
+  });
+
+  describe('getCountry', () => {
+    beforeAll(async () => {
+      await service.create({
+        code: 'TH',
+        dialCode: '+66',
+        name: 'Thailand',
+        flag: 'url',
+      });
+
+      await service.create({
+        code: 'US',
+        dialCode: '+1',
+        name: 'U.S.A.',
+        flag: 'url',
+      });
+
+      await service.create({
+        code: 'CN',
+        dialCode: '+86',
+        name: 'China',
+        flag: 'url',
+      });
+    });
+    it('should return country sort ny name asc', async () => {
+      const countries = await metadataServiceV2.getAllCountry({
+        name: 1,
+      });
+
+      const countriesResponse = countries.map((country) =>
+        country.toCountryPayload(),
+      );
+
+      expect(countriesResponse[countriesResponse.length - 1]).toEqual({
+        code: 'US',
+        dialCode: '+1',
+        name: 'U.S.A.',
+        flag: 'url',
+      });
+
+      expect(countriesResponse[0]).toEqual({
+        code: 'CN',
+        dialCode: '+86',
+        name: 'China',
+        flag: 'url',
+      });
+    });
+
+    it('should return country sort ny name desc', async () => {
+      const countries = await metadataServiceV2.getAllCountry({
+        name: -1,
+      });
+      const countriesResponse = countries.map((country) =>
+        country.toCountryPayload(),
+      );
+      expect(countriesResponse[0]).toEqual({
+        code: 'US',
+        dialCode: '+1',
+        name: 'U.S.A.',
+        flag: 'url',
+      });
+
+      expect(countriesResponse[countriesResponse.length - 1]).toEqual({
+        code: 'CN',
+        dialCode: '+86',
+        name: 'China',
+        flag: 'url',
+      });
     });
   });
 

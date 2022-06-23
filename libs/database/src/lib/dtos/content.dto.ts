@@ -21,12 +21,12 @@
  * or have any questions.
  */
 import { Configs } from '@castcle-api/environments';
-import { Image } from '@castcle-api/utils/aws';
+import { CastcleImage, Image } from '@castcle-api/utils/aws';
 import { TransformStringToEnum } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { UserVerified } from '../models';
-import { CastcleImage, CastcleMeta, QueryOption, SortBy } from './common.dto';
+import { OwnerVerification } from '../models';
+import { CastcleMeta, QueryOption, SortBy } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 
 export class Url {
@@ -166,7 +166,7 @@ export class Author {
   @ApiProperty()
   avatar: CastcleImage | null;
   @ApiProperty()
-  verified: UserVerified;
+  verified: OwnerVerification;
 
   constructor(author: Omit<Author, 'toIncludeUser'>) {
     this.avatar = author.avatar;

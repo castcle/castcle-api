@@ -38,7 +38,6 @@ export class LanguageService {
    * @returns {Language[]} return all Language Document
    */
   async getAll() {
-    console.log('get all language');
     return this._languageModel.find().exec();
   }
 

@@ -38,6 +38,7 @@ import {
   NotificationServiceV2,
   QueueName,
   RankerService,
+  RankerServiceV2,
   SuggestionServiceV2,
   TAccountService,
   UserService,
@@ -83,6 +84,7 @@ describe('FeedsControllerV2', () => {
         DataService,
         HashtagService,
         RankerService,
+        RankerServiceV2,
         Repository,
         SuggestionServiceV2,
         UserService,
@@ -213,8 +215,6 @@ describe('FeedsControllerV2', () => {
     });
   });
   afterAll(async () => {
-    await (contentServiceV2 as any).repository.hashtagModel.deleteMany({});
-    await (contentServiceV2 as any).repository.userModel.deleteMany({});
     await app.close();
     await mongod.stop();
   });

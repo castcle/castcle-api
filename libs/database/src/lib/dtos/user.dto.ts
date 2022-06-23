@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { RemoveLeadingZero } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform, Type } from 'class-transformer';
@@ -36,329 +37,29 @@ import {
   ValidateNested,
 } from 'class-validator';
 import {
+  AuthenticationProvider,
   OtpObjective,
-  PageVerified,
+  OwnerVerification,
+  PublicVerification,
   SocialProvider,
-  UserVerified,
+  UserContact,
+  UserImage,
+  UserMobile,
+  UserType,
   Wallet,
 } from '../models';
-import { CastcleImage, CastcleMeta, Pagination } from './common.dto';
+import { CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 import { Meta } from './response.dto';
 
-class UserImage {
+class UserImageDto {
   @IsOptional()
   @IsString()
-  avatar?: string | CastcleImage;
-
-  @IsOptional()
-  @IsString()
-  cover?: string | CastcleImage;
-}
-
-export class UserModelImage {
-  avatar?: CastcleImage;
-  cover?: CastcleImage;
-}
-
-class Link {
-  @ApiProperty()
-  @IsString()
-  facebook?: string;
-
-  @ApiProperty()
-  @IsString()
-  twitter?: string;
-
-  @ApiProperty()
-  @IsString()
-  youtube?: string;
-
-  @ApiProperty()
-  @IsString()
-  medium?: string;
-
-  @ApiProperty()
-  @IsString()
-  website?: string | null;
-}
-
-class Counter {
-  @ApiProperty()
-  count: number;
-}
-
-export type SyncSocialModelV2 = {
-  [provider in SocialProvider]?: SyncSocialDetail;
-};
-
-export class ContactDto {
-  @IsOptional()
-  @IsString()
-  countryCode?: string;
+  avatar?: string;
 
   @IsOptional()
   @IsString()
-  phone?: string;
-
-  @IsOptional()
-  @IsEmail()
-  email?: string;
-}
-
-export class UserResponseDto {
-  @ApiProperty()
-  id: string;
-
-  @ApiProperty()
-  castcleId: string;
-
-  @ApiProperty()
-  type: string;
-
-  @ApiProperty()
-  displayName: string;
-
-  @ApiProperty()
-  email?: string;
-
-  @ApiProperty()
-  overview: string | null;
-
-  @ApiProperty()
-  dob: Date | null;
-
-  @ApiProperty()
-  images: UserImage;
-
-  @ApiProperty()
-  links: Link;
-
-  @ApiProperty()
-  following: Counter;
-
-  @ApiProperty()
-  followers: Counter;
-
-  @ApiProperty()
-  verified: UserVerified;
-
-  @ApiProperty()
-  followed: boolean;
-
-  @ApiProperty()
-  blocked: boolean;
-
-  @ApiProperty()
-  blocking: boolean;
-
-  @ApiProperty()
-  passwordNotSet: boolean;
-
-  @ApiProperty()
-  wallet: Wallet;
-
-  @ApiProperty()
-  mobile: {
-    countryCode: string;
-    number: string;
-  };
-
-  @ApiProperty()
-  linkSocial: {
-    facebook?: linkSocialDetail | null;
-    twitter?: linkSocialDetail | null;
-    google?: linkSocialDetail | null;
-    apple?: linkSocialDetail | null;
-  };
-
-  @ApiProperty()
-  syncSocial: SyncSocialDetail[] | SyncSocialModelV2;
-
-  @ApiProperty()
-  casts: number;
-
-  @ApiProperty()
-  canUpdateCastcleId: boolean;
-
-  @ApiProperty()
-  contact?: ContactDto;
-}
-
-export class linkSocialDetail {
-  socialId: string;
-  displayName: string;
-}
-
-export class SyncSocialDetail {
-  id?: string;
-  provider: string;
-  socialId: string;
-  userName: string;
-  displayName: string;
-  avatar: string;
-  active: boolean;
-  autoPost: boolean;
-}
-
-export class UpdateUserDto {
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  castcleId?: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  displayName?: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  overview?: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  dob?: string;
-
-  @ApiProperty()
-  @IsOptional()
-  images?: UserImage;
-
-  @ApiProperty()
-  @IsOptional()
-  links?: Link;
-}
-
-export class PageDto {
-  @IsString()
-  @IsNotEmpty()
-  @ApiProperty()
-  castcleId: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @ApiProperty()
-  displayName: string;
-}
-
-export class PageResponseDto {
-  @ApiProperty()
-  id: string;
-
-  @ApiProperty()
-  castcleId: string;
-
-  @ApiProperty()
-  displayName: string;
-
-  @ApiProperty()
-  images: {
-    avatar: CastcleImage;
-    cover: CastcleImage;
-  };
-
-  @ApiProperty()
-  overview: string | null;
-
-  @ApiProperty()
-  links: {
-    facebook: string | null;
-    twitter: string | null;
-    youtube: string | null;
-    medium: string | null;
-    website: string | null;
-  };
-
-  @ApiProperty()
-  verified: PageVerified;
-
-  @ApiProperty()
-  followers: {
-    count: number;
-  };
-
-  @ApiProperty()
-  following: {
-    count: number;
-  };
-
-  @ApiProperty()
-  followed: boolean;
-
-  @ApiProperty()
-  blocked: boolean;
-
-  @ApiProperty()
-  blocking: boolean;
-
-  @ApiProperty()
-  updatedAt: string;
-
-  @ApiProperty()
-  createdAt: string;
-
-  @ApiProperty()
-  syncSocial: SyncSocialDetail;
-
-  @ApiProperty()
-  casts: number;
-
-  @ApiProperty()
-  canUpdateCastcleId: boolean;
-
-  contact?: UserContact;
-}
-
-export class UpdatePageDto {
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  displayName?: string;
-
-  @ApiProperty()
-  @IsOptional()
-  images?: {
-    avatar?: string;
-    cover?: string;
-  };
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  overview?: string;
-
-  @ApiProperty()
-  @IsOptional()
-  links?: {
-    facebook?: string | null;
-    twitter?: string | null;
-    youtube?: string | null;
-    medium?: string | null;
-    website?: string | null;
-  };
-}
-
-export class PagesResponse {
-  @ApiProperty()
-  payload: PageResponseDto[];
-
-  @ApiProperty()
-  pagination?: Pagination;
-}
-
-export class PageResponse {
-  @ApiProperty()
-  payload: PageResponseDto;
-}
-
-export class FollowResponse {
-  @ApiProperty()
-  payload: (UserResponseDto | PageResponseDto)[];
-
-  @ApiProperty()
-  meta: Meta;
+  cover?: string;
 }
 
 export class SocialSyncDto {
@@ -418,6 +119,273 @@ export class SocialSyncDto {
   authToken?: string;
 }
 
+export class SocialLinks {
+  @ApiProperty()
+  @IsString()
+  facebook?: string;
+
+  @ApiProperty()
+  @IsString()
+  twitter?: string;
+
+  @ApiProperty()
+  @IsString()
+  youtube?: string;
+
+  @ApiProperty()
+  @IsString()
+  medium?: string;
+
+  @ApiProperty()
+  @IsString()
+  website?: string;
+}
+
+class Counter {
+  @ApiProperty()
+  count: number;
+}
+
+export class ContactDto {
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+}
+
+export class UserResponseDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  castcleId: string;
+
+  @ApiProperty()
+  type: string;
+
+  @ApiProperty()
+  displayName: string;
+
+  @ApiProperty()
+  email?: string;
+
+  @ApiProperty()
+  overview: string | null;
+
+  @ApiProperty()
+  dob: Date | null;
+
+  @ApiProperty()
+  images: UserImage;
+
+  @ApiProperty()
+  links: SocialLinks;
+
+  @ApiProperty()
+  following: Counter;
+
+  @ApiProperty()
+  followers: Counter;
+
+  @ApiProperty()
+  verified: OwnerVerification;
+
+  @ApiProperty()
+  followed: boolean;
+
+  @ApiProperty()
+  blocked: boolean;
+
+  @ApiProperty()
+  blocking: boolean;
+
+  @ApiProperty()
+  passwordNotSet: boolean;
+
+  @ApiProperty()
+  wallet: Wallet;
+
+  @ApiProperty()
+  mobile: UserMobile;
+
+  @ApiProperty()
+  linkSocial: LinkedSocials;
+
+  @ApiProperty()
+  syncSocial: SocialSyncDto[] | SyncSocials;
+
+  @ApiProperty()
+  casts: number;
+
+  @ApiProperty()
+  canUpdateCastcleId: boolean;
+
+  @ApiProperty()
+  contact?: ContactDto;
+
+  pdpa?: boolean;
+}
+
+type LinkedSocials = Partial<Record<AuthenticationProvider, LinkedSocial>>;
+
+class LinkedSocial {
+  socialId: string;
+}
+
+type SyncSocials = Partial<Record<SocialProvider, SocialSyncDto>>;
+
+export class UpdateUserDto {
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  castcleId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  overview?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  dob?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UserImageDto)
+  images?: UserImageDto;
+
+  @ApiProperty()
+  @IsOptional()
+  links?: SocialLinks;
+}
+
+export class PageDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  castcleId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  displayName: string;
+}
+
+export class PageResponseDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  castcleId: string;
+
+  @ApiProperty()
+  displayName: string;
+
+  @ApiProperty()
+  images: UserImage;
+
+  @ApiProperty()
+  overview: string | null;
+
+  @ApiProperty()
+  links: SocialLinks;
+
+  @ApiProperty()
+  verified: PublicVerification;
+
+  @ApiProperty()
+  followers: Counter;
+
+  @ApiProperty()
+  following: Counter;
+
+  @ApiProperty()
+  followed: boolean;
+
+  @ApiProperty()
+  blocked: boolean;
+
+  @ApiProperty()
+  blocking: boolean;
+
+  @ApiProperty()
+  updatedAt: string;
+
+  @ApiProperty()
+  createdAt: string;
+
+  @ApiProperty()
+  syncSocial: SocialSyncDto;
+
+  @ApiProperty()
+  casts: number;
+
+  @ApiProperty()
+  canUpdateCastcleId: boolean;
+
+  contact?: UserContact;
+
+  pdpa?: boolean;
+}
+
+export class UpdatePageDto {
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  images?: {
+    avatar?: string;
+    cover?: string;
+  };
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  overview?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  links?: SocialLinks;
+}
+
+export class PagesResponse {
+  @ApiProperty()
+  payload: PageResponseDto[];
+
+  @ApiProperty()
+  pagination?: Pagination;
+}
+
+export class PageResponse {
+  @ApiProperty()
+  payload: PageResponseDto;
+}
+
+export class FollowResponse {
+  @ApiProperty()
+  payload: (UserResponseDto | PageResponseDto)[];
+
+  @ApiProperty()
+  meta: Meta;
+}
+
 export class CreatePageSocialDto {
   @Type(() => SocialSyncDto)
   @ValidateNested({ each: true })
@@ -448,6 +416,7 @@ export class SuggestToFollowResponseDto {
   payload: (UserResponseDto | PageResponseDto)[];
   meta: CastcleMeta;
 }
+
 export class SocialPageDto {
   castcleId: string;
   displayName: string;
@@ -455,13 +424,7 @@ export class SocialPageDto {
   overview?: string;
   avatar?: CastcleImage;
   cover?: CastcleImage;
-  links?: {
-    facebook?: string | null;
-    twitter?: string | null;
-    youtube?: string | null;
-    medium?: string | null;
-    website?: string | null;
-  };
+  links?: SocialLinks;
 }
 
 export class GetUserParam {
@@ -472,10 +435,6 @@ export class GetUserParam {
   @Expose()
   @Transform(({ obj }) => obj.userId === 'me')
   isMe = () => this.userId === 'me';
-}
-
-export class LinkSocialDetail {
-  [key: string]: string;
 }
 
 export class UpdateUserDtoV2 {
@@ -501,16 +460,11 @@ export class UpdateUserDtoV2 {
 
   @IsOptional()
   @IsObject()
-  links?: LinkSocialDetail;
+  links?: SocialLinks;
 
   @IsOptional()
   @IsObject()
-  images?: UserImage;
-}
-export interface UserContact {
-  countryCode?: string;
-  phone?: string;
-  email?: string;
+  images?: UserImageDto;
 }
 
 export class UpdateModelUserDto {
@@ -518,9 +472,9 @@ export class UpdateModelUserDto {
   displayName?: string;
   overview?: string;
   dob?: string;
-  links?: Link;
+  links?: SocialLinks;
   contact?: ContactDto;
-  images?: UserModelImage;
+  images?: UserImage;
 }
 
 export class PagesResponseV2 {
@@ -547,4 +501,37 @@ export class UpdateMobileDto {
   @IsMobilePhone()
   @RemoveLeadingZero()
   mobileNumber: string;
+}
+
+export class PublicUserResponse {
+  id: string;
+  castcleId: string;
+  displayName: string;
+  type: UserType;
+  email?: string;
+  overview?: string;
+  dob?: Date;
+  image: UserImage;
+  links: SocialLinks;
+  verified: PublicVerification;
+  followers: Counter;
+  following: Counter;
+  followed?: boolean;
+  blocking?: boolean;
+  blocked?: boolean;
+  contact: ContactDto;
+  casts: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class OwnerResponse extends PublicUserResponse {
+  verified: OwnerVerification;
+  canUpdateCastcleId: boolean;
+  passwordNotSet: boolean;
+  wallet?: Wallet;
+  mobile?: UserMobile;
+  linkSocial?: LinkedSocials;
+  syncSocial?: SyncSocials;
+  pdpa?: boolean;
 }

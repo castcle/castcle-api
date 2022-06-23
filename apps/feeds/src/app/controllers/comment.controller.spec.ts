@@ -176,7 +176,7 @@ describe('CommentController', () => {
   describe('#getAllComment()', () => {
     it('should display all comments', async () => {
       const comments = await commentController.getAllComment(
-        content._id,
+        content.id,
         userCredentialRequest,
         { hasRelationshipExpansion: false },
       );

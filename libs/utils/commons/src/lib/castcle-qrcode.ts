@@ -22,7 +22,7 @@
  */
 
 import { CastLogger } from '@castcle-api/logger';
-import { QRCODE_STANDARD_SIZE_CONFIGS } from '@castcle-api/utils/aws';
+import { QR_CODE_STANDARD_SIZE_CONFIGS } from '@castcle-api/utils/aws';
 import * as QRCode from 'qrcode';
 
 export class CastcleQRCode {
@@ -35,7 +35,7 @@ export class CastcleQRCode {
   static async generateQRCode(inputText: string, size: string) {
     this.logger.log(`Generate QR Code size : ${size}`);
 
-    const { width } = QRCODE_STANDARD_SIZE_CONFIGS.find(
+    const { width } = QR_CODE_STANDARD_SIZE_CONFIGS.find(
       ({ name }) => name === size,
     );
 

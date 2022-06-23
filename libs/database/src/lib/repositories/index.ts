@@ -62,6 +62,7 @@ import {
   RefreshTokenPayload,
   ShortPayload,
   Url,
+  UserField,
 } from '../dtos';
 import {
   AdsBoostStatus,
@@ -85,17 +86,20 @@ import {
   CAccountNature,
   Comment,
   Content,
+  Country,
   Credential,
   CredentialModel,
   Engagement,
   FeedItem,
   Hashtag,
+  Language,
   Notification,
   Otp,
   OtpModel,
   Queue,
   AccountReferral as Referral,
   Relationship,
+  Reporting,
   Revision,
   SocialSync,
   Transaction,
@@ -105,7 +109,7 @@ import {
 import { createCastcleFilter } from '../utils/common';
 
 type AccountQuery = {
-  _id?: string;
+  _id?: any;
   email?: string;
   provider?: string;
   socialId?: string;
@@ -120,7 +124,7 @@ type AccountQuery = {
 type UserQuery = {
   /** Mongo ID or castcle ID */
   _id?: string | Types.ObjectId[] | string[];
-  accountId?: string;
+  accountId?: string | Types.ObjectId[];
   castcleId?: string;
   excludeRelationship?: string[] | User[];
   keyword?: {
@@ -211,7 +215,7 @@ type HashtagQuery = {
 
 type SocialSyncQuery = {
   _id?: string;
-  authorId?: string;
+  user?: string;
 };
 
 @Injectable()
@@ -225,15 +229,18 @@ export class Repository {
     @InjectModel('AccountDevice') private deviceModel: Model<AccountDeviceV1>,
     /** @deprecated */
     @InjectModel('AccountReferral') private referralModel: Model<Referral>,
-    /** @deprecated */
-    @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Account') private accountModel: Model<Account>,
     @InjectModel('AdsCampaign') private adsCampaignModel: Model<AdsCampaign>,
-    @InjectModel('Content') private contentModel: Model<Content>,
+    @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
+    @InjectModel('CAccount') private caccountModel: Model<CAccount>,
     @InjectModel('Comment') private commentModel: Model<Comment>,
+    @InjectModel('Content') private contentModel: Model<Content>,
+    @InjectModel('Country') private countryModel: Model<Country>,
+    @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
+    @InjectModel('Language') private languageModel: Model<Language>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Queue') private queueModel: Model<Queue>,
@@ -242,9 +249,9 @@ export class Repository {
     @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
-    @InjectModel('CAccount') private caccountModel: Model<CAccount>,
-    @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
     @InjectModel('UxEngagement') private uxEngagementModel: Model<UxEngagement>,
+    @InjectModel('Reporting') private reportingModel: Model<Reporting>,
+
     private httpService: HttpService,
   ) {}
 
@@ -452,11 +459,9 @@ export class Repository {
 
   private getSocialSyncQuery(filter: SocialSyncQuery) {
     const query: FilterQuery<SocialSync> = {};
-    if (filter._id)
-      query._id = isString(filter._id)
-        ? Types.ObjectId(filter._id)
-        : filter._id;
-    if (filter.authorId) query['author.id'] = filter.authorId;
+
+    if (filter._id) query._id = Types.ObjectId(filter._id);
+    if (filter.user) query.user = filter.user as any;
 
     return query;
   }
@@ -468,8 +473,12 @@ export class Repository {
     return this.accountModel.findOne(this.getAccountQuery(filter));
   }
 
-  findAccounts(filter: AccountQuery) {
-    return this.accountModel.find(this.getAccountQuery(filter));
+  findAccounts(filter: AccountQuery, queryOptions?: QueryOptions) {
+    return this.accountModel.find(
+      this.getAccountQuery(filter),
+      {},
+      queryOptions,
+    );
   }
 
   updateAccount(filter: AccountQuery, updateQuery?: UpdateQuery<Account>) {
@@ -477,6 +486,12 @@ export class Repository {
       this.getAccountQuery(filter),
       updateQuery,
     );
+  }
+
+  countAccount(filter: AccountQuery) {
+    return this.accountModel
+      .countDocuments(this.getAccountQuery(filter))
+      .exec();
   }
 
   updateCredentials(
@@ -598,6 +613,9 @@ export class Repository {
     const query: FilterQuery<User> = {
       visibility: EntityVisibility.Publish,
     };
+
+    if (isArray(filter.accountId))
+      query.ownerAccount = { $in: filter.accountId as any };
 
     if (filter.accountId) query.ownerAccount = filter.accountId as any;
     if (filter.type) query.type = filter.type;
@@ -751,8 +769,10 @@ export class Repository {
     return this.relationshipModel.deleteOne(filter, queryOptions);
   }
 
-  findContent(filter: ContentQuery) {
-    return this.contentModel.findOne(this.getContentQuery(filter)).exec();
+  findContent(filter: ContentQuery, queryOptions?: QueryOptions) {
+    return this.contentModel
+      .findOne(this.getContentQuery(filter), {}, queryOptions)
+      .exec();
   }
 
   findContents(filter: ContentQuery, queryOptions?: QueryOptions) {
@@ -781,8 +801,13 @@ export class Repository {
     return this.relationshipModel.aggregate<T>(pipeline);
   }
 
-  createContent(content: AnyKeys<Content>) {
-    return new this.contentModel(content).save();
+  async createContent(dto: AnyKeys<Content>) {
+    const [content] = await Promise.all([
+      new this.contentModel(dto).save(),
+      this.userModel.updateOne({ _id: dto.author.id }, { $inc: { casts: 1 } }),
+    ]);
+
+    return content;
   }
 
   updateContent(
@@ -995,6 +1020,14 @@ export class Repository {
     return this.socialSyncModel.deleteMany(filter, queryOptions);
   }
 
+  updateFeedItem(
+    filter: FilterQuery<FeedItem>,
+    feedItem: UpdateQuery<FeedItem>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.feedItemModel.updateOne(filter, feedItem, queryOptions);
+  }
+
   findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {
     return this.socialSyncModel
       .findOne(this.getSocialSyncQuery(filter), {}, queryOptions)
@@ -1205,11 +1238,71 @@ export class Repository {
         this.deleteComments({ 'author._id': pageId }, { session }),
         this.deleteFeedItems({ author: pageId }, { session }),
         this.deleteRevisions({ author: pageId }, { session }),
-        this.deleteSocialSyncs({ 'author.id': pageId }, { session }),
+        this.deleteSocialSyncs({ user: pageId }, { session }),
         this.deleteNotifications({ user: pageId }, { session }),
       ]);
       await session.commitTransaction();
       session.endSession();
     });
+  }
+
+  findLanguages(filter?: FilterQuery<Language>, queryOptions?: QueryOptions) {
+    return this.languageModel.find(filter, queryOptions);
+  }
+
+  findCountries(filter?: FilterQuery<Country>, queryOptions?: QueryOptions) {
+    return this.countryModel.find(filter, queryOptions);
+  }
+
+  async getPublicUsers({
+    requestedBy,
+    filter,
+    queryOptions,
+    expansionFields,
+  }: {
+    requestedBy: User;
+    filter: UserQuery;
+    queryOptions?: QueryOptions;
+    expansionFields?: UserField[];
+  }) {
+    const users = await this.userModel.find(
+      this.getUserQuery(filter),
+      {},
+      queryOptions,
+    );
+    const userIds = users.map((user) => user._id);
+    const relationships =
+      requestedBy && expansionFields?.includes(UserField.Relationships)
+        ? await this.relationshipModel.find({
+            user: requestedBy,
+            followedUser: { $in: userIds },
+          })
+        : [];
+
+    const $userResponses = users.map((user) => {
+      if (String(user.ownerAccount) === String(requestedBy?.ownerAccount)) {
+        return user.toOwnerResponse({ expansionFields });
+      }
+
+      if (expansionFields?.includes(UserField.Relationships)) {
+        const relationship = relationships.find(
+          (relationship) => String(relationship.followedUser) == user.id,
+        );
+
+        return user.toPublicResponse({
+          blocked: relationship?.blocked ?? false,
+          blocking: relationship?.blocking ?? false,
+          followed: relationship?.following ?? false,
+        });
+      }
+
+      return user.toPublicResponse();
+    });
+
+    return Promise.all($userResponses);
+  }
+
+  createReporting(reporting: AnyKeys<Reporting>) {
+    return new this.reportingModel(reporting).save();
   }
 }

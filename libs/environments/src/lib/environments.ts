@@ -65,8 +65,8 @@ export class Environment {
   );
 
   // Cloudfront
-  static CLOUDFRONT_ACCESS_KEY_ID = process.env.CLOUDFRONT_ACCESS_KEY_ID;
-  static CLOUDFRONT_PRIVATE_KEY = process.env.CLOUDFRONT_PRIVATE_KEY;
+  static CLOUDFRONT_ACCESS_KEY_ID = process.env.CLOUDFRONT_ACCESS_KEY_ID || '';
+  static CLOUDFRONT_PRIVATE_KEY = process.env.CLOUDFRONT_PRIVATE_KEY || '';
 
   // Redis
   static REDIS_CACHE_HOST = process.env.REDIS_CACHE_HOST;
@@ -240,6 +240,11 @@ export class Environment {
   static LIMIT_CONTENT = Number(process.env.LIMIT_CONTENT) || 2000;
   static DECAY_DAY_CONTENT = Number(process.env.DECAY_DAY_CONTENT) || 7;
 
-  //  Generate QRCode
+  // Generate QRCode
   static QR_CODE_REDIRECT_URL = process.env.QR_CODE_REDIRECT_URL || '';
+
+  /** List of dates for each PDPA version (latest first) */
+  static PDPA_ACCEPT_DATES = (process.env.PDPA_ACCEPT_DATE || '')
+    .split(',')
+    .sort((a, b) => b.localeCompare(a));
 }

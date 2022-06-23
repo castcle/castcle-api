@@ -21,18 +21,25 @@
  * or have any questions.
  */
 
-import { CastcleBullModule } from '@castcle-api/environments';
-import { Mailer } from '@castcle-api/utils/clients';
+import { CastcleBullModule, Environment } from '@castcle-api/environments';
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule, getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
   AdsService,
   AnalyticService,
+  AuthenticationServiceV2,
   CampaignService,
   DataService,
   MongooseAsyncFeatures,
@@ -44,13 +51,7 @@ import {
   UserService,
   UserServiceV2,
 } from '../database.module';
-import {
-  Meta,
-  PageResponseDto,
-  PaginationQuery,
-  QRCodeImageSize,
-  UserResponseDto,
-} from '../dtos';
+import { PaginationQuery, QRCodeImageSize } from '../dtos';
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import { KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
@@ -61,10 +62,12 @@ import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 
 describe('UserServiceV2', () => {
+  let moduleRef: TestingModule;
   let mongod: MongoMemoryReplSet;
   let userServiceV2: UserServiceV2;
   let userServiceV1: UserService;
   let authService: AuthenticationService;
+  let authServiceV2: AuthenticationServiceV2;
   let guestDemo: {
     accountDocument: Account;
     credentialDocument: Credential;
@@ -77,11 +80,11 @@ describe('UserServiceV2', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryReplSet.create();
-    const module = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         HttpModule,
-        MongooseModule.forRoot(mongod.getUri(), { useCreateIndex: true }),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         CastcleBullModule,
         BullModule.registerQueue({ name: QueueName.NOTIFICATION }),
@@ -91,6 +94,7 @@ describe('UserServiceV2', () => {
         AdsService,
         AnalyticService,
         AuthenticationService,
+        AuthenticationServiceV2,
         CommentService,
         ContentService,
         DataService,
@@ -103,7 +107,11 @@ describe('UserServiceV2', () => {
         UserService,
         UserServiceV2,
         { provide: CampaignService, useValue: {} },
-        { provide: Mailer, useValue: {} },
+        { provide: FacebookClient, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
+        { provide: TwilioClient, useValue: {} },
+        { provide: Mailer, useValue: { sendRegistrationEmail: jest.fn() } },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -115,14 +123,17 @@ describe('UserServiceV2', () => {
       ],
     }).compile();
 
-    dataService = module.get<DataService>(DataService);
-    suggestServiceV2 = module.get<SuggestionServiceV2>(SuggestionServiceV2);
-    userServiceV2 = module.get<UserServiceV2>(UserServiceV2);
-    userServiceV1 = module.get<UserService>(UserService);
-    dataService = module.get<DataService>(DataService);
-    repository = module.get<Repository>(Repository);
-    authService = module.get<AuthenticationService>(AuthenticationService);
-    suggestServiceV2 = module.get<SuggestionServiceV2>(SuggestionServiceV2);
+    dataService = moduleRef.get<DataService>(DataService);
+    suggestServiceV2 = moduleRef.get<SuggestionServiceV2>(SuggestionServiceV2);
+    userServiceV2 = moduleRef.get<UserServiceV2>(UserServiceV2);
+    userServiceV1 = moduleRef.get<UserService>(UserService);
+    dataService = moduleRef.get<DataService>(DataService);
+    repository = moduleRef.get<Repository>(Repository);
+    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
+    authServiceV2 = moduleRef.get<AuthenticationServiceV2>(
+      AuthenticationServiceV2,
+    );
+    suggestServiceV2 = moduleRef.get<SuggestionServiceV2>(SuggestionServiceV2);
     guestDemo = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -139,6 +150,11 @@ describe('UserServiceV2', () => {
     });
 
     userDemo = await authService.getUserFromAccount(accountDemo.account);
+  });
+
+  afterAll(async () => {
+    await Promise.all([moduleRef.close(), mongod.stop()]);
+    jest.spyOn(dataService, 'getFollowingSuggestions').mockRestore();
   });
 
   describe('#getUserRelationships', () => {
@@ -185,13 +201,13 @@ describe('UserServiceV2', () => {
     });
 
     it('should return blocked lookup user', async () => {
-      const relationship: {
-        users: (PageResponseDto | UserResponseDto)[];
-        meta: Meta;
-      } = await userServiceV2.getBlockedLookup(user1, new PaginationQuery());
+      const relationship = await userServiceV2.getBlockedLookup(
+        user1,
+        new PaginationQuery(),
+      );
 
       expect(relationship).not.toBeNull();
-      expect(relationship.users.length).toBeGreaterThan(0);
+      expect(relationship.items.length).toBeGreaterThan(0);
     });
 
     it('should block user and create blocking relationship', async () => {
@@ -484,12 +500,97 @@ describe('UserServiceV2', () => {
     });
   });
 
+  describe('updatePDPA', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(2, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      Environment.PDPA_ACCEPT_DATES = ['20200701'];
+    });
+
+    it('should get user data pdpa in response', async () => {
+      const userResponse = await userServiceV2.updatePDPA(
+        '20200701',
+        mocksUsers[0].account,
+      );
+
+      expect(userResponse).toBeUndefined();
+    });
+
+    it('should get user data pdpa latest in response', async () => {
+      mocksUsers[0].account.pdpa = {
+        '20200701': false,
+      };
+      await mocksUsers[0].account.save();
+
+      const userResponse = await userServiceV2.updatePDPA(
+        '20200701',
+        mocksUsers[0].account,
+      );
+
+      expect(userResponse).toBeUndefined();
+    });
+  });
+  describe('getReferral', () => {
+    let mockUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(2, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      guestDemo = await authService.createAccount({
+        deviceUUID: `testuuid1`,
+        languagesPreferences: ['th', 'th'],
+        header: {
+          platform: 'ios',
+        },
+        device: `testdevice1`,
+      });
+
+      await authServiceV2.registerWithEmail(guestDemo.credentialDocument, {
+        hostUrl: 'http://test.com',
+        ip: '0.0.0.0',
+        email: `test1@gmail.com`,
+        password: '12345678Ab',
+        displayName: `Test1`,
+        castcleId: `test1`,
+        referral: mockUsers[0].user.displayId,
+      });
+    });
+    it('should get user referee', async () => {
+      const referee = await userServiceV2.getReferral(
+        {
+          maxResults: 10,
+          hasRelationshipExpansion: false,
+        },
+        mockUsers[0].user,
+        mockUsers[1].user,
+        true,
+      );
+
+      expect(referee.payload).toHaveLength(1);
+    });
+
+    it('should get user referrer', async () => {
+      const referrer = await userServiceV2.getReferral(
+        {
+          hasRelationshipExpansion: false,
+        },
+        mockUsers[0].user,
+        mockUsers[1].user,
+        false,
+      );
+
+      expect(referrer.payload).not.toBeNull();
+    });
+  });
+
   it('should be defined', () => {
     expect(repository).toBeDefined();
     expect(userServiceV2).toBeDefined();
-  });
-
-  afterAll(async () => {
-    await mongod.stop();
   });
 });

@@ -34,12 +34,7 @@ import {
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import {
-  AVATAR_SIZE_CONFIGS,
-  Downloader,
-  Image,
-  ImageUploadOptions,
-} from '@castcle-api/utils/aws';
+import { AVATAR_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { TwilioChannel, TwilioClient } from '@castcle-api/utils/clients';
 import { Password } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
@@ -78,9 +73,6 @@ export class AppService {
       pass: Environment.SMTP_PASSWORD,
     },
   });
-
-  _uploadImage = (base64: string, options?: ImageUploadOptions) =>
-    Image.upload(base64, options);
 
   async sendRegistrationEmail(hostUrl: string, toEmail: string, code: string) {
     const verifyLink = `${hostUrl}/authentications/verify`;
@@ -173,7 +165,7 @@ export class AppService {
         const img = await this.download.getImageFromUrl(body.avatar);
 
         this.logger.log('upload avatar to s3');
-        avatar = await this._uploadImage(img, {
+        avatar = await Image.upload(img, {
           filename: `avatar-${req.$credential.account._id}`,
           addTime: true,
           sizes: AVATAR_SIZE_CONFIGS,

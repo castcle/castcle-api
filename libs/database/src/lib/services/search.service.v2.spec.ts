@@ -48,7 +48,7 @@ import { SearchServiceV2 } from './search.service.v2';
 
 describe('SearchServiceV2', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let hashtagService: HashtagService;
   let service: SearchServiceV2;
   let authService: AuthenticationService;
@@ -58,7 +58,7 @@ describe('SearchServiceV2', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         HttpModule,
@@ -67,14 +67,14 @@ describe('SearchServiceV2', () => {
         MongooseForFeatures,
       ],
       providers: [
-        SearchServiceV2,
-        Repository,
-        UserServiceV2,
-        ContentService,
         AuthenticationService,
-        UserService,
+        ContentService,
         HashtagService,
         NotificationService,
+        Repository,
+        SearchServiceV2,
+        UserService,
+        UserServiceV2,
         { provide: AnalyticService, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },
@@ -93,11 +93,11 @@ describe('SearchServiceV2', () => {
       ],
     }).compile();
 
-    authService = app.get(AuthenticationService);
-    hashtagService = app.get<HashtagService>(HashtagService);
-    service = app.get<SearchServiceV2>(SearchServiceV2);
-    userService = app.get(UserService);
-    userServiceV2 = app.get(UserServiceV2);
+    authService = moduleRef.get(AuthenticationService);
+    hashtagService = moduleRef.get<HashtagService>(HashtagService);
+    service = moduleRef.get<SearchServiceV2>(SearchServiceV2);
+    userService = moduleRef.get(UserService);
+    userServiceV2 = moduleRef.get(UserServiceV2);
 
     mocksUsers = await generateMockUsers(10, 0, {
       userService: userService,
@@ -308,9 +308,7 @@ describe('SearchServiceV2', () => {
   });
 
   afterAll(async () => {
-    await (service as any).repository.hashtagModel.deleteMany({});
-    await (service as any).repository.userModel.deleteMany({});
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 });

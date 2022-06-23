@@ -43,7 +43,7 @@ import { UserService } from './user.service';
 
 describe('NotificationService', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: NotificationService;
   let userService: UserService;
   let authService: AuthenticationService;
@@ -61,7 +61,7 @@ describe('NotificationService', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
@@ -89,9 +89,9 @@ describe('NotificationService', () => {
       ],
     }).compile();
 
-    service = app.get<NotificationService>(NotificationService);
-    userService = app.get<UserService>(UserService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
+    service = moduleRef.get<NotificationService>(NotificationService);
+    userService = moduleRef.get<UserService>(UserService);
+    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -162,61 +162,10 @@ describe('NotificationService', () => {
       },
       device: 'iPhone',
     });
-    // jest
-    //   .spyOn(service, 'generateNotificationToMessage')
-    //   .mockImplementation(async (userOwner, notify, language): Promise<any> => {
-    //     const userIds = notify.sourceUserId.reverse().slice(0, 2);
-
-    //     const users: User[] = await (service as any)._userModel
-    //       .find({
-    //         _id: { $in: userIds },
-    //       })
-    //       .exec();
-
-    //     if (!notify && !users.length) return;
-
-    //     const userSort: User[] = [];
-
-    //     users.forEach((user) => {
-    //       const index = userIds.indexOf(user._id);
-    //       if (index > -1) userSort[index] = user;
-    //     });
-
-    //     let countOther: number;
-    //     if (notify.sourceUserId.length > 2)
-    //       countOther = await (service as any)._userModel.countDocuments({
-    //         $and: [
-    //           { _id: { $in: notify.sourceUserId } },
-    //           { _id: { $nin: users } },
-    //         ],
-    //       });
-
-    //     let message: string[] = [
-    //       users
-    //         .map((user) => user.displayName)
-    //         .join(',')
-    //         .replace(/,/g, ':'),
-    //     ];
-
-    //     message = [
-    //       ...message,
-    //       countOther
-    //         ? await notifyService.translate('and 2 people', language)
-    //         : '',
-    //       await notifyService.translate(
-    //         `like ${
-    //           userOwner.type === NotificationSource.Page ? 'page' : 'you'
-    //         }`,
-    //         language
-    //       ),
-    //     ].filter((item) => item);
-
-    //     return message.join(',').replace(/,/g, ' ').replace(/:/g, ', ');
-    //   });
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 

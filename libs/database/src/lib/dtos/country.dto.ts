@@ -21,8 +21,11 @@
  * or have any questions.
  */
 
+import { TransformSortStringToSortObject } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsObject, IsOptional } from 'class-validator';
 import { CastcleQueryOptions, SortDirection } from './common.dto';
+import { PaginationQuery } from './pagination.dto';
 
 export class CountryPayloadDto {
   @ApiProperty()
@@ -36,6 +39,13 @@ export class CountryPayloadDto {
 
   @ApiProperty()
   flag: string;
+}
+
+export class GetCountryQuery extends PaginationQuery {
+  @IsOptional()
+  @IsObject()
+  @TransformSortStringToSortObject()
+  sortBy? = { name: 1 };
 }
 
 export class CountryResponse {
