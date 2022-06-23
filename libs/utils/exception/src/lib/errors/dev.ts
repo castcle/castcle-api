@@ -266,4 +266,14 @@ export const DevErrors = {
     code: '8001',
     message: 'Invalid transaction data',
   },
+  '8002': {
+    statusCode: '404',
+    code: '8002',
+    message: 'The chain id could not be found.',
+  },
+  '8003': {
+    statusCode: '400',
+    code: '8003',
+    message: 'Wallet shortcut is already exists.',
+  },
 };
