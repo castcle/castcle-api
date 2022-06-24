@@ -21,6 +21,13 @@
  * or have any questions.
  */
 import { Environment } from '@castcle-api/environments';
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { CastcleDate } from '@castcle-api/utils/commons';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
@@ -30,9 +37,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
+  AnalyticService,
+  AuthenticationServiceV2,
+  CampaignService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  UserServiceV2,
 } from '../database.module';
 import { AcceptPlatform, ContentType } from '../dtos';
 import {
@@ -41,27 +52,25 @@ import {
   NotificationSource,
   NotificationType,
 } from '../dtos/notification.dto';
-import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
+import { MockUserService } from '../mocks';
+import { MockUserDetail } from '../mocks/user.mocks';
 import { QueueName } from '../models';
 import { Comment, Content, Notification } from '../schemas';
-import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
-import { UserService } from './user.service';
 
 describe('NotificationServiceV2', () => {
   let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: NotificationServiceV2;
-  let repository: Repository;
-  let authService: AuthenticationService;
-  let contentService: ContentService;
-  let userService: UserService;
   let comment: Comment;
   let content: Content;
+  let contentService: ContentService;
+  let generateUser: MockUserService;
   let mocksUsers: MockUserDetail[];
   let notification: Notification[];
+  let repository: Repository;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -74,13 +83,21 @@ describe('NotificationServiceV2', () => {
         HttpModule,
       ],
       providers: [
-        AuthenticationService,
-        HashtagService,
+        AuthenticationServiceV2,
         ContentService,
-        UserService,
+        HashtagService,
+        MockUserService,
         NotificationService,
         NotificationServiceV2,
         Repository,
+        UserServiceV2,
+        { provide: AnalyticService, useValue: {} },
+        { provide: CampaignService, useValue: {} },
+        { provide: FacebookClient, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
+        { provide: Mailer, useValue: {} },
+        { provide: TwilioClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -96,16 +113,12 @@ describe('NotificationServiceV2', () => {
       ],
     }).compile();
 
-    authService = moduleRef.get(AuthenticationService);
     contentService = moduleRef.get(ContentService);
     service = moduleRef.get(NotificationServiceV2);
-    userService = moduleRef.get(UserService);
     repository = moduleRef.get(Repository);
+    generateUser = moduleRef.get(MockUserService);
 
-    mocksUsers = await generateMockUsers(3, 0, {
-      userService: userService,
-      accountService: authService,
-    });
+    mocksUsers = await generateUser.generateMockUsers(3);
 
     const user = mocksUsers[0].user;
     content = await contentService.createContentFromUser(user, {
@@ -184,7 +197,7 @@ describe('NotificationServiceV2', () => {
         mocksUsers[0].user,
       );
 
-      expect(newMessage).toEqual('Mock-1 commented on your cast');
+      expect(newMessage).toEqual('people-1 commented on your cast');
     });
 
     it('generate message by type notification and language thai.', async () => {
@@ -201,7 +214,7 @@ describe('NotificationServiceV2', () => {
         mocksUsers[0].user,
       );
 
-      expect(newMessage).toEqual('Mock-1 แสดงความคิดเห็นบน cast ของคุณ');
+      expect(newMessage).toEqual('people-1 แสดงความคิดเห็นบน cast ของคุณ');
     });
   });
 
@@ -362,7 +375,7 @@ describe('NotificationServiceV2', () => {
         'en',
       );
       expect(message).toBeDefined();
-      expect(message).toEqual('Mock-1 started following you');
+      expect(message).toEqual('people-1 started following you');
     });
 
     it('should generate message notification by language thai is correct.', async () => {
@@ -378,7 +391,7 @@ describe('NotificationServiceV2', () => {
       );
 
       expect(message).toBeDefined();
-      expect(message).toEqual('Mock-1 ได้ติดตามคุณ');
+      expect(message).toEqual('people-1 ได้ติดตามคุณ');
     });
   });
 
@@ -393,9 +406,9 @@ describe('NotificationServiceV2', () => {
 
       notifyResp.forEach((item) => {
         if (item.type === NotificationType.Comment) {
-          expect(item.message).toEqual('Mock-1 commented on your cast');
+          expect(item.message).toEqual('people-1 commented on your cast');
         } else {
-          expect(item.message).toEqual('Mock-1 started following you');
+          expect(item.message).toEqual('people-1 started following you');
         }
       });
     });
@@ -409,9 +422,11 @@ describe('NotificationServiceV2', () => {
 
       notifyResp.forEach((item) => {
         if (item.type === NotificationType.Comment) {
-          expect(item.message).toEqual('Mock-1 แสดงความคิดเห็นบน cast ของคุณ');
+          expect(item.message).toEqual(
+            'people-1 แสดงความคิดเห็นบน cast ของคุณ',
+          );
         } else {
-          expect(item.message).toEqual('Mock-1 ได้ติดตามคุณ');
+          expect(item.message).toEqual('people-1 ได้ติดตามคุณ');
         }
       });
     });

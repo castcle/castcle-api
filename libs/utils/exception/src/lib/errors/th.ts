@@ -196,6 +196,11 @@ export const ThErrors = {
     code: '3023',
     message: 'Sorry, Boost Status not match. Please try again.',
   },
+  '3029': {
+    statusCode: '400',
+    code: '3029',
+    message: 'Wallet shortcut is already exists.',
+  },
   '4001': {
     statusCode: '404',
     code: '4001',

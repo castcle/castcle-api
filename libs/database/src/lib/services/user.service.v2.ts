@@ -60,7 +60,7 @@ import { Repository } from '../repositories';
 import { Account, Relationship, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
 import { CampaignService } from './campaign.service';
-import { NotificationService } from './notification.service';
+import { NotificationServiceV2 } from './notification.service.v2';
 
 @Injectable()
 export class UserServiceV2 {
@@ -74,7 +74,7 @@ export class UserServiceV2 {
     private analyticService: AnalyticService,
     private campaignService: CampaignService,
     private mailerService: Mailer,
-    private notificationService: NotificationService,
+    private notificationService: NotificationServiceV2,
     private repository: Repository,
   ) {}
 
