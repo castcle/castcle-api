@@ -119,7 +119,7 @@ export class FeedsController {
     );
 
     if (account.visibility !== EntityVisibility.Publish) {
-      throw CastcleException.INVALID_ACCESS_TOKEN;
+      throw new CastcleException('INVALID_ACCESS_TOKEN');
     }
 
     const feedItems = await this.rankerService.getFeeds(

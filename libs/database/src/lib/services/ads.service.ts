@@ -297,7 +297,7 @@ export class AdsService {
           $id: new mongoose.Types.ObjectId(adsRequest.contentId),
         };
     if (!(await this.validateAds(user, adsRequest)))
-      throw CastcleException.INVALID_TRANSACTIONS_DATA;
+      throw new CastcleException('INVALID_TRANSACTIONS_DATA');
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
       owner: user.id,

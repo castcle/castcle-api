@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleException } from '@castcle-api/utils/exception';
 import { getQueueToken } from '@nestjs/bull';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -79,7 +80,7 @@ describe('Campaign Service', () => {
         accountId,
         CampaignType.VERIFY_MOBILE,
       ),
-    ).rejects.toThrowError('This campaign has not started');
+    ).rejects.toThrow(new CastcleException('CAMPAIGN_HAS_NOT_STARTED'));
   });
 
   it('should return REWARD_IS_NOT_ENOUGH when reward is not enough to claim', async () => {
@@ -99,7 +100,7 @@ describe('Campaign Service', () => {
         accountId,
         CampaignType.VERIFY_MOBILE,
       ),
-    ).rejects.toThrowError('The reward is not enough');
+    ).rejects.toThrow(new CastcleException('REWARD_IS_NOT_ENOUGH'));
 
     await campaign.deleteOne();
   });
@@ -140,7 +141,7 @@ describe('Campaign Service', () => {
           accountId,
           CampaignType.VERIFY_MOBILE,
         ),
-      ).rejects.toThrowError('Reached the maximum limit of claims');
+      ).rejects.toThrow(new CastcleException('REACHED_MAX_CLAIMS'));
     });
   });
 
@@ -180,7 +181,7 @@ describe('Campaign Service', () => {
           accountId,
           CampaignType.FRIEND_REFERRAL,
         ),
-      ).rejects.toThrowError('Reached the maximum limit of claims');
+      ).rejects.toThrow(new CastcleException('REACHED_MAX_CLAIMS'));
     });
   });
 });

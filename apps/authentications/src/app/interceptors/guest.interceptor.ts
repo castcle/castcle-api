@@ -55,7 +55,7 @@ export class GuestInterceptor extends HeadersInterceptor {
     if (request.$device) {
       return superResult;
     } else {
-      throw CastcleException.MISSING_AUTHORIZATION_HEADERS;
+      throw new CastcleException('MISSING_AUTHORIZATION_HEADERS');
     }
   }
 }

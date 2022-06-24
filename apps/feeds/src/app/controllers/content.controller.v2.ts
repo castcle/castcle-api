@@ -196,7 +196,7 @@ export class ContentControllerV2 {
     @Auth() authorizer: Authorizer,
     @Param() { contentId }: GetContentDto,
   ) {
-    if (authorizer.account.isGuest) throw CastcleException.FORBIDDEN;
+    if (authorizer.account.isGuest) throw new CastcleException('FORBIDDEN');
 
     return await this.contentServiceV2.getParticipates(
       contentId,

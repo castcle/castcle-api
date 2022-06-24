@@ -192,7 +192,7 @@ export class UserService {
       })
       .exec();
 
-    if (!account || !user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!account || !user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const balance = userFields?.includes(UserField.Wallet)
       ? await this.getBalance(user)
@@ -322,7 +322,7 @@ export class UserService {
   ) => {
     const targetUser = await this.getByIdOrCastcleId(id, type);
 
-    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!targetUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const [userResponse] = await this.convertUsersToUserResponses(
       user,
@@ -436,7 +436,7 @@ export class UserService {
   findUser = async (id: string, type?: UserType) => {
     const user = await this.getByIdOrCastcleId(id, type);
 
-    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+    if (!user) throw new CastcleException('REQUEST_URL_NOT_FOUND');
 
     return user;
   };
@@ -981,7 +981,7 @@ export class UserService {
   };
 
   async blockUser(user: User, blockedUser?: User) {
-    if (!blockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!blockedUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     await Promise.all([
       this._relationshipModel
@@ -1020,7 +1020,7 @@ export class UserService {
   }
 
   async unblockUser(user: User, unblockedUser: User) {
-    if (!unblockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!unblockedUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     await Promise.all([
       this._relationshipModel
@@ -1047,7 +1047,7 @@ export class UserService {
   }
 
   async reportUser(user: User, reportedUser: User, message: string) {
-    if (!reportedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!reportedUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const mail = await this.transporter.sendMail({
       from: 'castcle-noreply" <no-reply@castcle.com>',

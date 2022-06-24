@@ -24,7 +24,7 @@
 import { Configs } from './configs';
 
 export class Environment {
-  static PRODUCTION = process.env.NODE_ENV === 'production';
+  static IS_PRODUCTION = process.env.NODE_ENV === 'production';
   static NODE_ENV = process.env.NODE_ENV;
   static PORT = process.env.PORT;
 

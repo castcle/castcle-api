@@ -80,7 +80,7 @@ export class CredentialInterceptor implements NestInterceptor {
       }),
     );
 
-    if (!isAccessTokenValid) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (!isAccessTokenValid) throw new CastcleException('INVALID_ACCESS_TOKEN');
 
     return next.handle();
   }

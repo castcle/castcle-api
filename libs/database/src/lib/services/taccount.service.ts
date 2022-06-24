@@ -138,7 +138,7 @@ export class TAccountService {
     //check if balance available
     if (await this.validateTransfer(transferDTO))
       return new this._transactionModel(transferDTO).save({ session: session });
-    else throw CastcleException.INVALID_TRANSACTIONS_DATA;
+    else throw new CastcleException('INVALID_TRANSACTIONS_DATA');
   }
 
   async getBalance(caccountNo: string) {

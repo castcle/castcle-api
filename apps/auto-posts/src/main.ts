@@ -21,25 +21,20 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const logger = new CastLogger('Bootstrap');
+  const app = await NestFactory.create(AppModule);
   const port = process.env.PORT || 3342;
   const prefix = 'auto-posts';
-  const app = await NestFactory.create(AppModule, {
-    logger: CastLoggerLevel,
-  });
 
   app.setGlobalPrefix(prefix);
 
   await app.listen(port);
-  logger.log(`Listening at http://localhost:${port}/`);
-  logger.log(`Environment at ${Environment.NODE_ENV}`);
+  Logger.log(`🚀 Application is running on: http://localhost:${port}/`);
+  Logger.log(`Environment at ${process.env.NODE_ENV}`);
 }
 
 bootstrap();

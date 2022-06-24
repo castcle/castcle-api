@@ -104,7 +104,7 @@ export class PagesController {
     )
       return idResult;
     else if (idResult && idResult.type === UserType.PAGE)
-      throw CastcleException.INVALID_ACCESS_TOKEN;
+      throw new CastcleException('INVALID_ACCESS_TOKEN');
     const castcleIdResult = await this.userService.getByIdOrCastcleId(
       idOrCastCleId,
     );
@@ -116,8 +116,8 @@ export class PagesController {
     )
       return castcleIdResult;
     else if (castcleIdResult && castcleIdResult.type === UserType.PAGE)
-      throw CastcleException.INVALID_ACCESS_TOKEN;
-    else throw CastcleException.REQUEST_URL_NOT_FOUND;
+      throw new CastcleException('INVALID_ACCESS_TOKEN');
+    else throw new CastcleException('REQUEST_URL_NOT_FOUND');
   };
 
   /**
@@ -145,7 +145,7 @@ export class PagesController {
     const namingResult = await this.authService.getExistedUserFromCastcleId(
       body.castcleId,
     );
-    if (namingResult) throw CastcleException.PAGE_IS_EXIST;
+    if (namingResult) throw new CastcleException('PAGE_IS_EXIST');
 
     const page = await this.userService.createPageFromCredential(
       req.$credential,
@@ -279,7 +279,7 @@ export class PagesController {
         req.$credential,
       );
       if (!(await account.verifyPassword(password))) {
-        throw CastcleException.INVALID_PASSWORD;
+        throw new CastcleException('INVALID_PASSWORD');
       }
       if (String(page.ownerAccount) === String(req.$credential.account._id)) {
         const syncSocial = await this.socialSyncService.getSocialSyncByPageId(
@@ -303,9 +303,9 @@ export class PagesController {
 
         await this.userService.deleteUserFromId(page._id);
         return '';
-      } else throw CastcleException.FORBIDDEN;
+      } else throw new CastcleException('FORBIDDEN');
     } catch (e) {
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
     }
   }
 
@@ -334,7 +334,7 @@ export class PagesController {
   ): Promise<ContentsResponse> {
     const page = await this.userService.getByIdOrCastcleId(id, UserType.PAGE);
 
-    if (!page) throw CastcleException.REQUEST_URL_NOT_FOUND;
+    if (!page) throw new CastcleException('REQUEST_URL_NOT_FOUND');
 
     const requester = await this.userService.getUserFromCredential($credential);
     const { items: contents } = await this.contentService.getContentsFromUser(
@@ -385,7 +385,7 @@ export class PagesController {
           this.logger.error(
             `Duplicate provider : ${socialSync.provider} with social id : ${socialSync.socialId}.`,
           );
-          throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
+          throw new CastcleException('SOCIAL_PROVIDER_IS_EXIST');
         }
       }),
     );
@@ -503,7 +503,7 @@ export class PagesController {
     const account = await this.authService.getAccountFromCredential(credential);
     if (!account || account.isGuest) {
       this.logger.error(`Forbidden guest account.`);
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
     } else {
       return account;
     }

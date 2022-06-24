@@ -39,7 +39,7 @@ export class Authorizer {
   requestAccessForAccount(accountId: any) {
     if (this.account.id === String(accountId)) return;
 
-    throw CastcleException.FORBIDDEN;
+    throw new CastcleException('FORBIDDEN');
   }
 
   /**
@@ -61,12 +61,12 @@ export class Authorizer {
     if (this.user.displayId === userId) return;
     if (this.user.id === userId) return;
 
-    throw CastcleException.FORBIDDEN;
+    throw new CastcleException('FORBIDDEN');
   }
 
   requireActivation() {
     if (this.account.isGuest || !this.account.activateDate) {
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
     }
   }
 }

@@ -156,7 +156,7 @@ export class Uploader {
         })
         .promise();
     } catch (error) {
-      throw CastcleException.UPLOAD_FAILED;
+      throw new CastcleException('UPLOAD_FAILED');
     }
   };
 
