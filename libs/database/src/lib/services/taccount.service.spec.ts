@@ -30,7 +30,7 @@ import { TransactionFilter, TransactionType, WalletType } from '../models';
 import { MicroTransaction, TLedger, Transaction } from '../schemas';
 import { CAccount } from '../schemas/caccount.schema';
 import { TAccountService } from './taccount.service';
-
+jest.setTimeout(40000);
 describe('TAccount Service', () => {
   let moduleRef: TestingModule;
   let mongod: MongoMemoryReplSet;
@@ -304,9 +304,22 @@ describe('TAccount Service', () => {
       expect(result.payload).toEqual(expect.arrayContaining(expectArr));
     });
   });
-  describe('canSpend()', () => {
-    it('should be ok', () => {
-      expect(true).toEqual(true);
+  describe('topup()', () => {
+    let mockUserId;
+    beforeAll(() => {
+      mockUserId = Types.ObjectId();
+    });
+    it('should be able topup ads account', async () => {
+      await service.topup(WalletType.ADS, 500, String(mockUserId));
+      expect(
+        await service.getAccountBalance(mockUserId, WalletType.ADS),
+      ).toEqual(500);
+    });
+    it('should be able topup personal account', async () => {
+      await service.topup(WalletType.PERSONAL, 700, String(mockUserId));
+      expect(
+        await service.getAccountBalance(mockUserId, WalletType.PERSONAL),
+      ).toEqual(700);
     });
   });
 });

@@ -30,6 +30,7 @@ import {
   pipelineOfGetBalanceFromWalletType,
 } from '../aggregations';
 import {
+  CACCOUNT_NO,
   CastcleNumber,
   TransactionFilter,
   WalletHistoryResponseDto,
@@ -197,5 +198,64 @@ export class TAccountService {
       })),
     };
     return result;
+  }
+
+  topup(type: WalletType, value: number, userId?: string) {
+    switch (type) {
+      case WalletType.ADS:
+        return new this._transactionModel({
+          from: {
+            type: WalletType.EXTERNAL_DEPOSIT,
+            value: value,
+          },
+          to: [
+            {
+              type: WalletType.ADS,
+              value: value,
+              user: userId,
+            },
+          ],
+          ledgers: [
+            {
+              credit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
+                value: value,
+              },
+              debit: {
+                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                value: value,
+              },
+            },
+          ],
+        }).save();
+      case WalletType.PERSONAL:
+        return new this._transactionModel({
+          from: {
+            type: WalletType.EXTERNAL_DEPOSIT,
+            value: value,
+          },
+          to: [
+            {
+              type: WalletType.PERSONAL,
+              value: value,
+              user: userId,
+            },
+          ],
+          ledgers: [
+            {
+              credit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                value: value,
+              },
+              debit: {
+                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                value: value,
+              },
+            },
+          ],
+        }).save();
+      default:
+        throw CastcleException.SOMETHING_WRONG;
+    }
   }
 }
