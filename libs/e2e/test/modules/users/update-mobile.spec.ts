@@ -66,9 +66,7 @@ export const testUsersUpdateMobile = () => {
   it('should return UNAUTHORIZED when sending request without credential', () => {
     return UsersRequest.updateMobile()
       .expect(({ body }) => {
-        expect(body.message).toEqual(
-          'Sorry, Something went wrong. Please try again.',
-        );
+        expect(body.message).toEqual('Missing Authorization header.');
       })
       .expect(HttpStatus.UNAUTHORIZED);
   });
@@ -152,7 +150,7 @@ export const testUsersUpdateMobile = () => {
         mobileNumber: tempUser.randomPhone(),
       })
       .expect(({ body }) => {
-        expect(body.message).toEqual('The request exceeded the time limit.');
+        expect(body.message).toEqual('Invalid ref code. Please try again.');
       })
       .expect(HttpStatus.BAD_REQUEST);
   });

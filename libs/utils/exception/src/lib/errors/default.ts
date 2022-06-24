@@ -22,316 +22,316 @@
  */
 
 export const DefaultErrors = {
-  '0000': {
+  INTERNAL_SERVER_ERROR: {
     statusCode: '500',
     code: '0000',
     message: 'Sorry, Something went wrong. Please try again',
   },
-  '1001': {
+  REQUEST_URL_NOT_FOUND: {
     statusCode: '404',
     code: '1001',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '1002': {
+  MISSING_AUTHORIZATION_HEADERS: {
     statusCode: '401',
     code: '1002',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '1003': {
+  INVALID_ACCESS_TOKEN: {
     statusCode: '401',
     code: '1003',
     message: 'Invalid access token or expire',
   },
-  '1004': {
+  INVALID_REFRESH_TOKEN: {
     statusCode: '401',
     code: '1004',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '1005': {
+  INVALID_FORMAT: {
     statusCode: '401',
     code: '1005',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '1006': {
+  UPLOAD_FAILED: {
     statusCode: '401',
     code: '1006',
     message: 'Image upload failed. Please try again.',
   },
-  '1007': {
+  FORBIDDEN: {
     statusCode: '403',
     code: '1007',
     message: 'Can not access the data. Please try again.',
   },
-  '1008': {
+  INVALID_MAX_RESULT: {
     statusCode: '400',
     code: '1008',
     message: `The 'maxResults' query parameter value is not between 5 and 100`,
   },
-  '1010': {
+  RATE_LIMIT_REQUEST: {
     statusCode: '429',
     code: '1010',
     message: `Please wait a few minutes before you try again.`,
   },
-  '1011': {
+  RECAPTCHA_FAILED: {
     statusCode: '400',
     code: '1011',
     message: `Captcha failed please try again`,
   },
-  '1012': {
+  UNABLE_TO_SYNC: {
     statusCode: '400',
     code: '1012',
     message: `Unable to sync with social platform`,
   },
-  '3001': {
+  INVALID_AUTH_TOKEN: {
     statusCode: '400',
     code: '3001',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '3002': {
+  INVALID_EMAIL_OR_PASSWORD: {
     statusCode: '400',
     code: '3002',
     message: 'Incorrect email address or password. Please try again.',
   },
-  '3003': {
+  INVALID_EMAIL: {
     statusCode: '400',
     code: '3003',
     message: 'Incorrect email address. Please try again.',
   },
-  '3004': {
+  INVALID_PHONE_NUMBER: {
     statusCode: '400',
     code: '3004',
     message: 'Invalid phone number. Please try again.',
   },
-  '3005': {
+  PAYLOAD_CHANNEL_MISMATCH: {
     statusCode: '400',
     code: '3005',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '3006': {
+  EMAIL_OR_PHONE_NOT_FOUND: {
     statusCode: '400',
     code: '3006',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '3007': {
+  PLEASE_TRY_AGAIN: {
     statusCode: '400',
     code: '3007',
     message: 'Please try again in 5 minutes.',
   },
-  '3008': {
+  INVALID_OTP: {
     statusCode: '400',
     code: '3008',
     message: 'Invalid OTP code. Please try again.',
   },
-  '3009': {
+  EXPIRED_OTP: {
     statusCode: '400',
     code: '3009',
     message:
       'The OTP has been requested past the time limit, please press the "Get OTP" button to request a new code again.',
   },
-  '3010': {
+  LOCKED_OTP: {
     statusCode: '400',
     code: '3010',
     message:
       'Enter an incorrect OTP more than 3 times. Please enter your phone number or email to request a new OTP again.',
   },
-  '3011': {
+  INVALID_PASSWORD: {
     statusCode: '400',
     code: '3011',
     message: 'Incorrect password. Please try again.',
   },
-  '3012': {
+  INVALID_REF_CODE: {
     statusCode: '400',
     code: '3012',
     message: 'The request exceeded the time limit.',
   },
-  '3013': {
+  INVALID_ROLE: {
     statusCode: '400',
     code: '3013',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '3014': {
+  EMAIL_OR_PHONE_IS_EXIST: {
     statusCode: '400',
     code: '3014',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '3015': {
+  PAGE_IS_EXIST: {
     statusCode: '400',
     code: '3015',
     message:
       'The name of this page already exists. Please choose another name.',
   },
-  '3016': {
+  USER_NAME_IS_EXIST: {
     statusCode: '400',
     code: '3016',
     message: 'This username already exists. Please choose another username.',
   },
-  '3017': {
+  USER_ID_IS_EXIST: {
     statusCode: '400',
     code: '3017',
     message: 'This Castcle Id already exists, please choose another name.',
   },
-  '3018': {
+  MOBILE_NUMBER_ALREADY_EXISTS: {
     statusCode: '400',
     code: '3018',
     message: 'This phone number is already exists.',
   },
-  '3019': {
+  SOCIAL_PROVIDER_IS_EXIST: {
     statusCode: '400',
     code: '3019',
     message:
       'There is already a connection to this social . Please change another channel.',
   },
-  '3020': {
+  TWILIO_MAX_LIMIT: {
     statusCode: '400',
     code: '3020',
     message: 'Max send attempts reached. Please contact an administrator.',
   },
-  '3021': {
+  DUPLICATE_EMAIL: {
     statusCode: '400',
     code: '3021',
     message: 'This email is already in Castcle.',
   },
-  '3022': {
+  TWILIO_TOO_MANY_REQUESTS: {
     statusCode: '400',
     code: '3022',
     message: 'Please wait a few minutes before you try again.',
   },
-  '3023': {
+  ADS_BOOST_STATUS_MISMATCH: {
     statusCode: '400',
     code: '3023',
     message: 'Sorry, Boost Status not match. Please try again.',
   },
-  '3024': {
+  NO_PASSWORD_SET: {
     statusCode: '400',
     code: '3024',
     message: 'Cannot delete account. You have not set a password.',
   },
-  '3025': {
+  EMAIL_NOT_FOUND: {
     statusCode: '404',
     code: '3025',
     message: 'Email could not be found. Please try again.',
   },
-  '3026': {
+  MOBILE_NOT_FOUND: {
     statusCode: '404',
     code: '3026',
     message: 'Mobile could not be found. Please try again.',
   },
-  '3027': {
+  OTP_USAGE_LIMIT_EXCEEDED: {
     statusCode: '400',
     code: '3027',
     message: 'OTP usage limit exceeded',
   },
-  '3028': {
+  EMAIL_ALREADY_VERIFIED: {
     statusCode: '400',
     code: '3028',
     message: 'This email has been verified.',
   },
-  '3029': {
+  WALLET_SHORTCUT_IS_EXIST: {
     statusCode: '400',
     code: '3029',
     message: 'Wallet shortcut is already exists.',
   },
-  '4001': {
+  USER_OR_PAGE_NOT_FOUND: {
     statusCode: '404',
     code: '4001',
     message: 'Username or the page could not be found. Please try again.',
   },
-  '4002': {
+  CAMPAIGN_HAS_NOT_STARTED: {
     statusCode: '404',
     code: '4002',
     message: 'This campaign has not started',
   },
-  '4003': {
+  NOT_ELIGIBLE_FOR_CAMPAIGN: {
     statusCode: '400',
     code: '4003',
     message: 'Not eligible for this campaign',
   },
-  '4004': {
+  REACHED_MAX_CLAIMS: {
     statusCode: '400',
     code: '4004',
     message: 'Reached the maximum limit of claims',
   },
-  '4005': {
+  REWARD_IS_NOT_ENOUGH: {
     statusCode: '400',
     code: '4005',
     message: 'The reward is not enough',
   },
-  '4006': {
+  CHANGE_CASTCLE_ID_FAILED: {
     statusCode: '400',
     code: '4006',
     message: 'You cannot change your Castcle Id.',
   },
-  '4007': {
+  INVALID_DATE: {
     statusCode: '400',
     code: '4007',
     message: 'Invalid date. Please try again.',
   },
-  '5001': {
+  FEATURE_NOT_EXIST: {
     statusCode: '400',
     code: '5001',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '5002': {
+  PAYLOAD_TYPE_MISMATCH: {
     statusCode: '400',
     code: '5002',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '5003': {
+  CONTENT_NOT_FOUND: {
     statusCode: '404',
     code: '5003',
     message: 'Post or topic was not found. Please try again.',
   },
-  '5004': {
+  RECAST_IS_EXIST: {
     statusCode: '404',
     code: '5004',
     message: 'You already recast this cast',
   },
-  '5005': {
+  LIKE_IS_EXIST: {
     statusCode: '404',
     code: '5005',
     message: 'You already like this cast',
   },
-  '5006': {
+  LIKE_COMMENT_IS_EXIST: {
     statusCode: '404',
     code: '5005',
     message: 'You already like this comment cast',
   },
-  '5007': {
+  CONTENT_FARMING_ALREADY_FARM: {
     statusCode: '400',
     code: '5007',
     message: 'You already farm this cast',
   },
-  '5008': {
+  CONTENT_FARMING_NOT_FOUND: {
     statusCode: '404',
     code: '5008',
     message: 'Farming not found',
   },
-  '5009': {
+  CONTENT_FARMING_NOT_AVAILABLE_BALANCE: {
     statusCode: '400',
     code: '5009',
     message: "You don't have enough $CAST to farm",
   },
-  '5010': {
+  CONTENT_FARMING_LIMIT: {
     statusCode: '400',
     code: '5010',
     message: 'You have reach your farming limit, please wait 24hrs',
   },
-  '5011': {
+  QUOTE_IS_EXIST: {
     statusCode: '400',
     code: '5011',
     message: 'You already said that',
   },
-  '6001': {
+  NOTIFICATION_NOT_FOUND: {
     statusCode: '400',
     code: '6001',
     message: 'Notification not found Please try again.',
   },
-  '7001': {
+  SOMETHING_WRONG: {
     statusCode: '400',
     code: '7001',
     message: 'Sorry, Something went wrong. Please try again.',
   },
-  '8001': {
+  INVALID_TRANSACTIONS_DATA: {
     statusCode: '400',
     code: '8001',
     message: 'Invalid transaction data',

@@ -66,14 +66,14 @@ export class WalletShortcutService {
 
   async createWalletShortcut(body: ShortcutInternalDto, accountId: string) {
     const user = await this.repository.findUser({ _id: body.userId });
-    if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const walletShortcut = await this.repository.findWallerShortcut({
       address: body.userId,
       accountId,
     });
 
-    if (walletShortcut) throw CastcleException.WALLET_SHORTCUT_IS_EXIST;
+    if (walletShortcut) throw new CastcleException('WALLET_SHORTCUT_IS_EXIST');
 
     const newShortcut = await this.repository.createWallerShortcut({
       ...body,

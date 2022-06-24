@@ -706,7 +706,7 @@ describe('ContentService', () => {
     it('should throw CONTENT_NOT_FOUND when content to report is not found', async () => {
       await expect(
         service.reportContent(user, null, reportingMessage),
-      ).rejects.toThrowError(CastcleException.CONTENT_NOT_FOUND);
+      ).rejects.toThrow(new CastcleException('CONTENT_NOT_FOUND'));
     });
 
     it('should report content by sending email to Castcle admin', async () => {

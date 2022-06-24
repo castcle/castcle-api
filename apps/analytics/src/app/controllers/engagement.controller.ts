@@ -44,9 +44,9 @@ export class EngagementController {
     //check if they have the same id
     const accountId = String(body.accountId);
     if (accountId !== String(req.$credential.account._id))
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
     const result = this.uxEngagementService.track(body);
     if (result) return '';
-    else throw CastcleException.FORBIDDEN;
+    else throw new CastcleException('FORBIDDEN');
   }
 }

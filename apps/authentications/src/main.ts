@@ -26,7 +26,7 @@
  * This is only a minimal backend to get started.
  */
 
-import { Configs, Environment } from '@castcle-api/environments';
+import { Configs } from '@castcle-api/environments';
 import { Documentation } from '@castcle-api/utils/commons';
 import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
@@ -49,10 +49,9 @@ async function bootstrap() {
     header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
-  await app.listen(port, () => {
-    Logger.log(`Listening at http://localhost:${port}`);
-    Logger.log(`Environment at ${Environment.NODE_ENV}`);
-  });
+  await app.listen(port);
+  Logger.log(`🚀 Application is running on: http://localhost:${port}/`);
+  Logger.log(`Environment at ${process.env.NODE_ENV}`);
 }
 
 bootstrap();

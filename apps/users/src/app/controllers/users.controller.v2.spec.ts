@@ -238,7 +238,7 @@ describe('UsersControllerV2', () => {
           },
           { userId: user.id } as GetUserParam,
         ),
-      ).rejects.toEqual(CastcleException.CONTENT_NOT_FOUND);
+      ).rejects.toEqual(new CastcleException('CONTENT_NOT_FOUND'));
     });
 
     it('updateComment() should update a message of comment', async () => {
@@ -271,7 +271,7 @@ describe('UsersControllerV2', () => {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
         } as CommentParam),
-      ).rejects.toEqual(CastcleException.CONTENT_NOT_FOUND);
+      ).rejects.toEqual(new CastcleException('CONTENT_NOT_FOUND'));
     });
 
     it('replyComment() should be able create a comment in comment(reply)', async () => {
@@ -308,7 +308,7 @@ describe('UsersControllerV2', () => {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
         } as CommentParam),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
 
     it('deleteComment() should delete a comment', async () => {
@@ -413,7 +413,7 @@ describe('UsersControllerV2', () => {
             sourceCommentId: '624a7c01df5d0069d04655da',
           } as CommentParam,
         ),
-      ).rejects.toEqual(CastcleException.CONTENT_NOT_FOUND);
+      ).rejects.toEqual(new CastcleException('CONTENT_NOT_FOUND'));
     });
 
     it('updateReplyComment() should update a message of reply comment', async () => {
@@ -448,7 +448,7 @@ describe('UsersControllerV2', () => {
           sourceCommentId: comment.payload.id,
           replyCommentId: replyComment.payload.id,
         } as ReplyCommentParam),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
 
     it('deleteReplyComment() return Exception when use wrong account', async () => {
@@ -464,7 +464,7 @@ describe('UsersControllerV2', () => {
           sourceCommentId: comment.payload.id,
           replyCommentId: replyComment.payload.id,
         } as ReplyCommentParam),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
 
     it('deleteReplyComment() should delete a comment', async () => {

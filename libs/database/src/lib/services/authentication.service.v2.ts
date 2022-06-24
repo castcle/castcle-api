@@ -191,9 +191,9 @@ export class AuthenticationServiceV2 {
   ) {
     const account = await this.repository.findAccount({ email });
 
-    if (!account) throw CastcleException.INVALID_EMAIL;
+    if (!account) throw new CastcleException('INVALID_EMAIL');
     if (!account.verifyPassword(password)) {
-      throw CastcleException.INVALID_EMAIL_OR_PASSWORD;
+      throw new CastcleException('INVALID_EMAIL_OR_PASSWORD');
     }
 
     await this.linkCredentialToAccount(credential, account);
@@ -209,13 +209,14 @@ export class AuthenticationServiceV2 {
 
     if (provider === AuthenticationProvider.FACEBOOK) {
       const profile = await this.facebookClient.getFacebookProfile(authToken);
-      if (socialId !== profile.id) throw CastcleException.INVALID_AUTH_TOKEN;
+      if (socialId !== profile.id)
+        throw new CastcleException('INVALID_AUTH_TOKEN');
       socialConnectDto.displayName ||= profile.name;
     } else if (provider === AuthenticationProvider.TWITTER) {
       const [token, secret] = authToken.split('|');
       const profile = await this.twitterClient.verifyCredentials(token, secret);
       if (socialId !== profile.id_str) {
-        throw CastcleException.INVALID_AUTH_TOKEN;
+        throw new CastcleException('INVALID_AUTH_TOKEN');
       }
       socialConnectDto.displayName ||= profile.name;
     }
@@ -238,7 +239,8 @@ export class AuthenticationServiceV2 {
           accountId: duplicateAccount._id,
         });
         const profile = duplicateUser?.toPublicResponse();
-        throw CastcleException.DUPLICATE_EMAIL_WITH_PAYLOAD(
+        throw new CastcleException(
+          'DUPLICATE_EMAIL',
           profile ? { profile } : null,
         );
       }
@@ -257,22 +259,23 @@ export class AuthenticationServiceV2 {
     account: Account,
     { avatar, provider, socialId, authToken }: SocialConnectDto,
   ) {
-    if (account.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (account.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
 
     const socialConnected = await this.repository.findAccount({
       provider,
       socialId,
     });
 
-    if (socialConnected) throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
+    if (socialConnected) throw new CastcleException('SOCIAL_PROVIDER_IS_EXIST');
     if (provider === AuthenticationProvider.FACEBOOK) {
       const profile = await this.facebookClient.getFacebookProfile(authToken);
-      if (socialId !== profile.id) throw CastcleException.INVALID_AUTH_TOKEN;
+      if (socialId !== profile.id)
+        throw new CastcleException('INVALID_AUTH_TOKEN');
     } else if (provider === AuthenticationProvider.TWITTER) {
       const [token, secret] = authToken.split('|');
       const profile = await this.twitterClient.verifyCredentials(token, secret);
       if (socialId !== profile.id_str) {
-        throw CastcleException.INVALID_AUTH_TOKEN;
+        throw new CastcleException('INVALID_AUTH_TOKEN');
       }
     }
 
@@ -286,7 +289,7 @@ export class AuthenticationServiceV2 {
   async getRefreshToken(refreshToken: string) {
     const credential = await this.repository.findCredential({ refreshToken });
     if (!credential?.isRefreshTokenValid())
-      throw CastcleException.INVALID_REFRESH_TOKEN;
+      throw new CastcleException('INVALID_REFRESH_TOKEN');
     const account = await this.repository.findAccount({
       _id: credential.account._id,
     });
@@ -304,9 +307,10 @@ export class AuthenticationServiceV2 {
         this.repository.findUser({ _id: dto.castcleId }),
       ]);
 
-    if (!account.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
-    if (emailAlreadyExists) throw CastcleException.EMAIL_OR_PHONE_IS_EXIST;
-    if (castcleIdAlreadyExists) throw CastcleException.USER_ID_IS_EXIST;
+    if (!account.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
+    if (emailAlreadyExists)
+      throw new CastcleException('EMAIL_OR_PHONE_IS_EXIST');
+    if (castcleIdAlreadyExists) throw new CastcleException('USER_ID_IS_EXIST');
 
     await this.repository.updateCredentials(
       { 'account._id': account._id },
@@ -348,7 +352,7 @@ export class AuthenticationServiceV2 {
       _id: credential.account._id,
     });
 
-    if (!account) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (!account) throw new CastcleException('INVALID_ACCESS_TOKEN');
     if (dto.email) {
       this.createAccountActivation(account, AccountActivationType.EMAIL, true);
       account.email = dto.email;
@@ -505,7 +509,7 @@ export class AuthenticationServiceV2 {
       };
     } catch (error) {
       await session.abortTransaction();
-      throw CastcleException.INTERNAL_SERVER_ERROR;
+      throw new CastcleException('INTERNAL_SERVER_ERROR');
     }
   }
 
@@ -541,17 +545,18 @@ export class AuthenticationServiceV2 {
     source?: string;
     userAgent?: string;
   }) {
-    if (!requestedBy.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (!requestedBy.isGuest)
+      throw new CastcleException('INVALID_ACCESS_TOKEN');
     if (source?.toLowerCase() === 'web') {
       const success = await this.googleClient.verifyRecaptcha(
         recaptchaToken,
         ip,
       );
-      if (!success) CastcleException.RECAPTCHA_FAILED;
+      if (!success) new CastcleException('RECAPTCHA_FAILED');
     }
 
     const account = await this.repository.findAccount({ email });
-    if (!account) throw CastcleException.EMAIL_NOT_FOUND;
+    if (!account) throw new CastcleException('EMAIL_NOT_FOUND');
 
     return this.requestOtp({
       channel: TwilioChannel.EMAIL,
@@ -583,15 +588,16 @@ export class AuthenticationServiceV2 {
         recaptchaToken,
         ip,
       );
-      if (!success) CastcleException.RECAPTCHA_FAILED;
+      if (!success) new CastcleException('RECAPTCHA_FAILED');
     }
 
     const existingAccount = await this.repository.findAccount({
       mobileCountryCode: countryCode,
       mobileNumber,
     });
-    if (existingAccount) throw CastcleException.MOBILE_NUMBER_ALREADY_EXISTS;
-    if (requestedBy.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (existingAccount)
+      throw new CastcleException('MOBILE_NUMBER_ALREADY_EXISTS');
+    if (requestedBy.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
 
     return this.requestOtp({
       channel: TwilioChannel.SMS,
@@ -626,10 +632,10 @@ export class AuthenticationServiceV2 {
       });
 
       if (otp?.exceededUsageLimit()) {
-        throw CastcleException.OTP_USAGE_LIMIT_EXCEEDED;
+        throw new CastcleException('OTP_USAGE_LIMIT_EXCEEDED');
       }
       if (otp?.isValid() && otp.exceededMaxRetries()) {
-        throw CastcleException.TWILIO_TOO_MANY_REQUESTS;
+        throw new CastcleException('TWILIO_TOO_MANY_REQUESTS');
       }
       if (otp?.isValid() && !otp.isVerify) {
         return otp;
@@ -667,11 +673,11 @@ export class AuthenticationServiceV2 {
     } catch (error) {
       this.logger.error(error, 'requestOtpByEmail');
       if (error.message === TwilioErrorMessage.TOO_MANY_REQUESTS) {
-        throw CastcleException.TWILIO_TOO_MANY_REQUESTS;
+        throw new CastcleException('TWILIO_TOO_MANY_REQUESTS');
       } else if (error instanceof CastcleException) {
         throw error;
       } else {
-        throw CastcleException.TWILIO_MAX_LIMIT;
+        throw new CastcleException('TWILIO_MAX_LIMIT');
       }
     }
   }
@@ -684,11 +690,11 @@ export class AuthenticationServiceV2 {
     credential,
   }: VerifyOtpByEmailDto & { credential: Credential }) {
     if (!credential.account.isGuest) {
-      throw CastcleException.INVALID_ACCESS_TOKEN;
+      throw new CastcleException('INVALID_ACCESS_TOKEN');
     }
 
     const account = await this.repository.findAccount({ email });
-    if (!account) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (!account) throw new CastcleException('INVALID_ACCESS_TOKEN');
 
     const otp = await this.verifyOtp({
       channel: TwilioChannel.EMAIL,
@@ -718,8 +724,9 @@ export class AuthenticationServiceV2 {
       mobileCountryCode: countryCode,
       mobileNumber,
     });
-    if (existingAccount) throw CastcleException.MOBILE_NUMBER_ALREADY_EXISTS;
-    if (requestedBy.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (existingAccount)
+      throw new CastcleException('MOBILE_NUMBER_ALREADY_EXISTS');
+    if (requestedBy.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
 
     return this.verifyOtp({
       channel: TwilioChannel.SMS,
@@ -753,31 +760,31 @@ export class AuthenticationServiceV2 {
     });
 
     if (!existingOtp) {
-      throw CastcleException.INVALID_OTP;
+      throw new CastcleException('INVALID_OTP');
     }
     if (existingOtp.refCode !== refCode) {
-      throw CastcleException.INVALID_REF_CODE;
+      throw new CastcleException('INVALID_REF_CODE');
     }
     if (!existingOtp.isValid()) {
-      throw CastcleException.EXPIRED_OTP;
+      throw new CastcleException('EXPIRED_OTP');
     }
     if (existingOtp.exceededMaxRetries()) {
       await this.twilioClient.cancelOtp(existingOtp.sid);
-      throw CastcleException.LOCKED_OTP;
+      throw new CastcleException('LOCKED_OTP');
     }
 
     try {
       const otpVerification = await this.twilioClient.verifyOtp(receiver, otp);
       if (otpVerification.status !== TwilioStatus.APPROVED) {
         await existingOtp.updateOne({ $inc: { retry: 1 } });
-        throw CastcleException.INVALID_OTP;
+        throw new CastcleException('INVALID_OTP');
       }
       return existingOtp.markVerified().save();
     } catch (error) {
       this.logger.error(error, 'verifyOtp');
       if (error instanceof CastcleException) throw error;
       await this.twilioClient.cancelOtp(existingOtp.sid);
-      throw CastcleException.EXPIRED_OTP;
+      throw new CastcleException('EXPIRED_OTP');
     }
   }
 
@@ -788,12 +795,12 @@ export class AuthenticationServiceV2 {
     requestedBy,
   }: RequestOtpForChangingPasswordDto & { requestedBy: Account }) {
     const account = await this.repository.findAccount({ email });
-    if (!account) throw CastcleException.EMAIL_NOT_FOUND;
+    if (!account) throw new CastcleException('EMAIL_NOT_FOUND');
     if (account.id !== requestedBy.id) {
-      throw CastcleException.INVALID_ACCESS_TOKEN;
+      throw new CastcleException('INVALID_ACCESS_TOKEN');
     }
     if (!account.verifyPassword(password)) {
-      throw CastcleException.INVALID_PASSWORD;
+      throw new CastcleException('INVALID_PASSWORD');
     }
 
     const otp = await this.repository.findOtp({
@@ -815,10 +822,10 @@ export class AuthenticationServiceV2 {
     }
 
     if (otp.exceededUsageLimit()) {
-      throw CastcleException.OTP_USAGE_LIMIT_EXCEEDED;
+      throw new CastcleException('OTP_USAGE_LIMIT_EXCEEDED');
     }
     if (otp.isValid() && otp.exceededMaxRetries()) {
-      throw CastcleException.TWILIO_MAX_LIMIT;
+      throw new CastcleException('TWILIO_MAX_LIMIT');
     }
     if (otp.isValid() && !otp.exceededMaxRetries()) {
       return otp;
@@ -844,13 +851,13 @@ export class AuthenticationServiceV2 {
     const account = await this.repository.findAccount({ email });
 
     if (objective === OtpObjective.FORGOT_PASSWORD && !requestedBy.isGuest) {
-      throw CastcleException.INVALID_ACCESS_TOKEN;
+      throw new CastcleException('INVALID_ACCESS_TOKEN');
     }
     if (
       objective === OtpObjective.CHANGE_PASSWORD &&
       String(requestedBy._id) !== account?.id
     ) {
-      throw CastcleException.INVALID_ACCESS_TOKEN;
+      throw new CastcleException('INVALID_ACCESS_TOKEN');
     }
 
     const otp = await this.repository.findOtp({
@@ -860,17 +867,17 @@ export class AuthenticationServiceV2 {
     });
 
     if (!otp?.isVerify) {
-      throw CastcleException.INVALID_REF_CODE;
+      throw new CastcleException('INVALID_REF_CODE');
     }
     if (!otp.isValid()) {
       await otp.updateOne({ isVerify: false, retry: 0 });
-      throw CastcleException.EXPIRED_OTP;
+      throw new CastcleException('EXPIRED_OTP');
     }
     if (otp.refCode !== refCode) {
       await otp.failedToVerify().save();
       throw otp.exceededMaxRetries()
-        ? CastcleException.OTP_USAGE_LIMIT_EXCEEDED
-        : CastcleException.INVALID_REF_CODE;
+        ? new CastcleException('OTP_USAGE_LIMIT_EXCEEDED')
+        : new CastcleException('INVALID_REF_CODE');
     }
 
     await account.changePassword(newPassword);
@@ -882,9 +889,9 @@ export class AuthenticationServiceV2 {
       ({ type }) => type === AccountActivationType.EMAIL,
     );
 
-    if (!activation) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (!activation) throw new CastcleException('INVALID_ACCESS_TOKEN');
     if (activation.activationDate) {
-      throw CastcleException.EMAIL_ALREADY_VERIFIED;
+      throw new CastcleException('EMAIL_ALREADY_VERIFIED');
     }
 
     const tokenExpiryDate = DateTime.local().plus({
@@ -923,7 +930,7 @@ export class AuthenticationServiceV2 {
         !activation.activationDate,
     );
 
-    if (!activation) throw CastcleException.INVALID_REFRESH_TOKEN;
+    if (!activation) throw new CastcleException('INVALID_REFRESH_TOKEN');
 
     activation.activationDate = now;
     account.activateDate = now;

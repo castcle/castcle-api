@@ -51,7 +51,7 @@ export class AppService {
     const account = credentialRequest.$credential?.account;
     const user = await this.userService.getByIdOrCastcleId(castcleId);
     if (String(user.ownerAccount) !== String(account._id)) {
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
     }
     return user;
   }

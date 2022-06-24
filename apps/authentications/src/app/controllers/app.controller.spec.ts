@@ -318,7 +318,7 @@ describe('AppController', () => {
           $token: '123',
           $language: language,
         } as any),
-      ).rejects.toEqual(CastcleException.INVALID_REFRESH_TOKEN);
+      ).rejects.toEqual(new CastcleException('INVALID_REFRESH_TOKEN'));
     });
   });
 
@@ -598,7 +598,7 @@ describe('AppController', () => {
             username: 'error',
           },
         ),
-      ).rejects.toEqual(CastcleException.INVALID_EMAIL_OR_PASSWORD);
+      ).rejects.toEqual(new CastcleException('INVALID_EMAIL_OR_PASSWORD'));
     });
 
     it('should get Exception when wrong password', async () => {
@@ -622,7 +622,7 @@ describe('AppController', () => {
             username: registerEmail,
           },
         ),
-      ).rejects.toEqual(CastcleException.INVALID_EMAIL_OR_PASSWORD);
+      ).rejects.toEqual(new CastcleException('INVALID_EMAIL_OR_PASSWORD'));
     });
 
     it('should be able to login and return all pages', async () => {
@@ -932,7 +932,7 @@ describe('AppController', () => {
           },
           { ip: '127.0.0.1', userAgent: 'castcle-app' },
         ),
-      ).rejects.toEqual(CastcleException.DUPLICATE_EMAIL);
+      ).rejects.toEqual(new CastcleException('DUPLICATE_EMAIL'));
     });
   });
 
@@ -988,7 +988,7 @@ describe('AppController', () => {
           email: mockUsers[0].account.email,
           authToken: '',
         }),
-      ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
+      ).rejects.toEqual(new CastcleException('SOCIAL_PROVIDER_IS_EXIST'));
     });
 
     it('should return Exception when use guest account', async () => {
@@ -1007,7 +1007,7 @@ describe('AppController', () => {
           email: mockUsers[0].account.email,
           authToken: '',
         }),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
   });
   describe('registerToken', () => {
@@ -1311,7 +1311,7 @@ describe('AppController', () => {
       await expect(
         appController.requestOTP(request(), credentialGuest, {} as any)
       ).rejects.toEqual(
-        CastcleException.MOBILE_NUMBER_IS_EXIST
+        new CastcleException('MOBILE_NUMBER_IS_EXIST')
       );
     });
 
@@ -1344,7 +1344,7 @@ describe('AppController', () => {
       await expect(
         appController.requestOTP(request(), guest, {} as any)
       ).rejects.toEqual(
-        CastcleException.FORBIDDEN
+        new CastcleException('FORBIDDEN')
       );
     });
   });
@@ -1684,7 +1684,7 @@ describe('AppController', () => {
           },
           credentialGuest
         )
-      ).rejects.toEqual(CastcleException.INVALID_REF_CODE);
+      ).rejects.toEqual(new CastcleException('INVALID_REF_CODE'));
     });
 
     it('should return Exception when invalid otp and return lock otp when over 3 times', async () => {

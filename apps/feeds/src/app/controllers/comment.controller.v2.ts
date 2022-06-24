@@ -47,7 +47,7 @@ export class CommentControllerV2 {
 
   private validateId(id: string) {
     this.logger.log(`Validate is object id: ${id}`);
-    if (!isMongoId(id)) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!isMongoId(id)) throw new CastcleException('CONTENT_NOT_FOUND');
   }
 
   @CastcleAuth(CacheKeyName.Comments)
@@ -60,7 +60,7 @@ export class CommentControllerV2 {
     this.logger.log(`Start get all comment from content: ${contentId}`);
     this.validateId(contentId);
     const content = await this.contentService.getContentById(contentId);
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
     return this.commentService.getCommentsByContentId(
       authorizer.user,
       content._id,
@@ -82,7 +82,7 @@ export class CommentControllerV2 {
     this.validateId(contentId);
     this.validateId(commentId);
     const content = await this.contentService.getContentById(contentId);
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
     return this.commentService.getReplyCommentsByCommentId(
       authorizer.user,
       commentId,
@@ -109,7 +109,7 @@ export class CommentControllerV2 {
       commentId,
     );
     if (!commentResult || !commentResult.payload || !content)
-      throw CastcleException.CONTENT_NOT_FOUND;
+      throw new CastcleException('CONTENT_NOT_FOUND');
 
     const replyResult = await this.commentService.getReplyCommentsByCommentId(
       authorizer.user,

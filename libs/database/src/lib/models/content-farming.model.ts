@@ -28,7 +28,7 @@ export type ContentFarmingCDF = {
   contentFarmings: ContentFarming[];
 };
 
-export class ContentFarmingReponse {
+export class ContentFarmingResponse {
   'number': number;
   'balance': {
     farmed: number;

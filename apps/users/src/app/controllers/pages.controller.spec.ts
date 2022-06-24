@@ -351,7 +351,7 @@ describe('PageController', () => {
             ],
           },
         ),
-      ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
+      ).rejects.toEqual(new CastcleException('SOCIAL_PROVIDER_IS_EXIST'));
     });
 
     it('should return Exception when use guest account', async () => {
@@ -386,7 +386,7 @@ describe('PageController', () => {
             },
           ],
         }),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
   });
 });

@@ -32,7 +32,7 @@ export class SaveContentPipe implements PipeTransform<SaveContentDto> {
       (value.payload as ShortPayload).message &&
       (value.payload as ShortPayload).message.trim().length === 0
     ) {
-      throw CastcleException.SOMETHING_WRONG;
+      throw new CastcleException('SOMETHING_WRONG');
     } else return value;
   }
 }

@@ -100,7 +100,7 @@ export class AppService {
   validatePassword(password: string) {
     if (Password.validate(password)) return true;
     else {
-      throw CastcleException.INVALID_PASSWORD;
+      throw new CastcleException('INVALID_PASSWORD');
     }
   }
 
@@ -157,7 +157,7 @@ export class AppService {
         req.$credential,
       );
 
-      if (!account) throw CastcleException.INVALID_ACCESS_TOKEN;
+      if (!account) throw new CastcleException('INVALID_ACCESS_TOKEN');
 
       let avatar: Image;
       if (body.avatar) {
@@ -246,7 +246,7 @@ export class AppService {
   async getAccountFromEmail(email: string) {
     this.logger.log('Get Account from email');
     const account = await this.authService.getAccountFromEmail(email);
-    if (!account) throw CastcleException.EMAIL_OR_PHONE_NOT_FOUND;
+    if (!account) throw new CastcleException('EMAIL_OR_PHONE_NOT_FOUND');
 
     return account;
   }
@@ -298,12 +298,12 @@ export class AppService {
       this.logger.error(
         'Can not get Account from mobile : ' + countryCode + mobileNumber,
       );
-      throw CastcleException.EMAIL_OR_PHONE_NOT_FOUND;
+      throw new CastcleException('EMAIL_OR_PHONE_NOT_FOUND');
     }
 
     if (account && objective === OtpObjective.VERIFY_MOBILE) {
       this.logger.error('Duplicate mobile : ' + countryCode + mobileNumber);
-      throw CastcleException.MOBILE_NUMBER_ALREADY_EXISTS;
+      throw new CastcleException('MOBILE_NUMBER_ALREADY_EXISTS');
     }
 
     if (!account && objective === OtpObjective.VERIFY_MOBILE) {
@@ -313,7 +313,7 @@ export class AppService {
 
       if (account.isGuest) {
         this.logger.error('Can not verify mobile from guest account');
-        throw CastcleException.FORBIDDEN;
+        throw new CastcleException('FORBIDDEN');
       }
     }
 
@@ -353,11 +353,11 @@ export class AppService {
           )}`,
         );
         if (captchaResponse && captchaResponse.success == false) {
-          throw CastcleException.RECAPTCHA_FAILED;
+          throw new CastcleException('RECAPTCHA_FAILED');
         }
       } else {
         //throw error
-        throw CastcleException.RECAPTCHA_FAILED;
+        throw new CastcleException('RECAPTCHA_FAILED');
       }
     }
 
@@ -425,7 +425,7 @@ export class AppService {
       }
       default: {
         this.logger.error(`Forgot password channel mismatch.`);
-        throw CastcleException.PAYLOAD_CHANNEL_MISMATCH;
+        throw new CastcleException('PAYLOAD_CHANNEL_MISMATCH');
       }
     }
     return otp;
@@ -467,9 +467,9 @@ export class AppService {
     } catch (ex) {
       this.logger.error('Twilio Error : ' + ex.message, ex);
       if (ex.message == 'Error: Too many requests') {
-        throw CastcleException.TWILIO_TOO_MANY_REQUESTS;
+        throw new CastcleException('TWILIO_TOO_MANY_REQUESTS');
       } else {
-        throw CastcleException.TWILIO_MAX_LIMIT;
+        throw new CastcleException('TWILIO_MAX_LIMIT');
       }
     }
 
@@ -520,7 +520,7 @@ export class AppService {
       }
       default: {
         this.logger.error(`Verify password channel mismatch.`);
-        throw CastcleException.PAYLOAD_CHANNEL_MISMATCH;
+        throw new CastcleException('PAYLOAD_CHANNEL_MISMATCH');
       }
     }
 
@@ -532,13 +532,13 @@ export class AppService {
 
     if (!otp) {
       this.logger.error(`Invalid ref code: ${request.refCode}`);
-      throw CastcleException.INVALID_REF_CODE;
+      throw new CastcleException('INVALID_REF_CODE');
     } else if (otp.action !== objective) {
       this.logger.error(`Invalid objective.`);
-      throw CastcleException.PAYLOAD_TYPE_MISMATCH;
+      throw new CastcleException('PAYLOAD_TYPE_MISMATCH');
     } else if (otp.channel !== request.channel) {
       this.logger.error(`Verify password channel mismatch.`);
-      throw CastcleException.PAYLOAD_CHANNEL_MISMATCH;
+      throw new CastcleException('PAYLOAD_CHANNEL_MISMATCH');
     }
 
     const retryCount = otp.retry ? otp.retry : 0;
@@ -546,7 +546,7 @@ export class AppService {
       this.logger.error(`Otp over limit retry : ${limitRetry}`);
       await this.cancelOtp(otp);
       await otp.delete();
-      throw CastcleException.LOCKED_OTP;
+      throw new CastcleException('LOCKED_OTP');
     }
 
     if (otp && otp.isValid()) {
@@ -561,14 +561,14 @@ export class AppService {
         this.logger.error(ex.message, ex);
         await this.cancelOtp(otp);
         await otp.delete();
-        throw CastcleException.EXPIRED_OTP;
+        throw new CastcleException('EXPIRED_OTP');
       }
 
       this.logger.log('Twilio result : ' + verifyOtpResult.status);
       if (!verifyOtpResult || verifyOtpResult.status !== 'approved') {
         await this.authService.updateRetryOtp(otp);
         this.logger.error(`Invalid Otp.`);
-        throw CastcleException.INVALID_OTP;
+        throw new CastcleException('INVALID_OTP');
       }
 
       const tokenResult = await this.getTokenMergeAccount(
@@ -595,7 +595,7 @@ export class AppService {
       // await this.cancelOtp(otp);
       this.logger.log('Delete OTP refCode: ' + otp.refCode);
       await otp.delete();
-      throw CastcleException.EXPIRED_OTP;
+      throw new CastcleException('EXPIRED_OTP');
     }
   }
 
@@ -628,7 +628,7 @@ export class AppService {
       return '';
     } else {
       this.logger.error(`Invalid Ref Code`);
-      throw CastcleException.INVALID_REF_CODE;
+      throw new CastcleException('INVALID_REF_CODE');
     }
   }
 

@@ -144,7 +144,7 @@ export class FacebookClient {
       return data;
     } catch (error) {
       this.logger.error(error, `subscribeApps:${socialId}`);
-      throw CastcleException.UNABLE_TO_SYNC;
+      throw new CastcleException('UNABLE_TO_SYNC');
     }
   }
 
@@ -165,7 +165,7 @@ export class FacebookClient {
       return data;
     } catch (error) {
       this.logger.error(error, `unsubscribeApps:${socialId}`);
-      throw CastcleException.UNABLE_TO_SYNC;
+      throw new CastcleException('UNABLE_TO_SYNC');
     }
   }
 

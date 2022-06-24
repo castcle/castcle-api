@@ -193,8 +193,8 @@ describe('UserServiceV2', () => {
     });
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
-      await expect(userServiceV2.blockUser(user1, 'undefined')).rejects.toBe(
-        CastcleException.USER_OR_PAGE_NOT_FOUND,
+      await expect(userServiceV2.blockUser(user1, 'undefined')).rejects.toThrow(
+        new CastcleException('USER_OR_PAGE_NOT_FOUND'),
       );
     });
 
@@ -268,7 +268,7 @@ describe('UserServiceV2', () => {
     it('should throw USER_OR_PAGE_NOT_FOUND when user to follow is not found', async () => {
       await expect(
         userServiceV2.followUser(user1, 'undefined', user1.ownerAccount),
-      ).rejects.toBe(CastcleException.USER_OR_PAGE_NOT_FOUND);
+      ).rejects.toThrow(new CastcleException('USER_OR_PAGE_NOT_FOUND'));
     });
 
     it('should follow user and create follow relationship', async () => {
@@ -357,7 +357,7 @@ describe('UserServiceV2', () => {
           castcleId: 'testNewPage',
           displayName: 'testNewPage',
         }),
-      ).rejects.toThrowError(CastcleException.PAGE_IS_EXIST);
+      ).rejects.toThrow(new CastcleException('PAGE_IS_EXIST'));
     });
 
     it('should return page of user when created', async () => {
