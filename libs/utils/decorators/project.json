@@ -3,18 +3,6 @@
   "sourceRoot": "libs/utils/decorators/src",
   "projectType": "library",
   "targets": {
-    "build": {
-      "executor": "@nrwl/js:swc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/utils/decorators",
-        "tsConfig": "libs/utils/decorators/tsconfig.lib.json",
-        "packageJson": "libs/utils/decorators/package.json",
-        "main": "libs/utils/decorators/src/index.ts",
-        "assets": ["libs/utils/decorators/*.md"],
-        "swcrc": ".swcrc.base"
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],

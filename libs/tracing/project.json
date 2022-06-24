@@ -3,18 +3,6 @@
   "sourceRoot": "libs/tracing/src",
   "projectType": "library",
   "targets": {
-    "build": {
-      "executor": "@nrwl/js:swc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/tracing",
-        "tsConfig": "libs/tracing/tsconfig.lib.json",
-        "packageJson": "libs/tracing/package.json",
-        "main": "libs/tracing/src/index.ts",
-        "assets": ["libs/tracing/*.md"],
-        "swcrc": ".swcrc.base"
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],

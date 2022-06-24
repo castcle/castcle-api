@@ -66,7 +66,7 @@ export class NotificationsController {
 
   async _getNotificationIfExist(id: string) {
     const notification = await this.notificationService.getFromId(id);
-    if (!notification) throw CastcleException.NOTIFICATION_NOT_FOUND;
+    if (!notification) throw new CastcleException('NOTIFICATION_NOT_FOUND');
     return notification;
   }
 
@@ -104,7 +104,7 @@ export class NotificationsController {
   ) {
     if (query?.maxResults) {
       if (+query.maxResults < 5 || +query.maxResults > 100) {
-        throw CastcleException.INVALID_MAX_RESULT;
+        throw new CastcleException('INVALID_MAX_RESULT');
       }
     }
     const notifications = await this.notificationService.getNotificationAll(
@@ -138,7 +138,7 @@ export class NotificationsController {
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (!user) {
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
     }
     const notification = await this._getNotificationIfExist(id);
 
@@ -155,7 +155,7 @@ export class NotificationsController {
     this.#logger.log('Notification mark read all.');
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (!user) {
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
     }
     await this.notificationService.flagReadAll(req.$credential);
     this.#logger.log('Success mark read all notification');
@@ -179,7 +179,7 @@ export class NotificationsController {
       JSON.stringify(body.deviceUUID),
     );
     const user = await this.userService.getUserFromCredential(req.$credential);
-    if (!user) throw CastcleException.FORBIDDEN;
+    if (!user) throw new CastcleException('FORBIDDEN');
 
     await this.notificationService.registerToken(body);
   }

@@ -25,12 +25,22 @@ import { Environment } from '@castcle-api/environments';
 import { ConsoleLogger, ConsoleLoggerOptions, LogLevel } from '@nestjs/common';
 
 export class CastLogger extends ConsoleLogger {
+  private static Levels: LogLevel[] = Environment.IS_PRODUCTION
+    ? ['log', 'error', 'warn']
+    : ['log', 'error', 'warn', 'debug', 'verbose'];
+
   timer: Record<string, number> = {};
 
   /**
    * Create a logger with context and default options: `CastLoggerOptions`
    */
-  constructor(context?: string, options = CastLoggerOptions) {
+  constructor(
+    context?: string,
+    options: ConsoleLoggerOptions = {
+      logLevels: CastLogger.Levels,
+      timestamp: true,
+    },
+  ) {
     super(context, options);
   }
 
@@ -91,12 +101,3 @@ export class CastLogger extends ConsoleLogger {
     super.log(message, this.#formatContext(context, time));
   }
 }
-
-export const CastLoggerLevel: LogLevel[] = Environment.PRODUCTION
-  ? ['log', 'error', 'warn']
-  : ['log', 'error', 'warn', 'debug', 'verbose'];
-
-export const CastLoggerOptions: ConsoleLoggerOptions = {
-  logLevels: CastLoggerLevel,
-  timestamp: true,
-};

@@ -22,22 +22,27 @@
  */
 
 import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
 import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { CastcleException } from './exception';
 
 @Catch(CastcleException)
 export class CastcleExceptionFilter implements ExceptionFilter {
+  private logger = new CastLogger(CastcleExceptionFilter.name);
+
   catch(exception: CastcleException, host: ArgumentsHost) {
+    this.logger.error(exception);
+
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request>();
-    const response = ctx.getResponse<Response>();
-    const language = ['development', 'localhost'].includes(Environment.NODE_ENV)
-      ? 'dev'
-      : request.headers['accept-language'];
+    const language = Environment.IS_PRODUCTION
+      ? request.headers['accept-language']
+      : 'dev';
     const localizedException = exception.getLocalizedException(language);
 
-    response
+    ctx
+      .getResponse<Response>()
       .status(localizedException.getStatus())
       .json(localizedException.getResponse());
   }

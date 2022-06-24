@@ -44,7 +44,7 @@ export class NotificationsControllerV2 {
 
   async _getNotificationIfExist(_id: string) {
     const notification = await this.notificationServiceV2.getFromId(_id);
-    if (!notification) throw CastcleException.NOTIFICATION_NOT_FOUND;
+    if (!notification) throw new CastcleException('NOTIFICATION_NOT_FOUND');
     return notification;
   }
 
