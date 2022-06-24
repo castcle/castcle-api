@@ -3,18 +3,6 @@
   "sourceRoot": "libs/logger/src",
   "projectType": "library",
   "targets": {
-    "build": {
-      "executor": "@nrwl/js:swc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/logger",
-        "tsConfig": "libs/logger/tsconfig.lib.json",
-        "packageJson": "libs/logger/package.json",
-        "main": "libs/logger/src/index.ts",
-        "assets": ["libs/logger/*.md"],
-        "swcrc": ".swcrc.base"
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],

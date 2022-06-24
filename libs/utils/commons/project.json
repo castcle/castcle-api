@@ -3,18 +3,6 @@
   "sourceRoot": "libs/utils/commons/src",
   "projectType": "library",
   "targets": {
-    "build": {
-      "executor": "@nrwl/js:swc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/utils/commons",
-        "tsConfig": "libs/utils/commons/tsconfig.lib.json",
-        "packageJson": "libs/utils/commons/package.json",
-        "main": "libs/utils/commons/src/index.ts",
-        "assets": ["libs/utils/commons/*.md"],
-        "swcrc": ".swcrc.base"
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],
