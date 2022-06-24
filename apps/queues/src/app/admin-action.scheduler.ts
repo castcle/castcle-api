@@ -42,11 +42,7 @@ export class AdminScheduler {
     if (!actionQueues) return;
     for (let i = 0; i < actionQueues.length; i++) {
       const actionQ = actionQueues[i];
-      const result = await this.taccountService.topup(
-        actionQ.payload.type,
-        actionQ.payload.value,
-        actionQ.payload.userId,
-      );
+      const result = await this.taccountService.topup(actionQ.payload.data);
       if (result) actionQ.status = QueueStatus.DONE;
       else actionQ.status = QueueStatus.FAILED;
       await actionQ.save();

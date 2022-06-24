@@ -41,7 +41,7 @@ export class WalletHistoryResponseDto {
 }
 
 export class TopUpDto {
-  type: WalletType.ADS | WalletType.PERSONAL;
-  userId: string;
+  type: WalletType;
+  userId?: string;
   value: number;
 }
