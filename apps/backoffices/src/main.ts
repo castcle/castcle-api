@@ -21,31 +21,28 @@
  * or have any questions.
  */
 
-export * from './account.dto';
-export * from './ads.dto';
-export * from './authentications.dto.v2';
-export * from './comment.dto.v2';
-export * from './comment.dto';
-export * from './common.dto';
-export * from './content.dto.v2';
-export * from './content.dto';
-export * from './country.dto';
-export * from './feed.dto.v2';
-export * from './feed.dto';
-export * from './follow.dto';
-export * from './guest-feed-item.dto';
-export * from './hashtag.dto';
-export * from './language.dto';
-export * from './link-preview.dto';
-export * from './notification.dto';
-export * from './pagination.dto';
-export * from './query.dto';
-export * from './response.dto';
-export * from './search.dto.v2';
-export * from './search.dto';
-export * from './sync-social.dto';
-export * from './token.dto';
-export * from './user.dto.v2';
-export * from './user.dto';
-export * from './ux.engagement.dto';
-export * from './wallet.dto';
+import { Configs, Environment } from '@castcle-api/environments';
+import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
+import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app/app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const port = process.env.PORT || 3339;
+
+  app.useGlobalFilters(new CastcleExceptionFilter());
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.enableCors();
+  app.enableVersioning({
+    type: VersioningType.HEADER,
+    header: Configs.RequiredHeaders.AcceptVersion.name,
+  });
+
+  await app.listen(port, () => {
+    Logger.log(`Listening at http://localhost:${port}`);
+    Logger.log(`Environment at ${Environment.NODE_ENV}`);
+  });
+}
+
+bootstrap();

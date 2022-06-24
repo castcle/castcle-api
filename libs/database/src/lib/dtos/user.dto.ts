@@ -511,7 +511,7 @@ export class PublicUserResponse {
   email?: string;
   overview?: string;
   dob?: Date;
-  image: UserImage;
+  images: UserImage;
   links: SocialLinks;
   verified: PublicVerification;
   followers: Counter;

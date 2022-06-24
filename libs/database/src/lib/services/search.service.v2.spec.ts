@@ -20,7 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Mailer } from '@castcle-api/utils/clients';
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -30,30 +36,27 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Types } from 'mongoose';
 import {
   AnalyticService,
-  AuthenticationService,
+  AuthenticationServiceV2,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService,
-  UserService,
+  NotificationServiceV2,
   UserServiceV2,
 } from '../database.module';
 import { CreateHashtag } from '../dtos/hashtag.dto';
-import { MockUserDetail, generateMockUsers } from '../mocks';
+import { MockUserDetail, MockUserService } from '../mocks';
 import { ExcludeType, KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
 import { CampaignService } from './campaign.service';
-import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { SearchServiceV2 } from './search.service.v2';
 
 describe('SearchServiceV2', () => {
-  let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
+  let mongod: MongoMemoryServer;
+  let generateUser: MockUserService;
   let hashtagService: HashtagService;
-  let service: SearchServiceV2;
-  let authService: AuthenticationService;
-  let userService: UserService;
   let mocksUsers: MockUserDetail[];
+  let service: SearchServiceV2;
   let userServiceV2: UserServiceV2;
 
   beforeAll(async () => {
@@ -67,25 +70,20 @@ describe('SearchServiceV2', () => {
         MongooseForFeatures,
       ],
       providers: [
-        AuthenticationService,
-        ContentService,
+        AuthenticationServiceV2,
         HashtagService,
-        NotificationService,
+        MockUserService,
+        NotificationServiceV2,
         Repository,
         SearchServiceV2,
-        UserService,
         UserServiceV2,
         { provide: AnalyticService, useValue: {} },
         { provide: CampaignService, useValue: {} },
+        { provide: FacebookClient, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
         { provide: Mailer, useValue: {} },
-        {
-          provide: getQueueToken(QueueName.CONTENT),
-          useValue: { add: jest.fn() },
-        },
-        {
-          provide: getQueueToken(QueueName.USER),
-          useValue: { add: jest.fn() },
-        },
+        { provide: TwilioClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
         {
           provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
@@ -93,16 +91,11 @@ describe('SearchServiceV2', () => {
       ],
     }).compile();
 
-    authService = moduleRef.get(AuthenticationService);
+    generateUser = moduleRef.get(MockUserService);
     hashtagService = moduleRef.get<HashtagService>(HashtagService);
     service = moduleRef.get<SearchServiceV2>(SearchServiceV2);
-    userService = moduleRef.get(UserService);
     userServiceV2 = moduleRef.get(UserServiceV2);
 
-    mocksUsers = await generateMockUsers(10, 0, {
-      userService: userService,
-      accountService: authService,
-    });
     const mockHashtag = async (slug, hName, hScore) => {
       const newHashtag: CreateHashtag = {
         tag: slug,
@@ -114,37 +107,46 @@ describe('SearchServiceV2', () => {
       };
       await hashtagService.create(newHashtag);
     };
+    await Promise.all(
+      [...Array(5)]
+        .fill('hashtag')
+        .map((name, index) =>
+          mockHashtag(
+            `#castcle${name + index}`,
+            `Castcle ${name + index}`,
+            90 - index,
+          ),
+        ),
+    );
 
-    for (let i = 0; i < 10; i++) {
-      await mockHashtag(`#castcle${i}`, `Castcle ${i}`, 90 - i);
-    }
+    mocksUsers = await generateUser.generateMockUsers(5);
   });
 
   describe('#getTopTrends', () => {
     it('should get all top trend', async () => {
       const getTopTrends = await service.getTopTrends({ limit: 100 });
 
-      expect(getTopTrends.hashtags).toHaveLength(10);
-      expect(getTopTrends.users).toHaveLength(10);
+      expect(getTopTrends.hashtags).toHaveLength(5);
+      expect(getTopTrends.users).toHaveLength(5);
     });
 
     it('should get top trend exclude hashtags', async () => {
       const getTopTrends = await service.getTopTrends({
-        limit: 10,
+        limit: 5,
         exclude: [ExcludeType.Hashtags],
       });
 
       expect(getTopTrends.hashtags.length).toEqual(0);
-      expect(getTopTrends.users.length).toEqual(10);
+      expect(getTopTrends.users.length).toEqual(5);
     });
 
     it('should get top trend exclude users', async () => {
       const getTopTrends = await service.getTopTrends({
-        limit: 10,
+        limit: 5,
         exclude: [ExcludeType.Users],
       });
 
-      expect(getTopTrends.hashtags.length).toEqual(10);
+      expect(getTopTrends.hashtags.length).toEqual(5);
       expect(getTopTrends.users.length).toEqual(0);
     });
 
@@ -157,65 +159,25 @@ describe('SearchServiceV2', () => {
     });
   });
 
-  describe('toPayloadHashtags', () => {
-    it('should get payload hashtags', async () => {
-      const toPayloadHashtags = await (service as any).toPayloadHashtags([
-        {
-          _id: Types.ObjectId(),
-          tag: 'test',
-          createdAt: new Date(),
-          name: 'TEST',
-          score: 1,
-          updatedAt: new Date(),
-        },
-      ]);
-
-      expect(toPayloadHashtags[0].slug).toEqual('test');
-      expect(toPayloadHashtags[0].name).toEqual('TEST');
-      expect(toPayloadHashtags[0].isTrending).toBeUndefined();
-      expect(toPayloadHashtags[0].key).toBeUndefined();
-    });
-
-    it('should get payload hashtags at optional', async () => {
-      const toPayloadHashtags = await (service as any).toPayloadHashtags([
-        {
-          _id: Types.ObjectId(),
-          tag: 'test',
-          createdAt: new Date(),
-          name: 'TEST',
-          score: 1,
-          updatedAt: new Date(),
-        },
-        {
-          key: 'test',
-          isTrending: true,
-        },
-      ]);
-
-      expect(toPayloadHashtags[0].isTrending).not.toBeNull();
-      expect(toPayloadHashtags[0].key).not.toBeNull();
-    });
-  });
-
   describe('getByKeyword', () => {
     it('should get user by keyword', async () => {
       const getByKeyword = await service.getByKeyword(
         {
-          limit: 10,
+          limit: 5,
           keyword: {
             type: KeywordType.Mention,
-            input: 'c',
+            input: 'p',
           },
         },
         mocksUsers[0].user,
       );
 
       expect(getByKeyword.keyword).toContainEqual({
-        text: 'c',
+        text: 'p',
         isTrending: true,
       });
-      expect(getByKeyword.hashtags).toHaveLength(10);
-      expect(getByKeyword.users).toHaveLength(10);
+      expect(getByKeyword.hashtags).toHaveLength(0);
+      expect(getByKeyword.users).toHaveLength(5);
     });
 
     it('should get user by keyword is empty', async () => {
@@ -248,7 +210,7 @@ describe('SearchServiceV2', () => {
         {
           keyword: {
             type: KeywordType.Mention,
-            input: 'm',
+            input: 'p',
           },
           hasRelationshipExpansion: false,
         },
@@ -281,7 +243,7 @@ describe('SearchServiceV2', () => {
         {
           keyword: {
             type: KeywordType.Word,
-            input: 'mock-2',
+            input: 'people-2',
           },
           hasRelationshipExpansion: false,
         },
