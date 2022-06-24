@@ -329,7 +329,7 @@ export const UserSchemaFactory = (
       email: this.email,
       overview: this.profile?.overview,
       dob: this.profile?.birthdate,
-      image: {
+      images: {
         avatar: this.profile?.images?.avatar
           ? CastcleImage.sign(this.profile.images.avatar)
           : Configs.DefaultAvatarImages,
