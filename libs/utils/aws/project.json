@@ -3,18 +3,6 @@
   "sourceRoot": "libs/utils/aws/src",
   "projectType": "library",
   "targets": {
-    "build": {
-      "executor": "@nrwl/js:swc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/utils/aws",
-        "tsConfig": "libs/utils/aws/tsconfig.lib.json",
-        "packageJson": "libs/utils/aws/package.json",
-        "main": "libs/utils/aws/src/index.ts",
-        "assets": ["libs/utils/aws/*.md"],
-        "swcrc": ".swcrc.base"
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],
