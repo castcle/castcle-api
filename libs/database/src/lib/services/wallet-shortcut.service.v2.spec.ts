@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { Environment } from '@castcle-api/environments';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -79,6 +80,8 @@ describe('WalletShortcutService', () => {
       userService: userServiceV1,
       accountService: authServiceV1,
     });
+
+    Environment.CHAIN_INTERNAL = 'castcle';
   });
 
   afterAll(async () => {

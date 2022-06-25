@@ -226,11 +226,6 @@ export const DefaultErrors = {
     code: '3028',
     message: 'This email has been verified.',
   },
-  WALLET_SHORTCUT_IS_EXIST: {
-    statusCode: '400',
-    code: '3029',
-    message: 'Wallet shortcut is already exists.',
-  },
   USER_OR_PAGE_NOT_FOUND: {
     statusCode: '404',
     code: '4001',
@@ -335,5 +330,15 @@ export const DefaultErrors = {
     statusCode: '400',
     code: '8001',
     message: 'Invalid transaction data',
+  },
+  INTERNAL_CHAIN_NOT_FOUND: {
+    statusCode: '404',
+    code: '8002',
+    message: 'The chain id could not be found.',
+  },
+  WALLET_SHORTCUT_IS_EXIST: {
+    statusCode: '400',
+    code: '8003',
+    message: 'Wallet shortcut is already exists.',
   },
 };
