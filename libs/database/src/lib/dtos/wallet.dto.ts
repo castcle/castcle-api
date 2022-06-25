@@ -76,7 +76,9 @@ export class WalletShortcutResponse {
   type: string;
   castcleId: string;
   displayName: string;
-  images: CastcleImage;
+  images: {
+    avatar: CastcleImage;
+  };
   order: number;
   createdAt: string;
   updatedAt: string;

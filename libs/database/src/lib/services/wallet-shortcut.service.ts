@@ -52,9 +52,11 @@ export class WalletShortcutService {
       type: user.type,
       order: shortcut?.order,
       displayName: shortcut?.displayName ?? user.displayName,
-      images: user.profile?.images?.avatar
-        ? new Image(user.profile.images.avatar)
-        : Configs.DefaultAvatarImages,
+      images: {
+        avatar: user.profile?.images?.avatar
+          ? new Image(user.profile.images.avatar)
+          : Configs.DefaultAvatarImages,
+      },
       memo: shortcut?.memo,
       createdAt:
         shortcut?.createdAt?.toISOString() ?? user?.createdAt?.toISOString(),
@@ -65,6 +67,10 @@ export class WalletShortcutService {
   }
 
   async createWalletShortcut(body: ShortcutInternalDto, accountId: string) {
+    //TODO !!! Now! Check internal chain only.
+    if (body.chainId !== Environment.CHAIN_INTERNAL)
+      throw new CastcleException('INTERNAL_CHAIN_NOT_FOUND');
+
     const user = await this.repository.findUser({ _id: body.userId });
     if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
