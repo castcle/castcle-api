@@ -32,6 +32,7 @@ import {
 import {
   CACCOUNT_NO,
   CastcleNumber,
+  TopUpDto,
   TransactionFilter,
   WalletHistoryResponseDto,
   WalletType,
@@ -199,31 +200,35 @@ export class TAccountService {
     };
     return result;
   }
-
-  topup(type: WalletType, value: number, userId?: string) {
-    switch (type) {
+  /**
+   * Use for dev only
+   * @param topupDto
+   * @returns
+   */
+  topup(topupDto: TopUpDto) {
+    switch (topupDto.type) {
       case WalletType.ADS:
         return new this._transactionModel({
           from: {
             type: WalletType.EXTERNAL_DEPOSIT,
-            value: value,
+            value: topupDto.value,
           },
           to: [
             {
               type: WalletType.ADS,
-              value: value,
-              user: userId,
+              value: topupDto.value,
+              user: topupDto.userId,
             },
           ],
           ledgers: [
             {
               credit: {
                 caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
-                value: value,
+                value: topupDto.value,
               },
               debit: {
                 caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
-                value: value,
+                value: topupDto.value,
               },
             },
           ],
@@ -232,30 +237,30 @@ export class TAccountService {
         return new this._transactionModel({
           from: {
             type: WalletType.EXTERNAL_DEPOSIT,
-            value: value,
+            value: topupDto.value,
           },
           to: [
             {
               type: WalletType.PERSONAL,
-              value: value,
-              user: userId,
+              value: topupDto.value,
+              user: topupDto.userId,
             },
           ],
           ledgers: [
             {
               credit: {
                 caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
-                value: value,
+                value: topupDto.value,
               },
               debit: {
                 caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
-                value: value,
+                value: topupDto.value,
               },
             },
           ],
         }).save();
       default:
-        throw CastcleException.SOMETHING_WRONG;
+        throw new CastcleException('SOMETHING_WRONG');
     }
   }
 }
