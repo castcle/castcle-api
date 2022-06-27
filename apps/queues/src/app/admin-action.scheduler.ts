@@ -21,27 +21,35 @@
  * or have any questions.
  */
 
-import { WalletType } from './wallet.enum';
+import { Queue, QueueStatus, TAccountService } from '@castcle-api/database';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Model } from 'mongoose';
 
-export class Wallet {
-  balance: number;
-}
+@Injectable()
+export class AdminScheduler {
+  constructor(
+    @InjectModel('Queue') private queue: Model<Queue>,
+    private taccountService: TAccountService,
+  ) {}
 
-export class WalletHistoryPayloadItem {
-  'id': string;
-  'type': string;
-  'value': number;
-  'status': 'success' | 'pending' | 'failed';
-  'createdAt': Date;
-  'updatedAt': Date;
-}
-
-export class WalletHistoryResponseDto {
-  payload: WalletHistoryPayloadItem[];
-}
-
-export class TopUpDto {
-  type: WalletType;
-  userId?: string;
-  value: number;
+  @Cron(CronExpression.EVERY_MINUTE)
+  async executeUnprocessQueue() {
+    const actionQueues = await this.queue.find({
+      'payload.action': 'topup-token',
+      status: QueueStatus.WAITING,
+    });
+    if (!actionQueues) return;
+    for (let i = 0; i < actionQueues.length; i++) {
+      const actionQ = actionQueues[i];
+      try {
+        await this.taccountService.topup(actionQ.payload.data);
+        actionQ.status = QueueStatus.DONE;
+      } catch (e) {
+        actionQ.status = QueueStatus.FAILED;
+      }
+      await actionQ.save();
+    }
+  }
 }

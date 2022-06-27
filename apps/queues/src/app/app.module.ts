@@ -36,6 +36,7 @@ import { CastcleTracingModule } from '@castcle-api/tracing';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AdminScheduler } from './admin-action.scheduler';
 import { CampaignConsumer } from './campaign.consumer';
 import { CampaignScheduler } from './campaign.scheduler';
 import { ContentFarmingScheduler } from './content-farming.sheduler';
@@ -57,6 +58,7 @@ import { ContentFarmingScheduler } from './content-farming.sheduler';
   ],
   controllers: [],
   providers: [
+    AdminScheduler,
     CampaignConsumer,
     CampaignScheduler,
     CampaignService,

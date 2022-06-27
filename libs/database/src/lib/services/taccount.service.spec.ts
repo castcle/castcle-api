@@ -26,11 +26,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
-import { TransactionFilter, TransactionType, WalletType } from '../models';
+import {
+  TopUpDto,
+  TransactionFilter,
+  TransactionType,
+  WalletType,
+} from '../models';
 import { MicroTransaction, TLedger, Transaction } from '../schemas';
 import { CAccount } from '../schemas/caccount.schema';
 import { TAccountService } from './taccount.service';
-
 describe('TAccount Service', () => {
   let moduleRef: TestingModule;
   let mongod: MongoMemoryReplSet;
@@ -304,9 +308,30 @@ describe('TAccount Service', () => {
       expect(result.payload).toEqual(expect.arrayContaining(expectArr));
     });
   });
-  describe('canSpend()', () => {
-    it('should be ok', () => {
-      expect(true).toEqual(true);
+  describe('topup()', () => {
+    let mockUserId;
+    beforeAll(() => {
+      mockUserId = Types.ObjectId();
+    });
+    it('should be able topup ads account', async () => {
+      await service.topup({
+        type: WalletType.ADS,
+        value: 500,
+        userId: String(mockUserId),
+      } as TopUpDto);
+      expect(
+        await service.getAccountBalance(mockUserId, WalletType.ADS),
+      ).toEqual(500);
+    });
+    it('should be able topup personal account', async () => {
+      await service.topup({
+        type: WalletType.PERSONAL,
+        value: 700,
+        userId: String(mockUserId),
+      } as TopUpDto);
+      expect(
+        await service.getAccountBalance(mockUserId, WalletType.PERSONAL),
+      ).toEqual(700);
     });
   });
 });

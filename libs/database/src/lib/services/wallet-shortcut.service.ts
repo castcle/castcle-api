@@ -22,7 +22,7 @@
  */
 
 import { Configs, Environment } from '@castcle-api/environments';
-import { Image } from '@castcle-api/utils/aws';
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { isMongoId } from 'class-validator';
@@ -54,7 +54,7 @@ export class WalletShortcutService {
       displayName: shortcut?.displayName ?? user.displayName,
       images: {
         avatar: user.profile?.images?.avatar
-          ? new Image(user.profile.images.avatar)
+          ? CastcleImage.sign(user.profile.images.avatar)
           : Configs.DefaultAvatarImages,
       },
       memo: shortcut?.memo,
