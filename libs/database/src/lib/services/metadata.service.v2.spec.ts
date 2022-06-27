@@ -1,5 +1,5 @@
 import { HttpModule } from '@nestjs/axios';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
@@ -27,9 +27,12 @@ describe('MetadataServiceV2', () => {
       providers: [MetadataServiceV2, Repository],
     }).compile();
 
-    service = moduleRef.get<MetadataServiceV2>(MetadataServiceV2);
+    service = moduleRef.get(MetadataServiceV2);
+    const reportingSubjectModel = moduleRef.get(
+      getModelToken('ReportingSubject'),
+    );
 
-    await new (service as any).repository.reportingSubjectModel({
+    await new reportingSubjectModel({
       slug: 'spam',
       name: 'Spam',
       order: 1,
@@ -41,7 +44,7 @@ describe('MetadataServiceV2', () => {
   });
   describe('getReportSubjects', () => {
     it('should get reporting subjects', async () => {
-      const reportSubjects = await (service as any).getReportSubjects();
+      const reportSubjects = await service.getReportSubjects();
 
       expect(reportSubjects).toHaveLength(1);
     });

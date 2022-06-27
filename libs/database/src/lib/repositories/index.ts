@@ -634,6 +634,7 @@ export class Repository {
 
     return new this.userModel(user).save();
   }
+
   private getUserQuery(filter: UserQuery) {
     const query: FilterQuery<User> = {
       visibility: EntityVisibility.Publish,
