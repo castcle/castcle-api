@@ -29,4 +29,6 @@ export enum ReportType {
 export enum ReportStatus {
   REVIEWING = 'reviewing',
   DONE = 'done',
+  APPEAL = 'appeal',
+  CLOSED = 'closed',
 }

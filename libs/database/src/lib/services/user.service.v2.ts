@@ -55,7 +55,13 @@ import {
   UserField,
   UserResponseDto,
 } from '../dtos';
-import { CampaignType, EngagementType, ReportType, UserType } from '../models';
+import {
+  CampaignType,
+  EngagementType,
+  ReportType,
+  ReportingDto,
+  UserType,
+} from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
@@ -331,9 +337,9 @@ export class UserServiceV2 {
     await user.unfollow(targetUser);
   }
 
-  async reportContent(user: User, targetContentId: string, message: string) {
+  async reportContent(user: User, body: ReportingDto) {
     const targetContent = await this.repository.findContent({
-      _id: targetContentId,
+      _id: body.targetContentId,
     });
 
     if (!targetContent) throw new CastcleException('CONTENT_NOT_FOUND');
@@ -362,21 +368,22 @@ export class UserServiceV2 {
           displayName: targetContent.author.displayName,
         },
       },
-      message,
+      body.message,
     );
 
     await this.repository.createReporting({
-      user: targetContent.author.id,
-      type: ReportType.CONTENT,
-      payload: targetContent,
       by: user._id,
-      message,
+      message: body.message,
+      payload: targetContent,
+      subject: body.subject,
+      type: ReportType.CONTENT,
+      user: targetContent.author.id,
     });
   }
 
-  async reportUser(user: User, targetCastcleId: string, message: string) {
+  async reportUser(user: User, body: ReportingDto) {
     const targetUser = await this.repository.findUser({
-      _id: targetCastcleId,
+      _id: body.targetCastcleId,
     });
 
     if (!targetUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
@@ -384,15 +391,16 @@ export class UserServiceV2 {
     await this.mailerService.sendReportUserEmail(
       { _id: user._id, displayName: user.displayName },
       { _id: targetUser._id, displayName: targetUser.displayName },
-      message,
+      body.message,
     );
 
     await this.repository.createReporting({
-      user: targetUser._id,
-      type: ReportType.USER,
-      payload: targetUser,
       by: user._id,
-      message,
+      message: body.message,
+      payload: body.targetCastcleId,
+      subject: body.subject,
+      type: ReportType.USER,
+      user: targetUser._id,
     });
   }
 

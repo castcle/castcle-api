@@ -21,23 +21,24 @@
  * or have any questions.
  */
 
-import { RequireAtLeastOne } from '@castcle-api/utils/decorators';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, ValidateIf } from 'class-validator';
 
 export class ReportingDto {
   @IsString()
   @IsNotEmpty()
   message: string;
 
-  @RequireAtLeastOne('targetCastcleId', 'targetContentId')
   @IsString()
-  @IsNotEmpty()
-  targetCastcleId?: string;
-
-  @RequireAtLeastOne('targetCastcleId', 'targetContentId')
-  @IsString()
-  @IsNotEmpty()
+  @ValidateIf(
+    (value) => value.targetCastcleId == undefined || value.targetContentId,
+  )
   targetContentId?: string;
+
+  @IsString()
+  @ValidateIf(
+    (value) => value.targetContentId == undefined || value.targetCastcleId,
+  )
+  targetCastcleId?: string;
 
   @IsString()
   @IsNotEmpty()

@@ -71,6 +71,13 @@ export class Reporting extends CastcleBase {
     default: ReportStatus.REVIEWING,
   })
   status: ReportStatus;
+
+  @Prop({
+    required: true,
+    type: String,
+    index: true,
+  })
+  subject: string;
 }
 
 export const ReportingSchema = SchemaFactory.createForClass(Reporting);
