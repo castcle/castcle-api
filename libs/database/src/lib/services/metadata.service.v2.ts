@@ -39,9 +39,7 @@ export class MetadataServiceV2 {
     return this.repository.findReportingSubjects(
       {},
       {
-        sort: {
-          order: 1,
-        },
+        sort: { order: 1 },
       },
     );
   }
