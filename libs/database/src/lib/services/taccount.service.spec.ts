@@ -35,7 +35,6 @@ import {
 import { MicroTransaction, TLedger, Transaction } from '../schemas';
 import { CAccount } from '../schemas/caccount.schema';
 import { TAccountService } from './taccount.service';
-jest.useFakeTimers();
 describe('TAccount Service', () => {
   let moduleRef: TestingModule;
   let mongod: MongoMemoryReplSet;
