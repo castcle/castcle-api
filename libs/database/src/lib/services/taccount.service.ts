@@ -30,7 +30,9 @@ import {
   pipelineOfGetBalanceFromWalletType,
 } from '../aggregations';
 import {
+  CACCOUNT_NO,
   CastcleNumber,
+  TopUpDto,
   TransactionFilter,
   WalletHistoryResponseDto,
   WalletType,
@@ -197,5 +199,68 @@ export class TAccountService {
       })),
     };
     return result;
+  }
+  /**
+   * Use for dev only
+   * @param topupDto
+   * @returns
+   */
+  topup(topupDto: TopUpDto) {
+    switch (topupDto.type) {
+      case WalletType.ADS:
+        return new this._transactionModel({
+          from: {
+            type: WalletType.EXTERNAL_DEPOSIT,
+            value: topupDto.value,
+          },
+          to: [
+            {
+              type: WalletType.ADS,
+              value: topupDto.value,
+              user: topupDto.userId,
+            },
+          ],
+          ledgers: [
+            {
+              credit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
+                value: topupDto.value,
+              },
+              debit: {
+                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                value: topupDto.value,
+              },
+            },
+          ],
+        }).save();
+      case WalletType.PERSONAL:
+        return new this._transactionModel({
+          from: {
+            type: WalletType.EXTERNAL_DEPOSIT,
+            value: topupDto.value,
+          },
+          to: [
+            {
+              type: WalletType.PERSONAL,
+              value: topupDto.value,
+              user: topupDto.userId,
+            },
+          ],
+          ledgers: [
+            {
+              credit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                value: topupDto.value,
+              },
+              debit: {
+                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                value: topupDto.value,
+              },
+            },
+          ],
+        }).save();
+      default:
+        throw new CastcleException('SOMETHING_WRONG');
+    }
   }
 }
