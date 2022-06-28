@@ -20,27 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Injectable } from '@nestjs/common';
-import { Repository } from '../repositories';
 
-@Injectable()
-export class MetadataServiceV2 {
-  constructor(private repository: Repository) {}
-
-  getAllLanguage() {
-    return this.repository.findLanguages().exec();
-  }
-
-  getAllCountry(sortBy: { [key: string]: number }) {
-    return this.repository.findCountries().sort(sortBy).exec();
-  }
-
-  getReportSubjects() {
-    return this.repository.findReportingSubjects(
-      {},
-      {
-        sort: { order: 1 },
-      },
-    );
-  }
+export class ReportingSubjectPayloadDto {
+  id: string;
+  slug: string;
+  name: string;
+  order: number;
 }

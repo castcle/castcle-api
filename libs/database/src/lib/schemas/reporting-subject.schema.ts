@@ -20,27 +20,47 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Injectable } from '@nestjs/common';
-import { Repository } from '../repositories';
 
-@Injectable()
-export class MetadataServiceV2 {
-  constructor(private repository: Repository) {}
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+import { ReportingSubjectPayloadDto } from '../models';
 
-  getAllLanguage() {
-    return this.repository.findLanguages().exec();
-  }
+@Schema({ timestamps: true })
+export class ReportingSubjectDocument extends Document {
+  @Prop({
+    required: true,
+    type: String,
+    index: true,
+  })
+  slug: string;
 
-  getAllCountry(sortBy: { [key: string]: number }) {
-    return this.repository.findCountries().sort(sortBy).exec();
-  }
+  @Prop({
+    required: true,
+    type: String,
+  })
+  name: string;
 
-  getReportSubjects() {
-    return this.repository.findReportingSubjects(
-      {},
-      {
-        sort: { order: 1 },
-      },
-    );
-  }
+  @Prop({
+    required: true,
+    type: Number,
+    index: true,
+  })
+  order: number;
 }
+
+export const ReportingSubjectSchema = SchemaFactory.createForClass(
+  ReportingSubjectDocument,
+);
+
+export class ReportingSubject extends ReportingSubjectDocument {
+  toReportingSubjectPayload: () => ReportingSubjectPayloadDto;
+}
+
+ReportingSubjectSchema.methods.toReportingSubjectPayload = function () {
+  return {
+    id: this._id,
+    slug: this.slug,
+    name: this.name,
+    order: this.order,
+  } as ReportingSubjectPayloadDto;
+};

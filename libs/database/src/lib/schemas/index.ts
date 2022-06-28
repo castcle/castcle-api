@@ -54,6 +54,7 @@ export * from './notification.schema';
 export * from './otp.schema';
 export * from './queue.schema';
 export * from './relationship.schema';
+export * from './reporting-subject.schema';
 export * from './reporting.schema';
 export * from './revision.schema';
 export * from './social-sync.schema';
