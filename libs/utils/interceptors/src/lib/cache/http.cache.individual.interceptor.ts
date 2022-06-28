@@ -28,6 +28,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Cache } from 'cache-manager';
+import { FastifyRequest } from 'fastify';
 import * as util from '../util';
 
 @Injectable()
@@ -40,9 +41,11 @@ export class HttpCacheIndividualInterceptor extends CacheInterceptor {
     );
 
     if (cacheKey) {
-      const request = context.switchToHttp().getRequest();
+      const request = context.switchToHttp().getRequest<FastifyRequest>();
       const token = util.getTokenFromRequest(request);
-      const finalKey = `${cacheKey}-${token}-${request._parsedUrl.pathname}-${request._parsedUrl.query}`;
+      const finalKey = `${cacheKey}-${token}-${JSON.stringify(
+        request.routerPath,
+      )}-${JSON.stringify(request.query)}`;
 
       cacheManager.get<string>(token).then((settingString) => {
         const setting = JSON.parse(settingString || '{}');

@@ -26,16 +26,20 @@ import { Documentation } from '@castcle-api/utils/commons';
 import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { json, urlencoded } from 'express';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
   const port = process.env.PORT || 3338;
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter(),
+  );
 
   Documentation.setup('Users', app);
-  app.use(json({ limit: '50mb' }));
-  app.use(urlencoded({ limit: '50mb', extended: true }));
   app.useGlobalFilters(new CastcleExceptionFilter());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.enableCors();

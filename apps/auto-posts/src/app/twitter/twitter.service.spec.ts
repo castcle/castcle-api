@@ -34,9 +34,6 @@ import {
 } from 'twitter-api-v2';
 import { TwitterService } from './twitter.service';
 
-jest.mock('twitter-api-v2');
-jest.mock('@castcle-api/utils/aws');
-
 class PrivateTwitterService {
   client: TwitterApiv2;
   logger: CastLogger;
@@ -45,7 +42,7 @@ class PrivateTwitterService {
 type Union<T, R> = Pick<T, Exclude<keyof T, keyof R>> & R;
 
 describe('Twitter Service', () => {
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let contentService: ContentService;
   let socialSyncService: SocialSyncService;
   let twitterService: Union<TwitterService, PrivateTwitterService>;
@@ -100,7 +97,7 @@ describe('Twitter Service', () => {
   };
 
   beforeAll(async () => {
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       providers: [
         TwitterService,
         {
@@ -121,14 +118,14 @@ describe('Twitter Service', () => {
       ],
     }).compile();
 
-    contentService = app.get(ContentService);
-    socialSyncService = app.get(SocialSyncService);
-    twitterService = app.get(TwitterService);
+    contentService = moduleRef.get(ContentService);
+    socialSyncService = moduleRef.get(SocialSyncService);
+    twitterService = moduleRef.get(TwitterService);
     twitterService.client = { userTimeline: jest.fn() } as any;
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
   });
 
   beforeEach(() => {

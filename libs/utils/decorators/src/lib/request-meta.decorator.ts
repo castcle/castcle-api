@@ -22,7 +22,7 @@
  */
 
 import { ExecutionContext, createParamDecorator } from '@nestjs/common';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 import { getClientIp } from 'request-ip';
 
 export class RequestMetadata {
@@ -53,12 +53,11 @@ export const RequestMeta: (
   property?: keyof RequestMetadata,
 ) => ParameterDecorator = createParamDecorator(
   async (property: keyof RequestMetadata, ctx: ExecutionContext) => {
-    const req = ctx.switchToHttp().getRequest<Request>();
+    const req = ctx.switchToHttp().getRequest<FastifyRequest>();
     const ip = getClientIp(req);
-    const userAgent = req.get('User-Agent');
+    const userAgent = req.headers['user-agent'] as string;
     const hostUrl = `${req.protocol}://${req.hostname}`;
-    const source = req
-      .get('API-Metadata')
+    const source = (req.headers['API-Metadata'] as string)
       ?.split(',')
       .reduce((metadata, data) => {
         const [k, v] = data.split('=');

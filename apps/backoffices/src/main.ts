@@ -25,11 +25,18 @@ import { Configs } from '@castcle-api/environments';
 import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
   const port = process.env.PORT || 3339;
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter(),
+  );
 
   app.useGlobalFilters(new CastcleExceptionFilter());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));

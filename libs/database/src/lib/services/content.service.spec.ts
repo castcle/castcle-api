@@ -295,7 +295,6 @@ describe('ContentService', () => {
   });
   describe('#getContentsFromUser()', () => {
     it('should return Content[] from author', async () => {
-      jest.setSystemTime(Date.now() + 100);
       const shortPayload1: ShortPayload = {
         message: 'Order 1',
       };
@@ -304,7 +303,6 @@ describe('ContentService', () => {
         payload: shortPayload1,
         castcleId: user.displayId,
       });
-      jest.setSystemTime(Date.now() + 100);
       const shortPayload2: ShortPayload = {
         message: 'Order 2',
       };
