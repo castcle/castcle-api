@@ -25,7 +25,7 @@ import { Analytic, AnalyticService } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
 import { RequestMeta, RequestMetadata } from '@castcle-api/utils/decorators';
 import { Controller, Get, Query, Res } from '@nestjs/common';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 
 @Controller()
 export class LinksController {
@@ -36,7 +36,7 @@ export class LinksController {
   @Get('links')
   async trackAndRedirect(
     @RequestMeta() requestMetadata: RequestMetadata,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
     @Query()
     { e: name, d: data, dest, src }: Record<string, string>,
   ) {

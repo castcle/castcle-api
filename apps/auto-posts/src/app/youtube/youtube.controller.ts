@@ -21,10 +21,11 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import { Controller, Get, Post, Query, Req } from '@nestjs/common';
-import { Request } from 'express';
+import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import { FastifyRequest } from 'fastify';
+import { getClientIp } from 'request-ip';
 import { ValidateWebhookQuery } from './dto';
+import { SubscriptionContent } from './models';
 import { YoutubeWebhookService } from './services';
 
 @Controller('youtube')
@@ -36,19 +37,22 @@ export class YoutubeController {
     @Query()
     {
       'hub.challenge': challenge,
+      'hub.topic': topic,
       'hub.verify_token': verifyToken,
     }: ValidateWebhookQuery,
+    @Req() req: FastifyRequest,
   ) {
-    if (verifyToken !== Environment.YOUTUBE_VERIFY_TOKEN) return;
-
-    return challenge;
+    return this.youtubeWebhookService.validateWebhook({
+      challenge,
+      verifyToken,
+      topic,
+      ip: getClientIp(req),
+      userAgent: req.headers['user-agent'],
+    });
   }
 
   @Post()
-  async handleWebhook(@Req() req: Request) {
-    const subscriptionContent =
-      await this.youtubeWebhookService.getSubscriptionContentFromRequest(req);
-
+  async handleWebhook(@Body() subscriptionContent: SubscriptionContent) {
     await this.youtubeWebhookService.createContentFromYoutubeFeed(
       subscriptionContent,
     );

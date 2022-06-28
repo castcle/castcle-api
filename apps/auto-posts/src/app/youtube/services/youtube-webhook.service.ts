@@ -31,43 +31,54 @@ import {
   SocialProvider,
   SocialSyncService,
 } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
-import { Request } from 'express';
-import { XMLParser } from 'fast-xml-parser';
 import { PublishedContent, SubscriptionContent, Youtube } from '../models';
 
 @Injectable()
 export class YoutubeWebhookService {
-  private readonly parser: XMLParser;
   private readonly logger = new CastLogger(YoutubeWebhookService.name);
 
   constructor(
     private readonly contentService: ContentService,
     private readonly downloader: Downloader,
     private readonly socialSyncService: SocialSyncService,
-  ) {
-    this.parser = new XMLParser();
-  }
+  ) {}
 
-  getSubscriptionContentFromRequest(req: Request) {
-    return new Promise<SubscriptionContent>((resolve, reject) => {
-      let xml = '';
+  validateWebhook(dto: {
+    challenge: string;
+    verifyToken: string;
+    topic: string;
+    ip: string;
+    userAgent: string;
+  }) {
+    const isValidToken = dto.verifyToken === Environment.YOUTUBE_VERIFY_TOKEN;
+    const isYoutubeFeedTopic = Youtube.FEED_URL_PATTERN.test(dto.topic);
 
-      req.on('data', (data: string) => (xml += data));
-      req.on('error', (error: unknown) => reject(error));
-      req.on('end', () => {
-        const subscriptionContent = this.parser.parse(xml);
-        resolve(new SubscriptionContent(subscriptionContent?.feed));
-      });
-    });
+    this.logger.log(
+      JSON.stringify({
+        isValidToken,
+        isYoutubeFeedTopic,
+        topic: dto.topic,
+        ip: dto.ip,
+        userAgent: dto.userAgent,
+      }),
+      'validateWebhook',
+    );
+
+    if (!isValidToken) return;
+    if (!isYoutubeFeedTopic) return;
+
+    return dto.challenge;
   }
 
   async createContentFromYoutubeFeed(subscriptionContent: SubscriptionContent) {
-    if (!subscriptionContent.isPublishedContent) return;
+    const isPublishedContent = Boolean(subscriptionContent.feed?.entry?.id);
+    if (!isPublishedContent) return;
 
-    const feed = subscriptionContent.feed as PublishedContent;
+    const feed: PublishedContent = subscriptionContent.feed;
     const channelId = feed.entry['yt:channelId'];
     const syncAccount =
       await this.socialSyncService.getAutoSyncAccountBySocialId(

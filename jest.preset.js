@@ -22,5 +22,20 @@
  */
 
 const nxPreset = require('@nrwl/jest/preset').default;
+const fs = require('fs');
+const { exclude: _, ...swcJestConfig } = JSON.parse(
+  fs.readFileSync(`${__dirname}/.swcrc`, 'utf-8'),
+);
 
-module.exports = { ...nxPreset };
+module.exports = {
+  ...nxPreset,
+  moduleFileExtensions: ['js', 'ts'],
+  moduleNameMapper: {
+    msgpackr: require.resolve('msgpackr'),
+    uuid: require.resolve('uuid'),
+  },
+  testEnvironment: 'node',
+  transform: {
+    '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
+  },
+};

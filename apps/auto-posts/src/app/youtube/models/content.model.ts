@@ -21,14 +21,8 @@
  * or have any questions.
  */
 
-export class SubscriptionContent {
-  feed: DeletedContent | PublishedContent;
-  isPublishedContent: boolean;
-
-  constructor(feed: DeletedContent | PublishedContent) {
-    this.feed = feed;
-    this.isPublishedContent = Boolean((feed as PublishedContent).entry?.id);
-  }
+export class SubscriptionContent<T = any> {
+  feed: T;
 }
 
 export class DeletedContent {

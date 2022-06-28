@@ -26,10 +26,10 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 import { getLanguageFromRequest } from '../util';
 
-export interface HeadersRequest extends Request {
+export interface HeadersRequest extends FastifyRequest {
   $language: string;
 }
 

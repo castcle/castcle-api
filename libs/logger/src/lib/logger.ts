@@ -29,7 +29,7 @@ export class CastLogger extends ConsoleLogger {
     ? ['log', 'error', 'warn']
     : ['log', 'error', 'warn', 'debug', 'verbose'];
 
-  timer: Record<string, number> = {};
+  private timer: Record<string, number> = {};
 
   /**
    * Create a logger with context and default options: `CastLoggerOptions`
@@ -44,7 +44,7 @@ export class CastLogger extends ConsoleLogger {
     super(context, options);
   }
 
-  #formatContext = (context?: string, time?: number) => {
+  private formatContext = (context?: string, time?: number) => {
     const logContext = context ? `#${context}` : '';
     const timeContext = time ? `+${time}ms` : '';
 
@@ -55,7 +55,7 @@ export class CastLogger extends ConsoleLogger {
    * Write a 'log' level log.
    */
   log(message: any, context?: string) {
-    super.log(message, this.#formatContext(context));
+    super.log(message, this.formatContext(context));
   }
 
   /**
@@ -73,7 +73,7 @@ export class CastLogger extends ConsoleLogger {
         ? message
         : JSON.stringify(message),
       '',
-      this.#formatContext(context),
+      this.formatContext(context),
     );
   }
 
@@ -81,7 +81,7 @@ export class CastLogger extends ConsoleLogger {
    * Write a 'warn' level log.
    */
   warn(message: any, context?: string) {
-    super.warn(message, this.#formatContext(context));
+    super.warn(message, this.formatContext(context));
   }
 
   time(message: any, context?: string) {
@@ -98,6 +98,6 @@ export class CastLogger extends ConsoleLogger {
 
     delete this.timer[JSON.stringify({ context, message })];
 
-    super.log(message, this.#formatContext(context, time));
+    super.log(message, this.formatContext(context, time));
   }
 }

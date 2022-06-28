@@ -23,14 +23,25 @@
 
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
+import fastifyXmlBodyParser from 'fastify-xml-body-parser';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
   const port = process.env.PORT || 3342;
   const prefix = 'auto-posts';
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter(),
+  );
 
   app.setGlobalPrefix(prefix);
+  await app.register(fastifyXmlBodyParser, {
+    contentType: ['application/atom+xml'],
+  });
 
   await app.listen(port);
   Logger.log(`🚀 Application is running on: http://localhost:${port}/`);

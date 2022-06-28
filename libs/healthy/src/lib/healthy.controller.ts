@@ -23,11 +23,13 @@
 
 import { CastLogger } from '@castcle-api/logger';
 import { Controller, Get } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @Controller('healthy')
 export class HealthyController {
   private logger = new CastLogger(HealthyController.name);
 
+  @SkipThrottle()
   @Get()
   getData() {
     this.logger.log('Health Check');
