@@ -574,7 +574,7 @@ export class CommentServiceV2 {
       type: EngagementType.Like,
     });
 
-    if (engagement) throw CastcleException.LIKE_COMMENT_IS_EXIST;
+    if (engagement) throw new CastcleException('LIKE_COMMENT_IS_EXIST');
 
     await new this._engagementModel({
       type: EngagementType.Like,

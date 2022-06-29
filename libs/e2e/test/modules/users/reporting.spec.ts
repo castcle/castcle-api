@@ -49,7 +49,9 @@ export const testUsersReporting = () => {
       .send({ message: 'spam', targetCastcleId: '61dd5e36acf08f6cfe74f0ea' })
       .expect(({ body }) => {
         expect(body).toMatchObject(
-          CastcleException.USER_OR_PAGE_NOT_FOUND.getLocalizedException().getResponse(),
+          new CastcleException('USER_OR_PAGE_NOT_FOUND')
+            .getLocalizedException()
+            .getResponse(),
         );
       })
       .expect(HttpStatus.NOT_FOUND);
@@ -61,7 +63,9 @@ export const testUsersReporting = () => {
       .send({ message: 'spam', targetContentId: '61dd5e36acf08f6cfe74f0ea' })
       .expect(({ body }) => {
         expect(body).toMatchObject(
-          CastcleException.CONTENT_NOT_FOUND.getLocalizedException().getResponse(),
+          new CastcleException('CONTENT_NOT_FOUND')
+            .getLocalizedException()
+            .getResponse(),
         );
       })
       .expect(HttpStatus.NOT_FOUND);
@@ -73,7 +77,9 @@ export const testUsersReporting = () => {
       .send({ message: 'Spam', targetCastcleId: userBeta.id })
       .expect(({ body }) => {
         expect(body).toMatchObject(
-          CastcleException.FORBIDDEN.getLocalizedException().getResponse(),
+          new CastcleException('FORBIDDEN')
+            .getLocalizedException()
+            .getResponse(),
         );
       })
       .expect(HttpStatus.FORBIDDEN);

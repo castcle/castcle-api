@@ -289,7 +289,7 @@ export class CommentController {
 
     const likeComment = await this.contentService.likeComment(user, comment);
 
-    if (!likeComment) throw CastcleException.LIKE_IS_EXIST;
+    if (!likeComment) throw new CastcleException('LIKE_IS_EXIST');
 
     if (String(authorizedUser._id) === String(comment.author._id)) return;
     const userOwner = await this.userService.getByIdOrCastcleId(

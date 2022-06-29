@@ -21,17 +21,46 @@
  * or have any questions.
  */
 
-import { Logger } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { BackgroundModule } from './app/app.module';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+import { ReportingSubjectPayloadDto } from '../models';
 
-async function bootstrap() {
-  const app = await NestFactory.create(BackgroundModule);
-  const port = process.env.PORT || 3341;
+@Schema({ timestamps: true })
+export class ReportingSubjectDocument extends Document {
+  @Prop({
+    required: true,
+    type: String,
+    index: true,
+  })
+  slug: string;
 
-  await app.listen(port);
-  Logger.log(`🚀 Application is running on: http://localhost:${port}/`);
-  Logger.log(`Environment at ${process.env.NODE_ENV}`);
+  @Prop({
+    required: true,
+    type: String,
+  })
+  name: string;
+
+  @Prop({
+    required: true,
+    type: Number,
+    index: true,
+  })
+  order: number;
 }
 
-bootstrap();
+export const ReportingSubjectSchema = SchemaFactory.createForClass(
+  ReportingSubjectDocument,
+);
+
+export class ReportingSubject extends ReportingSubjectDocument {
+  toReportingSubjectPayload: () => ReportingSubjectPayloadDto;
+}
+
+ReportingSubjectSchema.methods.toReportingSubjectPayload = function () {
+  return {
+    id: this._id,
+    slug: this.slug,
+    name: this.name,
+    order: this.order,
+  } as ReportingSubjectPayloadDto;
+};

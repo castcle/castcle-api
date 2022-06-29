@@ -57,6 +57,7 @@ import {
   QueueSchema,
   RelationshipSchema,
   ReportingSchema,
+  ReportingSubjectSchema,
   RevisionSchema,
   SocialSyncSchema,
   TransactionSchema,
@@ -112,6 +113,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Analytic', schema: AnalyticSchema },
   { name: 'CAccount', schema: CAccountSchema },
   { name: 'Campaign', schema: CampaignSchema },
+  { name: 'ContentFarming', schema: ContentFarmingSchema },
   { name: 'Country', schema: CountrySchema },
   { name: 'DefaultContent', schema: DefaultContentSchema },
   { name: 'DsContentReach', schema: DsContentReachSchema },
@@ -121,9 +123,9 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Notification', schema: NotificationSchema },
   { name: 'Otp', schema: OtpSchema },
   { name: 'Queue', schema: QueueSchema },
-  { name: 'UxEngagement', schema: UxEngagementSchema },
-  { name: 'ContentFarming', schema: ContentFarmingSchema },
   { name: 'Reporting', schema: ReportingSchema },
+  { name: 'ReportingSubject', schema: ReportingSubjectSchema },
+  { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'WalletShortcut', schema: WalletShortcutSchema },
 ]);
 

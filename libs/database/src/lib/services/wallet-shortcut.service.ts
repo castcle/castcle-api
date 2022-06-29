@@ -22,7 +22,7 @@
  */
 
 import { Configs, Environment } from '@castcle-api/environments';
-import { Image } from '@castcle-api/utils/aws';
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { isMongoId } from 'class-validator';
@@ -52,9 +52,11 @@ export class WalletShortcutService {
       type: user.type,
       order: shortcut?.order,
       displayName: shortcut?.displayName ?? user.displayName,
-      images: user.profile?.images?.avatar
-        ? new Image(user.profile.images.avatar)
-        : Configs.DefaultAvatarImages,
+      images: {
+        avatar: user.profile?.images?.avatar
+          ? CastcleImage.sign(user.profile.images.avatar)
+          : Configs.DefaultAvatarImages,
+      },
       memo: shortcut?.memo,
       createdAt:
         shortcut?.createdAt?.toISOString() ?? user?.createdAt?.toISOString(),
@@ -65,15 +67,19 @@ export class WalletShortcutService {
   }
 
   async createWalletShortcut(body: ShortcutInternalDto, accountId: string) {
+    //TODO !!! Now! Check internal chain only.
+    if (body.chainId !== Environment.CHAIN_INTERNAL)
+      throw new CastcleException('INTERNAL_CHAIN_NOT_FOUND');
+
     const user = await this.repository.findUser({ _id: body.userId });
-    if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const walletShortcut = await this.repository.findWallerShortcut({
       address: body.userId,
       accountId,
     });
 
-    if (walletShortcut) throw CastcleException.WALLET_SHORTCUT_IS_EXIST;
+    if (walletShortcut) throw new CastcleException('WALLET_SHORTCUT_IS_EXIST');
 
     const newShortcut = await this.repository.createWallerShortcut({
       ...body,

@@ -118,7 +118,7 @@ export class AuthenticationController {
     @Body() { email }: CheckEmailExistDto,
   ) {
     if (!this.authService.validateEmail(email))
-      throw CastcleException.INVALID_EMAIL;
+      throw new CastcleException('INVALID_EMAIL');
     try {
       const account = await this.authService.getAccountFromEmail(email);
       return {
@@ -128,7 +128,7 @@ export class AuthenticationController {
         },
       };
     } catch (error) {
-      throw CastcleException.INVALID_EMAIL;
+      throw new CastcleException('INVALID_EMAIL');
     }
   }
 
@@ -150,7 +150,7 @@ export class AuthenticationController {
   ) {
     try {
       const account = await this.authService.getAccountFromEmail(username);
-      if (!account) throw CastcleException.INVALID_EMAIL;
+      if (!account) throw new CastcleException('INVALID_EMAIL');
       if (await account.verifyPassword(password)) {
         const embedCredentialByDeviceUUID = account.credentials.find(
           (item) => item.deviceUUID === req.$credential.deviceUUID,
@@ -196,10 +196,10 @@ export class AuthenticationController {
           : null;
 
         return result;
-      } else throw CastcleException.INVALID_EMAIL_OR_PASSWORD;
+      } else throw new CastcleException('INVALID_EMAIL_OR_PASSWORD');
     } catch (error) {
       this.logger.error('Login error', error.stack);
-      throw CastcleException.INVALID_EMAIL_OR_PASSWORD;
+      throw new CastcleException('INVALID_EMAIL_OR_PASSWORD');
     }
   }
 
@@ -279,15 +279,16 @@ export class AuthenticationController {
       const currentAccount = await this.authService.getAccountFromCredential(
         req.$credential,
       );
-      if (!currentAccount?.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+      if (!currentAccount?.isGuest)
+        throw new CastcleException('INVALID_ACCESS_TOKEN');
       if (currentAccount?.email === body.payload.email)
-        throw CastcleException.EMAIL_OR_PHONE_IS_EXIST;
+        throw new CastcleException('EMAIL_OR_PHONE_IS_EXIST');
       //check if account already activate
       //check if email exist and not the same
       if (await this.authService.getAccountFromEmail(body.payload.email))
-        throw CastcleException.EMAIL_OR_PHONE_IS_EXIST;
+        throw new CastcleException('EMAIL_OR_PHONE_IS_EXIST');
       if (!this.authService.validateEmail(body.payload.email))
-        throw CastcleException.INVALID_EMAIL;
+        throw new CastcleException('INVALID_EMAIL');
       //check if castcleId Exist
       const user = await this.authService.getExistedUserFromCastcleId(
         body.payload.castcleId,
@@ -295,7 +296,7 @@ export class AuthenticationController {
       //validate password
       this.appService.validatePassword(body.payload.password);
 
-      if (user) throw CastcleException.USER_ID_IS_EXIST;
+      if (user) throw new CastcleException('USER_ID_IS_EXIST');
 
       const accountActivation = await this.authService.signupByEmail(
         currentAccount,
@@ -342,7 +343,7 @@ export class AuthenticationController {
         : null;
       return result;
     }
-    throw CastcleException.PAYLOAD_CHANNEL_MISMATCH;
+    throw new CastcleException('PAYLOAD_CHANNEL_MISMATCH');
   }
 
   @ApiResponse({
@@ -370,7 +371,7 @@ export class AuthenticationController {
       this.logger.log('Validate profile member.');
       if (!userProfile.profile && !credential.account.isGuest) {
         this.logger.warn('Member Profile is empty.');
-        throw CastcleException.INVALID_REFRESH_TOKEN;
+        throw new CastcleException('INVALID_REFRESH_TOKEN');
       }
 
       const accessTokenPayload =
@@ -396,7 +397,7 @@ export class AuthenticationController {
         accessToken: newAccessToken,
       } as RefreshTokenResponse;
     }
-    throw CastcleException.INVALID_REFRESH_TOKEN;
+    throw new CastcleException('INVALID_REFRESH_TOKEN');
   }
 
   @ApiBearerAuth()
@@ -416,10 +417,10 @@ export class AuthenticationController {
     if (accountActivation && accountActivation.isVerifyTokenValid()) {
       //verify email
       const account = await this.authService.verifyAccount(accountActivation);
-      if (!account) throw CastcleException.INVALID_REFRESH_TOKEN;
+      if (!account) throw new CastcleException('INVALID_REFRESH_TOKEN');
       return '';
     }
-    throw CastcleException.INVALID_REFRESH_TOKEN;
+    throw new CastcleException('INVALID_REFRESH_TOKEN');
   }
 
   @ApiBearerAuth()
@@ -441,11 +442,11 @@ export class AuthenticationController {
       await this.authService.getAccountActivationFromCredential(
         req.$credential,
       );
-    if (!accountActivation) throw CastcleException.INVALID_REFRESH_TOKEN;
+    if (!accountActivation) throw new CastcleException('INVALID_REFRESH_TOKEN');
     const newAccountActivation = await this.authService.revokeAccountActivation(
       accountActivation,
     );
-    if (!accountActivation) throw CastcleException.INVALID_REFRESH_TOKEN;
+    if (!accountActivation) throw new CastcleException('INVALID_REFRESH_TOKEN');
     if (accountActivation.activationDate) {
       const returnObj = {
         message: 'This email has been verified.',
@@ -456,7 +457,8 @@ export class AuthenticationController {
     const account = await this.authService.getAccountFromCredential(
       req.$credential,
     );
-    if (!(account && account.email)) throw CastcleException.INVALID_EMAIL;
+    if (!(account && account.email))
+      throw new CastcleException('INVALID_EMAIL');
     this.appService.sendRegistrationEmail(
       hostUrl,
       account.email,
@@ -509,7 +511,7 @@ export class AuthenticationController {
       };
       return response;
     } else {
-      throw CastcleException.EXPIRED_OTP;
+      throw new CastcleException('EXPIRED_OTP');
     }
   }
 
@@ -545,7 +547,7 @@ export class AuthenticationController {
       };
       return response;
     } else {
-      throw CastcleException.EXPIRED_OTP;
+      throw new CastcleException('EXPIRED_OTP');
     }
   }
   /*
@@ -555,7 +557,7 @@ export class AuthenticationController {
   @Get('verify')
   async verify(@Req() req: CredentialRequest) {
     if (!req.query.code) {
-      throw CastcleException.REQUEST_URL_NOT_FOUND;
+      throw new CastcleException('REQUEST_URL_NOT_FOUND');
     }
 
     const token = req.query.code as string;
@@ -613,7 +615,7 @@ export class AuthenticationController {
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString(),
       };
-    } else throw CastcleException.INVALID_PASSWORD;
+    } else throw new CastcleException('INVALID_PASSWORD');
   }
 
   @CastcleBasicAuth()
@@ -664,7 +666,7 @@ export class AuthenticationController {
 
     if (!token) {
       this.logger.log(`response merge account.`);
-      throw CastcleException.DUPLICATE_EMAIL_WITH_PAYLOAD({
+      throw new CastcleException('DUPLICATE_EMAIL', {
         profile: users.profile
           ? await users.profile.toUserResponse({
               passwordNotSet: account.password ? false : true,
@@ -708,7 +710,7 @@ export class AuthenticationController {
     const currentAccount = await this.authService.getAccountFromCredential(
       req.$credential,
     );
-    if (currentAccount?.isGuest) throw CastcleException.FORBIDDEN;
+    if (currentAccount?.isGuest) throw new CastcleException('FORBIDDEN');
 
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
       body.socialId,
@@ -716,7 +718,7 @@ export class AuthenticationController {
     );
     if (socialAccount) {
       this.logger.error(`already connect social: ${body.provider}.`);
-      throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
+      throw new CastcleException('SOCIAL_PROVIDER_IS_EXIST');
     }
 
     this.logger.log(`connect account with social`);

@@ -282,7 +282,7 @@ describe('NotificationsController', () => {
           } as any,
           '',
         ),
-      ).rejects.toEqual(CastcleException.NOTIFICATION_NOT_FOUND);
+      ).rejects.toEqual(new CastcleException('NOTIFICATION_NOT_FOUND'));
 
       await expect(
         controller.notificationRead(
@@ -291,7 +291,7 @@ describe('NotificationsController', () => {
           } as any,
           '',
         ),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
   });
 
@@ -331,7 +331,7 @@ describe('NotificationsController', () => {
         controller.notificationReadAll({
           $credential: wrongUserCredential,
         } as any),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
   });
 
@@ -380,7 +380,7 @@ describe('NotificationsController', () => {
             firebaseToken: firebaseToken,
           } as RegisterTokenDto,
         ),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
   });
 

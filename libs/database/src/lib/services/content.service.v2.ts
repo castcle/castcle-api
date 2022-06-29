@@ -61,7 +61,7 @@ import {
 } from '../models';
 import {
   ContentFarmingCDF,
-  ContentFarmingReponse,
+  ContentFarmingResponse,
 } from '../models/content-farming.model';
 import { Repository } from '../repositories';
 import {
@@ -83,7 +83,7 @@ export class ContentServiceV2 {
   private logger = new CastLogger(ContentServiceV2.name);
   constructor(
     private notificationServiceV2: NotificationServiceV2,
-    private taccountService: TAccountService,
+    private tAccountService: TAccountService,
     private repository: Repository,
     @InjectModel('ContentFarming')
     private contentFarmingModel: Model<ContentFarming>,
@@ -321,7 +321,7 @@ export class ContentServiceV2 {
 
   likeCast = async (contentId: string, user: User, account: Account) => {
     const content = await this.repository.findContent({ _id: contentId });
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
     const engagement = await this.repository.findEngagement({
       user: user._id,
       targetRef: {
@@ -331,7 +331,7 @@ export class ContentServiceV2 {
       type: EngagementType.Like,
     });
 
-    if (engagement) throw CastcleException.LIKE_IS_EXIST;
+    if (engagement) throw new CastcleException('LIKE_IS_EXIST');
 
     const newEngagement = await this.repository.createEngagement({
       type: EngagementType.Like,
@@ -424,7 +424,7 @@ export class ContentServiceV2 {
 
   recast = async (contentId: string, user: User, account: Account) => {
     const content = await this.repository.findContent({ _id: contentId });
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
     const originalContent = await this.repository.findContent({
       originalPost: contentId,
@@ -432,7 +432,7 @@ export class ContentServiceV2 {
       isRecast: true,
     });
 
-    if (originalContent) throw CastcleException.RECAST_IS_EXIST;
+    if (originalContent) throw new CastcleException('RECAST_IS_EXIST');
 
     const author = new Author({
       id: user._id,
@@ -458,7 +458,7 @@ export class ContentServiceV2 {
       isRecast: true,
     } as Content;
     const recastContent = await this.repository.createContent(newContent);
-    if (!recastContent) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!recastContent) throw new CastcleException('CONTENT_NOT_FOUND');
 
     const engagement = await this.repository.createEngagement({
       type: EngagementType.Recast,
@@ -502,7 +502,7 @@ export class ContentServiceV2 {
       author: user._id,
     });
 
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
     const engagement = await this.repository.findEngagement({
       user: user._id,
@@ -549,7 +549,7 @@ export class ContentServiceV2 {
     account: Account,
   ) => {
     const content = await this.repository.findContent({ _id: contentId });
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
     const originalContent = await this.repository.findContent({
       originalPost: contentId,
@@ -558,7 +558,7 @@ export class ContentServiceV2 {
       message,
     });
 
-    if (originalContent) throw CastcleException.QUOTE_IS_EXIST;
+    if (originalContent) throw new CastcleException('QUOTE_IS_EXIST');
 
     const author = new Author({
       id: user._id,
@@ -587,7 +587,7 @@ export class ContentServiceV2 {
     } as Content;
 
     const quoteContent = await this.repository.createContent(newContent);
-    if (!quoteContent) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!quoteContent) throw new CastcleException('CONTENT_NOT_FOUND');
 
     const engagement = await this.repository.createEngagement({
       type: EngagementType.Quote,
@@ -626,11 +626,11 @@ export class ContentServiceV2 {
   };
 
   createContentFarming = async (contentId: string, userId: string) => {
-    const balance = await this.taccountService.getAccountBalance(
+    const balance = await this.tAccountService.getAccountBalance(
       userId,
       WalletType.PERSONAL,
     );
-    const lockBalance = await this.taccountService.getAccountBalance(
+    const lockBalance = await this.tAccountService.getAccountBalance(
       userId,
       WalletType.FARM_LOCKED,
     );
@@ -650,7 +650,7 @@ export class ContentServiceV2 {
       try {
         session.startTransaction();
         await contentFarming.save();
-        await this.taccountService.transfers({
+        await this.tAccountService.transfers({
           from: {
             type: WalletType.PERSONAL,
             user: userId,
@@ -684,22 +684,22 @@ export class ContentServiceV2 {
         return contentFarming;
       } catch (error) {
         await session.abortTransaction();
-        throw CastcleException.INTERNAL_SERVER_ERROR;
+        throw new CastcleException('INTERNAL_SERVER_ERROR');
       }
     } else {
       //throw error
-      throw CastcleException.CONTENT_FARMING_NOT_AVAIABLE_BALANCE;
+      throw new CastcleException('CONTENT_FARMING_NOT_AVAILABLE_BALANCE');
     }
   };
 
   updateContentFarming = async (contentFarming: ContentFarming) => {
     contentFarming.status = ContentFarmingStatus.Farming;
     contentFarming.startAt = new Date();
-    const balance = await this.taccountService.getAccountBalance(
+    const balance = await this.tAccountService.getAccountBalance(
       String(contentFarming.user),
       WalletType.PERSONAL,
     );
-    const lockBalance = await this.taccountService.getAccountBalance(
+    const lockBalance = await this.tAccountService.getAccountBalance(
       String(contentFarming.user),
       WalletType.FARM_LOCKED,
     );
@@ -709,7 +709,7 @@ export class ContentServiceV2 {
       contentFarming.farmAmount = farmAmount;
       await session.withTransaction(async () => {
         await contentFarming.save();
-        await this.taccountService.transfers({
+        await this.tAccountService.transfers({
           from: {
             type: WalletType.PERSONAL,
             user: String(contentFarming.user),
@@ -744,7 +744,7 @@ export class ContentServiceV2 {
       return contentFarming;
     } else {
       //thorw error
-      throw CastcleException.CONTENT_FARMING_NOT_AVAIABLE_BALANCE;
+      throw new CastcleException('CONTENT_FARMING_NOT_AVAILABLE_BALANCE');
     }
   };
 
@@ -761,9 +761,9 @@ export class ContentServiceV2 {
       contentFarming &&
       contentFarming.status === ContentFarmingStatus.Farmed
     )
-      throw CastcleException.CONTENT_FARMING_ALREDY_FARM;
+      throw new CastcleException('CONTENT_FARMING_ALREADY_FARM');
     else if (!contentFarming) return false;
-    else throw CastcleException.CONTENT_FARMING_LIMIT;
+    else throw new CastcleException('CONTENT_FARMING_LIMIT');
   };
 
   getContentFarming = async (contentId: string, userId: string) =>
@@ -798,7 +798,7 @@ export class ContentServiceV2 {
             },
           },
         );
-        await this.taccountService.transfers({
+        await this.tAccountService.transfers({
           from: {
             type: WalletType.FARM_LOCKED,
             user: String(contentFarming.user),
@@ -832,7 +832,7 @@ export class ContentServiceV2 {
       session.endSession();
       return contentFarming;
     } else {
-      throw CastcleException.CONTENT_FARMING_NOT_FOUND;
+      throw new CastcleException('CONTENT_FARMING_NOT_FOUND');
     }
   };
 
@@ -854,7 +854,7 @@ export class ContentServiceV2 {
           },
         },
       );
-      await this.taccountService.transfers({
+      await this.tAccountService.transfers({
         from: {
           type: WalletType.FARM_LOCKED,
           user: String(contentFarming.user),
@@ -968,18 +968,18 @@ export class ContentServiceV2 {
     contentFarming: ContentFarming,
     userId: string,
   ) => {
-    const balance = await this.taccountService.getAccountBalance(
+    const balance = await this.tAccountService.getAccountBalance(
       userId,
       WalletType.PERSONAL,
     );
-    const lockBalance = await this.taccountService.getAccountBalance(
+    const lockBalance = await this.tAccountService.getAccountBalance(
       userId,
       WalletType.FARM_LOCKED,
     );
     const totalContentFarming = await this.contentFarmingModel.countDocuments({
       user: userId,
     });
-    return new ContentFarmingReponse(
+    return new ContentFarmingResponse(
       contentFarming,
       balance,
       lockBalance,
@@ -995,7 +995,7 @@ export class ContentServiceV2 {
     viewer?: User,
   ) => {
     const content = await this.repository.findContent({ _id: contentId });
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
     const filter = {
       targetRef: {
@@ -1110,10 +1110,10 @@ export class ContentServiceV2 {
     const author = await this.repository.findUser({
       _id: body.castcleId,
     });
-    if (!author) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!author) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     if (String(author.ownerAccount) !== String(requestedBy.ownerAccount))
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
 
     const convertImage = await this.repository.createContentImage(
       body,
@@ -1162,7 +1162,7 @@ export class ContentServiceV2 {
       author: user._id,
     });
 
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
     await this.repository.deleteContents({ _id: contentId });
     await this.repository.updateUser(
@@ -1180,12 +1180,12 @@ export class ContentServiceV2 {
       .findUsers({ accountId: account._id })
       .exec();
 
-    if (!users.length) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!users.length) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const userIds = users.map((user) => user._id);
 
     const content = await this.repository.findContent({ _id: contentId });
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
     const engagements = await this.repository.findEngagements({
       user: userIds,

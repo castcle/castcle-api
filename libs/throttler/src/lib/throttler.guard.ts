@@ -30,7 +30,7 @@ import { getClientIp } from 'request-ip';
 @Injectable()
 export class CastcleThrottlerGuard extends ThrottlerGuard {
   override throwThrottlingException(): void {
-    throw CastcleException.RATE_LIMIT_REQUEST;
+    throw new CastcleException('RATE_LIMIT_REQUEST');
   }
 
   override getTracker(req: Request): string {

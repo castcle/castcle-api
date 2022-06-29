@@ -3,18 +3,6 @@
   "sourceRoot": "libs/utils/clients/src",
   "projectType": "library",
   "targets": {
-    "build": {
-      "executor": "@nrwl/js:swc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/utils/clients",
-        "tsConfig": "libs/utils/clients/tsconfig.lib.json",
-        "packageJson": "libs/utils/clients/package.json",
-        "main": "libs/utils/clients/src/index.ts",
-        "assets": ["libs/utils/clients/*.md"],
-        "swcrc": ".swcrc.base"
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],

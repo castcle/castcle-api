@@ -38,9 +38,7 @@ export const testUsersDeleteUser = () => {
   it('should return UNAUTHORIZED when sending request without credential', () => {
     return UsersRequest.deleteUser()
       .expect(({ body }) => {
-        expect(body.message).toEqual(
-          'Sorry, Something went wrong. Please try again.',
-        );
+        expect(body.message).toEqual('Missing Authorization header.');
       })
       .expect(HttpStatus.UNAUTHORIZED);
   });

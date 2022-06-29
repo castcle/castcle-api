@@ -3,18 +3,6 @@
   "sourceRoot": "libs/utils/interceptors/src",
   "projectType": "library",
   "targets": {
-    "build": {
-      "executor": "@nrwl/js:swc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/utils/interceptors",
-        "tsConfig": "libs/utils/interceptors/tsconfig.lib.json",
-        "packageJson": "libs/utils/interceptors/package.json",
-        "main": "libs/utils/interceptors/src/index.ts",
-        "assets": ["libs/utils/interceptors/*.md"],
-        "swcrc": ".swcrc.base"
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],

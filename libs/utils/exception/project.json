@@ -3,18 +3,6 @@
   "sourceRoot": "libs/utils/exception/src",
   "projectType": "library",
   "targets": {
-    "build": {
-      "executor": "@nrwl/js:swc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/utils/exception",
-        "tsConfig": "libs/utils/exception/tsconfig.lib.json",
-        "packageJson": "libs/utils/exception/package.json",
-        "main": "libs/utils/exception/src/index.ts",
-        "assets": ["libs/utils/exception/*.md"],
-        "swcrc": ".swcrc.base"
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],

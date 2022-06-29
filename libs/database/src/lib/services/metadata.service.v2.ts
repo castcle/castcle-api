@@ -34,4 +34,13 @@ export class MetadataServiceV2 {
   getAllCountry(sortBy: { [key: string]: number }) {
     return this.repository.findCountries().sort(sortBy).exec();
   }
+
+  getReportSubjects() {
+    return this.repository.findReportingSubjects(
+      {},
+      {
+        sort: { order: 1 },
+      },
+    );
+  }
 }
