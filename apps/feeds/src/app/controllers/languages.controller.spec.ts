@@ -33,8 +33,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { LanguagesController } from './languages.controller';
 
-jest.mock('libs/database/src/lib/services/user.service');
-
 describe('LanguagesController', () => {
   let mongod: MongoMemoryServer;
   let app: TestingModule;
@@ -55,7 +53,11 @@ describe('LanguagesController', () => {
         }),
       ],
       controllers: [LanguagesController],
-      providers: [LanguageService, AuthenticationService, UserService],
+      providers: [
+        LanguageService,
+        AuthenticationService,
+        { provide: UserService, useValue: {} },
+      ],
     }).compile();
 
     appController = app.get<LanguagesController>(LanguagesController);

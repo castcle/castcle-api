@@ -1,6 +1,10 @@
 import { Configs } from '@castcle-api/environments';
 import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../../apps/authentications/src/app/app.module';
 import { TwilioClient } from '../../../utils/clients/src/lib/twilio/twilio.client';
@@ -58,7 +62,10 @@ export const setupAuthenticationsModule = async () => {
     .useValue(twilioClient)
     .compile();
 
-  apps.authentications = moduleFixture.createNestApplication();
+  apps.authentications =
+    moduleFixture.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
+    );
   apps.authentications.useGlobalPipes(new ValidationPipe());
   apps.authentications.useGlobalFilters(new CastcleExceptionFilter());
   apps.authentications.enableVersioning({
@@ -67,6 +74,7 @@ export const setupAuthenticationsModule = async () => {
   });
 
   await apps.authentications.init();
+  await apps.authentications.getHttpAdapter().getInstance().ready();
 };
 
 export const closeAuthenticationsModule = () => {

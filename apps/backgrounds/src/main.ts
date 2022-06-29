@@ -23,11 +23,18 @@
 
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { BackgroundModule } from './app/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(BackgroundModule);
   const port = process.env.PORT || 3341;
+  const app = await NestFactory.create<NestFastifyApplication>(
+    BackgroundModule,
+    new FastifyAdapter(),
+  );
 
   await app.listen(port);
   Logger.log(`🚀 Application is running on: http://localhost:${port}/`);

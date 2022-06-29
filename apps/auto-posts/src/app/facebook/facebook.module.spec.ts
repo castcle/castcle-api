@@ -28,11 +28,12 @@ import {
   User,
   UserType,
 } from '@castcle-api/database';
-import { Image } from '@castcle-api/utils/aws';
+import { Downloader, Image } from '@castcle-api/utils/aws';
 import { getQueueToken } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { FastifyRequest } from 'fastify';
 import { getLinkPreview } from 'link-preview-js';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
@@ -41,13 +42,13 @@ import { FeedEntryChange, SubscriptionEntry } from './dto';
 import { FacebookController } from './facebook.controller';
 import { FacebookModule } from './facebook.module';
 
-jest.mock('@castcle-api/utils/aws');
-
 describe('FacebookController', () => {
-  let testingModule: TestingModule;
-  let controller: FacebookController;
-  let logger: Logger;
   let mongo: MongoMemoryReplSet;
+  let moduleRef: TestingModule;
+  let controller: FacebookController;
+  let downloader: Downloader;
+  let logger: Logger;
+
   const socialId = {
     invalidAuthorId: 'invalid-author-id',
     invalid: 'invalid-social-id',
@@ -63,22 +64,27 @@ describe('FacebookController', () => {
 
   beforeAll(async () => {
     mongo = await MongoMemoryReplSet.create();
-    testingModule = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [MongooseModule.forRoot(mongo.getUri()), FacebookModule],
     })
       .overrideProvider(getQueueToken(QueueName.CONTENT))
       .useValue({ add: jest.fn() })
       .compile();
 
-    controller = testingModule.get(FacebookController);
+    controller = moduleRef.get(FacebookController);
+    downloader = moduleRef.get(Downloader);
     logger = (controller as any).logger;
 
     jest
       .spyOn(Image, 'upload')
-      .mockResolvedValue({ image: { original: 'uploaded-image-url' } } as any);
+      .mockResolvedValue(new Image({ original: 'uploaded-image-url' }));
 
-    const userModel = testingModule.get<Model<User>>(getModelToken('User'));
-    const socialSyncModel = testingModule.get<Model<SocialSync>>(
+    jest
+      .spyOn(downloader, 'getImageFromUrl')
+      .mockResolvedValue('image-base-64');
+
+    const userModel = moduleRef.get<Model<User>>(getModelToken('User'));
+    const socialSyncModel = moduleRef.get<Model<SocialSync>>(
       getModelToken('SocialSync'),
     );
 
@@ -106,26 +112,32 @@ describe('FacebookController', () => {
   });
 
   afterAll(async () => {
-    await testingModule.close();
+    await moduleRef.close();
     await mongo.stop();
   });
 
   describe('validateWebhook', () => {
     it('should return not challenge when verify token mismatched', () => {
       expect(
-        controller.validateWebhook({
-          'hub.verify_token': 'invalid-verify-token',
-          'hub.challenge': 'challenge',
-        } as ValidateWebhookQuery),
+        controller.validateWebhook(
+          {
+            'hub.verify_token': 'invalid-verify-token',
+            'hub.challenge': 'challenge',
+          } as ValidateWebhookQuery,
+          { headers: {} } as FastifyRequest,
+        ),
       ).toEqual(undefined);
     });
 
     it('should return challenge when verify token matched', () => {
       expect(
-        controller.validateWebhook({
-          'hub.verify_token': undefined,
-          'hub.challenge': 'challenge',
-        } as ValidateWebhookQuery),
+        controller.validateWebhook(
+          {
+            'hub.verify_token': undefined,
+            'hub.challenge': 'challenge',
+          } as ValidateWebhookQuery,
+          { headers: {} } as FastifyRequest,
+        ),
       ).toEqual('challenge');
     });
   });

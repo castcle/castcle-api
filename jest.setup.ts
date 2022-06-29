@@ -1,6 +1,5 @@
 jest.setTimeout(20_000);
 
-jest.mock('@castcle-api/logger');
 jest.mock('bull');
 jest.mock('dotenv', () => ({ config: () => true }));
 jest.mock('libs/environments/src/lib/factories', () => ({
@@ -13,6 +12,16 @@ jest.mock('libs/environments/src/lib/factories', () => ({
   }),
 }));
 
+jest.mock('libs/logger/src/lib/logger', () => ({
+  CastLogger: jest.fn(() => ({
+    error: jest.fn(),
+    log: jest.fn(),
+    time: jest.fn(),
+    timeEnd: jest.fn(),
+    warn: jest.fn(),
+  })),
+}));
+
 jest.mock('link-preview-js', () => ({
   getLinkPreview: jest.fn().mockReturnValue({}),
 }));
@@ -22,5 +31,7 @@ jest.mock('nodemailer', () => ({
     sendMail: jest.fn().mockResolvedValue({ messageId: 1 }),
   }),
 }));
+
+jest.mock('twitter-api-v2');
 
 global.process.env = { NODE_ENV: global.process.env.NODE_ENV };

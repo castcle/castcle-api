@@ -49,6 +49,7 @@ import {
   Get,
   HttpCode,
   Post,
+  Query,
   Req,
   Res,
   UseInterceptors,
@@ -63,7 +64,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 import { AppService } from '../app.service';
 import { getEmailVerificationHtml } from '../configs';
 import {
@@ -435,7 +436,7 @@ export class AuthenticationController {
   @UseInterceptors(CredentialInterceptor)
   async requestLinkVerify(
     @Req() req: CredentialRequest,
-    @Res() response: Response,
+    @Res() response: FastifyReply,
     @RequestMeta() { hostUrl }: RequestMetadata,
   ) {
     const accountActivation =
@@ -451,7 +452,7 @@ export class AuthenticationController {
       const returnObj = {
         message: 'This email has been verified.',
       };
-      response.status(200).json(returnObj);
+      response.status(200).send(returnObj);
       return returnObj;
     }
     const account = await this.authService.getAccountFromCredential(
@@ -555,17 +556,19 @@ export class AuthenticationController {
    */
   @Version(VERSION_NEUTRAL)
   @Get('verify')
-  async verify(@Req() req: CredentialRequest) {
-    if (!req.query.code) {
+  async verify(
+    @Query('code') $token: string,
+    @Req() { $language }: CredentialRequest,
+  ) {
+    if (!$token) {
       throw new CastcleException('REQUEST_URL_NOT_FOUND');
     }
 
-    const token = req.query.code as string;
     await this.verificationEmail({
-      $language: req.$language,
-      $token: token,
+      $language,
+      $token,
     } as TokenRequest);
-    const email = await this.authService.getEmailFromVerifyToken(token);
+    const email = await this.authService.getEmailFromVerifyToken($token);
 
     return getEmailVerificationHtml(email);
   }
