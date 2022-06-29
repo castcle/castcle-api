@@ -45,7 +45,7 @@ import {
   QuoteCastDto,
   RankerService,
   ReplyCommentParam,
-  ReportingDto,
+  ReportingDtoV2,
   ResponseDto,
   SocialSyncServiceV2,
   SuggestionServiceV2,
@@ -806,7 +806,7 @@ export class UsersControllerV2 {
   async reportUser(
     @Auth() authorizer: Authorizer,
     @Param() { isMe, userId }: GetUserParam,
-    @Body() body: ReportingDto,
+    @Body() body: ReportingDtoV2,
   ) {
     const user = isMe
       ? authorizer.user
@@ -821,7 +821,7 @@ export class UsersControllerV2 {
   async reportContent(
     @Auth() authorizer: Authorizer,
     @Param() { isMe, userId }: GetUserParam,
-    @Body() body: ReportingDto,
+    @Body() body: ReportingDtoV2,
   ) {
     const user = isMe
       ? authorizer.user

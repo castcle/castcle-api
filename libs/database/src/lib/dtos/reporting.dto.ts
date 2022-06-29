@@ -23,10 +23,10 @@
 
 import { IsNotEmpty, IsString, ValidateIf } from 'class-validator';
 
-export class ReportingDto {
+export class ReportingDtoV2 {
   @IsString()
   @IsNotEmpty()
-  message: string;
+  message?: string;
 
   @IsString()
   @ValidateIf(

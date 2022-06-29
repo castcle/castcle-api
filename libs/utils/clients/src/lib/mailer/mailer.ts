@@ -94,7 +94,7 @@ export class Mailer {
   async sendReportUserEmail(
     user: UserReport,
     targetUser: UserReport,
-    message: string,
+    message?: string,
   ) {
     try {
       const info = await this.transporter.sendMail({

@@ -59,7 +59,7 @@ import {
   CampaignType,
   EngagementType,
   ReportType,
-  ReportingDto,
+  ReportingDtoV2,
   UserType,
 } from '../models';
 import { Repository } from '../repositories';
@@ -337,7 +337,7 @@ export class UserServiceV2 {
     await user.unfollow(targetUser);
   }
 
-  async reportContent(user: User, body: ReportingDto) {
+  async reportContent(user: User, body: ReportingDtoV2) {
     const targetContent = await this.repository.findContent({
       _id: body.targetContentId,
     });
@@ -381,7 +381,7 @@ export class UserServiceV2 {
     });
   }
 
-  async reportUser(user: User, body: ReportingDto) {
+  async reportUser(user: User, body: ReportingDtoV2) {
     const targetUser = await this.repository.findUser({
       _id: body.targetCastcleId,
     });
