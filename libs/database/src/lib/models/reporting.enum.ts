@@ -30,5 +30,6 @@ export enum ReportStatus {
   REVIEWING = 'reviewing',
   DONE = 'done',
   APPEAL = 'appeal',
+  NOT_APPEAL = 'not-appeal',
   CLOSED = 'closed',
 }

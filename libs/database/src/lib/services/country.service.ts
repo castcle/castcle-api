@@ -28,11 +28,13 @@ import {
   CountryPayloadDto,
   DEFAULT_COUNTRY_QUERY_OPTIONS,
 } from '../dtos';
-import { Country } from '../schemas';
+import { MetadataType } from '../models';
+import { Metadata } from '../schemas';
 
+/** @deprecated */
 @Injectable()
 export class CountryService {
-  constructor(@InjectModel('Country') public _countryModel: Model<Country>) {}
+  constructor(@InjectModel('Metadata') public metadataModel: Model<Metadata>) {}
 
   /**
    * get all data from country Document
@@ -40,7 +42,9 @@ export class CountryService {
    * @returns {Country[]} return all country Document
    */
   async getAll(options: CastcleQueryOptions = DEFAULT_COUNTRY_QUERY_OPTIONS) {
-    let query = this._countryModel.find();
+    let query = this.metadataModel.find({
+      type: MetadataType.COUNTRY,
+    });
     if (options.sortBy.type === 'desc') {
       query = query.sort(`-${options.sortBy.field}`);
     } else {
@@ -55,11 +59,13 @@ export class CountryService {
    * @returns {Country} return country document result
    */
   async getByDialCode(dialCode: string) {
-    return this._countryModel
+    const metadata = await this.metadataModel
       .findOne({
-        dialCode: dialCode,
+        'payload.dialCode': dialCode,
       })
       .exec();
+
+    return metadata.toMetadataPayload();
   }
 
   /**
@@ -68,7 +74,9 @@ export class CountryService {
    * @returns {Country} return new country document
    */
   async create(country: CountryPayloadDto) {
-    const createResult = await new this._countryModel(country).save();
-    return createResult;
+    return new this.metadataModel({
+      type: MetadataType.COUNTRY,
+      payload: country,
+    }).save();
   }
 }

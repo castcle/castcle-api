@@ -29,12 +29,9 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '../database.module';
-import { LanguagePayloadDto } from '../dtos';
-import { Repository } from '../repositories';
-import { MetadataServiceV2 } from './metadata.service.v2';
+import { LanguagePayload } from '../models';
 describe('LanguageService', () => {
   let moduleRef: TestingModule;
-  let metadataServiceV2: MetadataServiceV2;
   let mongod: MongoMemoryServer;
   let service: LanguageService;
 
@@ -47,10 +44,10 @@ describe('LanguageService', () => {
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
-      providers: [LanguageService, MetadataServiceV2, Repository],
+      providers: [LanguageService],
     }).compile();
+
     service = moduleRef.get<LanguageService>(LanguageService);
-    metadataServiceV2 = moduleRef.get<MetadataServiceV2>(MetadataServiceV2);
   });
 
   afterAll(async () => {
@@ -60,24 +57,24 @@ describe('LanguageService', () => {
 
   describe('#create and get all language', () => {
     it('should create new language in db', async () => {
-      const newLanguage: LanguagePayloadDto = {
+      const newLanguage = {
         code: 'th',
         title: 'Thai',
         display: 'ภาษาไทย',
       };
 
-      const resultData = await service.create(newLanguage);
+      const { payload } = await service.create(newLanguage);
 
-      expect(resultData).toBeDefined();
-      expect(resultData.code).toEqual(newLanguage.code);
-      expect(resultData.title).toEqual(newLanguage.title);
-      expect(resultData.display).toEqual(newLanguage.display);
+      expect(payload).toBeDefined();
+      expect((payload as LanguagePayload).code).toEqual(newLanguage.code);
+      expect((payload as LanguagePayload).title).toEqual(newLanguage.title);
+      expect((payload as LanguagePayload).display).toEqual(newLanguage.display);
     });
 
     it('should get data in db', async () => {
-      const result = await service.getAll();
-      expect(result).toBeDefined();
-      expect(result.length).toEqual(1);
+      const languagesData = await service.getAll();
+      expect(languagesData).toBeDefined();
+      expect(languagesData.length).toEqual(1);
     });
   });
 
@@ -90,9 +87,9 @@ describe('LanguageService', () => {
       });
     });
     it('should return language in collection', async () => {
-      const languages = await metadataServiceV2.getAllLanguage();
+      const languages = await service.getAll();
       const languagesResponse = languages.map((language) =>
-        language.toLanguagePayload(),
+        language.toMetadataPayload(),
       );
       expect(languagesResponse[0]).toEqual({
         code: 'th',

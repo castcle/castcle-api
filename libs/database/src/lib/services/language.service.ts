@@ -24,13 +24,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { LanguagePayloadDto } from '../dtos/language.dto';
-import { Language } from '../schemas';
+import { MetadataType } from '../models';
+import { Metadata } from '../schemas';
 
+/** @deprecated */
 @Injectable()
 export class LanguageService {
-  constructor(
-    @InjectModel('Language') public _languageModel: Model<Language>,
-  ) {}
+  constructor(@InjectModel('Metadata') public metadataModel: Model<Metadata>) {}
 
   /**
    * get all data from Language Document
@@ -38,7 +38,11 @@ export class LanguageService {
    * @returns {Language[]} return all Language Document
    */
   async getAll() {
-    return this._languageModel.find().exec();
+    return this.metadataModel
+      .find({
+        type: MetadataType.LANGUAGE,
+      })
+      .exec();
   }
 
   /**
@@ -47,8 +51,9 @@ export class LanguageService {
    * @returns {Language} return new language document
    */
   create = async (language: LanguagePayloadDto) => {
-    console.log('save language');
-    const createResult = await new this._languageModel(language).save();
-    return createResult;
+    return new this.metadataModel({
+      type: MetadataType.LANGUAGE,
+      payload: language,
+    }).save();
   };
 }

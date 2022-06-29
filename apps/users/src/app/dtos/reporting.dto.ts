@@ -22,24 +22,24 @@
  */
 
 import { RequireAtLeastOne } from '@castcle-api/utils/decorators';
+import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 
 export class ReportingDto {
+  @ApiProperty()
   @IsString()
   @IsNotEmpty()
   message: string;
 
+  @ApiProperty()
   @RequireAtLeastOne('targetCastcleId', 'targetContentId')
   @IsString()
   @IsNotEmpty()
   targetCastcleId?: string;
 
+  @ApiProperty()
   @RequireAtLeastOne('targetCastcleId', 'targetContentId')
   @IsString()
   @IsNotEmpty()
   targetContentId?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  subject: string;
 }

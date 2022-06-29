@@ -30,12 +30,10 @@ import {
   MongooseForFeatures,
 } from '../database.module';
 import { CountryPayloadDto, SortDirection } from '../dtos';
-import { Repository } from '../repositories';
-import { MetadataServiceV2 } from './metadata.service.v2';
+import { CountryPayload } from '../models';
 
 describe('CountryService', () => {
   let moduleRef: TestingModule;
-  let metadataServiceV2: MetadataServiceV2;
   let mongod: MongoMemoryServer;
   let service: CountryService;
 
@@ -48,10 +46,9 @@ describe('CountryService', () => {
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
-      providers: [CountryService, MetadataServiceV2, Repository],
+      providers: [CountryService],
     }).compile();
     service = moduleRef.get<CountryService>(CountryService);
-    metadataServiceV2 = moduleRef.get<MetadataServiceV2>(MetadataServiceV2);
   });
 
   afterAll(async () => {
@@ -79,33 +76,36 @@ describe('CountryService', () => {
         name: 'China',
         flag: 'url',
       };
-      const resultData = await service.create(newCountry);
+      const { payload } = await service.create(newCountry);
       const resultData2 = await service.create(newCountry2);
       const resultData3 = await service.create(newCountry3);
-      expect(resultData).toBeDefined();
-      expect(resultData.code).toEqual(newCountry.code);
-      expect(resultData.dialCode).toEqual(newCountry.dialCode);
-      expect(resultData.name).toEqual(newCountry.name);
-      expect(resultData.flag).toEqual(newCountry.flag);
+
+      expect(payload).toBeDefined();
+      expect((payload as CountryPayload).code).toEqual(newCountry.code);
+      expect((payload as CountryPayload).dialCode).toEqual(newCountry.dialCode);
+      expect((payload as CountryPayload).name).toEqual(newCountry.name);
       expect(resultData2).toBeDefined();
       expect(resultData3).toBeDefined();
     });
 
     it('should get data in db', async () => {
-      const result = await service.getAll();
-      expect(result).toBeDefined();
-      expect(result.length).toEqual(3);
+      const countriesData = await service.getAll();
+      expect(countriesData).toBeDefined();
+      expect(countriesData.length).toEqual(3);
     });
 
     it('should get data in db with search criteria', async () => {
-      const result = await service.getAll({
+      const countriesData = await service.getAll({
         sortBy: {
-          field: 'dialCode',
+          field: 'payload.dialCode',
           type: SortDirection.ASC,
         },
       });
-      expect(result).toBeDefined();
-      expect(result[0].dialCode).toEqual('+1');
+
+      expect(countriesData).toBeDefined();
+      expect((countriesData[0].payload as CountryPayload).dialCode).toEqual(
+        '+1',
+      );
     });
   });
 
@@ -133,12 +133,15 @@ describe('CountryService', () => {
       });
     });
     it('should return country sort ny name asc', async () => {
-      const countries = await metadataServiceV2.getAllCountry({
-        name: 1,
+      const countries = await service.getAll({
+        sortBy: {
+          field: 'payload.name',
+          type: SortDirection.ASC,
+        },
       });
 
       const countriesResponse = countries.map((country) =>
-        country.toCountryPayload(),
+        country.toMetadataPayload(),
       );
 
       expect(countriesResponse[countriesResponse.length - 1]).toEqual({
@@ -157,11 +160,14 @@ describe('CountryService', () => {
     });
 
     it('should return country sort ny name desc', async () => {
-      const countries = await metadataServiceV2.getAllCountry({
-        name: -1,
+      const countries = await service.getAll({
+        sortBy: {
+          field: 'payload.name',
+          type: SortDirection.DESC,
+        },
       });
       const countriesResponse = countries.map((country) =>
-        country.toCountryPayload(),
+        country.toMetadataPayload(),
       );
       expect(countriesResponse[0]).toEqual({
         code: 'US',
@@ -181,9 +187,9 @@ describe('CountryService', () => {
 
   describe('#getByDialCode', () => {
     it('should get ByDialCode in db', async () => {
-      const result = await service.getByDialCode('+66');
-      expect(result).toBeDefined();
-      expect(result.dialCode).toEqual('+66');
+      const countriesData = await service.getByDialCode('+66');
+      expect(countriesData).toBeDefined();
+      expect((countriesData as CountryPayload).dialCode).toEqual('+66');
     });
   });
 });

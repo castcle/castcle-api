@@ -83,15 +83,9 @@ describe('CountryController', () => {
 
   describe('getAllCountry', () => {
     it('should get all country in db', async () => {
-      const result = await appController.getAllCountry();
+      const countriesData = await appController.getAllCountry();
       const expectResult = {
         payload: [
-          {
-            code: 'CN',
-            dialCode: '+86',
-            flag: 'url',
-            name: 'China',
-          },
           {
             code: 'TH',
             dialCode: '+66',
@@ -104,11 +98,16 @@ describe('CountryController', () => {
             flag: 'url',
             name: 'U.S.A.',
           },
+          {
+            code: 'CN',
+            dialCode: '+86',
+            flag: 'url',
+            name: 'China',
+          },
         ],
       };
-      console.log(result);
 
-      expect(expectResult).toEqual(result);
+      expect(expectResult).toEqual(countriesData);
     });
   });
 });

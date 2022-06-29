@@ -41,12 +41,12 @@ export class LanguagesController {
   @CacheKey(CacheKeyName.LanguagesGet.Name)
   @CacheTTL(CacheKeyName.LanguagesGet.Ttl)
   @Get('languages')
-  async getAllLanguage(): Promise<LanguageResponse> {
+  async getAllLanguage() {
     this.logger.log('Start get all language');
     const result = await this.languageService.getAll();
     this.logger.log('Success get all language');
     return {
-      payload: result.map((lang) => lang.toLanguagePayload()),
+      payload: result.map((lang) => lang.toMetadataPayload()),
     };
   }
 }

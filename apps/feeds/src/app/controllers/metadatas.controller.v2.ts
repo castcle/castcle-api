@@ -47,33 +47,31 @@ export class MetaDataControllerV2 {
   @CacheKey(CacheKeyName.LanguagesGet.Name)
   @CacheTTL(CacheKeyName.LanguagesGet.Ttl)
   @Get('languages')
-  async getAllLanguage() {
+  async getAllLanguages() {
     const languages = await this.metadataService.getAllLanguage();
 
     return ResponseDto.ok({
-      payload: languages.map((lang) => lang.toLanguagePayload()),
+      payload: languages.map((lang) => lang.toMetadataPayload()),
     });
   }
 
   @UseInterceptors(HttpCacheSharedInterceptor)
   @Get('country')
-  async getAllCountry(@Query() { sortBy }: GetCountryQuery) {
+  async getAllCountries(@Query() { sortBy }: GetCountryQuery) {
     const countries = await this.metadataService.getAllCountry(sortBy);
 
     return ResponseDto.ok({
-      payload: countries.map((country) => country.toCountryPayload()),
+      payload: countries.map((country) => country.toMetadataPayload()),
     });
   }
 
   @UseInterceptors(HeadersInterceptor, HttpCacheSharedInterceptor)
   @Get('report-subjects')
-  async getReportSubjects() {
-    const reportSubjects = await this.metadataService.getReportSubjects();
+  async getAllReportSubjects() {
+    const reportSubjects = await this.metadataService.getAllReportSubjects();
 
     return ResponseDto.ok({
-      payload: reportSubjects.map((subject) =>
-        subject.toReportingSubjectPayload(),
-      ),
+      payload: reportSubjects.map((subject) => subject.toMetadataPayload()),
     });
   }
 }

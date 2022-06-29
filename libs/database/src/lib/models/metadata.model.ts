@@ -21,32 +21,26 @@
  * or have any questions.
  */
 
-export * from './account.dto';
-export * from './ads.dto';
-export * from './authentications.dto.v2';
-export * from './comment.dto.v2';
-export * from './comment.dto';
-export * from './common.dto';
-export * from './content.dto.v2';
-export * from './content.dto';
-export * from './country.dto';
-export * from './feed.dto.v2';
-export * from './feed.dto';
-export * from './follow.dto';
-export * from './guest-feed-item.dto';
-export * from './hashtag.dto';
-export * from './language.dto';
-export * from './link-preview.dto';
-export * from './notification.dto';
-export * from './pagination.dto';
-export * from './query.dto';
-export * from './reporting.dto';
-export * from './response.dto';
-export * from './search.dto.v2';
-export * from './search.dto';
-export * from './sync-social.dto';
-export * from './token.dto';
-export * from './user.dto.v2';
-export * from './user.dto';
-export * from './ux.engagement.dto';
-export * from './wallet.dto';
+export enum MetadataType {
+  COUNTRY = 'country',
+  LANGUAGE = 'language',
+  REPORTING_SUBJECT = 'reporting-subject',
+}
+
+export interface CountryPayload {
+  code: string;
+  dialCode: string;
+  name: string;
+}
+
+export interface LanguagePayload {
+  code: string;
+  title: string;
+  display: number;
+}
+
+export interface ReportingSubjectPayload {
+  name: string;
+  order: number;
+  slug: string;
+}

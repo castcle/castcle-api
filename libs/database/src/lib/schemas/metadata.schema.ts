@@ -21,32 +21,35 @@
  * or have any questions.
  */
 
-export * from './account.dto';
-export * from './ads.dto';
-export * from './authentications.dto.v2';
-export * from './comment.dto.v2';
-export * from './comment.dto';
-export * from './common.dto';
-export * from './content.dto.v2';
-export * from './content.dto';
-export * from './country.dto';
-export * from './feed.dto.v2';
-export * from './feed.dto';
-export * from './follow.dto';
-export * from './guest-feed-item.dto';
-export * from './hashtag.dto';
-export * from './language.dto';
-export * from './link-preview.dto';
-export * from './notification.dto';
-export * from './pagination.dto';
-export * from './query.dto';
-export * from './reporting.dto';
-export * from './response.dto';
-export * from './search.dto.v2';
-export * from './search.dto';
-export * from './sync-social.dto';
-export * from './token.dto';
-export * from './user.dto.v2';
-export * from './user.dto';
-export * from './ux.engagement.dto';
-export * from './wallet.dto';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import {
+  CountryPayload,
+  LanguagePayload,
+  MetadataType,
+  ReportingSubjectPayload,
+} from '../models';
+import { CastcleBase } from './base.schema';
+
+@Schema({ timestamps: true })
+class MetadataDocument extends CastcleBase {
+  @Prop({ type: String, required: true, index: true })
+  type: MetadataType;
+
+  @Prop({ type: Object, required: true })
+  payload: CountryPayload | LanguagePayload | ReportingSubjectPayload;
+}
+
+export const MetadataSchema = SchemaFactory.createForClass(MetadataDocument);
+
+export class Metadata extends MetadataDocument {
+  toMetadataPayload: () =>
+    | CountryPayload
+    | LanguagePayload
+    | ReportingSubjectPayload;
+}
+
+MetadataSchema.methods.toMetadataPayload = function () {
+  return {
+    ...this.payload,
+  };
+};

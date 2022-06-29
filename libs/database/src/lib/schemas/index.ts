@@ -50,6 +50,7 @@ export * from './guest-feed-item.schema';
 export * from './hashtag-item.schema';
 export * from './hashtag.schema';
 export * from './language.schema';
+export * from './metadata.schema';
 export * from './notification.schema';
 export * from './otp.schema';
 export * from './queue.schema';

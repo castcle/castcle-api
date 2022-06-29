@@ -60,14 +60,14 @@ export class CountryController {
   async getAllCountry(
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_COUNTRY_QUERY_OPTIONS.sortBy,
-  ): Promise<CountryResponse> {
+  ) {
     this.logger.log('Start get all country');
     const result = await this.countryService.getAll({
       sortBy: sortByOption,
     });
     this.logger.log('Success get all country');
     return {
-      payload: result.map((country) => country.toCountryPayload()),
+      payload: result.map((country) => country.toMetadataPayload()),
     };
   }
 }
