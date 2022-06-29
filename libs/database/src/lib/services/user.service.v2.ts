@@ -49,19 +49,14 @@ import {
   PageResponseDto,
   PaginationQuery,
   QRCodeImageSize,
+  ReportingDtoV2,
   ResponseDto,
   SortDirection,
   UpdateMobileDto,
   UserField,
   UserResponseDto,
 } from '../dtos';
-import {
-  CampaignType,
-  EngagementType,
-  ReportType,
-  ReportingDtoV2,
-  UserType,
-} from '../models';
+import { CampaignType, EngagementType, ReportType, UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, User } from '../schemas';
 import { AnalyticService } from './analytic.service';

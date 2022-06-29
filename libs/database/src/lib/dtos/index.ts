@@ -40,7 +40,7 @@ export * from './link-preview.dto';
 export * from './notification.dto';
 export * from './pagination.dto';
 export * from './query.dto';
-export * from './reporting.dto';
+export * from './reporting.dto.v2';
 export * from './response.dto';
 export * from './search.dto.v2';
 export * from './search.dto';
