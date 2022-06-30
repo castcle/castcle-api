@@ -37,7 +37,7 @@ async function bootstrap() {
   );
 
   await app.listen(port, '0.0.0.0');
-  Logger.log(`🚀 Application is running on: http://${await app.getUrl()}/`);
+  Logger.log(`🚀 Application is running on: ${await app.getUrl()}/`);
   Logger.log(`Environment at ${process.env.NODE_ENV}`);
 }
 
