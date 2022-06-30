@@ -34,9 +34,25 @@ import { AppModule } from './app/app.module';
 
 async function bootstrap() {
   const port = process.env.PORT || 3338;
+  const fastifyAdapter = new FastifyAdapter();
+
+  fastifyAdapter
+    .getInstance()
+    .addContentTypeParser(
+      'application/json',
+      { parseAs: 'string' },
+      (_, body: string, done) => {
+        try {
+          done(null, JSON.parse(body || '{}'));
+        } catch (err) {
+          done(err, {});
+        }
+      },
+    );
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    fastifyAdapter,
   );
 
   Documentation.setup('Users', app);
@@ -49,7 +65,7 @@ async function bootstrap() {
   });
 
   await app.listen(port, '0.0.0.0');
-  Logger.log(`🚀 Application is running on: http://${await app.getUrl()}/`);
+  Logger.log(`🚀 Application is running on: ${await app.getUrl()}/`);
   Logger.log(`Environment at ${process.env.NODE_ENV}`);
 }
 
