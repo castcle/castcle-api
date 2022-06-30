@@ -26,6 +26,7 @@ import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Types } from 'mongoose';
 import {
   ContentService,
   DataService,
@@ -42,12 +43,14 @@ import {
   AdsCpm,
   AdsObjective,
   AdsPaymentMethod,
+  AdsSocialReward,
   AdsStatus,
+  CACCOUNT_NO,
   QueueName,
   WalletType,
 } from '../models';
 import { Repository } from '../repositories';
-import { AdsCampaign, Content } from '../schemas';
+import { AdsCampaign, AdsPlacement, Content } from '../schemas';
 import { AdsService } from './ads.service';
 import { AuthenticationService } from './authentication.service';
 import { UserService } from './user.service';
@@ -465,6 +468,394 @@ describe('AdsService', () => {
           }),
         ];
         expect(sortedCpms).toEqual(expect.arrayContaining(exptectedCPM));
+      });
+    });
+  });
+  describe('Distrute Reward cases', () => {
+    beforeAll(async () => {
+      const socialReward = await new service.taccountService._caccountModel({
+        no: CACCOUNT_NO.SOCIAL_REWARD.NO,
+        name: 'SOCIAL_REWARD',
+        nature: 'credit',
+        child: [
+          CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO,
+          CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+        ],
+      }).save();
+      await service.taccountService._caccountModel.insertMany([
+        {
+          no: CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO,
+          name: 'SOCIAL_REWARD.ADS_CREDIT',
+          nature: 'credit',
+          parent: socialReward._id,
+          child: [],
+        },
+        {
+          no: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          name: 'SOCIAL_REWARD.PERSONAL',
+          nature: 'credit',
+          parent: socialReward._id,
+          child: [],
+        },
+      ]);
+      const liability = await new service.taccountService._caccountModel({
+        no: CACCOUNT_NO.LIABILITY.NO,
+        name: 'LIABILITY',
+        nature: 'credit',
+        child: [
+          CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
+          CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+        ],
+      }).save();
+      service.taccountService._caccountModel.insertMany([
+        {
+          no: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
+          name: 'LIABILITY.ADS_CREDIT',
+          nature: 'credit',
+          parent: liability._id,
+          child: [],
+        },
+        {
+          no: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          name: 'LIABILITY.PERSONAL',
+          nature: 'credit',
+          parent: liability._id,
+          child: [],
+        },
+      ]);
+    });
+    describe('distributeAdsReward()', () => {
+      describe('distributeContentFarmingReward()', () => {
+        it('should distribute reward to content creator if no content farming', async () => {
+          const authors = [
+            Types.ObjectId(),
+            Types.ObjectId(),
+            Types.ObjectId(),
+            Types.ObjectId(),
+            Types.ObjectId(),
+          ];
+          const newContents = authors.map((author) => ({
+            authorId: author,
+            contentId: Types.ObjectId(),
+          }));
+          const campaign = Types.ObjectId();
+          const viewer = Types.ObjectId();
+          const topupValue = 100;
+          new service.taccountService._transactionModel({
+            from: {
+              type: WalletType.EXTERNAL_DEPOSIT,
+              value: topupValue,
+            },
+            to: [
+              {
+                type: WalletType.CASTCLE_SOCIAL,
+                value: topupValue,
+              },
+            ],
+            ledgers: [
+              {
+                credit: {
+                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  value: topupValue,
+                },
+                debit: {
+                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  value: topupValue,
+                },
+              },
+            ],
+          }).save();
+          const balance = await service.taccountService.getBalance(
+            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          );
+          expect(balance).toEqual(topupValue);
+          const session =
+            await service.taccountService._transactionModel.startSession();
+          const reward = {
+            adsCost: 100,
+            castcleShare: 30,
+            farmingShare: 35,
+            creatorShare: 21,
+            viewerShare: 14,
+          } as AdsSocialReward;
+          await service.distributeContentFarmingReward(
+            {
+              contents: newContents,
+              cost: {
+                UST: 50,
+              },
+              campaign: {
+                campaignId: campaign,
+                campaignPaymentType: AdsPaymentMethod.TOKEN_WALLET,
+              },
+              user: viewer,
+            } as any as AdsPlacement,
+            reward,
+            session,
+          );
+          const newBalance = await service.taccountService.getBalance(
+            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          );
+          expect(newBalance).not.toEqual(topupValue);
+          for (let i = 0; i < authors.length; i++) {
+            const authorBalance =
+              await service.taccountService.getAccountBalance(
+                String(authors[i]),
+                WalletType.PERSONAL,
+              );
+            expect(authorBalance).toEqual(reward.farmingShare / authors.length);
+          }
+        });
+      });
+      describe('distributeContentCreatorReward()', () => {
+        it('should distrubute author reward', async () => {
+          const authors = [
+            Types.ObjectId(),
+            Types.ObjectId(),
+            Types.ObjectId(),
+            Types.ObjectId(),
+            Types.ObjectId(),
+          ];
+          const newContents = authors.map((author) => ({
+            authorId: author,
+            contentId: Types.ObjectId(),
+          }));
+          const campaign = Types.ObjectId();
+          const viewer = Types.ObjectId();
+          const topupValue = 100;
+          await service.taccountService._transactionModel.deleteMany({});
+          new service.taccountService._transactionModel({
+            from: {
+              type: WalletType.EXTERNAL_DEPOSIT,
+              value: topupValue,
+            },
+            to: [
+              {
+                type: WalletType.CASTCLE_SOCIAL,
+                value: topupValue,
+              },
+            ],
+            ledgers: [
+              {
+                credit: {
+                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  value: topupValue,
+                },
+                debit: {
+                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  value: topupValue,
+                },
+              },
+            ],
+          }).save();
+          const balance = await service.taccountService.getBalance(
+            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          );
+          expect(balance).toEqual(topupValue);
+          const session =
+            await service.taccountService._transactionModel.startSession();
+          const reward = {
+            adsCost: 100,
+            castcleShare: 30,
+            farmingShare: 35,
+            creatorShare: 21,
+            viewerShare: 14,
+          } as AdsSocialReward;
+          await service.distributeContentCreatorReward(
+            {
+              contents: newContents,
+              cost: {
+                UST: 50,
+              },
+              campaign: {
+                campaignId: campaign,
+                campaignPaymentType: AdsPaymentMethod.TOKEN_WALLET,
+              },
+              user: viewer,
+            } as any as AdsPlacement,
+            reward,
+            session,
+          );
+          const newBalance = await service.taccountService.getBalance(
+            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          );
+          expect(newBalance).not.toEqual(topupValue);
+          for (let i = 0; i < authors.length; i++) {
+            const authorBalance =
+              await service.taccountService.getAccountBalance(
+                String(authors[i]),
+                WalletType.PERSONAL,
+              );
+            expect(authorBalance).toEqual(reward.creatorShare / authors.length);
+          }
+        });
+      });
+      describe('distributeViewerReward()', () => {
+        it('should distribute to viewer', async () => {
+          const authors = [
+            Types.ObjectId(),
+            Types.ObjectId(),
+            Types.ObjectId(),
+            Types.ObjectId(),
+            Types.ObjectId(),
+          ];
+          const newContents = authors.map((author) => ({
+            authorId: author,
+            contentId: Types.ObjectId(),
+          }));
+          const campaign = Types.ObjectId();
+          const viewer = Types.ObjectId();
+          const topupValue = 100;
+          await service.taccountService._transactionModel.deleteMany({});
+          new service.taccountService._transactionModel({
+            from: {
+              type: WalletType.EXTERNAL_DEPOSIT,
+              value: topupValue,
+            },
+            to: [
+              {
+                type: WalletType.CASTCLE_SOCIAL,
+                value: topupValue,
+              },
+            ],
+            ledgers: [
+              {
+                credit: {
+                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  value: topupValue,
+                },
+                debit: {
+                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  value: topupValue,
+                },
+              },
+            ],
+          }).save();
+          const balance = await service.taccountService.getBalance(
+            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          );
+          expect(balance).toEqual(topupValue);
+          const session =
+            await service.taccountService._transactionModel.startSession();
+          const reward = {
+            adsCost: 100,
+            castcleShare: 30,
+            farmingShare: 35,
+            creatorShare: 21,
+            viewerShare: 14,
+          } as AdsSocialReward;
+          await service.distributeViewerReward(
+            {
+              contents: newContents,
+              cost: {
+                UST: 50,
+              },
+              campaign: {
+                campaignId: campaign,
+                campaignPaymentType: AdsPaymentMethod.TOKEN_WALLET,
+              },
+              user: viewer,
+            } as any as AdsPlacement,
+            reward,
+            session,
+          );
+          const viewerBalance = await service.taccountService.getAccountBalance(
+            String(viewer),
+            WalletType.PERSONAL,
+          );
+          expect(viewerBalance).toEqual(reward.viewerShare);
+          const newBalance = await service.taccountService.getBalance(
+            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          );
+          expect(newBalance).not.toEqual(topupValue);
+        });
+      });
+      it('should distribute all rewards to all counter parties', async () => {
+        const authors = [
+          Types.ObjectId(),
+          Types.ObjectId(),
+          Types.ObjectId(),
+          Types.ObjectId(),
+          Types.ObjectId(),
+        ];
+        const newContents = authors.map((author) => ({
+          authorId: author,
+          contentId: Types.ObjectId(),
+        }));
+        const campaign = Types.ObjectId();
+        const viewer = Types.ObjectId();
+        const topupValue = 100;
+        await service.taccountService._transactionModel.deleteMany({});
+        new service.taccountService._transactionModel({
+          from: {
+            type: WalletType.EXTERNAL_DEPOSIT,
+            value: topupValue,
+          },
+          to: [
+            {
+              type: WalletType.CASTCLE_SOCIAL,
+              value: topupValue,
+            },
+          ],
+          ledgers: [
+            {
+              credit: {
+                caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                value: topupValue,
+              },
+              debit: {
+                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                value: topupValue,
+              },
+            },
+          ],
+        }).save();
+        const balance = await service.taccountService.getBalance(
+          CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+        );
+        expect(balance).toEqual(topupValue);
+        const session =
+          await service.taccountService._transactionModel.startSession();
+        const reward = {
+          adsCost: 100,
+          castcleShare: 30,
+          farmingShare: 35,
+          creatorShare: 21,
+          viewerShare: 14,
+        } as AdsSocialReward;
+        await service.distributeAdsReward(
+          {
+            contents: newContents,
+            cost: {
+              UST: 50,
+            },
+            campaign: {
+              campaignId: campaign,
+              campaignPaymentType: AdsPaymentMethod.TOKEN_WALLET,
+            },
+            user: viewer,
+          } as any as AdsPlacement,
+          reward,
+          session,
+        );
+        const newBalance = await service.taccountService.getBalance(
+          CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+        );
+        expect(newBalance).not.toEqual(topupValue);
+        const viewerBalance = await service.taccountService.getAccountBalance(
+          String(viewer),
+          WalletType.PERSONAL,
+        );
+        expect(viewerBalance).toEqual(reward.viewerShare);
+        for (let i = 0; i < authors.length; i++) {
+          const authorBalance = await service.taccountService.getAccountBalance(
+            String(authors[i]),
+            WalletType.PERSONAL,
+          );
+          expect(authorBalance).toEqual(
+            (reward.creatorShare + reward.farmingShare) / authors.length,
+          );
+        }
       });
     });
   });
