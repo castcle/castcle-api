@@ -21,24 +21,39 @@
  * or have any questions.
  */
 
-import { CastcleBackofficeMongooseModule } from '@castcle-api/environments';
-import { CastcleHealthyModule } from '@castcle-api/healthy';
-import { CastcleTracingModule } from '@castcle-api/tracing';
-import { Mailer } from '@castcle-api/utils/clients';
-import { Module } from '@nestjs/common';
-import { AuthenticationController } from './controllers/authentication.controller';
-import { CastcleBackofficeSchemas, CastcleDatabaseReadonly } from './schemas';
-import { AuthenticationService } from './services/authentication.service';
+import { CastcleBase } from '@castcle-api/database';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-@Module({
-  imports: [
-    CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
-    CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
-    CastcleBackofficeMongooseModule,
-    CastcleBackofficeSchemas,
-    CastcleDatabaseReadonly,
-  ],
-  controllers: [AuthenticationController],
-  providers: [AuthenticationService, Mailer],
-})
-export class AppModule {}
+export type StaffDocument = Staff;
+
+@Schema({ timestamps: true })
+export class Staff extends CastcleBase {
+  @Prop({
+    index: true,
+    unique: true,
+  })
+  email: string;
+
+  @Prop()
+  password: string;
+
+  @Prop({ index: true })
+  firstName: string;
+
+  @Prop({ index: true })
+  lastName: string;
+
+  @Prop({ index: true })
+  status: string;
+
+  @Prop()
+  role: string;
+
+  @Prop()
+  loginAt: Date[];
+
+  @Prop()
+  accessToken: string;
+}
+
+export const StaffSchema = SchemaFactory.createForClass(Staff);
