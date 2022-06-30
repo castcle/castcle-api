@@ -40,6 +40,7 @@ import {
 } from './headers/headers.interceptor';
 import { IpTrackerInterceptor } from './ip-tracker/ip-tracker.interceptor';
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
+import { getLanguageFromRequest, getTokenFromRequest } from './util';
 
 @Module({
   imports: [DatabaseModule, CastcleCacheModule],
@@ -61,4 +62,6 @@ export {
   HttpCacheSharedWithQueryInterceptor,
   HttpCacheClearInterceptor,
   IpTrackerInterceptor,
+  getLanguageFromRequest,
+  getTokenFromRequest,
 };

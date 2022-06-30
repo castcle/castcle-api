@@ -24,6 +24,7 @@
 import { BullModule } from '@nestjs/bull';
 import { CacheModule, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { Environment } from './environments';
 import {
   getBullModuleOptions,
   getCacheModuleOptions,
@@ -59,3 +60,16 @@ export class CastcleCacheModule {}
   exports: [MongooseModule],
 })
 export class CastcleMongooseModule {}
+
+@Module({
+  imports: [
+    MongooseModule.forRoot(Environment.BACKOFFICE_DB_URI, {
+      connectionName: Environment.BACKOFFICE_DB_DATABASE_NAME,
+    }),
+    MongooseModule.forRoot(Environment.DB_URI, {
+      connectionName: Environment.DB_DATABASE_NAME,
+    }),
+  ],
+  exports: [MongooseModule],
+})
+export class CastcleBackofficeMongooseModule {}
