@@ -48,8 +48,8 @@ async function bootstrap() {
     header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
-  await app.listen(port);
-  Logger.log(`🚀 Application is running on: http://localhost:${port}/`);
+  await app.listen(port, '0.0.0.0');
+  Logger.log(`🚀 Application is running on: http://${await app.getUrl()}/`);
   Logger.log(`Environment at ${process.env.NODE_ENV}`);
 }
 
