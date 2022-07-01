@@ -21,26 +21,20 @@
  * or have any questions.
  */
 
-import * as bcrypt from 'bcryptjs';
+import { compareSync, hashSync } from 'bcryptjs';
 import { CastcleRegExp } from './regexp';
 
-const saltRounds = 10;
-
-const hash = (password: string) => bcrypt.hashSync(password, saltRounds);
-
-const validate = (password: string) => {
-  return CastcleRegExp.PASSWORD_PATTERN.test(password);
-};
-
-const create = (password: string) =>
-  validate(password) ? hash(password) : null;
-
-const verify = (password: string, encryptPassword: string) =>
-  bcrypt.compareSync(password, encryptPassword);
-
 export const Password = {
-  create,
-  hash,
-  validate,
-  verify,
+  hash: (password: string) => {
+    const saltRounds = 10;
+    return hashSync(password, saltRounds);
+  },
+
+  validate: (password: string) => {
+    return CastcleRegExp.PASSWORD_PATTERN.test(password);
+  },
+
+  verify: (password: string, encryptPassword: string) => {
+    return compareSync(password, encryptPassword);
+  },
 };

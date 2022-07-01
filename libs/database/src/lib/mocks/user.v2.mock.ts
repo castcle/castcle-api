@@ -28,10 +28,11 @@ import { CreateCredentialDto, EntityVisibility } from '../dtos';
 import {
   AccountActivationType,
   AccountRequirements,
+  AccountRole,
   UserType,
 } from '../models';
 import { Repository } from '../repositories';
-import { Account, AccountRole } from '../schemas';
+import { Account } from '../schemas';
 import { AuthenticationServiceV2 } from '../services/authentication.service.v2';
 
 @Injectable()
