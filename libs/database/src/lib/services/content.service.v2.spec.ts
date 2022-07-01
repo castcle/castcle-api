@@ -783,17 +783,14 @@ describe('ContentServiceV2', () => {
 
       expect(getSearchTrends.payload).toHaveLength(25);
     });
-   
   });
   describe('getRecentFeeds', () => {
     const mockContents = [];
-    let mockPayload = []
+    let mockPayload = [];
     beforeAll(async () => {
-      
       for (let i = 0; i < mocksUsers.length; i++)
         mockContents[i] = await service.createContent(
           {
-          
             castcleId: mocksUsers[i].user.displayId,
             type: ContentType.Short,
             payload: {
@@ -826,28 +823,43 @@ describe('ContentServiceV2', () => {
         .mockResolvedValue({ payload: mockPayload });
     });
     it('should return recent content', async () => {
-      const response = await service.getRecentContents({ maxResults:20} as any, mocksUsers[0].account.id, mocksUsers[0].user)
-      expect(response.contents.map(c => String(c._id) )).toEqual(mockPayload.reverse().map(k => k.content));
+      const response = await service.getRecentContents(
+        { maxResults: 20 } as any,
+        mocksUsers[0].account.id,
+        mocksUsers[0].user,
+      );
+      expect(response.contents.map((c) => String(c._id))).toEqual(
+        mockPayload.reverse().map((k) => k.content),
+      );
     });
     describe('toFeedReponse()', () => {
-      it('should return feedResponse' , async() => {
-        const response = await service.getRecentContents({ maxResults:20} as any, mocksUsers[0].account.id, mocksUsers[0].user)
-        const mockFeedItems = response.contents.map(c => ({
-          id: Types.ObjectId(),
-          content: c._id,
-          viewer: mocksUsers[0].account._id,
-          author: Types.ObjectId(c.author.id)
-        } as FeedItem))
-        const feedResponse = await  service.toFeedReponse(response,mockFeedItems,mocksUsers[0].user, true )
-        expect(feedResponse.payload.map(p => (p.payload as ContentPayloadItem).id)).toEqual(mockFeedItems.map(f => String(f.content) ));
-      })
-    })
+      it('should return feedResponse', async () => {
+        const response = await service.getRecentContents(
+          { maxResults: 20 } as any,
+          mocksUsers[0].account.id,
+          mocksUsers[0].user,
+        );
+        const mockFeedItems = response.contents.map(
+          (c) =>
+            ({
+              id: Types.ObjectId(),
+              content: c._id,
+              viewer: mocksUsers[0].account._id,
+              author: Types.ObjectId(c.author.id),
+            } as FeedItem),
+        );
+        const feedResponse = await service.toFeedReponse(
+          response,
+          mockFeedItems,
+          mocksUsers[0].user,
+          true,
+        );
+        expect(
+          feedResponse.payload.map((p) => (p.payload as ContentPayloadItem).id),
+        ).toEqual(mockFeedItems.map((f) => String(f.content)));
+      });
+    });
   });
-  
-
-  describe('generateFeeds()', () => {
-
-  })
 
   afterAll(async () => {
     await moduleRef.close();
