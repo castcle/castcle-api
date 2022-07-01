@@ -21,24 +21,22 @@
  * or have any questions.
  */
 
-import { CastcleBackofficeMongooseModule } from '@castcle-api/environments';
-import { CastcleHealthyModule } from '@castcle-api/healthy';
-import { CastcleTracingModule } from '@castcle-api/tracing';
-import { Mailer } from '@castcle-api/utils/clients';
-import { Module } from '@nestjs/common';
-import { AuthenticationController } from './controllers/authentication.controller';
-import { CastcleBackofficeSchemas, CastcleDatabaseReadonly } from './schemas';
-import { AuthenticationService } from './services/authentication.service';
+import { Environment } from '@castcle-api/environments';
+import { CastcleException } from '@castcle-api/utils/exception';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 
-@Module({
-  imports: [
-    CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
-    CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
-    CastcleBackofficeMongooseModule,
-    CastcleBackofficeSchemas,
-    CastcleDatabaseReadonly,
-  ],
-  controllers: [AuthenticationController],
-  providers: [AuthenticationService, Mailer],
-})
-export class AppModule {}
+@Injectable()
+export class HeaderBackofficeInterceptor implements NestInterceptor {
+  async intercept(context: ExecutionContext, next: CallHandler) {
+    const request = context.switchToHttp().getRequest();
+    if (request.headers?.['api-key'] !== Environment.BACKOFFICE_API_KEY)
+      throw new CastcleException('MISSING_AUTHORIZATION_HEADERS');
+    request.$api_key = request.headers['api-key'];
+    return next.handle();
+  }
+}
