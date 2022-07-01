@@ -29,8 +29,8 @@ import { isMongoId } from 'class-validator';
 import {
   ShortcutInternalDto,
   ShortcutSort,
-  WalletShortcutOptions,
-  WalletShortcutResponse,
+  WalletOptions,
+  WalletResponse,
 } from '../dtos';
 import { Repository } from '../repositories';
 import { User, WalletShortcut } from '../schemas';
@@ -39,31 +39,34 @@ import { User, WalletShortcut } from '../schemas';
 export class WalletShortcutService {
   constructor(private repository: Repository) {}
 
-  private toWalletShortcutResponse(
+  toWalletResponse(
     user: User,
-    shortcut: WalletShortcut,
-    overwrite?: WalletShortcutOptions,
+    otherChain?: WalletShortcut,
+    overwrites?: WalletOptions,
   ) {
     return {
-      id: shortcut?._id,
-      chainId: shortcut?.chainId,
+      id: otherChain?._id ?? user._id,
+      chainId: otherChain?.chainId ?? Environment.CHAIN_INTERNAL,
       castcleId: user.displayId,
       userId: user._id,
       type: user.type,
-      order: shortcut?.order,
-      displayName: shortcut?.displayName ?? user.displayName,
+      order: otherChain?.order,
+      displayName: otherChain?.displayName ?? user.displayName,
+      walletAddress: !isMongoId(otherChain?.address)
+        ? otherChain?.address
+        : undefined,
       images: {
         avatar: user.profile?.images?.avatar
           ? CastcleImage.sign(user.profile.images.avatar)
           : Configs.DefaultAvatarImages,
       },
-      memo: shortcut?.memo,
+      memo: otherChain?.memo,
       createdAt:
-        shortcut?.createdAt?.toISOString() ?? user?.createdAt?.toISOString(),
+        otherChain?.createdAt?.toISOString() ?? user.createdAt?.toISOString(),
       updatedAt:
-        shortcut?.updatedAt?.toISOString() ?? user?.createdAt?.toISOString(),
-      ...overwrite,
-    } as WalletShortcutResponse;
+        otherChain?.updatedAt?.toISOString() ?? user.createdAt?.toISOString(),
+      ...overwrites,
+    } as WalletResponse;
   }
 
   async createWalletShortcut(body: ShortcutInternalDto, accountId: string) {
@@ -87,7 +90,7 @@ export class WalletShortcutService {
       account: accountId,
     });
 
-    return this.toWalletShortcutResponse(user, newShortcut);
+    return this.toWalletResponse(user, newShortcut);
   }
 
   async getWalletShortcut(accountId: string) {
@@ -113,14 +116,13 @@ export class WalletShortcutService {
 
     const shortcutResponses = walletShortcuts.map((shortcut) => {
       const user = users.find((user) => String(user._id) === shortcut.address);
-      return this.toWalletShortcutResponse(user, shortcut);
+      return this.toWalletResponse(user, shortcut);
     });
 
     const accountResponses = usersOwner.map((user) => {
-      return this.toWalletShortcutResponse(user, undefined, {
+      return this.toWalletResponse(user, undefined, {
         id: null,
         order: undefined,
-        chainId: Environment.CHAIN_INTERNAL,
       });
     });
     return {

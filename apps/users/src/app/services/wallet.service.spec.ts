@@ -26,6 +26,7 @@ import {
   CampaignService,
   ContentService,
   HashtagService,
+  KeywordType,
   MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
@@ -34,8 +35,10 @@ import {
   TAccountService,
   UserService,
   UserServiceV2,
+  WalletShortcutService,
   generateMockUsers,
   mockDeposit,
+  mockSend,
 } from '@castcle-api/database';
 import { Mailer } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
@@ -77,6 +80,7 @@ describe('WalletController', () => {
         Repository,
         UserService,
         UserServiceV2,
+        WalletShortcutService,
         { provide: CampaignService, useValue: {} },
         { provide: HashtagService, useValue: {} },
         { provide: Mailer, useValue: {} },
@@ -105,7 +109,7 @@ describe('WalletController', () => {
     authService = app.get<AuthenticationService>(AuthenticationService);
     taccountService = app.get<TAccountService>(TAccountService);
 
-    mocksUsers = await generateMockUsers(1, 0, {
+    mocksUsers = await generateMockUsers(2, 0, {
       userService: userServiceV1,
       accountService: authService,
     });
@@ -131,6 +135,60 @@ describe('WalletController', () => {
       } as WalletResponse);
     });
   });
+
+  describe('getAllWalletRecent()', () => {
+    beforeAll(async () => {
+      await mockSend(
+        mocksUsers[0].user,
+        mocksUsers[1].user,
+        100,
+        taccountService._transactionModel,
+      );
+    });
+    it('should get wallet recent list', async () => {
+      const walletRecent = await service.getAllWalletRecent(
+        mocksUsers[0].user._id,
+      );
+
+      expect(String(walletRecent.castcle[0].userId)).toEqual(
+        mocksUsers[1].user.id,
+      );
+      expect(walletRecent.castcle[0].castcleId).toEqual(
+        mocksUsers[1].user.displayId,
+      );
+    });
+
+    it('should get wallet recent list by keyword', async () => {
+      const walletRecent = await service.getAllWalletRecent(
+        mocksUsers[0].user._id,
+        {
+          input: 'mock',
+          type: KeywordType.Word,
+        },
+      );
+
+      expect(String(walletRecent.castcle[0].userId)).toEqual(
+        mocksUsers[1].user.id,
+      );
+      expect(walletRecent.castcle[0].castcleId).toEqual(
+        mocksUsers[1].user.displayId,
+      );
+    });
+
+    it('should get wallet recent list is empty', async () => {
+      const walletRecent = await service.getAllWalletRecent(
+        mocksUsers[0].user._id,
+        {
+          input: 'test',
+          type: KeywordType.Word,
+        },
+      );
+
+      expect(walletRecent.castcle).toHaveLength(0);
+      expect(walletRecent.other).toHaveLength(0);
+    });
+  });
+
   afterAll(async () => {
     await app.close();
     await mongod.stop();
