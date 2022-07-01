@@ -1,0 +1,94 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint and Detect Circular Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          cache: 'npm'
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-lint-${{ hashFiles('**/package-lock.json') }}
+      - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci && npm i madge
+      - name: Lint Project
+        run: npm run lint:all
+      - name: Detect Circular Dependencies
+        run: node scripts/detect-circular-deps.js
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - analytics
+          - authentications
+          - auto-posts
+          - backgrounds
+          - backoffices
+          - feeds
+          - queues
+          - users
+    name: Build `${{ matrix.app }}` Application
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          cache: 'npm'
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-build-${{ matrix.app }}-${{ hashFiles('**/package-lock.json') }}
+      - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - name: Build Project
+        run: npm run build ${{ matrix.app }}
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - topic: All Except Database and E2E
+            args: --all --exclude=database,e2e
+            key: all
+          - topic: Only Database
+            args: --projects=database
+            key: database
+          - topic: Only E2E
+            args: --projects=e2e
+            key: e2e
+    name: Test ${{ matrix.topic }}
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: '--max_old_space_size=4096'
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          cache: 'npm'
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-test-${{ matrix.key }}-${{ hashFiles('**/package-lock.json') }}
+      - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - name: Test Project
+        run: npm run nx run-many -- --target=test --silent --maxWorkers=1 ${{ matrix.args }}
