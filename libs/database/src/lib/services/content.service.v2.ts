@@ -1412,7 +1412,7 @@ export class ContentServiceV2 {
     viewer: User,
     hasRelationshipExpansion: boolean,
   ) => {
-    const contentsReponse = await this.toContentResponse(
+    const contentsReponse = await this.toContentsResponses(
       contentsCastDto,
       hasRelationshipExpansion,
       viewer,
