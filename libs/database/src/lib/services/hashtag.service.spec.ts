@@ -167,7 +167,7 @@ describe('HashtagService', () => {
         .findOne({ tag: 'sompop' })
         .exec();
       expect(newTag).toBeDefined();
-      expect(newTag.tag).toEqual(new CastcleName('Sompop').slug);
+      expect(newTag.tag).toEqual(CastcleName.toStugTag('Sompop'));
       expect(newTag.score).toEqual(1);
     });
     it("should update the current hashtag if it's already exist", async () => {
@@ -180,7 +180,7 @@ describe('HashtagService', () => {
         .findOne({ tag: 'sompop' })
         .exec();
       expect(newTag).toBeDefined();
-      expect(newTag.tag).toEqual(new CastcleName('SomPop').slug);
+      expect(newTag.tag).toEqual(CastcleName.toStugTag('SomPop'));
       expect(newTag.score).toEqual(2);
     });
   });

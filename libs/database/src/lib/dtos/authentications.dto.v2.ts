@@ -218,3 +218,8 @@ export class SocialConnectDto {
   @IsOptional()
   link?: string;
 }
+
+export class GetDisplayNameDto {
+  @IsString()
+  displayName: string;
+}

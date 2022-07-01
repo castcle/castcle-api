@@ -538,11 +538,11 @@ describe('Authentication Service', () => {
     describe('#suggestCastcleId()', () => {
       it('should suggest a name', async () => {
         const suggestName = await service.suggestCastcleId('Hello Friend');
-        expect(suggestName).toEqual('hellofriend');
+        expect(suggestName).toEqual('hello_friend');
       });
       it('should suggest a name + totalUser if the id is already exist', async () => {
         const totalUser = await service._userModel.countDocuments();
-        const suggestName = await service.suggestCastcleId('Dude this is new');
+        const suggestName = await service.suggestCastcleId('Dudethisisnew');
         expect(suggestName).toEqual(`dudethisisnew${totalUser}`);
       });
     });
@@ -590,7 +590,7 @@ describe('Authentication Service', () => {
         expect(signupRequirements.displayName).toEqual(
           afterSaveUser[0].displayName,
         );
-        expect('dudeeemock').toEqual(afterSaveUser[0].displayId);
+        expect('dudeee_mock').toEqual(afterSaveUser[0].displayId);
         expect(signupRequirements.provider).toEqual(accountSocial.type);
         expect(signupRequirements.socialId).toEqual(accountSocial.socialId);
         expect(signupRequirements.avatar.original).toEqual(

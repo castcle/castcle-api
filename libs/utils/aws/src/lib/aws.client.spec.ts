@@ -21,5 +21,23 @@
  * or have any questions.
  */
 
-export const RANDOM_SUBJECTS = ['banana', 'cookie', 'apple', 'pineapple'];
-export const RANDOM_ADJECTIVE = ['blaze', 'cooked', 'cool', 'burn'];
+import { AWSClient } from './aws.client';
+
+describe('getCastcleIdMetadata', () => {
+  beforeAll(() => {
+    jest.spyOn(AWSClient, 'getCastcleIdMetadata').mockResolvedValue({
+      bannedWords: ['bitch', 'admin', 'web'],
+      nouns: ['apple'],
+      adjectives: ['green'],
+      minLength: 4,
+      maxLength: 20,
+    });
+  });
+  it('should return metadata castcle id is exist.', async () => {
+    const metadataCastcleId = await AWSClient.getCastcleIdMetadata();
+
+    expect(metadataCastcleId.bannedWords).toHaveLength(3);
+    expect(metadataCastcleId.nouns).toHaveLength(1);
+    expect(metadataCastcleId.maxLength).toEqual(20);
+  });
+});

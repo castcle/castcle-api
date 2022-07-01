@@ -38,12 +38,18 @@ export const pipelineOfGetAvailableId = (castcleId: string) => [
       count: { $count: {} },
       existingNumbers: {
         $addToSet: {
-          $toInt: {
-            $cond: [
-              { $eq: [{ $substr: ['$displayId', castcleId.length, -1] }, ''] },
-              '0',
-              { $substr: ['$displayId', castcleId.length, -1] },
-            ],
+          $convert: {
+            input: {
+              $cond: [
+                {
+                  $eq: [{ $substr: ['$displayId', castcleId.length, -1] }, ''],
+                },
+                '0',
+                { $substr: ['$displayId', castcleId.length, -1] },
+              ],
+            },
+            to: 'int',
+            onError: 0,
           },
         },
       },
@@ -60,7 +66,7 @@ export const pipelineOfGetAvailableId = (castcleId: string) => [
     $project: {
       _id: 0,
       count: 1,
-      number: { $arrayElemAt: ['$availableNumbers', 0] },
+      number: { $ifNull: [{ $arrayElemAt: ['$availableNumbers', 0] }, 1] },
     },
   },
 ];

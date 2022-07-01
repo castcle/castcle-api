@@ -44,4 +44,7 @@ export class AuthenticationsRequest {
     AuthenticationsRequest.post(`/authentications/login-with-social`);
   static connectWithSocial = () =>
     AuthenticationsRequest.post(`/authentications/connect-with-social`);
+
+  static suggestCastcleId = () =>
+    AuthenticationsRequest.post(`/v2/authentications/suggest/castcle-id`);
 }

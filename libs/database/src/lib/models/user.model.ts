@@ -68,3 +68,11 @@ export interface UserProfile {
   details?: string;
   images?: UserImage;
 }
+
+export interface CastcleIdMetadata {
+  adjectives: string[];
+  bannedWords: string[];
+  maxLength: number;
+  minLength: number;
+  nouns: string[];
+}
