@@ -42,12 +42,11 @@ import {
   PaginationQuery,
   ResponseDto,
 } from '../dtos';
-import { EngagementType, UserType } from '../models';
+import { CommentType, EngagementType, UserType } from '../models';
 import { Repository } from '../repositories';
 import {
   Account,
   Comment,
-  CommentType,
   Content,
   Engagement,
   Hashtag,
@@ -130,7 +129,7 @@ export class CommentServiceV2 {
     return this.hashtagModel
       .updateOne(
         {
-          tag: CastcleName.toStugTag(tag),
+          tag: CastcleName.fromTagToSlug(tag),
           score: {
             $gt: 0,
           },

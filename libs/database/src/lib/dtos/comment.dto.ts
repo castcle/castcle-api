@@ -23,7 +23,7 @@
 
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
-import { CommentType } from '../schemas';
+import { CommentType } from '../models';
 import { CastcleMeta, CastcleMetric, CastcleParticipate } from './common.dto';
 import { IncludeUser } from './content.dto';
 

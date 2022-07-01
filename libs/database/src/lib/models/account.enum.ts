@@ -21,6 +21,11 @@
  * or have any questions.
  */
 
+export enum AccountRole {
+  Member = 'member',
+  Guest = 'guest',
+}
+
 export enum AuthenticationProvider {
   APPLE = 'apple',
   FACEBOOK = 'facebook',
