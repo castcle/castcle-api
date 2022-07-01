@@ -20,16 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import {
-  CountryResponse,
-  CountryService,
-  DEFAULT_COUNTRY_QUERY_OPTIONS,
-} from '@castcle-api/database';
+import { GetCountryQuery, MetadataServiceV2 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleController } from '@castcle-api/utils/decorators';
 import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
-import { SortByEnum, SortByPipe } from '@castcle-api/utils/pipes';
 import {
   CacheKey,
   CacheTTL,
@@ -37,37 +32,26 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiQuery } from '@nestjs/swagger';
 
 @CastcleController({ path: 'metadata', version: '1.0' })
 export class CountryController {
-  constructor(private countryService: CountryService) {}
+  constructor(private metadataService: MetadataServiceV2) {}
 
   private logger = new CastLogger(CountryController.name);
 
-  @ApiOkResponse({
-    type: CountryResponse,
-  })
   @UseInterceptors(HttpCacheSharedInterceptor)
   @CacheKey(CacheKeyName.Country.Name)
   @CacheTTL(CacheKeyName.Country.Ttl)
-  @ApiQuery({
-    name: 'sortBy',
-    enum: SortByEnum,
-    required: false,
-  })
   @Get('country')
   async getAllCountry(
-    @Query('sortBy', SortByPipe)
-    sortByOption = DEFAULT_COUNTRY_QUERY_OPTIONS.sortBy,
-  ): Promise<CountryResponse> {
+    @Query()
+    { sortBy }: GetCountryQuery,
+  ) {
     this.logger.log('Start get all country');
-    const result = await this.countryService.getAll({
-      sortBy: sortByOption,
-    });
+    const result = await this.metadataService.getAllCountry(sortBy);
     this.logger.log('Success get all country');
     return {
-      payload: result.map((country) => country.toCountryPayload()),
+      payload: result.map(({ payload }) => payload),
     };
   }
 }

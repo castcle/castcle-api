@@ -21,20 +21,26 @@
  * or have any questions.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-export class LanguagePayloadDto {
-  @ApiProperty()
-  code: string;
+class ReportingDtoV2 {
+  @IsString()
+  @IsNotEmpty()
+  subject: string;
 
-  @ApiProperty()
-  title: string;
-
-  @ApiProperty()
-  display: string;
+  @IsString()
+  @IsOptional()
+  message?: string;
 }
 
-export class LanguageResponse {
-  @ApiProperty({ type: LanguagePayloadDto, isArray: true })
-  payload: LanguagePayloadDto[];
+export class ReportContentDto extends ReportingDtoV2 {
+  @IsString()
+  @IsNotEmpty()
+  targetContentId: string;
+}
+
+export class ReportUserDto extends ReportingDtoV2 {
+  @IsString()
+  @IsNotEmpty()
+  targetCastcleId: string;
 }
