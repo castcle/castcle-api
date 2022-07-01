@@ -34,15 +34,15 @@ export class AuthenticationController {
   @UseInterceptors(HeadersInterceptor, HeaderBackofficeInterceptor)
   @Post('login/email')
   @HttpCode(200)
-  async login(@Body() { email, password }: LoginDto) {
-    return await this.authService.getStaffFromEmail(email, password);
+  login(@Body() { email, password }: LoginDto) {
+    return this.authService.getStaffFromEmail(email, password);
   }
 
   @UseInterceptors(HeaderBackofficeInterceptor)
   @UseGuards(CredentialGuard)
   @Post('logout')
   @HttpCode(200)
-  async logout(@Req() { $payload }: FastifyRequest & { $payload: Staff }) {
+  logout(@Req() { $payload }: FastifyRequest & { $payload: Staff }) {
     return this.authService.removeToken($payload.id);
   }
 
@@ -51,7 +51,7 @@ export class AuthenticationController {
   @RequiredPermissions(Permission.Manage)
   @Post('staff')
   @HttpCode(201)
-  async createStaff(@Body() body: StaffDto) {
+  createStaff(@Body() body: StaffDto) {
     return this.authService.createStaffFromEmail(body);
   }
 
@@ -60,7 +60,7 @@ export class AuthenticationController {
   @RequiredPermissions(Permission.Manage)
   @Get('staff')
   @HttpCode(200)
-  async getStaffs() {
+  getStaffs() {
     return this.authService.getStaffs();
   }
 
@@ -69,7 +69,7 @@ export class AuthenticationController {
   @RequiredPermissions(Permission.Manage)
   @Post('staff/:staffId/reset/password')
   @HttpCode(200)
-  async resetPassword(@Param() { staffId }: GetStaffParams) {
+  resetPassword(@Param() { staffId }: GetStaffParams) {
     return this.authService.resetPassword(staffId);
   }
 
@@ -78,7 +78,7 @@ export class AuthenticationController {
   @RequiredPermissions(Permission.Manage)
   @Delete('staff/:staffId')
   @HttpCode(200)
-  async deleteStaff(@Param() { staffId }: GetStaffParams) {
+  deleteStaff(@Param() { staffId }: GetStaffParams) {
     return this.authService.deleteStaff(staffId);
   }
 }
