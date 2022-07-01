@@ -21,13 +21,22 @@
  * or have any questions.
  */
 
-import { TAccountService, User, WalletType } from '@castcle-api/database';
+import {
+  TAccountService,
+  User,
+  WalletRecentResponse,
+  WalletShortcutService,
+  WalletType,
+} from '@castcle-api/database';
 import { Injectable } from '@nestjs/common';
 import { WalletHistoryQueryDto, WalletResponse } from '../dtos';
 
 @Injectable()
 export class WalletService {
-  constructor(private taccountService: TAccountService) {}
+  constructor(
+    private taccountService: TAccountService,
+    private walletShortcutService: WalletShortcutService,
+  ) {}
 
   async getWalletBalance(user: User): Promise<WalletResponse> {
     const personalBalance = await this.taccountService.getAccountBalance(
@@ -55,5 +64,22 @@ export class WalletService {
 
   getWalletHistory(user: User, query: WalletHistoryQueryDto) {
     return this.taccountService.getWalletHistory(user.id, query.filter);
+  }
+
+  async getAllWalletRecent(
+    userId: string,
+    keyword?: { [key: string]: string },
+  ) {
+    const users = await this.taccountService.getAllWalletRecent(
+      userId,
+      keyword,
+    );
+
+    return {
+      castcle: users.map((user) =>
+        this.walletShortcutService.toWalletResponse(user, null),
+      ),
+      other: [], // TODO !!! Implement external chain
+    } as WalletRecentResponse;
   }
 }

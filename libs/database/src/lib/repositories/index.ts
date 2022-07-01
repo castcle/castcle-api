@@ -134,8 +134,8 @@ type UserQuery = {
   castcleId?: string;
   excludeRelationship?: string[] | User[];
   keyword?: {
-    input: string;
-    type: KeywordType;
+    input?: string;
+    type?: KeywordType;
   };
   sinceId?: string;
   type?: UserType;

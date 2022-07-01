@@ -64,12 +64,11 @@ export class ShortcutSortDto {
   @ArrayMinSize(1)
   payload: ShortcutSort[];
 }
-export class WalletShortcutOptions {
+export class WalletOptions {
   id?: string;
-  chainId?: string;
   order?: string;
 }
-export class WalletShortcutResponse {
+export class WalletResponse {
   id: string;
   chainId: string;
   userId: string;
@@ -79,8 +78,13 @@ export class WalletShortcutResponse {
   images: {
     avatar: CastcleImage;
   };
-  order: number;
+  order?: number;
   createdAt: string;
   updatedAt: string;
   memo?: string;
+}
+
+export class WalletRecentResponse {
+  castcle: WalletResponse[];
+  other = [];
 }
