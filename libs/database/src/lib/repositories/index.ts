@@ -1451,7 +1451,7 @@ export class Repository {
 
     const castcleId =
       !this.castcleIdMetadata || this.isValidCastcleId(preferredCastcleId)
-        ? CastcleName.toStug(preferredCastcleId)
+        ? CastcleName.toSlug(preferredCastcleId)
         : this.randomCastcleId();
 
     const [availableId] =

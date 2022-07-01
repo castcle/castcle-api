@@ -36,15 +36,19 @@ import { Repository } from './repositories';
 import {
   AccountActivationSchema,
   AccountAuthenIdSchema,
+  AccountDeviceSchema,
   AccountReferralSchema,
   AccountSchemaFactory,
   AdsCampaignSchema,
+  AdsPlacementSchema,
   AnalyticSchema,
+  CAccountSchema,
   CampaignSchema,
   CommentSchemaFactory,
   ContentFarmingSchema,
   ContentSchemaFactory,
   CredentialSchema,
+  DefaultContentSchema,
   DsContentReachSchema,
   EngagementSchemaFactory,
   FeedItemSchema,
@@ -63,10 +67,6 @@ import {
   UxEngagementSchema,
   WalletShortcutSchema,
 } from './schemas';
-import { AccountDeviceSchema } from './schemas/account-device.schema';
-import { AdsPlacementSchema } from './schemas/ads-placement.schema';
-import { CAccountSchema } from './schemas/caccount.schema';
-import { DefaultContentSchema } from './schemas/default-content.schema';
 import { AdsService } from './services/ads.service';
 import { AnalyticService } from './services/analytic.service';
 import { AuthenticationService } from './services/authentication.service';
@@ -133,17 +133,12 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'Comment',
     useFactory: CommentSchemaFactory,
-    inject: [getModelToken('Revision'), getModelToken('Content')],
+    inject: [getModelToken('Revision')],
   },
   {
     name: 'Content',
     useFactory: ContentSchemaFactory,
-    inject: [
-      getModelToken('Revision'),
-      getModelToken('FeedItem'),
-      getModelToken('User'),
-      getModelToken('Relationship'),
-    ],
+    inject: [getModelToken('Revision')],
   },
   {
     name: 'Account',
@@ -162,11 +157,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'Engagement',
     useFactory: EngagementSchemaFactory,
-    inject: [
-      getModelToken('Content'),
-      getModelToken('Comment'),
-      getModelToken('FeedItem'),
-    ],
+    inject: [getModelToken('Content'), getModelToken('Comment')],
   },
 ]);
 
