@@ -8,7 +8,7 @@ import { DateTime } from 'luxon';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { customAlphabet } from 'nanoid';
 import { AccessTokenPayload, StaffDto } from '../models/authentication.dto';
-import { StaffRole, StaffStatus } from '../models/authentication.enum';
+import { StaffStatus } from '../models/authentication.enum';
 import { StaffDocument } from '../schemas/staff.schema';
 
 @Injectable()
@@ -41,21 +41,21 @@ export class AuthenticationService {
     return token;
   }
 
-  async createStaffFromEmail(StaffBody: StaffDto) {
+  async createStaffFromEmail(staffBody: StaffDto) {
     try {
       const password = this.generatePassword();
 
       const staff = await new this.staffModel({
-        email: StaffBody.email,
+        email: staffBody.email,
         password: password.hash,
-        firstName: StaffBody.firstName,
-        lastName: StaffBody.lastName,
-        role: StaffRole.ADMINISTRATOR,
+        firstName: staffBody.firstName,
+        lastName: staffBody.lastName,
+        role: staffBody.role,
         status: StaffStatus.ACTIVE,
       }).save();
 
       await this.mailService.sendPasswordToStaff(staff.email, password.raw);
-      return { email: StaffBody.email, password: password.raw };
+      return { email: staffBody.email, password: password.raw };
     } catch (error) {
       throw new CastcleException('EMAIL_OR_PHONE_IS_EXIST');
     }

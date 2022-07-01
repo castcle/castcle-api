@@ -1,4 +1,11 @@
-import { IsEmail, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsMongoId,
+  IsNotEmpty,
+  IsString,
+} from 'class-validator';
+import { StaffRole } from './authentication.enum';
 
 export class LoginDto {
   @IsEmail()
@@ -17,10 +24,16 @@ export class StaffDto {
   email: string;
 
   @IsNotEmpty()
+  @IsString()
   firstName: string;
 
   @IsNotEmpty()
+  @IsString()
   lastName: string;
+
+  @IsEnum(StaffRole)
+  @IsNotEmpty()
+  role: StaffRole;
 }
 
 export class GetStaffParams {
