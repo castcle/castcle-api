@@ -23,6 +23,7 @@
 
 import {
   AVATAR_SIZE_CONFIGS,
+  AWSClient,
   COMMON_SIZE_CONFIGS,
   Image,
 } from '@castcle-api/utils/aws';
@@ -68,6 +69,7 @@ import {
   AdsBoostStatus,
   AdsPaymentMethod,
   CACCOUNT_NO,
+  CastcleIdMetadata,
   CastcleNumber,
   KeywordType,
   OtpObjective,
@@ -232,6 +234,8 @@ type ReportingSubjectQuery = {
 
 @Injectable()
 export class Repository {
+  private castcleIdMetadata: CastcleIdMetadata;
+
   constructor(
     /** @deprecated */
     @InjectModel('AccountActivation') private activationModel: ActivationModel,
@@ -460,9 +464,11 @@ export class Repository {
         $gt: 0,
       },
     };
-    if (filter.tag) query.tag = new CastcleName(filter.tag).slug;
+    if (filter.tag) query.tag = CastcleName.toStugTag(filter.tag);
     if (filter.tags)
-      query.tags = { $in: filter.tags.map((tag) => new CastcleName(tag).slug) };
+      query.tags = {
+        $in: filter.tags.map((tag) => CastcleName.toStugTag(tag)),
+      };
 
     if (filter.keyword) {
       query.tag = CastcleRegExp.fromString(filter.keyword.input, {
@@ -619,19 +625,11 @@ export class Repository {
   }
 
   async createUser(user: AnyKeys<User>) {
-    const { suggestCastcleId } = new CastcleName(
+    const suggestId = await this.suggestCastcleId(
       user.displayId || user.displayName,
     );
 
-    const [availableId] =
-      await this.userModel.aggregate<GetAvailableIdResponse>(
-        pipelineOfGetAvailableId(suggestCastcleId),
-      );
-
-    user.displayId = availableId?.count
-      ? suggestCastcleId + (availableId.number || Date.now().toString())
-      : suggestCastcleId;
-
+    user.displayId = suggestId;
     return new this.userModel(user).save();
   }
 
@@ -1375,6 +1373,54 @@ export class Repository {
     return this.walletShortcutModel.deleteOne(
       this.getWalletShortcutQuery(filter),
     );
+  }
+
+  private isValidCastcleId(castcleId: string) {
+    const hasBannedWord = this.castcleIdMetadata.bannedWords.some(
+      (bannedWord) => new RegExp(bannedWord, 'i').test(castcleId),
+    );
+
+    return (
+      !hasBannedWord &&
+      castcleId.length >= this.castcleIdMetadata.minLength &&
+      castcleId.length <= this.castcleIdMetadata.maxLength
+    );
+  }
+
+  private randomCastcleId() {
+    const randomLength = (length = 0) => {
+      return Math.floor(Math.random() * length);
+    };
+
+    return `${
+      this.castcleIdMetadata.adjectives[
+        randomLength(this.castcleIdMetadata.adjectives.length)
+      ]
+    }${
+      this.castcleIdMetadata.nouns[
+        randomLength(this.castcleIdMetadata.nouns.length)
+      ]
+    }`;
+  }
+
+  async suggestCastcleId(preferredCastcleId?: string) {
+    if (!this.castcleIdMetadata) {
+      const castcleIdMetadata = await AWSClient.getCastcleIdMetadata();
+
+      this.castcleIdMetadata = castcleIdMetadata;
+    }
+
+    const castcleId =
+      !this.castcleIdMetadata || this.isValidCastcleId(preferredCastcleId)
+        ? CastcleName.toStug(preferredCastcleId)
+        : this.randomCastcleId();
+
+    const [availableId] =
+      await this.userModel.aggregate<GetAvailableIdResponse>(
+        pipelineOfGetAvailableId(castcleId),
+      );
+
+    return `${castcleId}${availableId ? availableId?.number : ''}`;
   }
 
   findReportingSubjects(

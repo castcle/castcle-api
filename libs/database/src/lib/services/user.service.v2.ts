@@ -617,12 +617,6 @@ export class UserServiceV2 {
   }
 
   async createPage(user: User, body: PageDto) {
-    const pageIsExist = await this.repository.findUser({
-      _id: body.castcleId,
-    });
-
-    if (pageIsExist) throw new CastcleException('PAGE_IS_EXIST');
-
     const page = await this.repository.createUser({
       ownerAccount: user.ownerAccount,
       type: UserType.PAGE,

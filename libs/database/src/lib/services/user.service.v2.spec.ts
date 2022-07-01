@@ -351,13 +351,12 @@ describe('UserServiceV2', () => {
       expect(page).toBeDefined();
     });
 
-    it('should return error when castcleId exist', async () => {
-      expect(
-        userServiceV2.createPage(userDemo, {
-          castcleId: 'testNewPage',
-          displayName: 'testNewPage',
-        }),
-      ).rejects.toThrow(new CastcleException('PAGE_IS_EXIST'));
+    it('should return new castcleId is duplicate', async () => {
+      const respPage = await userServiceV2.createPage(userDemo, {
+        castcleId: 'testNewPage',
+        displayName: 'testNewPage',
+      });
+      expect(respPage.castcleId).toEqual('testnewpage1');
     });
 
     it('should return page of user when created', async () => {
