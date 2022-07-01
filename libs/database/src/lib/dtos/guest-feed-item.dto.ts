@@ -56,5 +56,5 @@ export class FeedItemPayloadItem {
 export class FeedItemResponse {
   payload: FeedItemPayloadItem[];
   includes: CastcleIncludes;
-  meta: CastcleMeta;
+  meta?: CastcleMeta;
 }

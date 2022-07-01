@@ -60,6 +60,7 @@ import {
   EngagementType,
   KeywordType,
   QueueName,
+  SuggestContentItem,
   WalletType,
 } from '../models';
 import { Repository } from '../repositories';
@@ -78,6 +79,7 @@ describe('ContentServiceV2', () => {
   let content: ResponseDto;
   let mocksUsers: MockUserDetail[];
   let generateUser: MockUserService;
+  let dataService: DataService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -126,7 +128,7 @@ describe('ContentServiceV2', () => {
     repository = moduleRef.get(Repository);
     service = moduleRef.get(ContentServiceV2);
     tAccountService = moduleRef.get(TAccountService);
-
+    dataService = moduleRef.get<DataService>(DataService);
     mocksUsers = await generateUser.generateMockUsers(5);
 
     const user = mocksUsers[0].user;
@@ -778,6 +780,49 @@ describe('ContentServiceV2', () => {
       );
 
       expect(getSearchTrends.payload).toHaveLength(25);
+    });
+    describe('getRecentFeeds', () => {
+      const mockContents = [];
+      beforeAll(async () => {
+        const createContent = {
+          castcleId: mocksUsers[3].user.displayId,
+          type: ContentType.Short,
+          payload: {
+            message: 'Hello world!',
+            photo: {
+              contents: [],
+            },
+            link: [
+              {
+                type: 'other',
+                url: 'https://castcle.com',
+              },
+            ],
+          },
+        };
+        for (let i = 0; i < mocksUsers.length; i++)
+          mockContents[i] = await service.createContent(
+            createContent,
+            mocksUsers[i].user,
+          );
+        const mockPayload = mockContents.map(
+          (c, index) =>
+            ({
+              aggregator: {
+                name: 'default',
+              },
+              score: mocksUsers.length - index, //score sort from max to min
+              content: c.payload.id,
+            } as SuggestContentItem),
+        );
+        jest
+          .spyOn(dataService, 'suggestContents')
+          .mockResolvedValue({ payload: mockPayload });
+      });
+      it('should return recent feeds', async () => {
+        //const response = await service.getRecentFeeds({hasRelationshipExpansion:false, maxResults:mocksUsers.length} as any, mocksUsers[0].account.id, mocksUsers[0].user) ;
+        //response.payload.map()
+      });
     });
   });
 
