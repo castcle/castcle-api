@@ -21,19 +21,33 @@
  * or have any questions.
  */
 
-import { CastcleName } from './castcle-name';
-describe('CastcleName', () => {
-  describe('#toSlug()', () => {
-    it('should replace all space and lower all character to underscore', () => {
-      expect(CastcleName.toSlug('This Is Sparta')).toEqual('this_is_sparta');
-    });
+import { Model, Types } from 'mongoose';
+import { EntityVisibility } from '../dtos';
+import { CommentSchema } from './comment.schema';
+import { Revision } from './revision.schema';
+
+export const CommentSchemaFactory = (revisionModel: Model<Revision>) => {
+  CommentSchema.pre('save', function (next) {
+    this.revisionCount = this.revisionCount ? this.revisionCount + 1 : 1;
+    if (!this.visibility) this.visibility = EntityVisibility.Publish;
+    if (!this.engagements) {
+      this.engagements = {
+        like: { count: 0, refs: [] },
+        comment: { count: 0, refs: [] },
+      };
+    }
+
+    next();
   });
 
-  describe('#fromTagToSlug()', () => {
-    it('should replace all space and lower all character', () => {
-      expect(CastcleName.fromTagToSlug('This Is Sparta')).toEqual(
-        'thisissparta',
-      );
-    });
+  CommentSchema.post('save', async function (doc, next) {
+    await new revisionModel({
+      objectRef: { $ref: 'comment', $id: Types.ObjectId(doc._id) },
+      payload: doc,
+    }).save();
+
+    next();
   });
-});
+
+  return CommentSchema;
+};

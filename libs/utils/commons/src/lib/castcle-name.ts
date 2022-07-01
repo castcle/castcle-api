@@ -22,7 +22,7 @@
  */
 
 export class CastcleName {
-  static toStug(keyword: string) {
+  static toSlug(keyword: string) {
     return keyword?.toLowerCase().replace(/\W/g, '_');
   }
 

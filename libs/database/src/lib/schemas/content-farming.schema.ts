@@ -23,10 +23,8 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { ContentFarmingStatus } from '../models/content-farming.enum';
+import { ContentFarmingStatus } from '../models';
 import { CastcleBase } from './base.schema';
-import { Content } from './content.schema';
-import { User } from './user.schema';
 
 type CDFStat = {
   adjustedFarmPeriod: number;
@@ -37,10 +35,10 @@ type CDFStat = {
 @Schema({ timestamps: true })
 export class ContentFarming extends CastcleBase {
   @Prop({ index: true, required: true, type: Types.ObjectId })
-  content: Content | Types.ObjectId;
+  content: Types.ObjectId;
 
   @Prop({ index: true, required: true, type: Types.ObjectId })
-  user: User | Types.ObjectId;
+  user: Types.ObjectId;
 
   @Prop({ required: true, type: Object })
   startAt: Date;

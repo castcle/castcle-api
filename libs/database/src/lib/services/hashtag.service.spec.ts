@@ -30,7 +30,7 @@ import { BlogPayload, ShortPayload } from '../dtos';
 import { CommentDto } from '../dtos/comment.dto';
 import { ImagePayload } from '../dtos/content.dto';
 import { CreateHashtag } from '../dtos/hashtag.dto';
-import { CommentType } from '../schemas';
+import { CommentType } from '../models';
 import { HashtagService } from './hashtag.service';
 
 describe('HashtagService', () => {

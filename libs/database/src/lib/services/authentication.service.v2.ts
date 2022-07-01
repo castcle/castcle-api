@@ -57,13 +57,14 @@ import {
 import {
   AccountActivationType,
   AccountRequirements,
+  AccountRole,
   AuthenticationProvider,
   OtpObjective,
   OtpTemplateMessage,
   UserType,
 } from '../models';
 import { Repository } from '../repositories';
-import { Account, AccountRole, Credential, User } from '../schemas';
+import { Account, Credential, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
 
 @Injectable()

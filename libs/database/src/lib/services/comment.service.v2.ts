@@ -42,12 +42,11 @@ import {
   PaginationQuery,
   ResponseDto,
 } from '../dtos';
-import { EngagementType, UserType } from '../models';
+import { CommentType, EngagementType, UserType } from '../models';
 import { Repository } from '../repositories';
 import {
   Account,
   Comment,
-  CommentType,
   Content,
   Engagement,
   Hashtag,
