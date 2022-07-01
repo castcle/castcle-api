@@ -20,110 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import {
-  BANNED_NAMES,
-  LENGTH_MAX,
-  LENGTH_MIN,
-  RANDOM_ADJECTIVE,
-  RANDOM_SUBJECTS,
-  RESERVE_NAMES,
-} from './configs/names';
 
 export class CastcleName {
-  slug: string;
-  isBanned: boolean;
-  isReserved: boolean;
-  isValid: boolean;
-  suggestCastcleId: string;
-  constructor(public name: string) {
-    this.slug = CastcleName.convertToSlug(name);
-    this.isBanned = CastcleName.isBannedName(name);
-    this.isReserved = CastcleName.isReserveName(name);
-    this.isValid = CastcleName.isValidName(name);
-    this.suggestCastcleId = CastcleName.suggestCastcleId(name);
+  static toStug(keyword: string) {
+    return keyword?.toLowerCase().replace(/\W/g, '_');
   }
 
-  /**
-   * Change name to lowercase + remove all space
-   * @param {string }name
-   * @returns {string}
-   */
-  static convertToSlug(name: string) {
-    return name
-      .toLowerCase()
-      .replace(/[^\w ]+/g, '')
-      .replace(/ +/g, '');
-  }
-
-  /**
-   * convert name to slug and check if it exist in configs/names/ban.names
-   * @param {string }name
-   * @returns {boolean} return true if the name is ban name
-   */
-  static isBannedName(name: string) {
-    return BANNED_NAMES.find((str) => str === this.convertToSlug(name))
-      ? true
-      : false;
-  }
-
-  /**
-   * convert name to slug and check if it exist in configs/names/reserve.names
-   * @param {string} name
-   * @returns {boolean}
-   */
-  static isReserveName(name: string) {
-    return RESERVE_NAMES.find((str) => str === this.convertToSlug(name))
-      ? true
-      : false;
-  }
-
-  /**
-   * convert name to slug and check if length in ranges(in config) and if it has any special character
-   * @param {string} name
-   * @returns {boolean} return true if name is valid
-   */
-  static isValidName(name: string) {
-    const lengthRule =
-      this.convertToSlug(name).length >= LENGTH_MIN &&
-      this.convertToSlug(name).length <= LENGTH_MAX;
-    const format = /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
-    const specialCharacterRule = !format.test(name);
-    return (
-      lengthRule &&
-      specialCharacterRule &&
-      !this.isReserveName(name) &&
-      !this.isBannedName(name)
-    );
-  }
-
-  /**
-   * remove all special character and if length is more than LENGTH_MAX slice it to the maxium length
-   * @param {string} name
-   * @returns {string}
-   */
-  static _preSuggest(name: string) {
-    //remove any special character
-    let replaceName = name.replace(
-      /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/g,
-      '',
-    );
-    if (name.length >= LENGTH_MAX)
-      replaceName = replaceName.slice(0, LENGTH_MAX - 1);
-    return replaceName;
-  }
-
-  /**
-   * get name from _preSuggest and check
-   * @param {string} name
-   * @returns {string}
-   */
-  static suggestCastcleId(name: string) {
-    const newName = this._preSuggest(name).toLowerCase();
-    if (this.isValidName(newName)) return this.convertToSlug(newName);
-    const subject =
-      RANDOM_SUBJECTS[Math.floor(Math.random() * RANDOM_SUBJECTS.length)];
-    const adjective =
-      RANDOM_ADJECTIVE[Math.floor(Math.random() * RANDOM_ADJECTIVE.length)];
-    return adjective + subject;
+  static toStugTag(keyword: string) {
+    return keyword?.toLowerCase().replace(/\W/g, '');
   }
 }

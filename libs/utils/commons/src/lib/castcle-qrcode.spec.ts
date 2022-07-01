@@ -40,7 +40,7 @@ describe('#CastcleQRCode', () => {
     beforeAll(async () => {
       jest
         .spyOn(CastcleQRCode, 'generateQRCode')
-        .mockResolvedValue('data:image/png;base64,iVBORw0KGgoAAAAN');
+        .mockResolvedValueOnce('data:image/png;base64,iVBORw0KGgoAAAAN');
     });
     it('should create qrcode size equal thumbnail', async () => {
       const createQRCode = await CastcleQRCode.generateQRCode(

@@ -25,6 +25,7 @@ import {
   AccountRequirements,
   AuthenticationServiceV2,
   ChangePasswordDto,
+  GetDisplayNameDto,
   LoginWithEmailDto,
   RegisterFirebaseDto,
   RegisterWithEmailDto,
@@ -364,5 +365,15 @@ export class AuthenticationControllerV2 {
     @Body() body: RegisterFirebaseDto,
   ) {
     await this.authenticationService.deleteAccountDevice(body, account);
+  }
+
+  @Post('suggest/castcle-id')
+  @HttpCode(200)
+  async suggestCastcleId(@Body() { displayName }: GetDisplayNameDto) {
+    const suggestCastcleId = await this.authenticationService.suggestCastcleId(
+      displayName,
+    );
+
+    return { suggestCastcleId };
   }
 }

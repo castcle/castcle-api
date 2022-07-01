@@ -1,6 +1,7 @@
 import { Environment } from '@castcle-api/environments';
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
+import { AWSClient } from './aws.client';
 import { Downloader } from './downloader';
 import { predictContents, predictSuggestion } from './functions';
 import { CastcleImage, Image } from './image';
@@ -19,11 +20,12 @@ import { UploadOptions, Uploader } from './uploader';
 export class UtilsAwsModule {}
 
 export {
+  AWSClient,
   CastcleImage,
-  Image,
-  Uploader,
-  UploadOptions,
   Downloader,
+  Image,
   predictContents,
   predictSuggestion,
+  Uploader,
+  UploadOptions,
 };

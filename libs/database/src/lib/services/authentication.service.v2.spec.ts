@@ -1,3 +1,27 @@
+/*
+ * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 3 only, as
+ * published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+ * version 3 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 3 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Castcle, 22 Phet Kasem 47/2 Alley, Bang Khae, Bangkok,
+ * Thailand 10160, or visit www.castcle.com if you need additional information
+ * or have any questions.
+ */
+
+import { AWSClient } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
   GoogleClient,
@@ -23,7 +47,7 @@ import { AcceptPlatform, OwnerResponse } from '../dtos';
 import { Repository } from '../repositories';
 import { Account } from '../schemas';
 
-describe('Authentication Service', () => {
+describe('AuthenticationServiceV2', () => {
   let mongod: MongoMemoryReplSet;
   let moduleRef: TestingModule;
   let service: AuthenticationServiceV2;
@@ -61,6 +85,14 @@ describe('Authentication Service', () => {
     service = moduleRef.get(AuthenticationServiceV2);
     repository = moduleRef.get(Repository);
 
+    jest.spyOn(AWSClient, 'getCastcleIdMetadata').mockResolvedValue({
+      bannedWords: ['bitch', 'admin', 'web'],
+      nouns: ['apple'],
+      adjectives: ['green'],
+      minLength: 4,
+      maxLength: 20,
+    });
+
     const { accessToken } = await service.guestLogin({
       device: 'iPhone01',
       deviceUUID: '83b696d7-320b-4402-a412-d9cee10fc6a3',
@@ -92,11 +124,6 @@ describe('Authentication Service', () => {
 
   afterAll(async () => {
     await Promise.all([moduleRef.close(), mongod.stop()]);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-    expect(repository).toBeDefined();
   });
 
   describe('#guestLogin()', () => {
@@ -195,6 +222,28 @@ describe('Authentication Service', () => {
 
         expect(loginResponse.account.devices).toHaveLength(1);
       });
+    });
+  });
+
+  describe('#suggestCastcleId', () => {
+    it('should return suggest name', async () => {
+      const suggestId = await service.suggestCastcleId('John555');
+      expect(suggestId).toEqual('john555');
+    });
+
+    it('should return suggest name duplicate name', async () => {
+      const suggestId = await service.suggestCastcleId(
+        loginResponse.profile.castcleId,
+      );
+
+      /* castcle id + date time */
+      expect(suggestId).toMatch(loginResponse.profile.castcleId);
+    });
+
+    it('should return suggest new name', async () => {
+      const suggestId = await service.suggestCastcleId('bitch');
+
+      expect(suggestId).toEqual('greenapple');
     });
   });
 });

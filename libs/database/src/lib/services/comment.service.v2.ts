@@ -127,11 +127,10 @@ export class CommentServiceV2 {
    * @returns
    */
   private removeFromTag = async (tag: string) => {
-    const name = new CastcleName(tag);
     return this.hashtagModel
       .updateOne(
         {
-          tag: name.slug,
+          tag: CastcleName.toStugTag(tag),
           score: {
             $gt: 0,
           },

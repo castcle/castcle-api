@@ -135,7 +135,7 @@ export class MockUserService {
       ownerAccount: account._id,
       displayId: dto.castcleId,
       displayName: dto.displayName,
-      type: UserType.PEOPLE,
+      type: UserType.PAGE,
       email: dto.email,
     });
   }

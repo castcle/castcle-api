@@ -1709,10 +1709,10 @@ export class UsersController {
         }
 
         this.logger.log('Suggest CastcleId');
-        const sugguestDisplayId = await this.authService.suggestCastcleId(
+        const suggestDisplayId = await this.authService.suggestCastcleId(
           castcleId,
         );
-        socialPage.castcleId = sugguestDisplayId;
+        socialPage.castcleId = suggestDisplayId;
 
         if (syncBody.avatar) {
           this.logger.log(`download avatar from ${syncBody.avatar}`);
@@ -1722,10 +1722,10 @@ export class UsersController {
 
           this.logger.log('upload avatar to s3');
           const avatar = await Image.upload(imgAvatar, {
-            filename: `page-avatar-${sugguestDisplayId}`,
+            filename: `page-avatar-${suggestDisplayId}`,
             addTime: true,
             sizes: AVATAR_SIZE_CONFIGS,
-            subpath: `page_${sugguestDisplayId}`,
+            subpath: `page_${suggestDisplayId}`,
           });
 
           socialPage.avatar = avatar.image;
@@ -1738,10 +1738,10 @@ export class UsersController {
 
           this.logger.log('upload cover to s3');
           const cover = await Image.upload(imgCover, {
-            filename: `page-cover-${sugguestDisplayId}`,
+            filename: `page-cover-${suggestDisplayId}`,
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `page_${sugguestDisplayId}`,
+            subpath: `page_${suggestDisplayId}`,
           });
           socialPage.cover = cover.image;
           this.logger.log('Suggest Cover');
