@@ -47,7 +47,6 @@ import {
   CommentSchemaFactory,
   ContentFarmingSchema,
   ContentSchemaFactory,
-  CountrySchema,
   CredentialSchema,
   DefaultContentSchema,
   DsContentReachSchema,
@@ -55,13 +54,12 @@ import {
   FeedItemSchema,
   GuestFeedItemSchema,
   HashtagSchema,
-  LanguageSchema,
+  MetadataSchema,
   NotificationSchema,
   OtpSchema,
   QueueSchema,
   RelationshipSchema,
   ReportingSchema,
-  ReportingSubjectSchema,
   RevisionSchema,
   SocialSyncSchema,
   TransactionSchema,
@@ -78,10 +76,8 @@ import { CommentService } from './services/comment.service';
 import { CommentServiceV2 } from './services/comment.service.v2';
 import { ContentService } from './services/content.service';
 import { ContentServiceV2 } from './services/content.service.v2';
-import { CountryService } from './services/country.service';
 import { DataService } from './services/data.service';
 import { HashtagService } from './services/hashtag.service';
-import { LanguageService } from './services/language.service';
 import { MetadataServiceV2 } from './services/metadata.service.v2';
 import { NotificationService } from './services/notification.service';
 import { NotificationServiceV2 } from './services/notification.service.v2';
@@ -114,17 +110,15 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'CAccount', schema: CAccountSchema },
   { name: 'Campaign', schema: CampaignSchema },
   { name: 'ContentFarming', schema: ContentFarmingSchema },
-  { name: 'Country', schema: CountrySchema },
   { name: 'DefaultContent', schema: DefaultContentSchema },
   { name: 'DsContentReach', schema: DsContentReachSchema },
   { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
   { name: 'Hashtag', schema: HashtagSchema },
-  { name: 'Language', schema: LanguageSchema },
+  { name: 'Metadata', schema: MetadataSchema },
   { name: 'Notification', schema: NotificationSchema },
   { name: 'Otp', schema: OtpSchema },
   { name: 'Queue', schema: QueueSchema },
   { name: 'Reporting', schema: ReportingSchema },
-  { name: 'ReportingSubject', schema: ReportingSubjectSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'WalletShortcut', schema: WalletShortcutSchema },
 ]);
@@ -194,10 +188,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     CommentServiceV2,
     ContentService,
     ContentServiceV2,
-    CountryService,
     DataService,
     HashtagService,
-    LanguageService,
     MetadataServiceV2,
     NotificationService,
     NotificationServiceV2,
@@ -225,10 +217,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     CommentServiceV2,
     ContentService,
     ContentServiceV2,
-    CountryService,
     DataService,
     HashtagService,
-    LanguageService,
     MetadataServiceV2,
     NotificationService,
     NotificationServiceV2,
@@ -258,13 +248,11 @@ export {
   CommentServiceV2,
   ContentService,
   ContentServiceV2,
-  CountryService,
   createCastcleMeta,
   DataService,
   getRelationship,
   getSocialPrefix,
   HashtagService,
-  LanguageService,
   MetadataServiceV2,
   NotificationService,
   NotificationServiceV2,
