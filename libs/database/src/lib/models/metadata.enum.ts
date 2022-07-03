@@ -21,15 +21,8 @@
  * or have any questions.
  */
 
-export enum ReportType {
-  CONTENT = 'content',
-  USER = 'user',
-}
-
-export enum ReportStatus {
-  REVIEWING = 'reviewing',
-  DONE = 'done',
-  APPEAL = 'appeal',
-  NOT_APPEAL = 'not-appeal',
-  CLOSED = 'closed',
+export enum MetadataType {
+  COUNTRY = 'country',
+  LANGUAGE = 'language',
+  REPORTING_SUBJECT = 'reporting-subject',
 }

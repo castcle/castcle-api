@@ -45,6 +45,8 @@ import {
   QuoteCastDto,
   RankerService,
   ReplyCommentParam,
+  ReportContentDto,
+  ReportUserDto,
   ResponseDto,
   SocialSyncServiceV2,
   SuggestionServiceV2,
@@ -82,12 +84,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import {
-  DeleteUserDto,
-  ReportingContentDto,
-  ReportingUserDto,
-  TargetCastcleDto,
-} from '../dtos';
+import { DeleteUserDto, TargetCastcleDto } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
 
 @CastcleControllerV2({ path: 'users' })
@@ -810,13 +807,13 @@ export class UsersControllerV2 {
   async reportUser(
     @Auth() authorizer: Authorizer,
     @Param() { isMe, userId }: GetUserParam,
-    @Body() { message, targetCastcleId }: ReportingUserDto,
+    @Body() body: ReportUserDto,
   ) {
     const user = isMe
       ? authorizer.user
       : await this.userService.getUser(userId);
 
-    await this.userService.reportUser(user, targetCastcleId, message);
+    await this.userService.reportUser(user, body);
   }
 
   @Post(':userId/reporting/content')
@@ -825,13 +822,13 @@ export class UsersControllerV2 {
   async reportContent(
     @Auth() authorizer: Authorizer,
     @Param() { isMe, userId }: GetUserParam,
-    @Body() { message, targetContentId }: ReportingContentDto,
+    @Body() body: ReportContentDto,
   ) {
     const user = isMe
       ? authorizer.user
       : await this.userService.getUser(userId);
 
-    await this.userService.reportContent(user, targetContentId, message);
+    await this.userService.reportContent(user, body);
   }
 
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)

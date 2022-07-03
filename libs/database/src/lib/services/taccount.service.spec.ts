@@ -21,24 +21,41 @@
  * or have any questions.
  */
 
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
+import { HttpModule } from '@nestjs/axios';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
-import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
+  AnalyticService,
+  AuthenticationServiceV2,
+  MongooseAsyncFeatures,
+  MongooseForFeatures,
+  TAccountService,
+} from '../database.module';
+import { MockUserDetail, MockUserService, mockSend } from '../mocks';
+import {
+  KeywordType,
   TopUpDto,
   TransactionFilter,
   TransactionType,
   WalletType,
 } from '../models';
+import { Repository } from '../repositories';
 import { MicroTransaction, TLedger, Transaction } from '../schemas';
 import { CAccount } from '../schemas/caccount.schema';
-import { TAccountService } from './taccount.service';
 describe('TAccount Service', () => {
   let moduleRef: TestingModule;
   let mongod: MongoMemoryReplSet;
   let service: TAccountService;
+  let generateUser: MockUserService;
   let transactionModel: Model<Transaction>;
   let cAccountModel: Model<CAccount>;
   const CHART_OF_ACCOUNT = {
@@ -71,14 +88,28 @@ describe('TAccount Service', () => {
     mongod = await MongoMemoryReplSet.create();
     moduleRef = await Test.createTestingModule({
       imports: [
+        HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
-      providers: [TAccountService],
+      providers: [
+        AuthenticationServiceV2,
+        MockUserService,
+        Repository,
+        TAccountService,
+        { provide: AnalyticService, useValue: {} },
+        { provide: FacebookClient, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
+        { provide: Mailer, useValue: {} },
+        { provide: TwilioClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
+      ],
     }).compile();
 
     service = moduleRef.get(TAccountService);
+    generateUser = moduleRef.get(MockUserService);
+
     transactionModel = service._transactionModel;
     cAccountModel = service._caccountModel;
 
@@ -332,6 +363,45 @@ describe('TAccount Service', () => {
       expect(
         await service.getAccountBalance(mockUserId, WalletType.PERSONAL),
       ).toEqual(700);
+    });
+  });
+  describe('getAllWalletRecent()', () => {
+    let mocksUsers: MockUserDetail[];
+
+    beforeAll(async () => {
+      mocksUsers = await generateUser.generateMockUsers(2);
+
+      await mockSend(
+        mocksUsers[0].user,
+        mocksUsers[1].user,
+        100,
+        transactionModel,
+      );
+    });
+    it('should get wallet recent list', async () => {
+      const users = await service.getAllWalletRecent(mocksUsers[0].user._id);
+
+      expect(users[0].id).toEqual(mocksUsers[1].user.id);
+      expect(users[0].displayId).toEqual(mocksUsers[1].user.displayId);
+    });
+
+    it('should get wallet recent list by keyword', async () => {
+      const users = await service.getAllWalletRecent(mocksUsers[0].user._id, {
+        input: 'people',
+        type: KeywordType.Word,
+      });
+
+      expect(users[0].id).toEqual(mocksUsers[1].user.id);
+      expect(users[0].displayId).toEqual(mocksUsers[1].user.displayId);
+    });
+
+    it('should get wallet recent list is empty', async () => {
+      const users = await service.getAllWalletRecent(mocksUsers[0].user._id, {
+        input: 'test',
+        type: KeywordType.Word,
+      });
+
+      expect(users).toHaveLength(0);
     });
   });
 });

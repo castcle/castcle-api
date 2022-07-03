@@ -22,6 +22,7 @@
  */
 
 import { CastcleException } from '@castcle-api/utils/exception';
+import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -33,6 +34,7 @@ import {
   MongooseForFeatures,
 } from '../database.module';
 import { CampaignType, QueueName } from '../models';
+import { Repository } from '../repositories';
 import { Campaign } from '../schemas';
 import { TAccountService } from './taccount.service';
 
@@ -47,6 +49,7 @@ describe('Campaign Service', () => {
     mongo = await MongoMemoryServer.create();
     moduleRef = await Test.createTestingModule({
       imports: [
+        HttpModule,
         MongooseModule.forRoot(mongo.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
@@ -54,6 +57,7 @@ describe('Campaign Service', () => {
       providers: [
         CampaignService,
         TAccountService,
+        Repository,
         {
           provide: getQueueToken(QueueName.CAMPAIGN),
           useValue: { add: jest.fn() },

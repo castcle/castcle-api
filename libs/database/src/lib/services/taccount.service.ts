@@ -27,7 +27,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, FilterQuery, Model } from 'mongoose';
 import {
   GetBalanceResponse,
+  GetWalletRecentResponse,
   pipelineOfGetBalanceFromWalletType,
+  pipelineOfGetWalletRecentFromType,
 } from '../aggregations';
 import {
   CACCOUNT_NO,
@@ -38,6 +40,7 @@ import {
   WalletType,
 } from '../models';
 import { TransactionDto } from '../models/caccount.model';
+import { Repository } from '../repositories';
 import { CAccount, CAccountNature } from '../schemas/caccount.schema';
 import { Transaction } from '../schemas/transaction.schema';
 
@@ -46,6 +49,7 @@ export class TAccountService {
   constructor(
     @InjectModel('Transaction') public _transactionModel: Model<Transaction>,
     @InjectModel('CAccount') public _caccountModel: Model<CAccount>,
+    private repository: Repository,
   ) {}
 
   getFindQueryForChild(caccount: CAccount) {
@@ -262,5 +266,26 @@ export class TAccountService {
       default:
         throw new CastcleException('SOMETHING_WRONG');
     }
+  }
+
+  async getAllWalletRecent(
+    userId: string,
+    keyword?: { [key: string]: string },
+  ) {
+    const transactions =
+      await this._transactionModel.aggregate<GetWalletRecentResponse>([
+        pipelineOfGetWalletRecentFromType(userId),
+      ]);
+
+    if (!transactions.length) return [];
+
+    const userIds = transactions.map(({ user }) => user);
+
+    return this.repository
+      .findUsers({
+        keyword,
+        _id: userIds,
+      })
+      .exec();
   }
 }

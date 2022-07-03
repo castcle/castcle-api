@@ -71,9 +71,13 @@ import {
   CACCOUNT_NO,
   CastcleIdMetadata,
   CastcleNumber,
+  Country,
   KeywordType,
+  Language,
+  MetadataType,
   OtpObjective,
   QueueStatus,
+  ReportingSubject,
   SearchType,
   UserType,
 } from '../models';
@@ -88,13 +92,12 @@ import {
   CAccountNature,
   Comment,
   Content,
-  Country,
   Credential,
   CredentialModel,
   Engagement,
   FeedItem,
   Hashtag,
-  Language,
+  Metadata,
   Notification,
   Otp,
   OtpModel,
@@ -102,7 +105,6 @@ import {
   AccountReferral as Referral,
   Relationship,
   Reporting,
-  ReportingSubject,
   Revision,
   SocialSync,
   Transaction,
@@ -132,8 +134,8 @@ type UserQuery = {
   castcleId?: string;
   excludeRelationship?: string[] | User[];
   keyword?: {
-    input: string;
-    type: KeywordType;
+    input?: string;
+    type?: KeywordType;
   };
   sinceId?: string;
   type?: UserType;
@@ -228,8 +230,8 @@ type WalletShortcutQuery = {
   accountId?: string;
 };
 
-type ReportingSubjectQuery = {
-  slug?: string;
+type MetadataQuery = {
+  type?: MetadataType;
 };
 
 @Injectable()
@@ -251,19 +253,17 @@ export class Repository {
     @InjectModel('CAccount') private caccountModel: Model<CAccount>,
     @InjectModel('Comment') private commentModel: Model<Comment>,
     @InjectModel('Content') private contentModel: Model<Content>,
-    @InjectModel('Country') private countryModel: Model<Country>,
     @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
-    @InjectModel('Language') private languageModel: Model<Language>,
+    @InjectModel('Metadata')
+    private metadataModel: Model<Metadata<any>>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Queue') private queueModel: Model<Queue>,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
     @InjectModel('Reporting') private reportingModel: Model<Reporting>,
-    @InjectModel('ReportingSubject')
-    private reportingSubjectModel: Model<ReportingSubject>,
     @InjectModel('Revision') private revisionModel: Model<Revision>,
     @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
@@ -497,6 +497,15 @@ export class Repository {
     return query;
   }
 
+  private getMetadataQuery(filter: MetadataQuery) {
+    const query: FilterQuery<Metadata<Country | Language | ReportingSubject>> =
+      {};
+
+    if (filter.type) query.type = filter.type;
+
+    return query;
+  }
+
   deleteAccount(filter: AccountQuery) {
     return this.accountModel.deleteOne(this.getAccountQuery(filter));
   }
@@ -685,14 +694,6 @@ export class Repository {
         sinceId: filter.sinceId,
         untilId: filter.untilId,
       });
-
-    return query;
-  }
-
-  private getReportingSubjectQuery(filter: ReportingSubjectQuery) {
-    const query: FilterQuery<ReportingSubject> = {};
-
-    if (filter.slug) query.slug = filter.slug;
 
     return query;
   }
@@ -1278,12 +1279,13 @@ export class Repository {
     });
   }
 
-  findLanguages(filter?: FilterQuery<Language>, queryOptions?: QueryOptions) {
-    return this.languageModel.find(filter, queryOptions);
-  }
-
-  findCountries(filter?: FilterQuery<Country>, queryOptions?: QueryOptions) {
-    return this.countryModel.find(filter, queryOptions);
+  findMetadata<T extends Country | Language | ReportingSubject>(
+    filter?: MetadataQuery,
+    queryOptions?: QueryOptions,
+  ): Promise<Metadata<T>[]> {
+    return this.metadataModel
+      .find(this.getMetadataQuery(filter), {}, queryOptions)
+      .exec();
   }
 
   async getPublicUsers({
@@ -1421,14 +1423,5 @@ export class Repository {
       );
 
     return `${castcleId}${availableId ? availableId?.number : ''}`;
-  }
-
-  findReportingSubjects(
-    filter: ReportingSubjectQuery,
-    queryOptions?: QueryOptions,
-  ) {
-    return this.reportingSubjectModel
-      .find(this.getReportingSubjectQuery(filter), {}, queryOptions)
-      .exec();
   }
 }

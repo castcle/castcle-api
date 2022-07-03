@@ -4,6 +4,8 @@ export enum StaffStatus {
 
 export enum StaffRole {
   ADMINISTRATOR = 'administrator',
+  EDITOR = 'editor',
+  VIEWER = 'viewer',
 }
 
 export enum Permission {
