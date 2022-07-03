@@ -58,6 +58,7 @@ import {
   CreateContentDto,
   CreateCredentialDto,
   EntityVisibility,
+  GetContentCastDto,
   NotificationSource,
   NotificationType,
   RefreshTokenPayload,
@@ -1059,6 +1060,20 @@ export class Repository {
     queryOptions?: QueryOptions,
   ) {
     return this.feedItemModel.updateOne(filter, feedItem, queryOptions);
+  }
+
+  saveFeedItemFromContents(
+    contents: GetContentCastDto,
+    viewerAccountId: string,
+  ) {
+    return this.feedItemModel.insertMany(
+      contents.contents.map((c) => ({
+        viewer: viewerAccountId,
+        content: c._id,
+        author: c.author.id,
+        calledAt: new Date(),
+      })),
+    );
   }
 
   findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {

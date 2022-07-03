@@ -21,40 +21,26 @@
  * or have any questions.
  */
 
-import { GuestFeedItemType, User } from '../schemas';
-import { CastcleMeta } from './common.dto';
-import { CastcleIncludes, ContentPayloadItem } from './content.dto';
-import { PageResponseDto, UserResponseDto } from './user.dto';
-
-export class GuestFeedItemDto {
-  content?: any;
-  type: GuestFeedItemType;
-  user?: User;
-  countryCode?: string;
+export type SuggestContentItem = {
+  content: string;
   score: number;
-}
-
-export class FeedItemPayloadItem {
-  id: string;
-  feature: {
-    slug: 'feed';
-    key: 'feature.feed';
-    name: 'Feed';
+  aggregator: {
+    name: 'following-cast' | 'following-like' | 'trending' | 'default';
+    user?: string[]; //userId
   };
-  circle: {
-    id: 'for-you';
-    key: 'circle.forYou';
-    name: 'For You';
-    slug: 'forYou';
-  };
-  type: 'content' | 'suggestion-follow' | 'ads-content' | 'ads-page'; // content or suggestion or reminder or ads
-  campaignName?: string; //for ads only
-  campaignMessage?: string; // for ads only
-  payload: ContentPayloadItem | (UserResponseDto | PageResponseDto)[];
-}
+};
 
-export class FeedItemResponse {
-  payload: FeedItemPayloadItem[];
-  includes: CastcleIncludes;
-  meta?: CastcleMeta;
-}
+export type SuggestUserItem = {
+  user: string;
+  score: number;
+  aggregator: {
+    name: 'following' | 'trending' | 'default';
+    user?: string[]; //userId
+  };
+};
+
+export type PersonalizeAdsItem = {
+  user?: string;
+  content?: string;
+  score: number;
+};
