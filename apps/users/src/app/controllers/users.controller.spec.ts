@@ -66,6 +66,7 @@ import {
   UserResponseDto,
   UserService,
   UserType,
+  WalletShortcutService,
   WalletType,
   generateMockUsers,
 } from '@castcle-api/database';
@@ -140,6 +141,7 @@ describe('AppController', () => {
         RankerService,
         SocialSyncServiceV2,
         Repository,
+        WalletShortcutService,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },

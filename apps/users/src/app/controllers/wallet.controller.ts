@@ -22,6 +22,7 @@
  */
 import {
   GetAccountParam,
+  GetKeywordQuery,
   GetShortcutParam,
   GetUserParam,
   ShortcutInternalDto,
@@ -37,6 +38,7 @@ import {
   CastcleBasicAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
+import { HttpCacheIndividualInterceptor } from '@castcle-api/utils/interceptors';
 import {
   Body,
   Delete,
@@ -47,6 +49,7 @@ import {
   Post,
   Put,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { WalletHistoryQueryDto } from '../dtos/wallet.dto';
 import { WalletService } from '../services/wallet.service';
@@ -136,5 +139,36 @@ export class WalletController {
     authorizer.requestAccessForAccount(accountId);
 
     await this.walletShortcutService.sortWalletShortcut(payload, accountId);
+  }
+
+  @CastcleBasicAuth()
+  @UseInterceptors(HttpCacheIndividualInterceptor)
+  @Get(':userId/recent')
+  async getAllWalletRecent(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userServiceV2.getUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    return this.walletService.getAllWalletRecent(user.id);
+  }
+
+  @CastcleBasicAuth()
+  @UseInterceptors(HttpCacheIndividualInterceptor)
+  @Get(':userId/recent/search/by')
+  async getAllWalletRecentSearch(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Query() { keyword }: GetKeywordQuery,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userServiceV2.getUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    return this.walletService.getAllWalletRecent(user.id, keyword);
   }
 }

@@ -21,13 +21,26 @@
  * or have any questions.
  */
 
-export * from './ads.aggregation';
-export * from './estimate-content-reaches.aggregation';
-export * from './get-available-id.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-contents.aggregation';
-export * from './get-feed-contents.aggregation';
-export * from './get-users-relation.aggregation';
-export * from './get-wallet-recent.aggregation';
-export * from './notification.aggregation';
+import { Types } from 'mongoose';
+import { TransactionType } from '../models';
+
+export class GetWalletRecentResponse {
+  user: Types.ObjectId;
+}
+export const pipelineOfGetWalletRecentFromType = (userId: string) => [
+  { $unwind: { path: '$to' } },
+  {
+    $match: {
+      'from.user': new Types.ObjectId(userId),
+      'data.type': TransactionType.SEND,
+    },
+  },
+  {
+    $group: { _id: '$to.user' },
+  },
+  {
+    $project: {
+      user: '$_id',
+    },
+  },
+];
