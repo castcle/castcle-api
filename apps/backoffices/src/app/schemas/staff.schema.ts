@@ -21,4 +21,39 @@
  * or have any questions.
  */
 
-export const BANNED_NAMES = ['sexeducation'];
+import { CastcleBase } from '@castcle-api/database';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+
+export type StaffDocument = Staff;
+
+@Schema({ timestamps: true })
+export class Staff extends CastcleBase {
+  @Prop({
+    index: true,
+    unique: true,
+  })
+  email: string;
+
+  @Prop()
+  password: string;
+
+  @Prop({ index: true })
+  firstName: string;
+
+  @Prop({ index: true })
+  lastName: string;
+
+  @Prop({ index: true })
+  status: string;
+
+  @Prop()
+  role: string;
+
+  @Prop()
+  loginAt: Date[];
+
+  @Prop()
+  accessToken: string;
+}
+
+export const StaffSchema = SchemaFactory.createForClass(Staff);

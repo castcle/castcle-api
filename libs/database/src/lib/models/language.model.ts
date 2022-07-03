@@ -21,46 +21,8 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { ReportingSubjectPayloadDto } from '../models';
-
-@Schema({ timestamps: true })
-export class ReportingSubjectDocument extends Document {
-  @Prop({
-    required: true,
-    type: String,
-    index: true,
-  })
-  slug: string;
-
-  @Prop({
-    required: true,
-    type: String,
-  })
-  name: string;
-
-  @Prop({
-    required: true,
-    type: Number,
-    index: true,
-  })
-  order: number;
+export class Language {
+  code: string;
+  title: string;
+  display: string;
 }
-
-export const ReportingSubjectSchema = SchemaFactory.createForClass(
-  ReportingSubjectDocument,
-);
-
-export class ReportingSubject extends ReportingSubjectDocument {
-  toReportingSubjectPayload: () => ReportingSubjectPayloadDto;
-}
-
-ReportingSubjectSchema.methods.toReportingSubjectPayload = function () {
-  return {
-    id: this._id,
-    slug: this.slug,
-    name: this.name,
-    order: this.order,
-  } as ReportingSubjectPayloadDto;
-};

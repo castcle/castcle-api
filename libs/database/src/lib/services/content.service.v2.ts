@@ -34,9 +34,13 @@ import { Model, Types } from 'mongoose';
 import {
   Author,
   CastcleIncludes,
+  ContentPayloadItem,
   ContentType,
   CreateContentDto,
   EntityVisibility,
+  FeedItemPayloadItem,
+  FeedItemResponse,
+  FeedQuery,
   GetContentCastDto,
   GetSearchQuery,
   Meta,
@@ -68,6 +72,7 @@ import {
   Account,
   Content,
   ContentFarming,
+  FeedItem,
   User,
   signedContentPayloadItem,
   toUnsignedContentPayloadItem,
@@ -1381,5 +1386,82 @@ export class ContentServiceV2 {
       contents = this.getContentMore(contents, contentsMore);
     }
     return this.toContentsResponses(contents, hasRelationshipExpansion, viewer);
+  };
+
+  getRecentContents = async (
+    { maxResults }: FeedQuery,
+    accountId: string,
+    viewer: User,
+  ) => {
+    const suggestContents = await this.dataService.suggestContents(
+      accountId,
+      maxResults,
+    );
+    const suggestContentIds = suggestContents.payload.map((c) => c.content);
+    const [contents] = await this.repository.aggregationContent({
+      viewer,
+      maxResults: maxResults,
+      _id: suggestContentIds,
+    });
+    return contents as GetContentCastDto;
+  };
+
+  toFeedReponse = async (
+    contentsCastDto: GetContentCastDto,
+    feedItems: FeedItem[],
+    viewer: User,
+    hasRelationshipExpansion: boolean,
+  ) => {
+    const contentsReponse = await this.toContentsResponses(
+      contentsCastDto,
+      hasRelationshipExpansion,
+      viewer,
+    );
+    return {
+      includes: contentsReponse.includes,
+      payload: feedItems.map(
+        (f) =>
+          ({
+            id: f.id,
+            type: 'content',
+            feature: {
+              slug: 'feed',
+              key: 'feature.feed',
+              name: 'Feed',
+            },
+            circle: {
+              id: 'for-you',
+              key: 'circle.forYou',
+              name: 'For You',
+              slug: 'forYou',
+            },
+            payload: (contentsReponse.payload as ContentPayloadItem[]).find(
+              (p) => p.id === String(f.content),
+            ),
+          } as FeedItemPayloadItem),
+      ),
+    } as FeedItemResponse;
+  };
+
+  generateFeeds = async (
+    { hasRelationshipExpansion, maxResults, ...query }: FeedQuery,
+    accountId: string,
+    viewer: User,
+  ) => {
+    const contentsCastDto = await this.getRecentContents(
+      { hasRelationshipExpansion, maxResults, ...query },
+      accountId,
+      viewer,
+    );
+    const newFeeds = await this.repository.saveFeedItemFromContents(
+      contentsCastDto,
+      accountId,
+    );
+    return this.toFeedReponse(
+      contentsCastDto,
+      newFeeds,
+      viewer,
+      hasRelationshipExpansion,
+    );
   };
 }

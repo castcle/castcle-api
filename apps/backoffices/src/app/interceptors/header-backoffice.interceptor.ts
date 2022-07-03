@@ -21,4 +21,22 @@
  * or have any questions.
  */
 
-export const RESERVE_NAMES = ['castcle', 'castcle-official', 'administrator'];
+import { Environment } from '@castcle-api/environments';
+import { CastcleException } from '@castcle-api/utils/exception';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
+
+@Injectable()
+export class HeaderBackofficeInterceptor implements NestInterceptor {
+  async intercept(context: ExecutionContext, next: CallHandler) {
+    const request = context.switchToHttp().getRequest();
+    if (request.headers?.['api-key'] !== Environment.BACKOFFICE_API_KEY)
+      throw new CastcleException('MISSING_AUTHORIZATION_HEADERS');
+    request.$api_key = request.headers['api-key'];
+    return next.handle();
+  }
+}

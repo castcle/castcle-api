@@ -327,6 +327,7 @@ export class AuthenticationServiceV2 {
     const activation = account.createActivation(AccountActivationType.EMAIL);
     await this.updateReferral(account, dto.referral, dto.ip);
     await account.save();
+
     await this.repository.createUser({
       ownerAccount: account._id,
       displayId: dto.castcleId,
@@ -366,6 +367,7 @@ export class AuthenticationServiceV2 {
 
     await this.updateReferral(account, referral, ip);
     await account.set({ isGuest: false }).save();
+
     await this.repository.createUser({
       ownerAccount: account._id,
       displayId: dto.displayName || `${dto.provider}${dto.socialId}`,
@@ -978,5 +980,9 @@ export class AuthenticationServiceV2 {
         },
       },
     );
+  }
+
+  async suggestCastcleId(castcleId: string) {
+    return this.repository.suggestCastcleId(castcleId);
   }
 }

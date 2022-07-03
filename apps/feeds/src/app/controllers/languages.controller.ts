@@ -20,33 +20,29 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { LanguageResponse, LanguageService } from '@castcle-api/database';
+import { MetadataServiceV2 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleController } from '@castcle-api/utils/decorators';
 import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
 import { CacheKey, CacheTTL, Get, UseInterceptors } from '@nestjs/common';
-import { ApiOkResponse } from '@nestjs/swagger';
 
 @CastcleController({ path: 'metadata', version: '1.0' })
 export class LanguagesController {
-  constructor(private languageService: LanguageService) {}
+  constructor(private metadataService: MetadataServiceV2) {}
 
   private logger = new CastLogger(LanguagesController.name);
 
-  @ApiOkResponse({
-    type: LanguageResponse,
-  })
   @UseInterceptors(HttpCacheSharedInterceptor)
   @CacheKey(CacheKeyName.LanguagesGet.Name)
   @CacheTTL(CacheKeyName.LanguagesGet.Ttl)
   @Get('languages')
-  async getAllLanguage(): Promise<LanguageResponse> {
+  async getAllLanguage() {
     this.logger.log('Start get all language');
-    const result = await this.languageService.getAll();
+    const result = await this.metadataService.getAllLanguage();
     this.logger.log('Success get all language');
     return {
-      payload: result.map((lang) => lang.toLanguagePayload()),
+      payload: result.map(({ payload }) => payload),
     };
   }
 }

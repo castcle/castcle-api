@@ -75,4 +75,7 @@ export const Configs = {
     DuplicateContentMax: 200,
     CalledAtDelay: 1800,
   },
+  AssetsPath: {
+    SuggestWords: 'metadata/suggestion-words.json',
+  },
 };

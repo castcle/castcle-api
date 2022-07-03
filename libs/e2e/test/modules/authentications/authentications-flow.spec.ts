@@ -155,4 +155,17 @@ export const testAuthenticationsFlow = () => {
       expect(accountDevice).toBeNull();
     });
   });
+
+  describe('#suggest castcle id flow', () => {
+    it('should return lowercase castcle name to suggest castcle id', async () => {
+      const requestBody = {
+        displayName: 'DisPlayName1234',
+      };
+      await AuthenticationsRequest.suggestCastcleId()
+        .send(requestBody)
+        .expect(async ({ body }) => {
+          expect(body.suggestCastcleId).toEqual('displayname1234');
+        });
+    });
+  });
 };

@@ -34,9 +34,11 @@ import {
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { isEnum } from 'class-validator';
+import { FastifyRequest } from 'fastify';
 import { getLinkPreview } from 'link-preview-js';
+import { getClientIp } from 'request-ip';
 import { ValidateWebhookQuery } from '../youtube/dto';
 import {
   FeedEntryChange,
@@ -62,17 +64,20 @@ export class FacebookController {
       'hub.challenge': challenge,
       'hub.verify_token': verifyToken,
     }: ValidateWebhookQuery,
+    @Req() req: FastifyRequest,
   ) {
+    const isValidToken = verifyToken === Environment.FACEBOOK_VERIFY_TOKEN;
+
     this.logger.log(
       JSON.stringify({
-        challenge,
-        verifyToken,
-        isValidToken: verifyToken !== Environment.FACEBOOK_VERIFY_TOKEN,
+        isValidToken,
+        ip: getClientIp(req),
+        userAgent: req.headers['user-agent'],
       }),
       'validateWebhook',
     );
 
-    if (verifyToken !== Environment.FACEBOOK_VERIFY_TOKEN) return;
+    if (!isValidToken) return;
 
     return challenge;
   }

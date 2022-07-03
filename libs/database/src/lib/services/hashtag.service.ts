@@ -67,16 +67,15 @@ export class HashtagService {
    * @returns
    */
   createFromTag = async (tag: string) => {
-    const name = new CastcleName(tag);
     return this._hashtagModel
       .updateOne(
         {
-          tag: name.slug,
+          tag: CastcleName.toStugTag(tag),
         },
         {
           $setOnInsert: {
-            tag: name.slug,
-            name: name.name,
+            tag: CastcleName.toStugTag(tag),
+            name: tag,
             aggregator: {
               name: 'default',
             },
@@ -98,11 +97,10 @@ export class HashtagService {
    * @returns
    */
   removeFromTag = async (tag: string) => {
-    const name = new CastcleName(tag);
     return this._hashtagModel
       .updateOne(
         {
-          tag: name.slug,
+          tag: CastcleName.toStugTag(tag),
           score: {
             $gt: 0,
           },

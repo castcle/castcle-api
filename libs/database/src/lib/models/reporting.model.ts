@@ -21,8 +21,7 @@
  * or have any questions.
  */
 
-export class ReportingSubjectPayloadDto {
-  id: string;
+export class ReportingSubject {
   slug: string;
   name: string;
   order: number;

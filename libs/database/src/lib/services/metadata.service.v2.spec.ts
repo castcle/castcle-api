@@ -7,6 +7,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '../database.module';
+import { MetadataType } from '../models';
 import { Repository } from '../repositories';
 
 describe('MetadataServiceV2', () => {
@@ -28,14 +29,15 @@ describe('MetadataServiceV2', () => {
     }).compile();
 
     service = moduleRef.get(MetadataServiceV2);
-    const reportingSubjectModel = moduleRef.get(
-      getModelToken('ReportingSubject'),
-    );
+    const metadataModel = moduleRef.get(getModelToken('Metadata'));
 
-    await new reportingSubjectModel({
-      slug: 'spam',
-      name: 'Spam',
-      order: 1,
+    await new metadataModel({
+      type: MetadataType.REPORTING_SUBJECT,
+      payload: {
+        slug: 'spam',
+        name: 'Spam',
+        order: 1,
+      },
     }).save();
   });
 
@@ -44,7 +46,14 @@ describe('MetadataServiceV2', () => {
   });
   describe('getReportSubjects', () => {
     it('should get reporting subjects', async () => {
-      const reportSubjects = await service.getReportSubjects();
+      const expectSubject = {
+        slug: 'spam',
+        name: 'Spam',
+        order: 1,
+      };
+      const reportSubjects = await service.getAllReportSubjects();
+
+      expect(reportSubjects[0].payload).toEqual(expectSubject);
 
       expect(reportSubjects).toHaveLength(1);
     });

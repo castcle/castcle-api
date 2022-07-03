@@ -21,20 +21,26 @@
  * or have any questions.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
+import { Types } from 'mongoose';
+import { TransactionType } from '../models';
 
-export class LanguagePayloadDto {
-  @ApiProperty()
-  code: string;
-
-  @ApiProperty()
-  title: string;
-
-  @ApiProperty()
-  display: string;
+export class GetWalletRecentResponse {
+  user: Types.ObjectId;
 }
-
-export class LanguageResponse {
-  @ApiProperty({ type: LanguagePayloadDto, isArray: true })
-  payload: LanguagePayloadDto[];
-}
+export const pipelineOfGetWalletRecentFromType = (userId: string) => [
+  { $unwind: { path: '$to' } },
+  {
+    $match: {
+      'from.user': new Types.ObjectId(userId),
+      'data.type': TransactionType.SEND,
+    },
+  },
+  {
+    $group: { _id: '$to.user' },
+  },
+  {
+    $project: {
+      user: '$_id',
+    },
+  },
+];

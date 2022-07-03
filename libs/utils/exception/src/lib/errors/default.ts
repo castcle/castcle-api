@@ -331,6 +331,11 @@ export const DefaultErrors = {
     code: '8001',
     message: 'Invalid transaction data',
   },
+  STAFF_NOT_FOUND: {
+    statusCode: '404',
+    code: '9001',
+    message: 'Staff not found.',
+  },
   INTERNAL_CHAIN_NOT_FOUND: {
     statusCode: '404',
     code: '8002',

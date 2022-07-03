@@ -24,7 +24,7 @@
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
 import { CastcleException } from './exception';
 
 @Catch(CastcleException)
@@ -35,15 +35,15 @@ export class CastcleExceptionFilter implements ExceptionFilter {
     this.logger.error(exception);
 
     const ctx = host.switchToHttp();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<FastifyRequest>();
     const language = Environment.IS_PRODUCTION
       ? request.headers['accept-language']
       : 'dev';
     const localizedException = exception.getLocalizedException(language);
 
-    ctx
-      .getResponse<Response>()
+    return ctx
+      .getResponse<FastifyReply>()
       .status(localizedException.getStatus())
-      .json(localizedException.getResponse());
+      .send(localizedException.getResponse());
   }
 }

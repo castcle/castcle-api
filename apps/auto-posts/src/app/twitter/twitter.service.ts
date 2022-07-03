@@ -37,9 +37,7 @@ import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import TwitterApi, {
-  Tweetv2TimelineResult as TweetTimelineResult,
-} from 'twitter-api-v2';
+import TwitterApi, { Tweetv2TimelineResult } from 'twitter-api-v2';
 
 @Injectable()
 export class TwitterService {
@@ -138,7 +136,7 @@ export class TwitterService {
     }
   };
 
-  convertTimelineToContents(userId: string, timeline: TweetTimelineResult) {
+  convertTimelineToContents(userId: string, timeline: Tweetv2TimelineResult) {
     const $contents = timeline.data
       .filter(({ referenced_tweets }) => {
         return !referenced_tweets?.some(({ type }) => type === 'quoted');

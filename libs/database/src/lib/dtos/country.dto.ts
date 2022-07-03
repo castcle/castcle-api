@@ -22,40 +22,11 @@
  */
 
 import { TransformSortStringToSortObject } from '@castcle-api/utils/commons';
-import { ApiProperty } from '@nestjs/swagger';
 import { IsObject, IsOptional } from 'class-validator';
-import { CastcleQueryOptions, SortDirection } from './common.dto';
-import { PaginationQuery } from './pagination.dto';
 
-export class CountryPayloadDto {
-  @ApiProperty()
-  code: string;
-
-  @ApiProperty()
-  dialCode: string;
-
-  @ApiProperty()
-  name: string;
-
-  @ApiProperty()
-  flag: string;
-}
-
-export class GetCountryQuery extends PaginationQuery {
+export class GetCountryQuery {
   @IsOptional()
   @IsObject()
   @TransformSortStringToSortObject()
   sortBy? = { name: 1 };
 }
-
-export class CountryResponse {
-  @ApiProperty({ type: CountryPayloadDto, isArray: true })
-  payload: CountryPayloadDto[];
-}
-
-export const DEFAULT_COUNTRY_QUERY_OPTIONS = {
-  sortBy: {
-    field: 'name',
-    type: SortDirection.ASC,
-  },
-} as CastcleQueryOptions;

@@ -20,10 +20,34 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { BANNED_NAMES } from './ban.names';
-import { RANDOM_ADJECTIVE, RANDOM_SUBJECTS } from './random.names';
-import { RESERVE_NAMES } from './reserve.names';
 
-export const LENGTH_MAX = 20;
-export const LENGTH_MIN = 4;
-export { BANNED_NAMES, RANDOM_ADJECTIVE, RANDOM_SUBJECTS, RESERVE_NAMES };
+import {
+  Configs as config,
+  Environment as env,
+} from '@castcle-api/environments';
+import { HttpService } from '@nestjs/axios';
+import * as AWS from 'aws-sdk';
+import { DateTime } from 'luxon';
+import { lastValueFrom, map } from 'rxjs';
+import { EXPIRE_TIME } from './config';
+
+export class AWSClient {
+  private static httpService = new HttpService();
+  private static signer = new AWS.CloudFront.Signer(
+    env.CLOUDFRONT_ACCESS_KEY_ID,
+    Buffer.from(env.CLOUDFRONT_PRIVATE_KEY, 'base64').toString('ascii'),
+  );
+
+  static async getCastcleIdMetadata() {
+    if (!env.CLOUDFRONT_PRIVATE_KEY) return;
+
+    const signURL = await AWSClient.signer.getSignedUrl({
+      url: `${env.ASSETS_HOST}/${config.AssetsPath.SuggestWords}`,
+      expires: DateTime.now().plus({ milliseconds: EXPIRE_TIME }).toMillis(),
+    });
+
+    return lastValueFrom(
+      AWSClient.httpService.get(signURL).pipe(map(({ data }) => data)),
+    );
+  }
+}

@@ -23,6 +23,7 @@
 
 import {
   ContentServiceV2,
+  FeedQuery,
   GetSearchQuery,
   RankerServiceV2,
   SuggestionServiceV2,
@@ -89,5 +90,14 @@ export class FeedsControllerV2 {
     if (account.isGuest) return;
 
     await this.rankerServiceV2.offViewFeedItem(account.id, id);
+  }
+
+  @CastcleAuth(CacheKeyName.Feeds)
+  @Get('recent/feed/forYou')
+  async getRecentFeeds(
+    @Auth() { account, user }: Authorizer,
+    @Query() query: FeedQuery,
+  ) {
+    return this.contentServiceV2.generateFeeds(query, account._id, user);
   }
 }

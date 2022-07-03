@@ -20,36 +20,20 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { CountryPayloadDto } from '../dtos/country.dto';
+import { Country, Language, MetadataType, ReportingSubject } from '../models';
 import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })
-class CountryDocument extends CastcleBase {
-  @Prop()
-  code: string;
+export class Metadata<
+  T extends Country | Language | ReportingSubject,
+> extends CastcleBase {
+  @Prop({ type: String, required: true, index: true })
+  type: MetadataType;
 
-  @Prop()
-  dialCode: string;
-
-  @Prop()
-  name: string;
-
-  @Prop()
-  flag: string;
+  @Prop({ type: Object, required: true })
+  payload: T;
 }
 
-export const CountrySchema = SchemaFactory.createForClass(CountryDocument);
-
-export class Country extends CountryDocument {
-  toCountryPayload: () => CountryPayloadDto;
-}
-
-CountrySchema.methods.toCountryPayload = function () {
-  return {
-    code: this.code,
-    dialCode: this.dialCode,
-    name: this.name,
-    flag: this.flag,
-  } as CountryPayloadDto;
-};
+export const MetadataSchema = SchemaFactory.createForClass(Metadata);
