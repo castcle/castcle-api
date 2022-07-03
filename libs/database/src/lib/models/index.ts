@@ -53,3 +53,4 @@ export * from './user.message';
 export * from './user.model';
 export * from './wallet.enum';
 export * from './wallet.model';
+export * from './data-sci.model';

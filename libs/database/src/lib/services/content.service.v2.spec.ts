@@ -33,6 +33,7 @@ import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Types } from 'mongoose';
 import {
   AnalyticService,
   AuthenticationServiceV2,
@@ -44,6 +45,7 @@ import {
   UserServiceV2,
 } from '../database.module';
 import {
+  ContentPayloadItem,
   ContentType,
   NotificationType,
   ResponseDto,
@@ -60,10 +62,11 @@ import {
   EngagementType,
   KeywordType,
   QueueName,
+  SuggestContentItem,
   WalletType,
 } from '../models';
 import { Repository } from '../repositories';
-import { Content, ContentFarming } from '../schemas';
+import { Content, ContentFarming, FeedItem } from '../schemas';
 import { CampaignService } from './campaign.service';
 import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
@@ -78,6 +81,7 @@ describe('ContentServiceV2', () => {
   let content: ResponseDto;
   let mocksUsers: MockUserDetail[];
   let generateUser: MockUserService;
+  let dataService: DataService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -126,7 +130,7 @@ describe('ContentServiceV2', () => {
     repository = moduleRef.get(Repository);
     service = moduleRef.get(ContentServiceV2);
     tAccountService = moduleRef.get(TAccountService);
-
+    dataService = moduleRef.get<DataService>(DataService);
     mocksUsers = await generateUser.generateMockUsers(5);
 
     const user = mocksUsers[0].user;
@@ -778,6 +782,82 @@ describe('ContentServiceV2', () => {
       );
 
       expect(getSearchTrends.payload).toHaveLength(25);
+    });
+  });
+  describe('getRecentFeeds', () => {
+    const mockContents = [];
+    let mockPayload = [];
+    beforeAll(async () => {
+      for (let i = 0; i < mocksUsers.length; i++)
+        mockContents[i] = await service.createContent(
+          {
+            castcleId: mocksUsers[i].user.displayId,
+            type: ContentType.Short,
+            payload: {
+              message: 'Hello world!',
+              photo: {
+                contents: [],
+              },
+              link: [
+                {
+                  type: 'other',
+                  url: 'https://castcle.com',
+                },
+              ],
+            },
+          },
+          mocksUsers[i].user,
+        );
+      mockPayload = mockContents.map(
+        (c, index) =>
+          ({
+            aggregator: {
+              name: 'default',
+            },
+            score: mocksUsers.length - index, //score sort from max to min
+            content: c.payload.id,
+          } as SuggestContentItem),
+      );
+      jest
+        .spyOn(dataService, 'suggestContents')
+        .mockResolvedValue({ payload: mockPayload });
+    });
+    it('should return recent content', async () => {
+      const response = await service.getRecentContents(
+        { maxResults: 20 } as any,
+        mocksUsers[0].account.id,
+        mocksUsers[0].user,
+      );
+      expect(response.contents.map((c) => String(c._id))).toEqual(
+        mockPayload.reverse().map((k) => k.content),
+      );
+    });
+    describe('toFeedReponse()', () => {
+      it('should return feedResponse', async () => {
+        const response = await service.getRecentContents(
+          { maxResults: 20 } as any,
+          mocksUsers[0].account.id,
+          mocksUsers[0].user,
+        );
+        const mockFeedItems = response.contents.map(
+          (c) =>
+            ({
+              id: Types.ObjectId(),
+              content: c._id,
+              viewer: mocksUsers[0].account._id,
+              author: Types.ObjectId(c.author.id),
+            } as FeedItem),
+        );
+        const feedResponse = await service.toFeedReponse(
+          response,
+          mockFeedItems,
+          mocksUsers[0].user,
+          true,
+        );
+        expect(
+          feedResponse.payload.map((p) => (p.payload as ContentPayloadItem).id),
+        ).toEqual(mockFeedItems.map((f) => String(f.content)));
+      });
     });
   });
 
