@@ -70,11 +70,11 @@ export class HashtagService {
     return this._hashtagModel
       .updateOne(
         {
-          tag: CastcleName.toStugTag(tag),
+          tag: CastcleName.fromTagToSlug(tag),
         },
         {
           $setOnInsert: {
-            tag: CastcleName.toStugTag(tag),
+            tag: CastcleName.fromTagToSlug(tag),
             name: tag,
             aggregator: {
               name: 'default',
@@ -100,7 +100,7 @@ export class HashtagService {
     return this._hashtagModel
       .updateOne(
         {
-          tag: CastcleName.toStugTag(tag),
+          tag: CastcleName.fromTagToSlug(tag),
           score: {
             $gt: 0,
           },

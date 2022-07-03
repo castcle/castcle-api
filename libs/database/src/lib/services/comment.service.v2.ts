@@ -87,25 +87,32 @@ export class CommentServiceV2 {
     private repository: Repository,
   ) {}
 
-  /**
-   * Delete all Comment Engagement from Content or Comment
-   * @param {Comment} comment
-   */
   private removeEngagementComment = async (comment: Comment) => {
-    if (![CommentType.Comment, CommentType.Reply].includes(comment.type)) {
-      return true;
-    }
+    if (![CommentType.Comment, CommentType.Reply].includes(comment.type))
+      return;
 
-    const query: FilterQuery<Engagement> = {
+    await this.repository.deleteEngagements({
       targetRef: {
         $ref: 'comment',
         $id: comment.targetRef.$id ?? comment.targetRef.oid,
       },
-    };
+    });
+  };
 
-    const engagements = await this._engagementModel.find(query).exec();
-    await Promise.all(engagements.map((engagement) => engagement.remove()));
-    return true;
+  private removeEngagementContent = async (
+    comment: Comment,
+    userId: string,
+  ) => {
+    if (![CommentType.Comment].includes(comment.type)) return;
+
+    await this.repository.deleteEngagements({
+      user: userId as any,
+      targetRef: {
+        $ref: 'content',
+        $id: comment.targetRef.$id ?? comment.targetRef.oid,
+      },
+      type: CommentType.Comment,
+    });
   };
 
   private removeRevision = async (comment: Comment) => {
@@ -130,7 +137,7 @@ export class CommentServiceV2 {
     return this.hashtagModel
       .updateOne(
         {
-          tag: CastcleName.toStugTag(tag),
+          tag: CastcleName.fromTagToSlug(tag),
           score: {
             $gt: 0,
           },
@@ -530,18 +537,18 @@ export class CommentServiceV2 {
    * @returns {Comment}
    */
   deleteComment = async (rootComment: Comment) => {
-    const comment = await this.commentModel.findById(rootComment._id);
     const replies = await this.commentModel
       .find({
         type: CommentType.Reply,
-        targetRef: { $id: comment._id, $ref: 'comment' },
+        targetRef: { $id: rootComment._id, $ref: 'comment' },
         visibility: EntityVisibility.Publish,
       })
       .exec();
 
-    if (comment.hashtags) await this.removeFromTags(comment.hashtags);
-    await this.removeEngagementComment(comment);
-    await this.removeRevision(comment);
+    if (rootComment.hashtags) await this.removeFromTags(rootComment.hashtags);
+    await this.removeEngagementContent(rootComment, rootComment.author._id);
+    await this.removeEngagementComment(rootComment);
+    await this.removeRevision(rootComment);
 
     this.logger.log('Delete reply comment.');
     await Promise.all(
@@ -554,7 +561,7 @@ export class CommentServiceV2 {
     );
 
     this.logger.log('Delete comment.');
-    await comment.remove();
+    await rootComment.remove();
   };
 
   likeCommentCast = async (

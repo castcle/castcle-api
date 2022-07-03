@@ -465,10 +465,10 @@ export class Repository {
         $gt: 0,
       },
     };
-    if (filter.tag) query.tag = CastcleName.toStugTag(filter.tag);
+    if (filter.tag) query.tag = CastcleName.fromTagToSlug(filter.tag);
     if (filter.tags)
       query.tags = {
-        $in: filter.tags.map((tag) => CastcleName.toStugTag(tag)),
+        $in: filter.tags.map((tag) => CastcleName.fromTagToSlug(tag)),
       };
 
     if (filter.keyword) {
