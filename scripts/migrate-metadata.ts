@@ -119,6 +119,7 @@ class Migration {
         payload: { slug: 'something-else', name: 'Something else', order: 10 },
       },
     ];
+    this.logger.log(`Count reporting. ${reporting.length}`);
 
     await metadataSchemaModel.insertMany(reporting, { ordered: true });
 
@@ -148,6 +149,8 @@ class Migration {
       },
     ]);
 
+    this.logger.log(`Count countries. ${countries.length}`);
+
     await metadataSchemaModel.insertMany(countries, { ordered: true });
 
     this.logger.log(`End insert countries.`);
@@ -175,6 +178,8 @@ class Migration {
         },
       },
     ]);
+
+    this.logger.log(`Count languages. ${languages.length}`);
 
     await metadataSchemaModel.insertMany(languages, { ordered: true });
 
