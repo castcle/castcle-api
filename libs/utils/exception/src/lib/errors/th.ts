@@ -276,4 +276,9 @@ export const ThErrors = {
     code: '8003',
     message: 'Wallet shortcut is already exists.',
   },
+  REPORTING_IS_EXIST: {
+    statusCode: '400',
+    code: '8003',
+    message: 'Reporting is already exists.',
+  },
 };

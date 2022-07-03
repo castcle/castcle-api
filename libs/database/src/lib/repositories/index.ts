@@ -235,6 +235,12 @@ type MetadataQuery = {
   type?: MetadataType;
 };
 
+type ReportingQuery = {
+  subject: string;
+  payload: User | Content;
+  by: Types.ObjectId;
+};
+
 @Injectable()
 export class Repository {
   private castcleIdMetadata: CastcleIdMetadata;
@@ -465,10 +471,10 @@ export class Repository {
         $gt: 0,
       },
     };
-    if (filter.tag) query.tag = CastcleName.toStugTag(filter.tag);
+    if (filter.tag) query.tag = CastcleName.fromTagToSlug(filter.tag);
     if (filter.tags)
       query.tags = {
-        $in: filter.tags.map((tag) => CastcleName.toStugTag(tag)),
+        $in: filter.tags.map((tag) => CastcleName.fromTagToSlug(tag)),
       };
 
     if (filter.keyword) {
@@ -503,6 +509,16 @@ export class Repository {
       {};
 
     if (filter.type) query.type = filter.type;
+
+    return query;
+  }
+
+  private getReportingQuery(filter: ReportingQuery) {
+    const query: FilterQuery<Reporting> = {};
+
+    if (filter.subject) query.subject = filter.subject;
+    if (filter.payload) query.payload = filter.payload;
+    if (filter.subject) query.subject = filter.subject;
 
     return query;
   }
@@ -1353,6 +1369,12 @@ export class Repository {
 
   createReporting(dto: AnyKeys<Reporting>) {
     return new this.reportingModel(dto).save();
+  }
+
+  findReporting(filter: ReportingQuery, queryOptions?: QueryOptions) {
+    return this.reportingModel
+      .findOne(this.getReportingQuery(filter), {}, queryOptions)
+      .exec();
   }
 
   createWallerShortcut(dto: AnyKeys<WalletShortcut>) {
