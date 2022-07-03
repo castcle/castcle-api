@@ -31,7 +31,9 @@ describe('CastcleName', () => {
 
   describe('#fromTagToSlug()', () => {
     it('should replace all space and lower all character', () => {
-      expect(CastcleName.fromTagToSlug('This Is Sparta')).toEqual('thisissparta');
+      expect(CastcleName.fromTagToSlug('This Is Sparta')).toEqual(
+        'thisissparta',
+      );
     });
   });
 });
