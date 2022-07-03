@@ -29,9 +29,9 @@ describe('CastcleName', () => {
     });
   });
 
-  describe('#toStugTag()', () => {
+  describe('#fromTagToSlug()', () => {
     it('should replace all space and lower all character', () => {
-      expect(CastcleName.toStugTag('This Is Sparta')).toEqual('thisissparta');
+      expect(CastcleName.fromTagToSlug('This Is Sparta')).toEqual('thisissparta');
     });
   });
 });
