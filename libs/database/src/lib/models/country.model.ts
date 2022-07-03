@@ -20,10 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { BANNED_NAMES } from './ban.names';
-import { RANDOM_ADJECTIVE, RANDOM_SUBJECTS } from './random.names';
-import { RESERVE_NAMES } from './reserve.names';
 
-export const LENGTH_MAX = 20;
-export const LENGTH_MIN = 4;
-export { BANNED_NAMES, RANDOM_ADJECTIVE, RANDOM_SUBJECTS, RESERVE_NAMES };
+export class Country {
+  code: string;
+  dialCode: string;
+  name: string;
+  flag: string;
+}

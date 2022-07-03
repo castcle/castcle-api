@@ -62,6 +62,7 @@ import {
   UnlikeCommentCastParam,
   UserService,
   UserServiceV2,
+  WalletShortcutService,
   generateMockUsers,
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
@@ -126,29 +127,30 @@ describe('UsersControllerV2', () => {
       controllers: [UsersControllerV2],
       providers: [
         { provide: DataService, useValue: {} },
-        UserServiceV2,
-        AuthenticationService,
-        AuthenticationServiceV2,
-        ContentService,
-        HashtagService,
-        SocialSyncServiceV2,
-        SuggestionServiceV2,
-        CampaignService,
-        TAccountService,
-        SuggestionService,
-        WalletService,
         AdsService,
         AnalyticService,
-        NotificationService,
-        Mailer,
+        AuthenticationService,
+        AuthenticationServiceV2,
+        CampaignService,
+        CommentServiceV2,
+        ContentService,
+        ContentServiceV2,
         DownloaderProvider,
         FacebookClientProvider,
-        CommentServiceV2,
-        UserService,
-        RankerService,
-        ContentServiceV2,
+        HashtagService,
+        Mailer,
+        NotificationService,
         NotificationServiceV2,
+        RankerService,
         Repository,
+        SocialSyncServiceV2,
+        SuggestionService,
+        SuggestionServiceV2,
+        TAccountService,
+        UserService,
+        UserServiceV2,
+        WalletService,
+        WalletShortcutService,
         { provide: GoogleClient, useValue: {} },
         { provide: TwitterClient, useValue: {} },
         { provide: TwilioClient, useValue: {} },
@@ -238,7 +240,7 @@ describe('UsersControllerV2', () => {
           },
           { userId: user.id } as GetUserParam,
         ),
-      ).rejects.toEqual(CastcleException.CONTENT_NOT_FOUND);
+      ).rejects.toEqual(new CastcleException('CONTENT_NOT_FOUND'));
     });
 
     it('updateComment() should update a message of comment', async () => {
@@ -271,7 +273,7 @@ describe('UsersControllerV2', () => {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
         } as CommentParam),
-      ).rejects.toEqual(CastcleException.CONTENT_NOT_FOUND);
+      ).rejects.toEqual(new CastcleException('CONTENT_NOT_FOUND'));
     });
 
     it('replyComment() should be able create a comment in comment(reply)', async () => {
@@ -308,7 +310,7 @@ describe('UsersControllerV2', () => {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
         } as CommentParam),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
 
     it('deleteComment() should delete a comment', async () => {
@@ -413,7 +415,7 @@ describe('UsersControllerV2', () => {
             sourceCommentId: '624a7c01df5d0069d04655da',
           } as CommentParam,
         ),
-      ).rejects.toEqual(CastcleException.CONTENT_NOT_FOUND);
+      ).rejects.toEqual(new CastcleException('CONTENT_NOT_FOUND'));
     });
 
     it('updateReplyComment() should update a message of reply comment', async () => {
@@ -448,7 +450,7 @@ describe('UsersControllerV2', () => {
           sourceCommentId: comment.payload.id,
           replyCommentId: replyComment.payload.id,
         } as ReplyCommentParam),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
 
     it('deleteReplyComment() return Exception when use wrong account', async () => {
@@ -464,7 +466,7 @@ describe('UsersControllerV2', () => {
           sourceCommentId: comment.payload.id,
           replyCommentId: replyComment.payload.id,
         } as ReplyCommentParam),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
 
     it('deleteReplyComment() should delete a comment', async () => {

@@ -26,12 +26,41 @@ import { CastLogger } from '@castcle-api/logger';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { lastValueFrom, map } from 'rxjs';
+import {
+  PersonalizeAdsItem,
+  SuggestContentItem,
+  SuggestUserItem,
+} from '../models';
 
 @Injectable()
 export class DataService {
   private logger = new CastLogger(DataService.name);
 
   constructor(private httpService: HttpService) {}
+
+  private async postV2<T>(url: string, body: any, context: string) {
+    const payload = JSON.stringify({ url, body });
+
+    this.logger.log(payload, `${context}:init`);
+
+    try {
+      this.logger.time(payload, `${context}:time`);
+
+      const result = await lastValueFrom(
+        this.httpService
+          .post<{ result: T }>(url, body)
+          .pipe(map(({ data }) => data ?? {})),
+      );
+
+      this.logger.timeEnd(payload, `${context}:time`);
+      this.logger.log(JSON.stringify(result), `${context}:success`);
+
+      return result as T;
+    } catch (error: unknown) {
+      this.logger.timeEnd(payload, `${context}:time`);
+      this.logger.error(error, `${context}:error`);
+    }
+  }
 
   private async post<T>(url: string, body: any, context: string) {
     const payload = JSON.stringify({ url, body });
@@ -101,5 +130,38 @@ export class DataService {
     );
 
     return Boolean(detection?.illegalClass);
+  }
+
+  async suggestContents(accountId: string, maxResults: number) {
+    const url = `${Environment.DS_SERVICE_BASE_URL}/v2/data-services/suggest/contents`;
+    const body = { accountId, maxResults };
+    const suggestion = await this.postV2<{ payload: SuggestContentItem[] }>(
+      url,
+      body,
+      'suggestContents',
+    );
+    return suggestion ?? { payload: [] };
+  }
+
+  async suggestUsers(accountId: string, maxResults: number) {
+    const url = `${Environment.DS_SERVICE_BASE_URL}/v2/data-services/suggest/users`;
+    const body = { accountId, maxResults };
+    const suggestion = await this.postV2<{ payload: SuggestUserItem[] }>(
+      url,
+      body,
+      'suggestUsers',
+    );
+    return suggestion ?? { payload: [] };
+  }
+
+  async personalizeAds(accountId: string, users: string[], contents: string[]) {
+    const url = `${Environment.DS_SERVICE_BASE_URL}/v2/data-services/personalize/ads`;
+    const body = { accountId, users, contents };
+    const suggestion = await this.postV2<{ payload: PersonalizeAdsItem[] }>(
+      url,
+      body,
+      'personalizeAds',
+    );
+    return suggestion ?? { payload: [] };
   }
 }

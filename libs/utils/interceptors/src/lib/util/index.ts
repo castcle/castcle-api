@@ -22,20 +22,20 @@
  */
 
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 
-export const getTokenFromRequest = (request: Request) => {
+export const getTokenFromRequest = (request: FastifyRequest) => {
   const token = request.headers.authorization?.split(' ')?.[1];
 
-  if (!token) throw CastcleException.MISSING_AUTHORIZATION_HEADERS;
+  if (!token) throw new CastcleException('MISSING_AUTHORIZATION_HEADERS');
 
   return token;
 };
 
-export const getLanguageFromRequest = (request: Request) => {
+export const getLanguageFromRequest = (request: FastifyRequest) => {
   const language = request.headers['accept-language'];
 
-  if (!language) throw CastcleException.MISSING_AUTHORIZATION_HEADERS;
+  if (!language) throw new CastcleException('MISSING_AUTHORIZATION_HEADERS');
 
   return language;
 };

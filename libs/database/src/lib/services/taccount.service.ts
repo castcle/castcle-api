@@ -27,15 +27,20 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, FilterQuery, Model } from 'mongoose';
 import {
   GetBalanceResponse,
+  GetWalletRecentResponse,
   pipelineOfGetBalanceFromWalletType,
+  pipelineOfGetWalletRecentFromType,
 } from '../aggregations';
 import {
+  CACCOUNT_NO,
   CastcleNumber,
+  TopUpDto,
   TransactionFilter,
   WalletHistoryResponseDto,
   WalletType,
 } from '../models';
 import { TransactionDto } from '../models/caccount.model';
+import { Repository } from '../repositories';
 import { CAccount, CAccountNature } from '../schemas/caccount.schema';
 import { Transaction } from '../schemas/transaction.schema';
 
@@ -44,6 +49,7 @@ export class TAccountService {
   constructor(
     @InjectModel('Transaction') public _transactionModel: Model<Transaction>,
     @InjectModel('CAccount') public _caccountModel: Model<CAccount>,
+    private repository: Repository,
   ) {}
 
   getFindQueryForChild(caccount: CAccount) {
@@ -138,7 +144,7 @@ export class TAccountService {
     //check if balance available
     if (await this.validateTransfer(transferDTO))
       return new this._transactionModel(transferDTO).save({ session: session });
-    else throw CastcleException.INVALID_TRANSACTIONS_DATA;
+    else throw new CastcleException('INVALID_TRANSACTIONS_DATA');
   }
 
   async getBalance(caccountNo: string) {
@@ -197,5 +203,89 @@ export class TAccountService {
       })),
     };
     return result;
+  }
+  /**
+   * Use for dev only
+   * @param topupDto
+   * @returns
+   */
+  topup(topupDto: TopUpDto) {
+    switch (topupDto.type) {
+      case WalletType.ADS:
+        return new this._transactionModel({
+          from: {
+            type: WalletType.EXTERNAL_DEPOSIT,
+            value: topupDto.value,
+          },
+          to: [
+            {
+              type: WalletType.ADS,
+              value: topupDto.value,
+              user: topupDto.userId,
+            },
+          ],
+          ledgers: [
+            {
+              credit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
+                value: topupDto.value,
+              },
+              debit: {
+                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                value: topupDto.value,
+              },
+            },
+          ],
+        }).save();
+      case WalletType.PERSONAL:
+        return new this._transactionModel({
+          from: {
+            type: WalletType.EXTERNAL_DEPOSIT,
+            value: topupDto.value,
+          },
+          to: [
+            {
+              type: WalletType.PERSONAL,
+              value: topupDto.value,
+              user: topupDto.userId,
+            },
+          ],
+          ledgers: [
+            {
+              credit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                value: topupDto.value,
+              },
+              debit: {
+                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                value: topupDto.value,
+              },
+            },
+          ],
+        }).save();
+      default:
+        throw new CastcleException('SOMETHING_WRONG');
+    }
+  }
+
+  async getAllWalletRecent(
+    userId: string,
+    keyword?: { [key: string]: string },
+  ) {
+    const transactions =
+      await this._transactionModel.aggregate<GetWalletRecentResponse>([
+        pipelineOfGetWalletRecentFromType(userId),
+      ]);
+
+    if (!transactions.length) return [];
+
+    const userIds = transactions.map(({ user }) => user);
+
+    return this.repository
+      .findUsers({
+        keyword,
+        _id: userIds,
+      })
+      .exec();
   }
 }

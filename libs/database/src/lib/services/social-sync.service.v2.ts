@@ -88,7 +88,7 @@ export class SocialSyncServiceV2 {
       user: String(userId),
     });
 
-    if (!socialSync) throw CastcleException.FORBIDDEN;
+    if (!socialSync) throw new CastcleException('FORBIDDEN');
 
     socialSync.autoPost = isAutoPost;
     await socialSync.save();
@@ -111,7 +111,7 @@ export class SocialSyncServiceV2 {
       user: userId,
     });
 
-    if (!socialSync) throw CastcleException.FORBIDDEN;
+    if (!socialSync) throw new CastcleException('FORBIDDEN');
 
     await this.unsync(socialSync);
   }

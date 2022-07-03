@@ -21,5 +21,8 @@
  * or have any questions.
  */
 
-export const RANDOM_SUBJECTS = ['banana', 'cookie', 'apple', 'pineapple'];
-export const RANDOM_ADJECTIVE = ['blaze', 'cooked', 'cool', 'burn'];
+export class Language {
+  code: string;
+  title: string;
+  display: string;
+}

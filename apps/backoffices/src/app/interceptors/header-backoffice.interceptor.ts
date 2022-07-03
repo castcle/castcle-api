@@ -20,36 +20,23 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { CountryPayloadDto } from '../dtos/country.dto';
-import { CastcleBase } from './base.schema';
 
-@Schema({ timestamps: true })
-class CountryDocument extends CastcleBase {
-  @Prop()
-  code: string;
+import { Environment } from '@castcle-api/environments';
+import { CastcleException } from '@castcle-api/utils/exception';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 
-  @Prop()
-  dialCode: string;
-
-  @Prop()
-  name: string;
-
-  @Prop()
-  flag: string;
+@Injectable()
+export class HeaderBackofficeInterceptor implements NestInterceptor {
+  async intercept(context: ExecutionContext, next: CallHandler) {
+    const request = context.switchToHttp().getRequest();
+    if (request.headers?.['api-key'] !== Environment.BACKOFFICE_API_KEY)
+      throw new CastcleException('MISSING_AUTHORIZATION_HEADERS');
+    request.$api_key = request.headers['api-key'];
+    return next.handle();
+  }
 }
-
-export const CountrySchema = SchemaFactory.createForClass(CountryDocument);
-
-export class Country extends CountryDocument {
-  toCountryPayload: () => CountryPayloadDto;
-}
-
-CountrySchema.methods.toCountryPayload = function () {
-  return {
-    code: this.code,
-    dialCode: this.dialCode,
-    name: this.name,
-    flag: this.flag,
-  } as CountryPayloadDto;
-};

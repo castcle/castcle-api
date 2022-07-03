@@ -27,7 +27,10 @@ import {
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
-import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
+import {
+  HeadersInterceptor,
+  HttpCacheSharedInterceptor,
+} from '@castcle-api/utils/interceptors';
 import {
   CacheKey,
   CacheTTL,
@@ -44,21 +47,31 @@ export class MetaDataControllerV2 {
   @CacheKey(CacheKeyName.LanguagesGet.Name)
   @CacheTTL(CacheKeyName.LanguagesGet.Ttl)
   @Get('languages')
-  async getAllLanguage() {
+  async getAllLanguages() {
     const languages = await this.metadataService.getAllLanguage();
 
     return ResponseDto.ok({
-      payload: languages.map((lang) => lang.toLanguagePayload()),
+      payload: languages.map(({ payload }) => payload),
     });
   }
 
   @UseInterceptors(HttpCacheSharedInterceptor)
   @Get('country')
-  async getAllCountry(@Query() { sortBy }: GetCountryQuery) {
+  async getAllCountries(@Query() { sortBy }: GetCountryQuery) {
     const countries = await this.metadataService.getAllCountry(sortBy);
 
     return ResponseDto.ok({
-      payload: countries.map((country) => country.toCountryPayload()),
+      payload: countries.map(({ payload }) => payload),
+    });
+  }
+
+  @UseInterceptors(HeadersInterceptor, HttpCacheSharedInterceptor)
+  @Get('report-subjects')
+  async getAllReportSubjects() {
+    const reportSubjects = await this.metadataService.getAllReportSubjects();
+
+    return ResponseDto.ok({
+      payload: reportSubjects.map(({ payload }) => payload),
     });
   }
 }

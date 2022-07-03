@@ -45,6 +45,8 @@ import {
   QuoteCastDto,
   RankerService,
   ReplyCommentParam,
+  ReportContentDto,
+  ReportUserDto,
   ResponseDto,
   SocialSyncServiceV2,
   SuggestionServiceV2,
@@ -82,12 +84,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import {
-  DeleteUserDto,
-  ReportingContentDto,
-  ReportingUserDto,
-  TargetCastcleDto,
-} from '../dtos';
+import { DeleteUserDto, TargetCastcleDto } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
 
 @CastcleControllerV2({ path: 'users' })
@@ -186,12 +183,12 @@ export class UsersControllerV2 {
 
     if (body.castcleId) {
       if (!user.canUpdateCastcleId())
-        throw CastcleException.CHANGE_CASTCLE_ID_FAILED;
+        throw new CastcleException('CHANGE_CASTCLE_ID_FAILED');
 
       const userExisting = await this.userService.getUser(body.castcleId);
 
       if (userExisting && String(userExisting?.id) !== String(user?.id))
-        throw CastcleException.USER_ID_IS_EXIST;
+        throw new CastcleException('USER_ID_IS_EXIST');
     }
 
     const prepareUser = await this.userServiceV1.uploadUserInfo(
@@ -274,7 +271,7 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     if (!comment || String(comment.author._id) !== String(user.id))
-      throw CastcleException.CONTENT_NOT_FOUND;
+      throw new CastcleException('CONTENT_NOT_FOUND');
 
     const updatedComment = await this.contentService.updateComment(comment, {
       message: updateCommentDto.message,
@@ -300,7 +297,7 @@ export class UsersControllerV2 {
       : await this.userService.getUser(userId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     if (!comment || String(comment.author._id) !== String(user.id))
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
     await this.commentService.deleteComment(comment);
   }
 
@@ -323,7 +320,7 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     const comment = await this.contentService.getCommentById(sourceCommentId);
-    if (!comment) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!comment) throw new CastcleException('CONTENT_NOT_FOUND');
 
     const replyComment = await this.contentService.replyComment(user, comment, {
       message: replyCommentBody.message,
@@ -384,7 +381,7 @@ export class UsersControllerV2 {
       !replyComment ||
       String(replyComment.author._id) !== String(user.id)
     )
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
 
     const updatedComment = await this.contentService.updateComment(
       replyComment,
@@ -424,7 +421,7 @@ export class UsersControllerV2 {
       !replyComment ||
       String(replyComment.author._id) !== String(user.id)
     )
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
 
     await this.commentService.deleteComment(replyComment);
   }
@@ -491,14 +488,14 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     const comment = await this.contentService.getCommentById(commentId);
-    if (!comment) throw CastcleException.REQUEST_URL_NOT_FOUND;
+    if (!comment) throw new CastcleException('REQUEST_URL_NOT_FOUND');
 
     let originalComment: Comment;
     if (comment.type === CommentType.Reply) {
       originalComment = await this.contentService.getCommentById(
         comment.targetRef.oid,
       );
-      if (!originalComment) throw CastcleException.REQUEST_URL_NOT_FOUND;
+      if (!originalComment) throw new CastcleException('REQUEST_URL_NOT_FOUND');
     }
     const content = await this.contentService.getContentById(
       comment.type === CommentType.Reply
@@ -810,13 +807,13 @@ export class UsersControllerV2 {
   async reportUser(
     @Auth() authorizer: Authorizer,
     @Param() { isMe, userId }: GetUserParam,
-    @Body() { message, targetCastcleId }: ReportingUserDto,
+    @Body() body: ReportUserDto,
   ) {
     const user = isMe
       ? authorizer.user
       : await this.userService.getUser(userId);
 
-    await this.userService.reportUser(user, targetCastcleId, message);
+    await this.userService.reportUser(user, body);
   }
 
   @Post(':userId/reporting/content')
@@ -825,13 +822,13 @@ export class UsersControllerV2 {
   async reportContent(
     @Auth() authorizer: Authorizer,
     @Param() { isMe, userId }: GetUserParam,
-    @Body() { message, targetContentId }: ReportingContentDto,
+    @Body() body: ReportContentDto,
   ) {
     const user = isMe
       ? authorizer.user
       : await this.userService.getUser(userId);
 
-    await this.userService.reportContent(user, targetContentId, message);
+    await this.userService.reportContent(user, body);
   }
 
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)

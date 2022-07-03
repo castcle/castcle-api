@@ -23,6 +23,7 @@
 
 import {
   AVATAR_SIZE_CONFIGS,
+  AWSClient,
   COMMON_SIZE_CONFIGS,
   Image,
 } from '@castcle-api/utils/aws';
@@ -57,6 +58,7 @@ import {
   CreateContentDto,
   CreateCredentialDto,
   EntityVisibility,
+  GetContentCastDto,
   NotificationSource,
   NotificationType,
   RefreshTokenPayload,
@@ -68,10 +70,15 @@ import {
   AdsBoostStatus,
   AdsPaymentMethod,
   CACCOUNT_NO,
+  CastcleIdMetadata,
   CastcleNumber,
+  Country,
   KeywordType,
+  Language,
+  MetadataType,
   OtpObjective,
   QueueStatus,
+  ReportingSubject,
   SearchType,
   UserType,
 } from '../models';
@@ -86,13 +93,12 @@ import {
   CAccountNature,
   Comment,
   Content,
-  Country,
   Credential,
   CredentialModel,
   Engagement,
   FeedItem,
   Hashtag,
-  Language,
+  Metadata,
   Notification,
   Otp,
   OtpModel,
@@ -129,8 +135,8 @@ type UserQuery = {
   castcleId?: string;
   excludeRelationship?: string[] | User[];
   keyword?: {
-    input: string;
-    type: KeywordType;
+    input?: string;
+    type?: KeywordType;
   };
   sinceId?: string;
   type?: UserType;
@@ -225,8 +231,14 @@ type WalletShortcutQuery = {
   accountId?: string;
 };
 
+type MetadataQuery = {
+  type?: MetadataType;
+};
+
 @Injectable()
 export class Repository {
+  private castcleIdMetadata: CastcleIdMetadata;
+
   constructor(
     /** @deprecated */
     @InjectModel('AccountActivation') private activationModel: ActivationModel,
@@ -242,22 +254,22 @@ export class Repository {
     @InjectModel('CAccount') private caccountModel: Model<CAccount>,
     @InjectModel('Comment') private commentModel: Model<Comment>,
     @InjectModel('Content') private contentModel: Model<Content>,
-    @InjectModel('Country') private countryModel: Model<Country>,
     @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
-    @InjectModel('Language') private languageModel: Model<Language>,
+    @InjectModel('Metadata')
+    private metadataModel: Model<Metadata<any>>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Queue') private queueModel: Model<Queue>,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
+    @InjectModel('Reporting') private reportingModel: Model<Reporting>,
     @InjectModel('Revision') private revisionModel: Model<Revision>,
     @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
     @InjectModel('UxEngagement') private uxEngagementModel: Model<UxEngagement>,
-    @InjectModel('Reporting') private reportingModel: Model<Reporting>,
     @InjectModel('WalletShortcut')
     private walletShortcutModel: Model<WalletShortcut>,
     private httpService: HttpService,
@@ -453,9 +465,11 @@ export class Repository {
         $gt: 0,
       },
     };
-    if (filter.tag) query.tag = new CastcleName(filter.tag).slug;
+    if (filter.tag) query.tag = CastcleName.toStugTag(filter.tag);
     if (filter.tags)
-      query.tags = { $in: filter.tags.map((tag) => new CastcleName(tag).slug) };
+      query.tags = {
+        $in: filter.tags.map((tag) => CastcleName.toStugTag(tag)),
+      };
 
     if (filter.keyword) {
       query.tag = CastcleRegExp.fromString(filter.keyword.input, {
@@ -480,6 +494,15 @@ export class Repository {
     if (filter._id) query._id = filter._id as any;
     if (filter.accountId) query.account = filter.accountId as any;
     if (filter.address) query.address = filter.address;
+
+    return query;
+  }
+
+  private getMetadataQuery(filter: MetadataQuery) {
+    const query: FilterQuery<Metadata<Country | Language | ReportingSubject>> =
+      {};
+
+    if (filter.type) query.type = filter.type;
 
     return query;
   }
@@ -612,19 +635,11 @@ export class Repository {
   }
 
   async createUser(user: AnyKeys<User>) {
-    const { suggestCastcleId } = new CastcleName(
+    const suggestId = await this.suggestCastcleId(
       user.displayId || user.displayName,
     );
 
-    const [availableId] =
-      await this.userModel.aggregate<GetAvailableIdResponse>(
-        pipelineOfGetAvailableId(suggestCastcleId),
-      );
-
-    user.displayId = availableId?.count
-      ? suggestCastcleId + (availableId.number || Date.now().toString())
-      : suggestCastcleId;
-
+    user.displayId = suggestId;
     return new this.userModel(user).save();
   }
 
@@ -1047,6 +1062,20 @@ export class Repository {
     return this.feedItemModel.updateOne(filter, feedItem, queryOptions);
   }
 
+  saveFeedItemFromContents(
+    contents: GetContentCastDto,
+    viewerAccountId: string,
+  ) {
+    return this.feedItemModel.insertMany(
+      contents.contents.map((c) => ({
+        viewer: viewerAccountId,
+        content: c._id,
+        author: c.author.id,
+        calledAt: new Date(),
+      })),
+    );
+  }
+
   findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {
     return this.socialSyncModel
       .findOne(this.getSocialSyncQuery(filter), {}, queryOptions)
@@ -1265,12 +1294,13 @@ export class Repository {
     });
   }
 
-  findLanguages(filter?: FilterQuery<Language>, queryOptions?: QueryOptions) {
-    return this.languageModel.find(filter, queryOptions);
-  }
-
-  findCountries(filter?: FilterQuery<Country>, queryOptions?: QueryOptions) {
-    return this.countryModel.find(filter, queryOptions);
+  findMetadata<T extends Country | Language | ReportingSubject>(
+    filter?: MetadataQuery,
+    queryOptions?: QueryOptions,
+  ): Promise<Metadata<T>[]> {
+    return this.metadataModel
+      .find(this.getMetadataQuery(filter), {}, queryOptions)
+      .exec();
   }
 
   async getPublicUsers({
@@ -1343,6 +1373,7 @@ export class Repository {
       .find(this.getWalletShortcutQuery(filter), {}, queryOptions)
       .exec();
   }
+
   updateWallerShortcut(
     filter: WalletShortcutQuery,
     updateQuery: UpdateQuery<WalletShortcut>,
@@ -1359,5 +1390,53 @@ export class Repository {
     return this.walletShortcutModel.deleteOne(
       this.getWalletShortcutQuery(filter),
     );
+  }
+
+  private isValidCastcleId(castcleId: string) {
+    const hasBannedWord = this.castcleIdMetadata.bannedWords.some(
+      (bannedWord) => new RegExp(bannedWord, 'i').test(castcleId),
+    );
+
+    return (
+      !hasBannedWord &&
+      castcleId.length >= this.castcleIdMetadata.minLength &&
+      castcleId.length <= this.castcleIdMetadata.maxLength
+    );
+  }
+
+  private randomCastcleId() {
+    const randomLength = (length = 0) => {
+      return Math.floor(Math.random() * length);
+    };
+
+    return `${
+      this.castcleIdMetadata.adjectives[
+        randomLength(this.castcleIdMetadata.adjectives.length)
+      ]
+    }${
+      this.castcleIdMetadata.nouns[
+        randomLength(this.castcleIdMetadata.nouns.length)
+      ]
+    }`;
+  }
+
+  async suggestCastcleId(preferredCastcleId?: string) {
+    if (!this.castcleIdMetadata) {
+      const castcleIdMetadata = await AWSClient.getCastcleIdMetadata();
+
+      this.castcleIdMetadata = castcleIdMetadata;
+    }
+
+    const castcleId =
+      !this.castcleIdMetadata || this.isValidCastcleId(preferredCastcleId)
+        ? CastcleName.toStug(preferredCastcleId)
+        : this.randomCastcleId();
+
+    const [availableId] =
+      await this.userModel.aggregate<GetAvailableIdResponse>(
+        pipelineOfGetAvailableId(castcleId),
+      );
+
+    return `${castcleId}${availableId ? availableId?.number : ''}`;
   }
 }

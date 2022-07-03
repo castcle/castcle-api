@@ -24,7 +24,7 @@
 import { Configs } from './configs';
 
 export class Environment {
-  static PRODUCTION = process.env.NODE_ENV === 'production';
+  static IS_PRODUCTION = process.env.NODE_ENV === 'production';
   static NODE_ENV = process.env.NODE_ENV;
   static PORT = process.env.PORT;
 
@@ -254,8 +254,9 @@ export class Environment {
   static BACKOFFICE_JWT_ACCESS_SECRET =
     process.env.BACKOFFICE_JWT_ACCESS_SECRET;
   static BACKOFFICE_DB_DATABASE_NAME = process.env.BACKOFFICE_DB_DATABASE_NAME;
-  static BACKOFFICE_JWT_ACCESS_EXPIRES_IN =
-    process.env.BACKOFFICE_JWT_ACCESS_EXPIRES_IN;
+  static BACKOFFICE_JWT_ACCESS_EXPIRES_IN = Number(
+    process.env.BACKOFFICE_JWT_ACCESS_EXPIRES_IN || 0,
+  );
   static BACKOFFICE_DB_USERNAME = process.env.BACKOFFICE_DB_USERNAME;
   static BACKOFFICE_DB_PASSWORD = process.env.BACKOFFICE_DB_PASSWORD;
   static BACKOFFICE_DB_HOST = process.env.BACKOFFICE_DB_HOST;
@@ -271,5 +272,5 @@ export class Environment {
   static BACKOFFICE_DB_URI = `${Environment.DB_FORMAT}://${Environment.BACKOFFICE_DB_AUTHENTICATION}${Environment.BACKOFFICE_DB_HOST}/${Environment.BACKOFFICE_DB_DATABASE_NAME}?retryWrites=true&w=majority`;
 
   // Chain internal name
-  static CHAIN_INTERNAL = process.env.CHAIN_INTERNAL || '';
+  static CHAIN_INTERNAL = process.env.CHAIN_INTERNAL;
 }

@@ -22,15 +22,15 @@
  */
 
 import { Configs, Environment } from '@castcle-api/environments';
-import { Image } from '@castcle-api/utils/aws';
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { isMongoId } from 'class-validator';
 import {
   ShortcutInternalDto,
   ShortcutSort,
-  WalletShortcutOptions,
-  WalletShortcutResponse,
+  WalletOptions,
+  WalletResponse,
 } from '../dtos';
 import { Repository } from '../repositories';
 import { User, WalletShortcut } from '../schemas';
@@ -39,41 +39,50 @@ import { User, WalletShortcut } from '../schemas';
 export class WalletShortcutService {
   constructor(private repository: Repository) {}
 
-  private toWalletShortcutResponse(
+  toWalletResponse(
     user: User,
-    shortcut: WalletShortcut,
-    overwrite?: WalletShortcutOptions,
+    otherChain?: WalletShortcut,
+    overwrites?: WalletOptions,
   ) {
     return {
-      id: shortcut?._id,
-      chainId: shortcut?.chainId,
+      id: otherChain?._id ?? user._id,
+      chainId: otherChain?.chainId ?? Environment.CHAIN_INTERNAL,
       castcleId: user.displayId,
       userId: user._id,
       type: user.type,
-      order: shortcut?.order,
-      displayName: shortcut?.displayName ?? user.displayName,
-      images: user.profile?.images?.avatar
-        ? new Image(user.profile.images.avatar)
-        : Configs.DefaultAvatarImages,
-      memo: shortcut?.memo,
+      order: otherChain?.order,
+      displayName: otherChain?.displayName ?? user.displayName,
+      walletAddress: !isMongoId(otherChain?.address)
+        ? otherChain?.address
+        : undefined,
+      images: {
+        avatar: user.profile?.images?.avatar
+          ? CastcleImage.sign(user.profile.images.avatar)
+          : Configs.DefaultAvatarImages,
+      },
+      memo: otherChain?.memo,
       createdAt:
-        shortcut?.createdAt?.toISOString() ?? user?.createdAt?.toISOString(),
+        otherChain?.createdAt?.toISOString() ?? user.createdAt?.toISOString(),
       updatedAt:
-        shortcut?.updatedAt?.toISOString() ?? user?.createdAt?.toISOString(),
-      ...overwrite,
-    } as WalletShortcutResponse;
+        otherChain?.updatedAt?.toISOString() ?? user.createdAt?.toISOString(),
+      ...overwrites,
+    } as WalletResponse;
   }
 
   async createWalletShortcut(body: ShortcutInternalDto, accountId: string) {
+    //TODO !!! Now! Check internal chain only.
+    if (body.chainId !== Environment.CHAIN_INTERNAL)
+      throw new CastcleException('INTERNAL_CHAIN_NOT_FOUND');
+
     const user = await this.repository.findUser({ _id: body.userId });
-    if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const walletShortcut = await this.repository.findWallerShortcut({
       address: body.userId,
       accountId,
     });
 
-    if (walletShortcut) throw CastcleException.WALLET_SHORTCUT_IS_EXIST;
+    if (walletShortcut) throw new CastcleException('WALLET_SHORTCUT_IS_EXIST');
 
     const newShortcut = await this.repository.createWallerShortcut({
       ...body,
@@ -81,7 +90,7 @@ export class WalletShortcutService {
       account: accountId,
     });
 
-    return this.toWalletShortcutResponse(user, newShortcut);
+    return this.toWalletResponse(user, newShortcut);
   }
 
   async getWalletShortcut(accountId: string) {
@@ -107,14 +116,13 @@ export class WalletShortcutService {
 
     const shortcutResponses = walletShortcuts.map((shortcut) => {
       const user = users.find((user) => String(user._id) === shortcut.address);
-      return this.toWalletShortcutResponse(user, shortcut);
+      return this.toWalletResponse(user, shortcut);
     });
 
     const accountResponses = usersOwner.map((user) => {
-      return this.toWalletShortcutResponse(user, undefined, {
+      return this.toWalletResponse(user, undefined, {
         id: null,
         order: undefined,
-        chainId: Environment.CHAIN_INTERNAL,
       });
     });
     return {

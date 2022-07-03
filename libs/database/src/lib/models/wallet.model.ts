@@ -21,6 +21,8 @@
  * or have any questions.
  */
 
+import { WalletType } from './wallet.enum';
+
 export class Wallet {
   balance: number;
 }
@@ -36,4 +38,10 @@ export class WalletHistoryPayloadItem {
 
 export class WalletHistoryResponseDto {
   payload: WalletHistoryPayloadItem[];
+}
+
+export class TopUpDto {
+  type: WalletType;
+  userId?: string;
+  value: number;
 }

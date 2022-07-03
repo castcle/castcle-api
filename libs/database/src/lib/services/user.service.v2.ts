@@ -49,6 +49,8 @@ import {
   PageResponseDto,
   PaginationQuery,
   QRCodeImageSize,
+  ReportContentDto,
+  ReportUserDto,
   ResponseDto,
   SortDirection,
   UpdateMobileDto,
@@ -80,7 +82,7 @@ export class UserServiceV2 {
 
   getUser = async (userId: string) => {
     const user = await this.repository.findUser({ _id: userId });
-    if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
     return user;
   };
 
@@ -95,7 +97,7 @@ export class UserServiceV2 {
       expansionFields,
     });
 
-    if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     return user;
   };
@@ -176,7 +178,7 @@ export class UserServiceV2 {
       _id: targetCastcleId,
     });
 
-    if (!followedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!followedUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     await user.follow(followedUser);
     await this.notificationService.notifyToUser(
@@ -203,7 +205,7 @@ export class UserServiceV2 {
       })
       .exec();
 
-    if (!blockUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!blockUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const session = await this.relationshipModel.startSession();
     await session.withTransaction(async () => {
@@ -243,7 +245,7 @@ export class UserServiceV2 {
       _id: targetCastcleId,
     });
 
-    if (!unblockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!unblockedUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const session = await this.relationshipModel.startSession();
     await session.withTransaction(async () => {
@@ -326,17 +328,17 @@ export class UserServiceV2 {
       .findUser({ _id: targetCastcleId })
       .exec();
 
-    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!targetUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     await user.unfollow(targetUser);
   }
 
-  async reportContent(user: User, targetContentId: string, message: string) {
+  async reportContent(user: User, body: ReportContentDto) {
     const targetContent = await this.repository.findContent({
-      _id: targetContentId,
+      _id: body.targetContentId,
     });
 
-    if (!targetContent) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!targetContent) throw new CastcleException('CONTENT_NOT_FOUND');
 
     const engagementFilter = {
       user: user._id,
@@ -362,37 +364,39 @@ export class UserServiceV2 {
           displayName: targetContent.author.displayName,
         },
       },
-      message,
+      body.message,
     );
 
     await this.repository.createReporting({
-      user: targetContent.author.id,
-      type: ReportType.CONTENT,
-      payload: targetContent,
       by: user._id,
-      message,
+      message: body.message,
+      payload: targetContent,
+      subject: body.subject,
+      type: ReportType.CONTENT,
+      user: targetContent.author.id,
     });
   }
 
-  async reportUser(user: User, targetCastcleId: string, message: string) {
+  async reportUser(user: User, body: ReportUserDto) {
     const targetUser = await this.repository.findUser({
-      _id: targetCastcleId,
+      _id: body.targetCastcleId,
     });
 
-    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!targetUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     await this.mailerService.sendReportUserEmail(
       { _id: user._id, displayName: user.displayName },
       { _id: targetUser._id, displayName: targetUser.displayName },
-      message,
+      body.message,
     );
 
     await this.repository.createReporting({
-      user: targetUser._id,
-      type: ReportType.USER,
-      payload: targetUser,
       by: user._id,
-      message,
+      message: body.message,
+      payload: body.targetCastcleId,
+      subject: body.subject,
+      type: ReportType.USER,
+      user: targetUser._id,
     });
   }
 
@@ -401,7 +405,7 @@ export class UserServiceV2 {
     { objective, refCode, countryCode, mobileNumber }: UpdateMobileDto,
     ip: string,
   ) {
-    if (account.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (account.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
 
     const otp = await this.repository.findOtp({
       objective,
@@ -409,17 +413,17 @@ export class UserServiceV2 {
     });
 
     if (!otp?.isVerify) {
-      throw CastcleException.INVALID_REF_CODE;
+      throw new CastcleException('INVALID_REF_CODE');
     }
     if (!otp.isValid()) {
       await otp.updateOne({ isVerify: false, retry: 0 });
-      throw CastcleException.EXPIRED_OTP;
+      throw new CastcleException('EXPIRED_OTP');
     }
     if (otp.refCode !== refCode) {
       await otp.failedToVerify().save();
       throw otp.exceededMaxRetries()
-        ? CastcleException.OTP_USAGE_LIMIT_EXCEEDED
-        : CastcleException.INVALID_REF_CODE;
+        ? new CastcleException('OTP_USAGE_LIMIT_EXCEEDED')
+        : new CastcleException('INVALID_REF_CODE');
     }
 
     await Promise.all([
@@ -454,7 +458,7 @@ export class UserServiceV2 {
 
   async deleteCastcleAccount(account: Account, password: string) {
     if (!account.verifyPassword(password)) {
-      throw CastcleException.INVALID_PASSWORD;
+      throw new CastcleException('INVALID_PASSWORD');
     }
 
     await this.repository.deleteCastcleAccount(account);
@@ -466,12 +470,12 @@ export class UserServiceV2 {
       _id: pageId,
     });
 
-    if (!page) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!page) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
     if (String(page.ownerAccount) !== String(account._id)) {
-      throw CastcleException.FORBIDDEN;
+      throw new CastcleException('FORBIDDEN');
     }
     if (!account.verifyPassword(password)) {
-      throw CastcleException.INVALID_PASSWORD;
+      throw new CastcleException('INVALID_PASSWORD');
     }
 
     await this.repository.deletePage(page._id);
@@ -617,12 +621,6 @@ export class UserServiceV2 {
   }
 
   async createPage(user: User, body: PageDto) {
-    const pageIsExist = await this.repository.findUser({
-      _id: body.castcleId,
-    });
-
-    if (pageIsExist) throw CastcleException.PAGE_IS_EXIST;
-
     const page = await this.repository.createUser({
       ownerAccount: user.ownerAccount,
       type: UserType.PAGE,
@@ -636,7 +634,7 @@ export class UserServiceV2 {
   async createQRCode(chainId: string, size: string, userId: string) {
     const user = await this.repository.findUser({ _id: userId });
 
-    if (!user) throw CastcleException.USER_ID_IS_EXIST;
+    if (!user) throw new CastcleException('USER_ID_IS_EXIST');
 
     const qrCodeParams = CastcleQRCode.generateQRCodeText([
       chainId,
@@ -662,7 +660,7 @@ export class UserServiceV2 {
     requestedBy: User,
     refereeBy: boolean,
   ) {
-    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!targetUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const accounts = await this.repository.findAccounts(
       {

@@ -21,4 +21,33 @@
  * or have any questions.
  */
 
-export const RESERVE_NAMES = ['castcle', 'castcle-official', 'administrator'];
+import {
+  Configs as config,
+  Environment as env,
+} from '@castcle-api/environments';
+import { HttpService } from '@nestjs/axios';
+import * as AWS from 'aws-sdk';
+import { DateTime } from 'luxon';
+import { lastValueFrom, map } from 'rxjs';
+import { EXPIRE_TIME } from './config';
+
+export class AWSClient {
+  private static httpService = new HttpService();
+  private static signer = new AWS.CloudFront.Signer(
+    env.CLOUDFRONT_ACCESS_KEY_ID,
+    Buffer.from(env.CLOUDFRONT_PRIVATE_KEY, 'base64').toString('ascii'),
+  );
+
+  static async getCastcleIdMetadata() {
+    if (!env.CLOUDFRONT_PRIVATE_KEY) return;
+
+    const signURL = await AWSClient.signer.getSignedUrl({
+      url: `${env.ASSETS_HOST}/${config.AssetsPath.SuggestWords}`,
+      expires: DateTime.now().plus({ milliseconds: EXPIRE_TIME }).toMillis(),
+    });
+
+    return lastValueFrom(
+      AWSClient.httpService.get(signURL).pipe(map(({ data }) => data)),
+    );
+  }
+}

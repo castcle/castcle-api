@@ -24,24 +24,27 @@
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 import { getClientIp } from 'request-ip';
 
 @Injectable()
 export class CastcleThrottlerGuard extends ThrottlerGuard {
   override throwThrottlingException(): void {
-    throw CastcleException.RATE_LIMIT_REQUEST;
+    throw new CastcleException('RATE_LIMIT_REQUEST');
   }
 
-  override getTracker(req: Request): string {
-    const ip = getClientIp(req as any);
-    const userAgent = req.get('User-Agent');
+  override getTracker(req: FastifyRequest): string {
+    const ip = getClientIp(req);
+    const userAgent = req.headers['user-agent'];
     const defaultTracker = `${ip}-${userAgent}`;
 
-    return [defaultTracker, ...this.getTrackers(req.path, req.body)].join('-');
+    return [
+      defaultTracker,
+      ...this.getTrackers(req.routerPath, req.body ?? {}),
+    ].join('-');
   }
 
-  private getTrackers(path: string, body: Record<string, string>) {
+  private getTrackers(path: string, body: any) {
     if (path.includes('request-otp/email')) {
       return [body.objective, body.email];
     }

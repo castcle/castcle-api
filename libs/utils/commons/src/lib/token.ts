@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { sign, verify } from 'jsonwebtoken';
+import { decode, sign, verify } from 'jsonwebtoken';
 
 export const Token = {
   generateToken: (payload: any, secret: string, expireIn: number) =>
@@ -37,6 +37,15 @@ export const Token = {
     } catch (error) {
       console.error('error', error);
       return false;
+    }
+  },
+
+  decodeToken: <T = any>(token: string) => {
+    try {
+      return decode(token) as T;
+    } catch (error) {
+      console.error('error', error);
+      return undefined;
     }
   },
 };

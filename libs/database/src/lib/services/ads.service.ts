@@ -297,7 +297,7 @@ export class AdsService {
           $id: new mongoose.Types.ObjectId(adsRequest.contentId),
         };
     if (!(await this.validateAds(user, adsRequest)))
-      throw CastcleException.INVALID_TRANSACTIONS_DATA;
+      throw new CastcleException('INVALID_TRANSACTIONS_DATA');
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
       owner: user.id,
@@ -608,6 +608,14 @@ export class AdsService {
   ) => {
     await this.distributeContentFarmingReward(adsplacement, reward, session);
     await this.distributeContentCreatorReward(adsplacement, reward, session);
+    await this.distributeViewerReward(adsplacement, reward, session);
+  };
+
+  distributeViewerReward = async (
+    adsplacement: AdsPlacement,
+    reward: AdsSocialReward,
+    session: mongoose.ClientSession,
+  ) => {
     return this.taccountService.transfers(
       {
         from: {
@@ -627,8 +635,8 @@ export class AdsService {
               caccountNo:
                 adsplacement.campaign.campaignPaymentType ===
                 AdsPaymentMethod.ADS_CREDIT
-                  ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
-                  : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+                  ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+                  : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
               value: reward.viewerShare,
             },
             credit: {
@@ -647,25 +655,12 @@ export class AdsService {
     reward: AdsSocialReward,
     session: mongoose.ClientSession,
   ) => {
-    const creatorPool = reward.creatorShare + reward.farmingShare;
-    const creatorRewardPerContent = creatorPool / adsplacement.contents.length;
-    const cfs = await this._contentFarmingModel.find({
-      content: {
-        $in: adsplacement.contents.map((c) => String(c)),
-      },
-    });
-
+    const creatorRewardPerContent =
+      reward.creatorShare / adsplacement.contents.length;
     const transferTo: MicroTransaction[] = [];
     const ledgers: TLedger[] = [];
     for (let i = 0; i < adsplacement.contents.length; i++) {
-      const currentCfs = cfs.filter(
-        (c) => String(c.content) === adsplacement.contents[i].contentId,
-      );
-      const rewardPerContent =
-        currentCfs.length === 0
-          ? creatorRewardPerContent
-          : creatorRewardPerContent *
-            (reward.creatorShare / (reward.creatorShare + reward.farmingShare));
+      const rewardPerContent = creatorRewardPerContent;
       transferTo.push({
         user: adsplacement.contents[i].authorId,
         type: WalletType.PERSONAL,
@@ -704,8 +699,9 @@ export class AdsService {
     reward: AdsSocialReward,
     session: mongoose.ClientSession,
   ) => {
-    const creatorPool = reward.creatorShare + reward.farmingShare;
-    const creatorRewardPerContent = creatorPool / adsplacement.contents.length;
+    // const creatorPool = reward.creatorShare + reward.farmingShare;
+    const creatorRewardPerContent =
+      reward.farmingShare / adsplacement.contents.length; //creatorPool / adsplacement.contents.length;
 
     const cfs = await this._contentFarmingModel.find({
       content: {
@@ -769,9 +765,6 @@ export class AdsService {
           session,
         );
       } else {
-        const author = await this._userModel.findById(
-          adsplacement.contents[j].authorId,
-        );
         await this.taccountService.transfers(
           {
             from: {
@@ -782,7 +775,7 @@ export class AdsService {
               {
                 type: WalletType.PERSONAL,
                 value: creatorRewardPerContent,
-                user: author.id,
+                user: adsplacement.contents[j].authorId,
               },
             ],
             ledgers: [

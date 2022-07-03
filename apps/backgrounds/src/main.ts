@@ -21,22 +21,24 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { BackgroundModule } from './app/app.module';
 
 async function bootstrap() {
-  const logger = new CastLogger('Bootstrap');
-  const app = await NestFactory.create(BackgroundModule, {
-    logger: CastLoggerLevel,
-  });
   const port = process.env.PORT || 3341;
+  const app = await NestFactory.create<NestFastifyApplication>(
+    BackgroundModule,
+    new FastifyAdapter(),
+  );
 
-  await app.listen(port, () => {
-    logger.log(`Listening at http://localhost:${port}`);
-    logger.log(`Environment at ${Environment.NODE_ENV}`);
-  });
+  await app.listen(port, '0.0.0.0');
+  Logger.log(`🚀 Application is running on: ${await app.getUrl()}/`);
+  Logger.log(`Environment at ${process.env.NODE_ENV}`);
 }
 
 bootstrap();

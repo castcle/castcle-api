@@ -21,31 +21,29 @@
  * or have any questions.
  */
 import {
-  AuthenticationService,
-  LanguageService,
+  MetadataServiceV2,
+  MetadataType,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  UserService,
 } from '@castcle-api/database';
+import { HttpModule } from '@nestjs/axios';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { LanguagesController } from './languages.controller';
-
-jest.mock('libs/database/src/lib/services/user.service');
 
 describe('LanguagesController', () => {
   let mongod: MongoMemoryServer;
   let app: TestingModule;
   let appController: LanguagesController;
-  let languageService: LanguageService;
-  let authService: AuthenticationService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
@@ -55,19 +53,20 @@ describe('LanguagesController', () => {
         }),
       ],
       controllers: [LanguagesController],
-      providers: [LanguageService, AuthenticationService, UserService],
+      providers: [MetadataServiceV2, Repository],
     }).compile();
 
     appController = app.get<LanguagesController>(LanguagesController);
-    languageService = app.get<LanguageService>(LanguageService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
+    const metadataModel = app.get(getModelToken('Metadata'));
 
-    await authService.createAccount({
-      device: 'iPhone',
-      deviceUUID: 'iphone12345',
-      header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th'],
-    });
+    await new metadataModel({
+      type: MetadataType.LANGUAGE,
+      payload: {
+        code: 'th',
+        title: 'Thai',
+        display: 'ภาษาไทย',
+      },
+    }).save();
   });
 
   afterAll(async () => {
@@ -77,11 +76,6 @@ describe('LanguagesController', () => {
 
   describe('getAllLanguage', () => {
     it('should get all language in db', async () => {
-      await languageService.create({
-        code: 'th',
-        title: 'Thai',
-        display: 'ภาษาไทย',
-      });
       const result = await appController.getAllLanguage();
       const expectResult = {
         payload: [
@@ -92,7 +86,6 @@ describe('LanguagesController', () => {
           },
         ],
       };
-      console.log(result);
 
       expect(expectResult).toEqual(result);
     });

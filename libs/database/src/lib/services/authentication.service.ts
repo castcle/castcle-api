@@ -471,14 +471,12 @@ export class AuthenticationService {
    * @returns {Promise<string>} suggestCastCleId
    */
   async suggestCastcleId(displayName: string) {
-    const name = new CastcleName(displayName);
-    const result = await this.userService.getByIdOrCastcleId(
-      name.suggestCastcleId,
-    );
+    const suggestId = await CastcleName.toStug(displayName);
+    const result = await this.userService.getByIdOrCastcleId(suggestId);
     if (result) {
       const totalUser = await this._userModel.countDocuments().exec();
-      return name.suggestCastcleId + totalUser;
-    } else return name.suggestCastcleId;
+      return suggestId + totalUser;
+    } else return suggestId;
   }
 
   /**
@@ -671,14 +669,12 @@ export class AuthenticationService {
       avatar: requirements.avatar?.original,
     });
 
-    const suggestDisplayId = await this.suggestCastcleId(
-      requirements.displayName,
-    );
+    const suggestId = await CastcleName.toStug(requirements.displayName);
 
     this.logger.log('Create User.');
     await new this._userModel({
       ownerAccount: account._id,
-      displayId: suggestDisplayId,
+      displayId: suggestId,
       displayName: requirements.displayName,
       type: UserType.PEOPLE,
       profile: {

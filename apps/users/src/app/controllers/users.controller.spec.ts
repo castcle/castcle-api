@@ -66,6 +66,7 @@ import {
   UserResponseDto,
   UserService,
   UserType,
+  WalletShortcutService,
   WalletType,
   generateMockUsers,
 } from '@castcle-api/database';
@@ -140,6 +141,7 @@ describe('AppController', () => {
         RankerService,
         SocialSyncServiceV2,
         Repository,
+        WalletShortcutService,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -325,7 +327,7 @@ describe('AppController', () => {
           'me',
           updateDto,
         ),
-      ).rejects.toEqual(CastcleException.USER_ID_IS_EXIST);
+      ).rejects.toEqual(new CastcleException('USER_ID_IS_EXIST'));
     });
 
     it('should update castcleid and dispalyname from UpdateUserDto', async () => {
@@ -390,7 +392,7 @@ describe('AppController', () => {
           'me',
           updateDto,
         ),
-      ).rejects.toEqual(CastcleException.CHANGE_CASTCLE_ID_FAILED);
+      ).rejects.toEqual(new CastcleException('CHANGE_CASTCLE_ID_FAILED'));
     });
   });
 
@@ -636,13 +638,13 @@ describe('AppController', () => {
 
       await expect(
         appController.syncSocial(credentialGuest, defaultRequest),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
 
     it('should return exception when get duplicate social sync', async () => {
       await expect(
         appController.syncSocial(credential, defaultRequest),
-      ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
+      ).rejects.toEqual(new CastcleException('SOCIAL_PROVIDER_IS_EXIST'));
 
       const mocksNewUsers = await generateMockUsers(1, 1, {
         userService: service,
@@ -666,7 +668,7 @@ describe('AppController', () => {
       };
       await expect(
         appController.syncSocial(newCredential, newRequest),
-      ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
+      ).rejects.toEqual(new CastcleException('SOCIAL_PROVIDER_IS_EXIST'));
     });
 
     it('should return exception when socail sync with user people', async () => {
@@ -681,7 +683,7 @@ describe('AppController', () => {
       };
       await expect(
         appController.syncSocial(credential, userRequest),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
 
     it('should get all sync social from user', async () => {
@@ -797,7 +799,7 @@ describe('AppController', () => {
 
       await expect(
         appController.updateUserSettings(credentialGuest, req),
-      ).rejects.toEqual(CastcleException.PAYLOAD_TYPE_MISMATCH);
+      ).rejects.toEqual(new CastcleException('PAYLOAD_TYPE_MISMATCH'));
     });
 
     it('should return Exception when get guest account', async () => {
@@ -823,7 +825,7 @@ describe('AppController', () => {
 
       await expect(
         appController.updateUserSettings(credentialGuest, req),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
   });
 
@@ -1006,7 +1008,7 @@ describe('AppController', () => {
           contentA._id,
           newCredential,
         ),
-      ).rejects.toEqual(CastcleException.RECAST_IS_EXIST);
+      ).rejects.toEqual(new CastcleException('RECAST_IS_EXIST'));
     });
   });
 
@@ -1497,7 +1499,7 @@ describe('AppController', () => {
             },
           ],
         }),
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(new CastcleException('FORBIDDEN'));
     });
   });
 
@@ -1633,7 +1635,7 @@ describe('AppController', () => {
             { credential: mocks[0].credential, user: mocks[0].user } as any,
             ads._id,
           ),
-        ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
+        ).rejects.toEqual(new CastcleException('ADS_BOOST_STATUS_MISMATCH'));
       });
       it('should be able update ads Pause.', async () => {
         await appController.adsPause(
@@ -1653,7 +1655,7 @@ describe('AppController', () => {
             { credential: mocks[0].credential, user: mocks[0].user } as any,
             ads._id,
           ),
-        ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
+        ).rejects.toEqual(new CastcleException('ADS_BOOST_STATUS_MISMATCH'));
       });
       it('should be able update ads End.', async () => {
         await appController.adsEnd(
@@ -1673,7 +1675,7 @@ describe('AppController', () => {
             { credential: mocks[0].credential, user: mocks[0].user } as any,
             ads._id,
           ),
-        ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
+        ).rejects.toEqual(new CastcleException('ADS_BOOST_STATUS_MISMATCH'));
       });
     });
 

@@ -3,18 +3,6 @@
   "sourceRoot": "libs/healthy/src",
   "projectType": "library",
   "targets": {
-    "build": {
-      "executor": "@nrwl/js:swc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/healthy",
-        "tsConfig": "libs/healthy/tsconfig.lib.json",
-        "packageJson": "libs/healthy/package.json",
-        "main": "libs/healthy/src/index.ts",
-        "assets": ["libs/healthy/*.md"],
-        "swcrc": ".swcrc.base"
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],

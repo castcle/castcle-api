@@ -29,6 +29,7 @@ import {
   QueueStatus,
 } from '@castcle-api/database';
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Model } from 'mongoose';
 
@@ -37,7 +38,7 @@ export class SocialRewardScheduler {
   constructor(
     private contentService: ContentServiceV2,
     private adsService: AdsService,
-    private queue: Model<Queue>,
+    @InjectModel('Queue') private queue: Model<Queue>,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_10AM)

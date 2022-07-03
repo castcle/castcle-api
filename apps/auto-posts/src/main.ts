@@ -21,25 +21,47 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
+import fastifyXmlBodyParser from 'fastify-xml-body-parser';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const logger = new CastLogger('Bootstrap');
   const port = process.env.PORT || 3342;
   const prefix = 'auto-posts';
-  const app = await NestFactory.create(AppModule, {
-    logger: CastLoggerLevel,
-  });
+  const fastifyAdapter = new FastifyAdapter();
+
+  fastifyAdapter
+    .getInstance()
+    .addContentTypeParser(
+      'application/json',
+      { parseAs: 'string' },
+      (_, body: string, done) => {
+        try {
+          done(null, JSON.parse(body || '{}'));
+        } catch (err) {
+          done(err, {});
+        }
+      },
+    );
+
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    fastifyAdapter,
+  );
 
   app.setGlobalPrefix(prefix);
+  await app.register(fastifyXmlBodyParser, {
+    contentType: ['application/atom+xml'],
+  });
 
-  await app.listen(port);
-  logger.log(`Listening at http://localhost:${port}/`);
-  logger.log(`Environment at ${Environment.NODE_ENV}`);
+  await app.listen(port, '0.0.0.0');
+  Logger.log(`🚀 Application is running on: ${await app.getUrl()}/`);
+  Logger.log(`Environment at ${process.env.NODE_ENV}`);
 }
 
 bootstrap();

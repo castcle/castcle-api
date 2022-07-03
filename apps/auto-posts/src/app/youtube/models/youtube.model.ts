@@ -28,6 +28,9 @@ export enum YoutubeThumbnailQuality {
 }
 
 export class Youtube {
+  static FEED_URL_PATTERN =
+    /^https:\/\/www\.youtube\.com\/xml\/feeds\/videos\.xml\?channel_id=\w+$/;
+
   static feedUrlFromId(id: string) {
     return `https://www.youtube.com/xml/feeds/videos.xml?channel_id=${id}`;
   }

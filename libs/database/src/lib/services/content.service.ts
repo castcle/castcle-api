@@ -125,7 +125,7 @@ export class ContentService {
       .findOne({ _id: contentId, visibility: EntityVisibility.Publish })
       .exec();
 
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
     return content;
   };
@@ -237,7 +237,7 @@ export class ContentService {
   findContent = async (id: string) => {
     const content = await this.getContentFromId(id);
 
-    if (!content) throw CastcleException.REQUEST_URL_NOT_FOUND;
+    if (!content) throw new CastcleException('REQUEST_URL_NOT_FOUND');
 
     return content;
   };
@@ -912,7 +912,7 @@ export class ContentService {
       .exec();
 
   async reportContent(user: User, content: Content, message: string) {
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
     const engagementFilter = {
       user: user._id,

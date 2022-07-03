@@ -29,4 +29,5 @@ export * from './get-campaign-claims.aggregation';
 export * from './get-contents.aggregation';
 export * from './get-feed-contents.aggregation';
 export * from './get-users-relation.aggregation';
+export * from './get-wallet-recent.aggregation';
 export * from './notification.aggregation';

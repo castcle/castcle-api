@@ -24,7 +24,6 @@ import {
   DEFAULT_QUERY_OPTIONS,
   HashtagResponse,
   HashtagService,
-  LanguageResponse,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -40,7 +39,7 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { KeywordHashtagPipe } from '../pipes/keyword.hashtag.pipe';
 
 @CastcleController({ path: 'metadata', version: '1.0' })
@@ -50,9 +49,6 @@ export class HashtagsController {
   private logger = new CastLogger(HashtagsController.name);
 
   @ApiBearerAuth()
-  @ApiOkResponse({
-    type: LanguageResponse,
-  })
   @UseInterceptors(HttpCacheSharedInterceptor)
   @CacheKey(CacheKeyName.Hashtags.Name)
   @CacheTTL(CacheKeyName.Hashtags.Ttl)

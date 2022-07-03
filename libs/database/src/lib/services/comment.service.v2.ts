@@ -127,11 +127,10 @@ export class CommentServiceV2 {
    * @returns
    */
   private removeFromTag = async (tag: string) => {
-    const name = new CastcleName(tag);
     return this.hashtagModel
       .updateOne(
         {
-          tag: name.slug,
+          tag: CastcleName.toStugTag(tag),
           score: {
             $gt: 0,
           },
@@ -574,7 +573,7 @@ export class CommentServiceV2 {
       type: EngagementType.Like,
     });
 
-    if (engagement) throw CastcleException.LIKE_COMMENT_IS_EXIST;
+    if (engagement) throw new CastcleException('LIKE_COMMENT_IS_EXIST');
 
     await new this._engagementModel({
       type: EngagementType.Like,

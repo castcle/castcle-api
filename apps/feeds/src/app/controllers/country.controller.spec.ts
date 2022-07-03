@@ -21,13 +21,16 @@
  * or have any questions.
  */
 import {
-  CountryService,
+  MetadataServiceV2,
+  MetadataType,
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '@castcle-api/database';
+import { HttpModule } from '@nestjs/axios';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { CountryController } from './country.controller';
 
@@ -35,12 +38,12 @@ describe('CountryController', () => {
   let mongod: MongoMemoryServer;
   let app: TestingModule;
   let appController: CountryController;
-  let countryService: CountryService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
@@ -50,30 +53,41 @@ describe('CountryController', () => {
         }),
       ],
       controllers: [CountryController],
-      providers: [CountryService],
+      providers: [MetadataServiceV2, Repository],
     }).compile();
 
     appController = app.get<CountryController>(CountryController);
-    countryService = app.get<CountryService>(CountryService);
+    const metadataModel = app.get(getModelToken('Metadata'));
 
-    await countryService.create({
-      code: 'TH',
-      dialCode: '+66',
-      name: 'Thailand',
-      flag: 'url',
-    });
-    await countryService.create({
-      code: 'US',
-      dialCode: '+1',
-      name: 'U.S.A.',
-      flag: 'url',
-    });
-    await countryService.create({
-      code: 'CN',
-      dialCode: '+86',
-      name: 'China',
-      flag: 'url',
-    });
+    await metadataModel.insertMany([
+      {
+        type: MetadataType.COUNTRY,
+        payload: {
+          code: 'TH',
+          dialCode: '+66',
+          name: 'Thailand',
+          flag: 'url',
+        },
+      },
+      {
+        type: MetadataType.COUNTRY,
+        payload: {
+          code: 'US',
+          dialCode: '+1',
+          name: 'U.S.A.',
+          flag: 'url',
+        },
+      },
+      {
+        type: MetadataType.COUNTRY,
+        payload: {
+          code: 'CN',
+          dialCode: '+86',
+          name: 'China',
+          flag: 'url',
+        },
+      },
+    ]);
   });
 
   afterAll(async () => {
@@ -83,15 +97,11 @@ describe('CountryController', () => {
 
   describe('getAllCountry', () => {
     it('should get all country in db', async () => {
-      const result = await appController.getAllCountry();
+      const countriesData = await appController.getAllCountry({
+        sortBy: { name: 1 },
+      });
       const expectResult = {
         payload: [
-          {
-            code: 'CN',
-            dialCode: '+86',
-            flag: 'url',
-            name: 'China',
-          },
           {
             code: 'TH',
             dialCode: '+66',
@@ -104,11 +114,16 @@ describe('CountryController', () => {
             flag: 'url',
             name: 'U.S.A.',
           },
+          {
+            code: 'CN',
+            dialCode: '+86',
+            flag: 'url',
+            name: 'China',
+          },
         ],
       };
-      console.log(result);
 
-      expect(expectResult).toEqual(result);
+      expect(expectResult).toEqual(countriesData);
     });
   });
 });

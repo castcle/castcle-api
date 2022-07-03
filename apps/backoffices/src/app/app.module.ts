@@ -21,39 +21,24 @@
  * or have any questions.
  */
 
-import {
-  AdsCampaignSchema,
-  ContentSchema,
-  ReportingSchema,
-  UserSchema,
-} from '@castcle-api/database';
-import { Environment } from '@castcle-api/environments';
+import { CastcleBackofficeMongooseModule } from '@castcle-api/environments';
 import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleTracingModule } from '@castcle-api/tracing';
+import { Mailer } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { AppController } from './controllers/app.controller';
-import { AppService } from './services/app.service';
-
-export const MongooseForFeaturesApp = MongooseModule.forFeature(
-  [
-    { name: 'AdsCampaign', schema: AdsCampaignSchema },
-    { name: 'Content', schema: ContentSchema },
-    { name: 'User', schema: UserSchema },
-    { name: 'Reporting', schema: ReportingSchema },
-  ],
-  Environment.DB_DATABASE_NAME,
-);
+import { AuthenticationController } from './controllers/authentication.controller';
+import { CastcleBackofficeSchemas, CastcleDatabaseReadonly } from './schemas';
+import { AuthenticationService } from './services/authentication.service';
 
 @Module({
   imports: [
     CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
     CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
-    MongooseModule.forRoot(Environment.DB_URI, {
-      connectionName: Environment.DB_DATABASE_NAME,
-    }),
+    CastcleBackofficeMongooseModule,
+    CastcleBackofficeSchemas,
+    CastcleDatabaseReadonly,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AuthenticationController],
+  providers: [AuthenticationService, Mailer],
 })
 export class AppModule {}

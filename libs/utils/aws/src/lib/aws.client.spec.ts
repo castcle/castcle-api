@@ -20,32 +20,24 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { LanguagePayloadDto } from '../dtos/language.dto';
-import { CastcleBase } from './base.schema';
 
-@Schema({ timestamps: true })
-class LanguageDocument extends CastcleBase {
-  @Prop()
-  code: string;
+import { AWSClient } from './aws.client';
 
-  @Prop()
-  title: string;
+describe('getCastcleIdMetadata', () => {
+  beforeAll(() => {
+    jest.spyOn(AWSClient, 'getCastcleIdMetadata').mockResolvedValue({
+      bannedWords: ['bitch', 'admin', 'web'],
+      nouns: ['apple'],
+      adjectives: ['green'],
+      minLength: 4,
+      maxLength: 20,
+    });
+  });
+  it('should return metadata castcle id is exist.', async () => {
+    const metadataCastcleId = await AWSClient.getCastcleIdMetadata();
 
-  @Prop()
-  display: string;
-}
-
-export const LanguageSchema = SchemaFactory.createForClass(LanguageDocument);
-
-export class Language extends LanguageDocument {
-  toLanguagePayload: () => LanguagePayloadDto;
-}
-
-LanguageSchema.methods.toLanguagePayload = function () {
-  return {
-    code: this.code,
-    title: this.title,
-    display: this.display,
-  } as LanguagePayloadDto;
-};
+    expect(metadataCastcleId.bannedWords).toHaveLength(3);
+    expect(metadataCastcleId.nouns).toHaveLength(1);
+    expect(metadataCastcleId.maxLength).toEqual(20);
+  });
+});

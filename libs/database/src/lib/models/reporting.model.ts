@@ -21,4 +21,8 @@
  * or have any questions.
  */
 
-export const BANNED_NAMES = ['sexeducation'];
+export class ReportingSubject {
+  slug: string;
+  name: string;
+  order: number;
+}

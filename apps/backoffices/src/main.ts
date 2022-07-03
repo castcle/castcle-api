@@ -21,15 +21,38 @@
  * or have any questions.
  */
 
-import { Configs, Environment } from '@castcle-api/environments';
+import { Configs } from '@castcle-api/environments';
 import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
   const port = process.env.PORT || 3339;
+  const fastifyAdapter = new FastifyAdapter();
+
+  fastifyAdapter
+    .getInstance()
+    .addContentTypeParser(
+      'application/json',
+      { parseAs: 'string' },
+      (_, body: string, done) => {
+        try {
+          done(null, JSON.parse(body || '{}'));
+        } catch (err) {
+          done(err, {});
+        }
+      },
+    );
+
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    fastifyAdapter,
+  );
 
   app.useGlobalFilters(new CastcleExceptionFilter());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
@@ -39,10 +62,9 @@ async function bootstrap() {
     header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
-  await app.listen(port, () => {
-    Logger.log(`Listening at http://localhost:${port}`);
-    Logger.log(`Environment at ${Environment.NODE_ENV}`);
-  });
+  await app.listen(port, '0.0.0.0');
+  Logger.log(`🚀 Application is running on: ${await app.getUrl()}/`);
+  Logger.log(`Environment at ${process.env.NODE_ENV}`);
 }
 
 bootstrap();

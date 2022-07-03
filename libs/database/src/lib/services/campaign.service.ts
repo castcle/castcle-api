@@ -150,9 +150,9 @@ export class CampaignService {
       endDate: { $gte: now },
     });
 
-    if (!campaign) throw CastcleException.CAMPAIGN_HAS_NOT_STARTED;
+    if (!campaign) throw new CastcleException('CAMPAIGN_HAS_NOT_STARTED');
     if (campaign.rewardBalance < campaign.rewardsPerClaim) {
-      throw CastcleException.REWARD_IS_NOT_ENOUGH;
+      throw new CastcleException('REWARD_IS_NOT_ENOUGH');
     }
 
     const claims = await this.queueModel.aggregate([
@@ -182,7 +182,7 @@ export class CampaignService {
       'claimCampaignsAirdrop:init',
     );
 
-    if (hasReachedMaxClaims) throw CastcleException.REACHED_MAX_CLAIMS;
+    if (hasReachedMaxClaims) throw new CastcleException('REACHED_MAX_CLAIMS');
 
     const account = await this.accountModel.findById(accountId);
 
@@ -191,7 +191,8 @@ export class CampaignService {
         'payload.mobile': account?.mobile,
       });
 
-      if (claimedMobileNumber) throw CastcleException.NOT_ELIGIBLE_FOR_CAMPAIGN;
+      if (claimedMobileNumber)
+        throw new CastcleException('NOT_ELIGIBLE_FOR_CAMPAIGN');
     }
 
     const queue = await new this.queueModel({
@@ -275,7 +276,7 @@ export class CampaignService {
     campaign: Campaign,
   ) {
     if (campaign.rewardBalance < campaign.rewardsPerClaim) {
-      throw CastcleException.REWARD_IS_NOT_ENOUGH;
+      throw new CastcleException('REWARD_IS_NOT_ENOUGH');
     }
 
     const claimsCount = account.campaigns?.[campaign.id]?.length ?? 0;
@@ -292,7 +293,7 @@ export class CampaignService {
       'isEligibleForVerifyMobileCampaign:done',
     );
 
-    if (hasReachedMaxClaims) throw CastcleException.REACHED_MAX_CLAIMS;
+    if (hasReachedMaxClaims) throw new CastcleException('REACHED_MAX_CLAIMS');
   }
 
   private async claimAirdrop(

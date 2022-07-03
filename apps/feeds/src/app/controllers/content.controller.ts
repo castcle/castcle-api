@@ -138,9 +138,9 @@ export class ContentController {
     try {
       const content = await this.contentService.getContentFromId(id);
       if (content) return content;
-      else throw CastcleException.REQUEST_URL_NOT_FOUND;
+      else throw new CastcleException('REQUEST_URL_NOT_FOUND');
     } catch (e) {
-      throw CastcleException.REQUEST_URL_NOT_FOUND;
+      throw new CastcleException('REQUEST_URL_NOT_FOUND');
     }
   }
 
@@ -408,7 +408,7 @@ export class ContentController {
       const user = await this.userService.getUserAndPagesFromCredential(
         req.$credential,
       );
-      if (!user) throw CastcleException.FORBIDDEN;
+      if (!user) throw new CastcleException('FORBIDDEN');
 
       if (hasRelationshipExpansion && user) {
         this.logger.log('Get User relationship');
