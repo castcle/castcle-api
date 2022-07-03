@@ -340,6 +340,14 @@ export class UserServiceV2 {
 
     if (!targetContent) throw new CastcleException('CONTENT_NOT_FOUND');
 
+    const reportingExists = await this.repository.findReporting({
+      payload: targetContent,
+      subject: body.subject,
+      by: user._id,
+    });
+
+    if (reportingExists) throw new CastcleException('REPORTING_IS_EXIST');
+
     const engagementFilter = {
       user: user._id,
       targetRef: { $ref: 'content', $id: targetContent._id },
@@ -384,6 +392,14 @@ export class UserServiceV2 {
 
     if (!targetUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
+    const reportingExists = await this.repository.findReporting({
+      payload: targetUser,
+      subject: body.subject,
+      by: user._id,
+    });
+
+    if (reportingExists) throw new CastcleException('REPORTING_IS_EXIST');
+
     await this.mailerService.sendReportUserEmail(
       { _id: user._id, displayName: user.displayName },
       { _id: targetUser._id, displayName: targetUser.displayName },
@@ -393,7 +409,7 @@ export class UserServiceV2 {
     await this.repository.createReporting({
       by: user._id,
       message: body.message,
-      payload: body.targetCastcleId,
+      payload: targetUser,
       subject: body.subject,
       type: ReportType.USER,
       user: targetUser._id,

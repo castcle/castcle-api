@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 class ReportingDtoV2 {
   @IsString()
@@ -34,13 +34,13 @@ class ReportingDtoV2 {
 }
 
 export class ReportContentDto extends ReportingDtoV2 {
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
   targetContentId: string;
 }
 
 export class ReportUserDto extends ReportingDtoV2 {
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
   targetCastcleId: string;
 }
