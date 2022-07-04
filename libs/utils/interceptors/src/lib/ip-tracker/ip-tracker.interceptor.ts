@@ -33,8 +33,8 @@ import {
 } from '@nestjs/common';
 import { getClientIp } from 'request-ip';
 import { lastValueFrom, map } from 'rxjs';
+import { CredentialRequest } from '../credential/credential.interceptor';
 import { getTokenFromRequest } from '../util';
-import { CredentialRequest } from '../utils-interceptors.module';
 
 @Injectable()
 export class IpTrackerInterceptor implements NestInterceptor {
