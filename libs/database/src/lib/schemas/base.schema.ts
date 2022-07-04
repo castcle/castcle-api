@@ -34,7 +34,4 @@ export class CastcleBase extends Document {
 
   @Prop({ type: String })
   visibility?: EntityVisibility;
-
-  @Prop()
-  wasNew?: boolean;
 }

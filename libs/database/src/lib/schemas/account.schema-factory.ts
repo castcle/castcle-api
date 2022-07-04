@@ -21,29 +21,89 @@
  * or have any questions.
  */
 
-import { Model, Schema } from 'mongoose';
-import { postAccountSave, preAccountSave } from '../hooks/account.save';
-import { Account, AccountSchema } from './account.schema';
+import { Environment } from '@castcle-api/environments';
+import { Password, Token } from '@castcle-api/utils/commons';
+import { Model } from 'mongoose';
+import { EntityVisibility } from '../dtos';
+import { AccountActivationType, UserType } from '../models';
+import { AccountSchema } from './account.schema';
 import { Credential } from './credential.schema';
 import { User } from './user.schema';
 
 export const AccountSchemaFactory = (
   credentialModel: Model<Credential>,
   userModel: Model<User>,
-): Schema<any> => {
+) => {
   AccountSchema.pre('save', function (next) {
-    preAccountSave(this as Account);
+    if (!this.visibility) this.visibility = EntityVisibility.Publish;
+
     next();
   });
 
   AccountSchema.post('save', async function (doc, next) {
-    //add activate process
-    await postAccountSave(doc, {
-      credentialModel,
-      userModel,
-    });
+    try {
+      if (doc.activateDate) {
+        await userModel.updateOne(
+          { ownerAccount: doc._id, type: UserType.PEOPLE },
+          { 'verified.email': true },
+        );
+      }
+
+      await credentialModel.updateMany(
+        { 'account._id': doc._id },
+        {
+          'account.isGuest': doc.isGuest,
+          'account.activateDate': doc.activateDate,
+          'account.visibility': doc.visibility,
+          'account.preferences': doc.preferences,
+          'account.email': doc.email,
+          'account.geolocation': doc.geolocation || null,
+        },
+      );
+    } catch (error) {
+      console.error(error);
+    }
+
     next();
   });
+
+  AccountSchema.methods.changePassword = function (
+    password: string,
+    email?: string,
+  ) {
+    const encryptPassword = Password.hash(password);
+    if (!encryptPassword) return null;
+
+    this.password = encryptPassword;
+    if (email) this.email = email;
+    return this.save();
+  };
+
+  AccountSchema.methods.verifyPassword = function (password: string) {
+    return Password.verify(password, this.password || '');
+  };
+
+  AccountSchema.methods.createActivation = function (
+    type: AccountActivationType,
+  ) {
+    const verifyTokenExpireDate = new Date(
+      Date.now() + Environment.JWT_VERIFY_EXPIRES_IN * 1000,
+    );
+    const activation = {
+      type,
+      verifyTokenExpireDate,
+      verifyToken: Token.generateToken(
+        {
+          id: this._id,
+          verifyTokenExpiresTime: verifyTokenExpireDate.toISOString(),
+        },
+        Environment.JWT_VERIFY_SECRET,
+        Environment.JWT_VERIFY_EXPIRES_IN,
+      ),
+    };
+    (this.activations ||= []).push(activation);
+    return activation;
+  };
 
   return AccountSchema;
 };

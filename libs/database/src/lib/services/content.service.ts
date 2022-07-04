@@ -51,6 +51,7 @@ import {
   createFilterQuery,
 } from '../dtos';
 import {
+  CommentType,
   ContentMessage,
   ContentMessageEvent,
   EngagementType,
@@ -60,7 +61,6 @@ import {
 import {
   Account,
   Comment,
-  CommentType,
   Content,
   Engagement,
   FeedItem,

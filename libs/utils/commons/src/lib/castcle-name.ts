@@ -22,11 +22,11 @@
  */
 
 export class CastcleName {
-  static toStug(keyword: string) {
+  static toSlug(keyword: string) {
     return keyword?.toLowerCase().replace(/\W/g, '_');
   }
 
-  static toStugTag(keyword: string) {
+  static fromTagToSlug(keyword: string) {
     return keyword?.toLowerCase().replace(/\W/g, '');
   }
 }

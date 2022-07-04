@@ -21,19 +21,23 @@
  * or have any questions.
  */
 
-import { CastcleName } from './castcle-name';
-describe('CastcleName', () => {
-  describe('#toSlug()', () => {
-    it('should replace all space and lower all character to underscore', () => {
-      expect(CastcleName.toSlug('This Is Sparta')).toEqual('this_is_sparta');
-    });
+const madge = require('madge');
+const { getJestProjects } = require('@nrwl/jest');
+
+async function detectCircularDeps() {
+  const apps = getJestProjects()
+    .filter((path) => /\/apps\//.test(path))
+    .map((path) => path.replace('<rootDir>/', '') + '/src/main.ts');
+
+  const madgeResponse = await madge(apps, {
+    tsConfig: 'tsconfig.base.json',
+    excludeRegExp: [/index.ts/],
   });
 
-  describe('#fromTagToSlug()', () => {
-    it('should replace all space and lower all character', () => {
-      expect(CastcleName.fromTagToSlug('This Is Sparta')).toEqual(
-        'thisissparta',
-      );
-    });
-  });
-});
+  const circularDeps = madgeResponse.circular();
+
+  console.log({ circularDeps, totalCircularDeps: circularDeps.length });
+  process.exit(circularDeps.length ? 1 : 0);
+}
+
+detectCircularDeps();

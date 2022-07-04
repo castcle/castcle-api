@@ -21,8 +21,6 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import { Password, Token } from '@castcle-api/utils/commons';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
 import {
@@ -35,18 +33,13 @@ import {
 } from '../models';
 import { CastcleBase } from './base.schema';
 
-export enum AccountRole {
-  Member = 'member',
-  Guest = 'guest',
-}
-
 interface ICredential {
   _id: any;
   deviceUUID: string;
 }
 
 @Schema({ timestamps: true })
-class AccountDocument extends CastcleBase {
+export class AccountDocument extends CastcleBase {
   @Prop({
     index: true,
   })
@@ -120,41 +113,3 @@ export class Account extends AccountDocument {
   verifyPassword: (password: string) => boolean;
   createActivation: (type: AccountActivationType) => AccountActivation;
 }
-
-AccountSchema.methods.changePassword = function (
-  password: string,
-  email?: string,
-) {
-  const encryptPassword = Password.create(password);
-  if (!encryptPassword) return null;
-
-  this.password = encryptPassword;
-  if (email) this.email = email;
-  return this.save();
-};
-
-AccountSchema.methods.verifyPassword = function (password: string) {
-  return Password.verify(password, this.password || '');
-};
-
-AccountSchema.methods.createActivation = function (
-  type: AccountActivationType,
-) {
-  const verifyTokenExpireDate = new Date(
-    Date.now() + Environment.JWT_VERIFY_EXPIRES_IN * 1000,
-  );
-  const activation = {
-    type,
-    verifyTokenExpireDate,
-    verifyToken: Token.generateToken(
-      {
-        id: this._id,
-        verifyTokenExpiresTime: verifyTokenExpireDate.toISOString(),
-      },
-      Environment.JWT_VERIFY_SECRET,
-      Environment.JWT_VERIFY_EXPIRES_IN,
-    ),
-  };
-  (this.activations ||= []).push(activation);
-  return activation;
-};

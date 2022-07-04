@@ -30,7 +30,7 @@ import { BlogPayload, ShortPayload } from '../dtos';
 import { CommentDto } from '../dtos/comment.dto';
 import { ImagePayload } from '../dtos/content.dto';
 import { CreateHashtag } from '../dtos/hashtag.dto';
-import { CommentType } from '../schemas';
+import { CommentType } from '../models';
 import { HashtagService } from './hashtag.service';
 
 describe('HashtagService', () => {
@@ -167,7 +167,7 @@ describe('HashtagService', () => {
         .findOne({ tag: 'sompop' })
         .exec();
       expect(newTag).toBeDefined();
-      expect(newTag.tag).toEqual(CastcleName.toStugTag('Sompop'));
+      expect(newTag.tag).toEqual(CastcleName.fromTagToSlug('Sompop'));
       expect(newTag.score).toEqual(1);
     });
     it("should update the current hashtag if it's already exist", async () => {
@@ -180,7 +180,7 @@ describe('HashtagService', () => {
         .findOne({ tag: 'sompop' })
         .exec();
       expect(newTag).toBeDefined();
-      expect(newTag.tag).toEqual(CastcleName.toStugTag('SomPop'));
+      expect(newTag.tag).toEqual(CastcleName.fromTagToSlug('SomPop'));
       expect(newTag.score).toEqual(2);
     });
   });

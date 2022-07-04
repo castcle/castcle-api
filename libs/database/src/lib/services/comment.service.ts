@@ -11,15 +11,8 @@ import {
   EntityVisibility,
   ExpansionQuery,
 } from '../dtos';
-import { EngagementType } from '../models';
-import {
-  Comment,
-  CommentType,
-  Engagement,
-  Relationship,
-  Revision,
-  User,
-} from '../schemas';
+import { CommentType, EngagementType } from '../models';
+import { Comment, Engagement, Relationship, Revision, User } from '../schemas';
 import { createCastcleMeta, getRelationship } from '../utils/common';
 
 @Injectable()
