@@ -27,8 +27,10 @@ import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
 import { AuthenticationController } from './controllers/authentication.controller';
+import { CampaignController } from './controllers/campaign.controller';
 import { CastcleBackofficeSchemas, CastcleDatabaseReadonly } from './schemas';
 import { AuthenticationService } from './services/authentication.service';
+import { CampaignService } from './services/campaign.service';
 
 @Module({
   imports: [
@@ -38,7 +40,7 @@ import { AuthenticationService } from './services/authentication.service';
     CastcleBackofficeSchemas,
     CastcleDatabaseReadonly,
   ],
-  controllers: [AuthenticationController],
-  providers: [AuthenticationService, Mailer],
+  controllers: [AuthenticationController, CampaignController],
+  providers: [AuthenticationService, CampaignService, Mailer],
 })
 export class AppModule {}

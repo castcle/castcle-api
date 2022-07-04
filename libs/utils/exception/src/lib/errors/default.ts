@@ -351,4 +351,15 @@ export const DefaultErrors = {
     code: '8003',
     message: 'Reporting is already exists.',
   },
+  CAMPAIGN_TYPE_IS_EXIST: {
+    statusCode: '400',
+    code: '8004',
+    message:
+      'The Campaign type of Campaign already exists. Please choose another type.',
+  },
+  CAMPAIGN_NOT_FOUND: {
+    statusCode: '404',
+    code: '8005',
+    message: 'Campaign could not be found. Please try again.',
+  },
 };
