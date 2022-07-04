@@ -40,7 +40,7 @@ export class ReportContentDto extends ReportingDtoV2 {
 }
 
 export class ReportUserDto extends ReportingDtoV2 {
-  @IsMongoId()
+  @IsString()
   @IsNotEmpty()
   targetCastcleId: string;
 }
