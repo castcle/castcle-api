@@ -859,6 +859,43 @@ describe('ContentServiceV2', () => {
         ).toEqual(mockFeedItems.map((f) => String(f.content)));
       });
     });
+    describe('generateFeeds()', () => {
+      it('should save recent feed in feedItems', async () => {
+        const feedResponse = await service.generateFeeds(
+          { maxResults: 20 } as any,
+          mocksUsers[0].account.id,
+          mocksUsers[0].user,
+        );
+        const response = await service.getRecentContents(
+          { maxResults: 20 } as any,
+          mocksUsers[0].account.id,
+          mocksUsers[0].user,
+        );
+        const mockFeedItems = response.contents.map(
+          (c) =>
+            ({
+              id: Types.ObjectId(),
+              content: c._id,
+              viewer: mocksUsers[0].account._id,
+              author: Types.ObjectId(c.author.id),
+            } as FeedItem),
+        );
+
+        expect(
+          feedResponse.payload.map((p) => (p.payload as ContentPayloadItem).id),
+        ).toEqual(mockFeedItems.map((f) => String(f.content)));
+        //expect to have those id in db
+        const feedIds = feedResponse.payload.map((p) => p.id);
+        const dbFeeds = await repository.findFeedItems({
+          _id: {
+            $in: feedIds,
+          },
+        });
+        for (let i = 0; i < dbFeeds.length; i++) {
+          expect(feedIds).toContain(dbFeeds[i].id);
+        }
+      });
+    });
   });
 
   afterAll(async () => {
