@@ -22,7 +22,7 @@
  */
 
 export class CastcleRegExp {
-  /** Minimum 8 characters, at least one letter, one number and one special character */
+  /** Minimum 6 characters. At least 1 capital letter, 1 small letter and 1 number */
   static PASSWORD_PATTERN =
     /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,}$/;
 

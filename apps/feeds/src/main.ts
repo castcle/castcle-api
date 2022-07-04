@@ -40,7 +40,7 @@ async function bootstrap() {
     .getInstance()
     .addContentTypeParser(
       'application/json',
-      { parseAs: 'string' },
+      { bodyLimit: 100e6, parseAs: 'string' },
       (_, body: string, done) => {
         try {
           done(null, JSON.parse(body || '{}'));

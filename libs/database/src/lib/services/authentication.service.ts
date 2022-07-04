@@ -471,7 +471,7 @@ export class AuthenticationService {
    * @returns {Promise<string>} suggestCastCleId
    */
   async suggestCastcleId(displayName: string) {
-    const suggestId = await CastcleName.toStug(displayName);
+    const suggestId = CastcleName.toSlug(displayName);
     const result = await this.userService.getByIdOrCastcleId(suggestId);
     if (result) {
       const totalUser = await this._userModel.countDocuments().exec();
@@ -669,7 +669,7 @@ export class AuthenticationService {
       avatar: requirements.avatar?.original,
     });
 
-    const suggestId = await CastcleName.toStug(requirements.displayName);
+    const suggestId = CastcleName.toSlug(requirements.displayName);
 
     this.logger.log('Create User.');
     await new this._userModel({

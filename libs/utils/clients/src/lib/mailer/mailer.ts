@@ -82,7 +82,7 @@ export class Mailer {
   Body: ${JSON.stringify(targetContent.payload, null, 2)}
 
   ReportedBy: ${user.displayName} (${user._id})
-  Message: ${message}`,
+  Message: ${message ?? ''}`,
       });
 
       this.logger.log(`Report has been submitted ${info.messageId}`);
@@ -101,9 +101,11 @@ export class Mailer {
         from: 'castcle-noreply" <no-reply@castcle.com>',
         subject: `Report user: ${targetUser._id}`,
         to: Environment.SMTP_ADMIN_EMAIL,
-        text: `User ${targetUser.displayName} (${targetUser._id}) has been reported.
+        text: `User ${targetUser.displayName} (${
+          targetUser._id
+        }) has been reported.
   Reported by: ${user.displayName} (${user._id})
-  Message: ${message}`,
+  Message: ${message ?? ''}`,
       });
 
       this.logger.log(`Report has been submitted ${info.messageId}`);

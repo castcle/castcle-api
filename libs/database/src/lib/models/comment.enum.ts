@@ -21,19 +21,7 @@
  * or have any questions.
  */
 
-import { CastcleName } from './castcle-name';
-describe('CastcleName', () => {
-  describe('#toSlug()', () => {
-    it('should replace all space and lower all character to underscore', () => {
-      expect(CastcleName.toSlug('This Is Sparta')).toEqual('this_is_sparta');
-    });
-  });
-
-  describe('#fromTagToSlug()', () => {
-    it('should replace all space and lower all character', () => {
-      expect(CastcleName.fromTagToSlug('This Is Sparta')).toEqual(
-        'thisissparta',
-      );
-    });
-  });
-});
+export enum CommentType {
+  Comment = 'comment',
+  Reply = 'reply',
+}

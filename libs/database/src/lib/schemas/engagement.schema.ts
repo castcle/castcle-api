@@ -22,20 +22,16 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import * as mongoose from 'mongoose';
-import { EntityVisibility } from '../dtos/common.dto';
+import { SchemaTypes } from 'mongoose';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
-import { Comment } from './comment.schema';
-import { Content } from './content.schema';
 import { User } from './user.schema';
 
 @Schema({ timestamps: true })
 export class Engagement extends CastcleBase {
   @Prop({
     required: true,
-    type: mongoose.Schema.Types.ObjectId,
+    type: SchemaTypes.ObjectId,
     ref: 'User',
     index: true,
   })
@@ -43,7 +39,7 @@ export class Engagement extends CastcleBase {
 
   @Prop({
     required: true,
-    type: mongoose.Schema.Types.ObjectId,
+    type: SchemaTypes.ObjectId,
     ref: 'Account',
     index: true,
   })
@@ -55,58 +51,9 @@ export class Engagement extends CastcleBase {
   @Prop({ required: true, index: true })
   type: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId })
-  itemId?: any; // for recast /quote
+  /** for recast or quote */
+  @Prop({ type: SchemaTypes.ObjectId })
+  itemId?: any;
 }
 
 export const EngagementSchema = SchemaFactory.createForClass(Engagement);
-
-export const EngagementSchemaFactory = (
-  contentModel: Model<Content>,
-  commentModel: Model<Comment>,
-): mongoose.Schema<any> => {
-  EngagementSchema.post('save', async function (doc: Engagement, next) {
-    const count = doc.visibility === EntityVisibility.Publish ? 1 : -1;
-    const contentInc = { $inc: { [`engagements.${doc.type}.count`]: count } };
-
-    if (['content', 'comment'].includes(doc.targetRef.$ref)) {
-      await (doc.targetRef.$ref === 'content' ? contentModel : commentModel)
-        .updateOne({ _id: doc.targetRef.$id }, contentInc)
-        .exec();
-    } else if (
-      doc.targetRef.namespace === 'content' &&
-      doc.visibility !== EntityVisibility.Publish
-    ) {
-      await contentModel
-        .updateOne({ _id: doc.targetRef.oid }, contentInc)
-        .exec();
-    } else if (
-      doc.targetRef.namespace === 'comment' &&
-      doc.visibility !== EntityVisibility.Publish
-    ) {
-      await commentModel
-        .updateOne({ _id: doc.targetRef.oid }, contentInc)
-        .exec();
-    }
-
-    next();
-  });
-
-  EngagementSchema.post('remove', async (doc: Engagement, next) => {
-    const contentInc = { $inc: { [`engagements.${doc.type}.count`]: -1 } };
-
-    if (doc.targetRef.namespace === 'content') {
-      await contentModel
-        .updateOne({ _id: doc.targetRef.oid }, contentInc)
-        .exec();
-    } else {
-      await commentModel
-        .updateOne({ _id: doc.targetRef.oid }, contentInc)
-        .exec();
-    }
-
-    next();
-  });
-
-  return EngagementSchema;
-};

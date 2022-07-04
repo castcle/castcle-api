@@ -37,7 +37,6 @@ export enum WalletType {
 }
 
 export enum TransactionType {
-  //deposit, send, receive, withdraw, social, referral, airdrop, farming, unfarming, farmed
   DEPOSIT = 'deposit',
   SEND = 'send',
   RECEIVE = 'receive',

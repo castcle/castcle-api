@@ -60,15 +60,16 @@ export class Reporting extends CastcleBase {
   payload: User | Content;
 
   @Prop({
-    required: true,
     type: String,
     index: true,
   })
-  message: string;
+  message?: string;
 
   @Prop({
+    required: true,
     type: ReportStatus,
     default: ReportStatus.REVIEWING,
+    index: true,
   })
   status: ReportStatus;
 
