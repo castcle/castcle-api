@@ -379,29 +379,45 @@ describe('TAccount Service', () => {
       );
     });
     it('should get wallet recent list', async () => {
-      const users = await service.getAllWalletRecent(mocksUsers[0].user._id);
+      const walletRecent = await service.getAllWalletRecent(
+        mocksUsers[0].user._id,
+      );
 
-      expect(users[0].id).toEqual(mocksUsers[1].user.id);
-      expect(users[0].displayId).toEqual(mocksUsers[1].user.displayId);
+      expect(String(walletRecent.castcle[0].userId)).toEqual(
+        String(mocksUsers[1].user.id),
+      );
+      expect(walletRecent.castcle[0].castcleId).toEqual(
+        mocksUsers[1].user.displayId,
+      );
     });
 
     it('should get wallet recent list by keyword', async () => {
-      const users = await service.getAllWalletRecent(mocksUsers[0].user._id, {
-        input: 'people',
-        type: KeywordType.Word,
-      });
+      const walletRecent = await service.getAllWalletRecent(
+        mocksUsers[0].user._id,
+        {
+          input: 'people_1',
+          type: KeywordType.Word,
+        },
+      );
 
-      expect(users[0].id).toEqual(mocksUsers[1].user.id);
-      expect(users[0].displayId).toEqual(mocksUsers[1].user.displayId);
+      expect(String(walletRecent.castcle[0].userId)).toEqual(
+        String(mocksUsers[1].user.id),
+      );
+      expect(walletRecent.castcle[0].castcleId).toEqual(
+        mocksUsers[1].user.displayId,
+      );
     });
 
     it('should get wallet recent list is empty', async () => {
-      const users = await service.getAllWalletRecent(mocksUsers[0].user._id, {
-        input: 'test',
-        type: KeywordType.Word,
-      });
+      const walletRecent = await service.getAllWalletRecent(
+        mocksUsers[0].user._id,
+        {
+          input: 'test',
+          type: KeywordType.Word,
+        },
+      );
 
-      expect(users).toHaveLength(0);
+      expect(walletRecent.castcle).toHaveLength(0);
     });
   });
 });

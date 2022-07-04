@@ -51,7 +51,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { WalletResponse } from '../dtos';
 import { WalletService } from './wallet.service';
 
-describe('WalletController', () => {
+describe('WalletService', () => {
   let mongod: MongoMemoryServer;
   let app: TestingModule;
   let service: WalletService;
@@ -151,7 +151,7 @@ describe('WalletController', () => {
       );
 
       expect(String(walletRecent.castcle[0].userId)).toEqual(
-        mocksUsers[1].user.id,
+        String(mocksUsers[1].user.id),
       );
       expect(walletRecent.castcle[0].castcleId).toEqual(
         mocksUsers[1].user.displayId,
@@ -162,13 +162,13 @@ describe('WalletController', () => {
       const walletRecent = await service.getAllWalletRecent(
         mocksUsers[0].user._id,
         {
-          input: 'mock',
+          input: 'mock-1',
           type: KeywordType.Word,
         },
       );
 
       expect(String(walletRecent.castcle[0].userId)).toEqual(
-        mocksUsers[1].user.id,
+        String(mocksUsers[1].user.id),
       );
       expect(walletRecent.castcle[0].castcleId).toEqual(
         mocksUsers[1].user.displayId,
