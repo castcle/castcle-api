@@ -43,9 +43,7 @@ export class HttpCacheIndividualInterceptor extends CacheInterceptor {
     if (cacheKey) {
       const request = context.switchToHttp().getRequest<FastifyRequest>();
       const token = util.getTokenFromRequest(request);
-      const finalKey = `${cacheKey}-${token}-${JSON.stringify(
-        request.routerPath,
-      )}-${JSON.stringify(request.query)}`;
+      const finalKey = `${cacheKey}-${token}-${request.url}}`;
 
       cacheManager.get<string>(token).then((settingString) => {
         const setting = JSON.parse(settingString || '{}');
