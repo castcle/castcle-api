@@ -21,53 +21,20 @@
  * or have any questions.
  */
 
-import { Configs, Environment } from '@castcle-api/environments';
-import { CastcleImage } from '@castcle-api/utils/aws';
+import { Environment } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { isMongoId } from 'class-validator';
-import {
-  ShortcutInternalDto,
-  ShortcutSort,
-  WalletOptions,
-  WalletResponse,
-} from '../dtos';
+import { ShortcutInternalDto, ShortcutSort } from '../dtos';
 import { Repository } from '../repositories';
-import { User, WalletShortcut } from '../schemas';
+import { TAccountService } from './taccount.service';
 
 @Injectable()
 export class WalletShortcutService {
-  constructor(private repository: Repository) {}
-
-  toWalletResponse(
-    user: User,
-    otherChain?: WalletShortcut,
-    overwrites?: WalletOptions,
-  ) {
-    return {
-      id: otherChain?._id ?? user._id,
-      chainId: otherChain?.chainId ?? Environment.CHAIN_INTERNAL,
-      castcleId: user.displayId,
-      userId: user._id,
-      type: user.type,
-      order: otherChain?.order,
-      displayName: otherChain?.displayName ?? user.displayName,
-      walletAddress: !isMongoId(otherChain?.address)
-        ? otherChain?.address
-        : undefined,
-      images: {
-        avatar: user.profile?.images?.avatar
-          ? CastcleImage.sign(user.profile.images.avatar)
-          : Configs.DefaultAvatarImages,
-      },
-      memo: otherChain?.memo,
-      createdAt:
-        otherChain?.createdAt?.toISOString() ?? user.createdAt?.toISOString(),
-      updatedAt:
-        otherChain?.updatedAt?.toISOString() ?? user.createdAt?.toISOString(),
-      ...overwrites,
-    } as WalletResponse;
-  }
+  constructor(
+    private repository: Repository,
+    private taccountService: TAccountService,
+  ) {}
 
   async createWalletShortcut(body: ShortcutInternalDto, accountId: string) {
     //TODO !!! Now! Check internal chain only.
@@ -90,7 +57,7 @@ export class WalletShortcutService {
       account: accountId,
     });
 
-    return this.toWalletResponse(user, newShortcut);
+    return this.taccountService.toWalletResponse(user, newShortcut);
   }
 
   async getWalletShortcut(accountId: string) {
@@ -116,11 +83,11 @@ export class WalletShortcutService {
 
     const shortcutResponses = walletShortcuts.map((shortcut) => {
       const user = users.find((user) => String(user._id) === shortcut.address);
-      return this.toWalletResponse(user, shortcut);
+      return this.taccountService.toWalletResponse(user, shortcut);
     });
 
     const accountResponses = usersOwner.map((user) => {
-      return this.toWalletResponse(user, undefined, {
+      return this.taccountService.toWalletResponse(user, undefined, {
         id: null,
         order: undefined,
       });

@@ -20,7 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Environment } from '@castcle-api/environments';
 import {
   FacebookClient,
   GoogleClient,
@@ -28,7 +27,6 @@ import {
   TwilioClient,
   TwitterClient,
 } from '@castcle-api/utils/clients';
-import { CastcleDate } from '@castcle-api/utils/commons';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -45,9 +43,8 @@ import {
   NotificationService,
   UserServiceV2,
 } from '../database.module';
-import { AcceptPlatform, ContentType } from '../dtos';
+import { ContentType } from '../dtos';
 import {
-  NotificationLandingPage,
   NotificationRef,
   NotificationSource,
   NotificationType,
@@ -142,6 +139,7 @@ describe('NotificationServiceV2', () => {
       commentRef: comment._id,
       read: false,
       account: mocksUsers[0].account._id,
+      user: mocksUsers[0].user._id,
     });
 
     const notify_2 = await repository.createNotification({
@@ -151,22 +149,10 @@ describe('NotificationServiceV2', () => {
       profileRef: mocksUsers[0].user._id,
       read: false,
       account: mocksUsers[0].account._id,
+      user: mocksUsers[0].user._id,
     });
-    notification = [notify_1, notify_2];
-    jest
-      .spyOn(service as any, 'checkIntervalNotify')
-      .mockImplementation((type: string, notify: any) => {
-        switch (type) {
-          case NotificationType.Follow:
-            return CastcleDate.checkIntervalNotify(
-              notify.createdAt,
-              Number(Environment.NOTIFY_FOLLOW_INTERVAL),
-            );
 
-          default:
-            return true;
-        }
-      });
+    notification = [notify_1, notify_2];
   });
 
   describe('checkNotify', () => {
@@ -247,41 +233,7 @@ describe('NotificationServiceV2', () => {
       expect(landingPage).toEqual('follower');
     });
   });
-  describe('checkIntervalNotify', () => {
-    beforeAll(() => {
-      Environment.NOTIFY_FOLLOW_INTERVAL = 24; // 24 Hours
-    });
-    it('checking if the notification is within the interval', async () => {
-      const notify = await repository.findNotification({
-        profileRef: mocksUsers[0].user._id,
-        type: NotificationType.Follow,
-        account: mocksUsers[0].account._id,
-      });
 
-      const isInterval = (service as any).checkIntervalNotify(
-        notify.type,
-        notify,
-      );
-      expect(isInterval).toEqual(false);
-    });
-
-    it('checking if the notification is without the interval', async () => {
-      const notify = await repository.findNotification({
-        profileRef: mocksUsers[0].user._id,
-        type: NotificationType.Follow,
-        account: mocksUsers[0].account._id,
-      });
-
-      notify.createdAt = new Date(notify.createdAt);
-      notify.createdAt.setDate(notify.createdAt.getDate() - 1);
-
-      const isInterval = (service as any).checkIntervalNotify(
-        notify.type,
-        notify,
-      );
-      expect(isInterval).toEqual(true);
-    });
-  });
   describe('getFromId', () => {
     it('should get notification data is exists.', async () => {
       const notify = await repository.findNotification({
@@ -370,8 +322,8 @@ describe('NotificationServiceV2', () => {
         account: mocksUsers[0].account._id,
       });
       const { message } = await (service as any).generateMessage(
-        mocksUsers[0].user,
         notify,
+        mocksUsers[0].user,
         'en',
       );
       expect(message).toBeDefined();
@@ -385,8 +337,8 @@ describe('NotificationServiceV2', () => {
         account: mocksUsers[0].account._id,
       });
       const { message } = await (service as any).generateMessage(
-        mocksUsers[0].user,
         notify,
+        mocksUsers[0].user,
         'th',
       );
 
@@ -397,12 +349,14 @@ describe('NotificationServiceV2', () => {
 
   describe('generateNotificationsResponse', () => {
     it('should generate message notification response by language default is correct.', async () => {
+      const notifies = await repository.findNotifications({
+        account: mocksUsers[0].account._id,
+      });
+
       const notifyResp = await (service as any).generateNotificationsResponse(
-        notification,
+        notifies,
         'en',
       );
-
-      expect(notifyResp).toBeDefined();
 
       notifyResp.forEach((item) => {
         if (item.type === NotificationType.Comment) {
@@ -413,13 +367,16 @@ describe('NotificationServiceV2', () => {
       });
     });
     it('should generate message notification response by language thai is correct.', async () => {
+      const notifies = await repository.findNotifications({
+        account: mocksUsers[0].account._id,
+      });
+
       const notifyResp = await (service as any).generateNotificationsResponse(
-        notification,
+        notifies,
         'th',
       );
 
       expect(notifyResp).toBeDefined();
-
       notifyResp.forEach((item) => {
         if (item.type === NotificationType.Comment) {
           expect(item.message).toEqual(
@@ -431,65 +388,32 @@ describe('NotificationServiceV2', () => {
       });
     });
   });
-  describe('generateNotification', () => {
-    it('should create notification payload prepare into device is correct.', async () => {
-      const newMessage = await (service as any).generateMessage(
-        mocksUsers[0].user,
-        notification[0],
-        'en',
-      );
-      mocksUsers[0].account.devices = [
-        {
-          uuid: 'mockuuid',
-          platform: AcceptPlatform.IOS,
-          firebaseToken: 'mocktestfirebasetoken',
-        },
-      ];
-      const devicePayload = await (service as any).generateNotification(
-        newMessage,
-        notification[0],
-        mocksUsers[0].account,
-        2,
-      );
 
-      expect(devicePayload.notification.body).toEqual(newMessage);
-      expect(devicePayload.aps.alert).toEqual(newMessage);
-      expect(devicePayload.android.notification.body).toEqual(newMessage);
-      expect(devicePayload.payload.source).toEqual(NotificationSource.Profile);
-      expect(devicePayload.payload.type).toEqual(NotificationType.Comment);
-      expect(devicePayload.payload.landingPage).toEqual(
-        NotificationLandingPage.Comment,
-      );
-      expect(devicePayload.firebaseTokens).toContainEqual(
-        'mocktestfirebasetoken',
-      );
-    });
-  });
-  describe('deleteNotify', () => {
-    it('should delete notification by id is correct.', async () => {
-      await (service as any).deleteNotify(notification[0]._id);
+  // describe('deleteNotify', () => {
+  //   it('should delete notification by id is correct.', async () => {
+  //     await (service as any).deleteNotify(notification[0]._id);
 
-      const notify = await (service as any).getFromId(notification[0]._id);
+  //     const notify = await (service as any).getFromId(notification[0]._id);
 
-      expect(notify).toBeNull();
-    });
-  });
+  //     expect(notify).toBeNull();
+  //   });
+  // });
 
-  describe('getAllNotify', () => {
-    it('should delete all notification by source is correct.', async () => {
-      await (service as any).deleteAllSourceNotify(
-        mocksUsers[0].account,
-        NotificationSource.Profile,
-      );
+  // describe('getAllNotify', () => {
+  //   it('should delete all notification by source is correct.', async () => {
+  //     await (service as any).deleteAllSourceNotify(
+  //       mocksUsers[0].account,
+  //       NotificationSource.Profile,
+  //     );
 
-      const notifies = await (service as any).getAllNotify(
-        mocksUsers[0].account,
-        { maxResults: 100 },
-      );
+  //     const notifies = await (service as any).getAllNotify(
+  //       mocksUsers[0].account,
+  //       { maxResults: 100 },
+  //     );
 
-      expect(notifies).toHaveLength(0);
-    });
-  });
+  //     expect(notifies).toHaveLength(0);
+  //   });
+  // });
 
   afterAll(async () => {
     await moduleRef.close();
