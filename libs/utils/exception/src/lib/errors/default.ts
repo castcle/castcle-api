@@ -261,6 +261,11 @@ export const DefaultErrors = {
     code: '4007',
     message: 'Invalid date. Please try again.',
   },
+  EMAIL_CAN_NOT_CHANGE: {
+    statusCode: '400',
+    code: '4008',
+    message: `You can't change your email.`,
+  },
   FEATURE_NOT_EXIST: {
     statusCode: '400',
     code: '5001',
