@@ -22,10 +22,11 @@
  */
 
 import {
+  Meta,
   NotificationQuery,
   NotificationServiceV2,
   NotificationSourceQuery,
-  createCastcleMeta,
+  ResponseDto,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import {
@@ -35,18 +36,19 @@ import {
   CastcleBasicAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { CastcleException } from '@castcle-api/utils/exception';
-import { Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
+import {
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 
 @CastcleControllerV2({ path: 'notifications' })
 export class NotificationsControllerV2 {
-  constructor(private notificationServiceV2: NotificationServiceV2) {}
-
-  async _getNotificationIfExist(_id: string) {
-    const notification = await this.notificationServiceV2.getFromId(_id);
-    if (!notification) throw new CastcleException('NOTIFICATION_NOT_FOUND');
-    return notification;
-  }
+  constructor(private notificationService: NotificationServiceV2) {}
 
   @CastcleAuth(CacheKeyName.NotificationsGet)
   @Get()
@@ -54,41 +56,35 @@ export class NotificationsControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() query: NotificationQuery,
   ) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
-
-    const notifications = await this.notificationServiceV2.getAllNotify(
+    const notifications = await this.notificationService.getAllNotify(
       authorizer.account,
       query,
     );
     const payloadNotify =
-      await this.notificationServiceV2.generateNotificationsResponse(
+      await this.notificationService.generateNotificationsResponse(
         notifications,
         authorizer.account.preferences.languages[0],
       );
-    return {
+    return ResponseDto.ok({
       payload: payloadNotify,
-      meta: createCastcleMeta(payloadNotify),
-    };
+      meta: Meta.fromDocuments(payloadNotify),
+    });
   }
 
   @CastcleBasicAuth()
   @Post(':id/reads')
-  @HttpCode(204)
-  async readNotify(@Auth() authorizer: Authorizer, @Param('id') id: string) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
-
-    await this.notificationServiceV2.readNotify(id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async readNotify(@Param('id') id: string) {
+    await this.notificationService.readNotify(id);
   }
   @CastcleBasicAuth()
   @Post('reads')
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   async readAllSourceNotify(
     @Auth() authorizer: Authorizer,
     @Query() { source }: NotificationSourceQuery,
   ) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
-
-    await this.notificationServiceV2.readAllSourceNotify(
+    await this.notificationService.readAllSourceNotify(
       authorizer.account,
       source,
     );
@@ -96,23 +92,19 @@ export class NotificationsControllerV2 {
 
   @CastcleBasicAuth()
   @Delete(':id')
-  @HttpCode(204)
-  async deleteNotify(@Auth() authorizer: Authorizer, @Param('id') id: string) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
-
-    await this.notificationServiceV2.deleteNotify(id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteNotify(@Param('id') id: string) {
+    await this.notificationService.deleteNotify(id);
   }
 
   @CastcleBasicAuth()
   @Delete()
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   async deleteAllSourceNotify(
     @Auth() authorizer: Authorizer,
     @Query() { source }: NotificationSourceQuery,
   ) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
-
-    await this.notificationServiceV2.deleteAllSourceNotify(
+    await this.notificationService.deleteAllSourceNotify(
       authorizer.account,
       source,
     );
@@ -120,12 +112,7 @@ export class NotificationsControllerV2 {
 
   @CastcleAuth(CacheKeyName.NotificationsBadges)
   @Get('badges')
-  async badgesNotify(@Auth() authorizer: Authorizer) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
-
-    const badgeNotify = await this.notificationServiceV2.getBadges(
-      authorizer.account,
-    );
-    return badgeNotify;
+  badgesNotify(@Auth() authorizer: Authorizer) {
+    return this.notificationService.getBadges(authorizer.account);
   }
 }
