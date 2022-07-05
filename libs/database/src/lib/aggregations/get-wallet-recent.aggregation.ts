@@ -39,6 +39,14 @@ export const pipelineOfGetWalletRecentFromType = (userId: string) => [
     $group: { _id: '$to.user' },
   },
   {
+    $sort: {
+      createdAt: -1,
+    },
+  },
+  {
+    $limit: 100,
+  },
+  {
     $project: {
       user: '$_id',
     },

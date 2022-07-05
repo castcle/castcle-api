@@ -548,15 +548,41 @@ export class AuthenticationServiceV2 {
     source?: string;
     userAgent?: string;
   }) {
+    const recaptchaVerified =
+      source?.toLowerCase() === 'web'
+        ? await this.googleClient.verifyRecaptcha(recaptchaToken, ip)
+        : true;
+    if (!recaptchaVerified) new CastcleException('RECAPTCHA_FAILED');
+
+    switch (objective) {
+      case OtpObjective.SEND_TOKEN:
+        return this.requestSendTokenOtp({
+          channel: TwilioChannel.EMAIL,
+          email,
+          requestedBy,
+          userAgent,
+        });
+      default:
+        return this.requestForgotPasswordOtp({
+          email,
+          objective,
+          requestedBy,
+          userAgent,
+        });
+    }
+  }
+
+  private async requestForgotPasswordOtp({
+    email,
+    objective,
+    requestedBy,
+    userAgent,
+  }: RequestOtpByEmailDto & {
+    requestedBy: Account;
+    userAgent?: string;
+  }) {
     if (!requestedBy.isGuest)
       throw new CastcleException('INVALID_ACCESS_TOKEN');
-    if (source?.toLowerCase() === 'web') {
-      const success = await this.googleClient.verifyRecaptcha(
-        recaptchaToken,
-        ip,
-      );
-      if (!success) new CastcleException('RECAPTCHA_FAILED');
-    }
 
     const account = await this.repository.findAccount({ email });
     if (!account) throw new CastcleException('EMAIL_NOT_FOUND');
@@ -565,6 +591,47 @@ export class AuthenticationServiceV2 {
       channel: TwilioChannel.EMAIL,
       objective,
       receiver: email,
+      account,
+      requestedBy: requestedBy._id,
+      userAgent,
+    });
+  }
+
+  private async requestSendTokenOtp({
+    channel,
+    email,
+    countryCode,
+    mobileNumber,
+    requestedBy,
+    userAgent,
+  }: {
+    channel: TwilioChannel;
+    email?: string;
+    countryCode?: string;
+    mobileNumber?: string;
+    requestedBy: Account;
+    userAgent?: string;
+  }) {
+    if (requestedBy.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
+
+    const account = await this.repository.findAccount(
+      channel === TwilioChannel.EMAIL
+        ? { email }
+        : { mobileCountryCode: countryCode, mobileNumber },
+    );
+    if (account?.id !== String(requestedBy._id)) {
+      throw new CastcleException(
+        channel === TwilioChannel.EMAIL
+          ? 'EMAIL_NOT_FOUND'
+          : 'MOBILE_NOT_FOUND',
+      );
+    }
+
+    return this.requestOtp({
+      channel,
+      objective: OtpObjective.SEND_TOKEN,
+      receiver:
+        channel === TwilioChannel.EMAIL ? email : countryCode + mobileNumber,
       account,
       requestedBy: requestedBy._id,
       userAgent,
@@ -586,14 +653,42 @@ export class AuthenticationServiceV2 {
     source?: string;
     userAgent?: string;
   }) {
-    if (source?.toLowerCase() === 'web') {
-      const success = await this.googleClient.verifyRecaptcha(
-        recaptchaToken,
-        ip,
-      );
-      if (!success) new CastcleException('RECAPTCHA_FAILED');
-    }
+    const recaptchaVerified =
+      source?.toLowerCase() === 'web'
+        ? await this.googleClient.verifyRecaptcha(recaptchaToken, ip)
+        : true;
+    if (!recaptchaVerified) new CastcleException('RECAPTCHA_FAILED');
 
+    switch (objective) {
+      case OtpObjective.SEND_TOKEN:
+        return this.requestSendTokenOtp({
+          channel: TwilioChannel.SMS,
+          countryCode,
+          mobileNumber,
+          requestedBy,
+          userAgent,
+        });
+      default:
+        return this.requestVerifyMobileOtp({
+          countryCode,
+          mobileNumber,
+          requestedBy,
+          userAgent,
+        });
+    }
+  }
+
+  private async requestVerifyMobileOtp({
+    countryCode,
+    mobileNumber,
+    requestedBy,
+    userAgent,
+  }: {
+    countryCode?: string;
+    mobileNumber?: string;
+    requestedBy: Account;
+    userAgent?: string;
+  }) {
     const existingAccount = await this.repository.findAccount({
       mobileCountryCode: countryCode,
       mobileNumber,
@@ -604,7 +699,7 @@ export class AuthenticationServiceV2 {
 
     return this.requestOtp({
       channel: TwilioChannel.SMS,
-      objective,
+      objective: OtpObjective.VERIFY_MOBILE,
       receiver: countryCode + mobileNumber,
       account: requestedBy,
       requestedBy: requestedBy._id,
@@ -674,7 +769,7 @@ export class AuthenticationServiceV2 {
             sid,
           });
     } catch (error) {
-      this.logger.error(error, 'requestOtpByEmail');
+      this.logger.error(error, 'requestOtp');
       if (error.message === TwilioErrorMessage.TOO_MANY_REQUESTS) {
         throw new CastcleException('TWILIO_TOO_MANY_REQUESTS');
       } else if (error instanceof CastcleException) {

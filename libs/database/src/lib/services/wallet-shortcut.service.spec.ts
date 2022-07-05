@@ -34,6 +34,7 @@ import {
   ContentService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  TAccountService,
   UserService,
   WalletShortcutService,
 } from '../database.module';
@@ -64,6 +65,7 @@ describe('WalletShortcutService', () => {
         WalletShortcutService,
         Repository,
         UserService,
+        TAccountService,
         { provide: ContentService, useValue: {} },
         {
           provide: getQueueToken(QueueName.USER),
