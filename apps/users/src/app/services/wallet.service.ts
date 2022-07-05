@@ -24,7 +24,6 @@
 import {
   TAccountService,
   User,
-  WalletRecentResponse,
   WalletShortcutService,
   WalletType,
 } from '@castcle-api/database';
@@ -66,20 +65,7 @@ export class WalletService {
     return this.taccountService.getWalletHistory(user.id, query.filter);
   }
 
-  async getAllWalletRecent(
-    userId: string,
-    keyword?: { [key: string]: string },
-  ) {
-    const users = await this.taccountService.getAllWalletRecent(
-      userId,
-      keyword,
-    );
-
-    return {
-      castcle: users.map((user) =>
-        this.walletShortcutService.toWalletResponse(user, null),
-      ),
-      other: [], // TODO !!! Implement external chain
-    } as WalletRecentResponse;
+  getAllWalletRecent(userId: string, keyword?: { [key: string]: string }) {
+    return this.taccountService.getAllWalletRecent(userId, keyword);
   }
 }

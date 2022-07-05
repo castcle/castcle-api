@@ -80,30 +80,31 @@ export class TwilioClient {
     countryCode?: string;
   }) {
     const rateLimits = this.getRateLimitsOTP(dto);
-    this.logger.log(`* [START] requestOtp *`);
     this.logger.log(
-      `Request otp receiver: ${dto.receiver} channel: ${dto.channel}`,
+      `Request OTP DTO: ${JSON.stringify({
+        receiver: dto.receiver,
+        channel: dto.channel,
+        rateLimits,
+      })}`,
+      'requestOtp:start',
     );
-    this.logger.log(`* [PROCESS] requestOtp: ${JSON.stringify(rateLimits)} *`);
     return this.client.verify
       .services(Environment.TWILIO_OTP_SID)
       .verifications.create({
         rateLimits: rateLimits,
-        channelConfiguration: {
-          substitutions: dto.config,
-        },
+        channelConfiguration: { substitutions: dto.config },
         to: dto.receiver,
         channel: dto.channel,
       })
       .then((verification) => {
-        this.logger.log(`* [SUCCESS] requestOtp *`);
         this.logger.log(
           `${dto.accountId} invoke Twilio Verification SID: ${verification.sid}`,
+          'requestOtp:success',
         );
         return verification;
       })
       .catch((error) => {
-        this.logger.log(`* [ERROR] requestOtp: ${error} *`);
+        this.logger.error(error, 'requestOtp:error');
         throw new Error(error);
       });
   }
