@@ -21,6 +21,8 @@
  * or have any questions.
  */
 
+import { Configs, Environment } from '@castcle-api/environments';
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -32,17 +34,27 @@ import {
   pipelineOfGetWalletRecentFromType,
 } from '../aggregations';
 import {
+  WalletRecentResponse,
+  WalletResponse,
+  WalletResponseOptions,
+} from '../dtos';
+import {
   CACCOUNT_NO,
   CastcleNumber,
   TopUpDto,
+  TransactionDto,
   TransactionFilter,
   WalletHistoryResponseDto,
   WalletType,
 } from '../models';
-import { TransactionDto } from '../models/caccount.model';
 import { Repository } from '../repositories';
-import { CAccount, CAccountNature } from '../schemas/caccount.schema';
-import { Transaction } from '../schemas/transaction.schema';
+import {
+  CAccount,
+  CAccountNature,
+  Transaction,
+  User,
+  WalletShortcut,
+} from '../schemas';
 
 @Injectable()
 export class TAccountService {
@@ -51,6 +63,31 @@ export class TAccountService {
     @InjectModel('CAccount') public _caccountModel: Model<CAccount>,
     private repository: Repository,
   ) {}
+
+  toWalletResponse(
+    user: User,
+    shortcut?: WalletShortcut,
+    overwrites?: WalletResponseOptions,
+  ) {
+    return {
+      id: shortcut?._id ?? user._id,
+      chainId: shortcut?.chainId ?? Environment.CHAIN_INTERNAL,
+      castcleId: user.displayId,
+      userId: user._id,
+      type: user.type,
+      order: shortcut?.order,
+      displayName: shortcut?.displayName ?? user.displayName,
+      images: {
+        avatar: user.profile?.images?.avatar
+          ? CastcleImage.sign(user.profile.images.avatar)
+          : Configs.DefaultAvatarImages,
+      },
+      memo: shortcut?.memo,
+      createdAt: shortcut?.createdAt ?? user.createdAt,
+      updatedAt: shortcut?.updatedAt ?? user.updatedAt,
+      ...overwrites,
+    } as WalletResponse;
+  }
 
   getFindQueryForChild(caccount: CAccount) {
     const orQuery = [
@@ -271,21 +308,27 @@ export class TAccountService {
   async getAllWalletRecent(
     userId: string,
     keyword?: { [key: string]: string },
-  ) {
-    const transactions =
-      await this._transactionModel.aggregate<GetWalletRecentResponse>([
-        pipelineOfGetWalletRecentFromType(userId),
-      ]);
+  ): Promise<WalletRecentResponse> {
+    const transactions = !keyword
+      ? await this._transactionModel.aggregate<GetWalletRecentResponse>([
+          pipelineOfGetWalletRecentFromType(userId),
+        ])
+      : undefined;
 
-    if (!transactions.length) return [];
+    const userIds = transactions?.map(({ user }) => user);
 
-    const userIds = transactions.map(({ user }) => user);
-
-    return this.repository
-      .findUsers({
-        keyword,
-        _id: userIds,
-      })
+    const users = await this.repository
+      .findUsers(
+        { _id: userIds, keyword },
+        {
+          limit: 100,
+        },
+      )
       .exec();
+
+    return {
+      castcle: users.map((user) => this.toWalletResponse(user, null)),
+      other: [], // TODO !!! Implement external chain
+    };
   }
 }

@@ -167,6 +167,7 @@ export class WalletController {
     const user = isMe
       ? authorizer.user
       : await this.userServiceV2.getUser(userId);
+
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     return this.walletService.getAllWalletRecent(user.id, keyword);
