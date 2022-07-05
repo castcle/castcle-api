@@ -127,7 +127,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'Credential', useFactory: () => CredentialSchema },
-  { name: 'FeedItem', useFactory: () => FeedItemSchema },
+  { name: 'FeedItemV2', useFactory: () => FeedItemSchema },
   { name: 'Relationship', useFactory: () => RelationshipSchema },
   { name: 'Revision', useFactory: () => RevisionSchema },
   { name: 'SocialSync', useFactory: () => SocialSyncSchema },
@@ -140,7 +140,12 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'Content',
     useFactory: ContentSchemaFactory,
-    inject: [getModelToken('Revision')],
+    inject: [
+      getModelToken('Revision'),
+      getModelToken('FeedItemV2'),
+      getModelToken('User'),
+      getModelToken('Relationship'),
+    ],
   },
   {
     name: 'Account',
@@ -159,7 +164,11 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'Engagement',
     useFactory: EngagementSchemaFactory,
-    inject: [getModelToken('Content'), getModelToken('Comment')],
+    inject: [
+      getModelToken('Content'),
+      getModelToken('Comment'),
+      getModelToken('FeedItemV2'),
+    ],
   },
 ]);
 
