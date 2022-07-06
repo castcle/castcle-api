@@ -57,7 +57,13 @@ import {
   UserField,
   UserResponseDto,
 } from '../dtos';
-import { CampaignType, EngagementType, ReportType, UserType } from '../models';
+import {
+  AccountActivationType,
+  CampaignType,
+  EngagementType,
+  ReportType,
+  UserType,
+} from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
@@ -78,6 +84,7 @@ export class UserServiceV2 {
     private mailerService: Mailer,
     private notificationService: NotificationServiceV2,
     private repository: Repository,
+    private mailer: Mailer,
   ) {}
 
   getUser = async (userId: string) => {
@@ -472,6 +479,34 @@ export class UserServiceV2 {
     }
   }
 
+  async updateEmail(
+    account: Account,
+    user: User,
+    email: string,
+    hostUrl: string,
+  ) {
+    if (account.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
+
+    const emailAlreadyExists = await this.repository.findAccount({ email });
+    if (emailAlreadyExists) throw new CastcleException('DUPLICATE_EMAIL');
+
+    if ([user.verified.email, user.email].some((email) => email))
+      throw new CastcleException('EMAIL_CAN_NOT_CHANGE');
+
+    const { verifyToken } = account.createActivation(
+      AccountActivationType.EMAIL,
+    );
+
+    account.email = email;
+    user.email = email;
+    account.markModified('activations');
+
+    await Promise.all([account.save(), user.save()]);
+
+    await this.mailerService.sendRegistrationEmail(hostUrl, email, verifyToken);
+
+    return user.toOwnerResponse();
+  }
   async deleteCastcleAccount(account: Account, password: string) {
     if (!account.verifyPassword(password)) {
       throw new CastcleException('INVALID_PASSWORD');
