@@ -52,6 +52,7 @@ import {
   Query,
   Req,
   Res,
+  Response,
   UseInterceptors,
   VERSION_NEUTRAL,
   Version,
@@ -559,6 +560,7 @@ export class AuthenticationController {
   async verify(
     @Query('code') $token: string,
     @Req() { $language }: CredentialRequest,
+    @Response() res: FastifyReply,
   ) {
     if (!$token) {
       throw new CastcleException('REQUEST_URL_NOT_FOUND');
@@ -570,7 +572,7 @@ export class AuthenticationController {
     } as TokenRequest);
     const email = await this.authService.getEmailFromVerifyToken($token);
 
-    return getEmailVerificationHtml(email);
+    return res.type('text/html').send(getEmailVerificationHtml(email));
   }
 
   @ApiOkResponse({ type: SuggestCastcleIdResponse })

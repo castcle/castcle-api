@@ -581,11 +581,18 @@ export class AuthenticationServiceV2 {
     requestedBy: Account;
     userAgent?: string;
   }) {
-    if (!requestedBy.isGuest)
+    if (objective !== OtpObjective.CHANGE_PASSWORD && !requestedBy.isGuest) {
       throw new CastcleException('INVALID_ACCESS_TOKEN');
+    }
 
     const account = await this.repository.findAccount({ email });
     if (!account) throw new CastcleException('EMAIL_NOT_FOUND');
+    if (
+      objective === OtpObjective.CHANGE_PASSWORD &&
+      String(requestedBy._id) !== account.id
+    ) {
+      throw new CastcleException('INVALID_ACCESS_TOKEN');
+    }
 
     return this.requestOtp({
       channel: TwilioChannel.EMAIL,
@@ -787,12 +794,19 @@ export class AuthenticationServiceV2 {
     otp: otpCode,
     credential,
   }: VerifyOtpByEmailDto & { credential: Credential }) {
-    if (!credential.account.isGuest) {
+    const requestedBy = credential.account;
+    if (objective !== OtpObjective.CHANGE_PASSWORD && !requestedBy.isGuest) {
       throw new CastcleException('INVALID_ACCESS_TOKEN');
     }
 
     const account = await this.repository.findAccount({ email });
-    if (!account) throw new CastcleException('INVALID_ACCESS_TOKEN');
+    if (!account) throw new CastcleException('EMAIL_NOT_FOUND');
+    if (
+      objective === OtpObjective.CHANGE_PASSWORD &&
+      String(requestedBy._id) !== account.id
+    ) {
+      throw new CastcleException('INVALID_ACCESS_TOKEN');
+    }
 
     const otp = await this.verifyOtp({
       channel: TwilioChannel.EMAIL,

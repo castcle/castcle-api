@@ -115,22 +115,28 @@ export class RankerService {
    * @returns {GuestFeedItem[]}
    */
   getGuestFeedItems = async (
-    query: PaginationQuery,
+    { maxResults, ...query }: PaginationQuery,
     viewer: Account,
     excludeContents = [],
   ) => {
-    const filtersGuest = {
-      countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en',
-      content: { $nin: excludeContents },
-    };
+    const filtersDefault = createCastcleFilter({ index: { $gte: 0 } }, {});
 
-    const filterDefault = createCastcleFilter({ index: { $gte: 0 } }, query);
-    if (query.untilId || query.sinceId) filterDefault._id = { $exists: false };
+    if (query.untilId || query.sinceId) filtersDefault._id = { $exists: false };
+
+    const filtersGuest = createCastcleFilter(
+      {
+        countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en',
+        content: { $nin: excludeContents },
+      },
+      { ...query, reversePagination: true },
+    );
+
+    console.log(filtersDefault);
 
     const pipeline = pipelineOfGetGuestFeedContents({
-      filtersDefault: filterDefault,
-      filtersGuest: filtersGuest,
-      maxResults: query.maxResults,
+      filtersDefault,
+      filtersGuest,
+      maxResults,
     });
 
     this.logger.log(JSON.stringify(pipeline), 'getFeeds:aggregate');

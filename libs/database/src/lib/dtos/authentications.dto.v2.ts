@@ -67,6 +67,7 @@ export class RegisterWithEmailDto {
 
 export class RequestOtpByEmailDto {
   @IsEnum([
+    OtpObjective.CHANGE_PASSWORD,
     OtpObjective.FORGOT_PASSWORD,
     OtpObjective.MERGE_ACCOUNT,
     OtpObjective.SEND_TOKEN,
@@ -113,7 +114,11 @@ export class RequestOtpByMobileDto {
 }
 
 export class VerifyOtpByEmailDto {
-  @IsEnum([OtpObjective.FORGOT_PASSWORD, OtpObjective.MERGE_ACCOUNT])
+  @IsEnum([
+    OtpObjective.CHANGE_PASSWORD,
+    OtpObjective.FORGOT_PASSWORD,
+    OtpObjective.MERGE_ACCOUNT,
+  ])
   objective: OtpObjective;
 
   @IsEmail()
