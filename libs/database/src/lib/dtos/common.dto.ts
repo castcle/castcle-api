@@ -89,6 +89,7 @@ export class QueryOption {
   maxResults?: number;
   sinceId?: string;
   untilId?: string;
+  reversePagination?: boolean;
 }
 
 export class CastcleMetric {
