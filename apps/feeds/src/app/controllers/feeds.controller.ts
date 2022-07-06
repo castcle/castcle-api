@@ -89,20 +89,21 @@ export class FeedsController {
   @CastcleAuth(CacheKeyName.Feeds)
   @Get('guests')
   async getGuestFeed(
-    @Req() { $credential }: CredentialRequest,
+    @Auth() { account }: Authorizer,
     @Query() paginationQuery: FeedQuery,
   ) {
-    const account = await this.rankerService._accountModel.findById(
-      $credential.account._id,
-    ); // TODO !!! this is hot fix for guest $credential.account;
     const feedItems = await this.rankerService.getGuestFeedItems(
       paginationQuery,
       account,
     );
 
-    this.uxEngagementService.addReachToContents(
+    const contentIds = feedItems.payload.map(
+      (feed) => (feed.payload as ContentPayloadItem).id,
+    );
+
+    await this.uxEngagementService.addReachToContents(
       String(account._id),
-      feedItems.payload.map((feed) => (feed.payload as ContentPayloadItem).id),
+      contentIds,
     );
 
     return this.suggestionService.suggest(account.id, feedItems);

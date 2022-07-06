@@ -76,10 +76,7 @@ export const pipelineOfGetGuestFeedContents = ({
     {
       $unionWith: {
         coll: 'guestfeeditems',
-        pipeline: [
-          { $match: filtersGuest },
-          { $sort: { score: -1, createdAt: -1 } },
-        ],
+        pipeline: [{ $match: filtersGuest }, { $sort: { createdAt: 1 } }],
       },
     },
     { $limit: maxResults },
@@ -102,6 +99,11 @@ export const pipelineOfGetGuestFeedContents = ({
           },
         ],
         guestFeeds: [
+          {
+            $sort: {
+              createdAt: 1,
+            },
+          },
           {
             $match: { index: { $exists: false } },
           },

@@ -23,6 +23,7 @@
 import { Environment } from '@castcle-api/environments';
 import { TransformStringToKeyword } from '@castcle-api/utils/commons';
 import {
+  IsEmail,
   IsEnum,
   IsIn,
   IsMongoId,
@@ -72,4 +73,10 @@ export class GetDateDto {
   @IsString()
   @IsIn(Environment.PDPA_ACCEPT_DATES)
   date: string;
+}
+
+export class UpdateEmailDto {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
 }
