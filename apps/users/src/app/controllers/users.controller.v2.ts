@@ -54,6 +54,7 @@ import {
   TargetIdParam,
   UnlikeCommentCastParam,
   UpdateCommentDto,
+  UpdateEmailDto,
   UpdateMobileDto,
   UpdateUserDtoV2,
   UserService,
@@ -127,6 +128,17 @@ export class UsersControllerV2 {
       updateMobileDto,
       ip,
     );
+  }
+
+  @CastcleBasicAuth()
+  @Put('me/email')
+  @HttpCode(HttpStatus.OK)
+  async updateEmail(
+    @Auth() { account, user }: Authorizer,
+    @Body() { email }: UpdateEmailDto,
+    @RequestMeta() { hostUrl }: RequestMetadata,
+  ) {
+    return this.userService.updateEmail(account, user, email, hostUrl);
   }
 
   @CastcleBasicAuth()

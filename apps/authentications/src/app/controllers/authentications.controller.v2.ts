@@ -62,9 +62,11 @@ import {
   Post,
   Query,
   Req,
+  Response,
   UseInterceptors,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { FastifyReply } from 'fastify';
 import { getEmailVerificationHtml } from '../configs';
 import {
   CheckEmailExistDto,
@@ -341,10 +343,13 @@ export class AuthenticationControllerV2 {
   }
 
   @Get('verify/email')
-  async verifyEmail(@Query() { code }: Record<string, string>) {
+  async verifyEmail(
+    @Query() { code }: Record<string, string>,
+    @Response() res: FastifyReply,
+  ) {
     const [account] = await this.authenticationService.verifyEmail(code);
 
-    return getEmailVerificationHtml(account.email);
+    return res.type('text/html').send(getEmailVerificationHtml(account.email));
   }
 
   @CastcleBasicAuth()

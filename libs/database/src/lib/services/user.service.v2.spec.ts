@@ -54,7 +54,7 @@ import {
 import { PaginationQuery, QRCodeImageSize } from '../dtos';
 import { MockUserService } from '../mocks';
 import { MockUserDetail } from '../mocks/user.mocks';
-import { KeywordType, QueueName } from '../models';
+import { KeywordType, QueueName, UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
@@ -74,10 +74,12 @@ describe('UserServiceV2', () => {
     accountDocument: Account;
     credentialDocument: Credential;
   };
+  let mocksUsers: MockUserDetail[];
   let repository: Repository;
   let suggestServiceV2: SuggestionServiceV2;
   let userDemo: User;
   let userServiceV2: UserServiceV2;
+
   beforeAll(async () => {
     mongod = await MongoMemoryReplSet.create();
     moduleRef = await Test.createTestingModule({
@@ -138,6 +140,7 @@ describe('UserServiceV2', () => {
       AuthenticationServiceV2,
     );
     suggestServiceV2 = moduleRef.get<SuggestionServiceV2>(SuggestionServiceV2);
+
     guestDemo = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -165,7 +168,7 @@ describe('UserServiceV2', () => {
     let user1: User;
     let user2: User;
     beforeAll(async () => {
-      const mocksUsers = await generateUser.generateMockUsers(2, 10);
+      mocksUsers = await generateUser.generateMockUsers(2, 10);
 
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
@@ -248,7 +251,7 @@ describe('UserServiceV2', () => {
     let user1: User;
     let user2: User;
     beforeAll(async () => {
-      const mocksUsers = await generateUser.generateMockUsers(2, 10);
+      mocksUsers = await generateUser.generateMockUsers(2, 10);
 
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
@@ -366,7 +369,6 @@ describe('UserServiceV2', () => {
   });
 
   describe('getUserByKeyword', () => {
-    let mocksUsers: MockUserDetail[];
     beforeAll(async () => {
       mocksUsers = await generateUser.generateMockUsers(20);
     });
@@ -404,7 +406,6 @@ describe('UserServiceV2', () => {
   });
 
   describe('createQRCode', () => {
-    let mocksUsers: MockUserDetail[];
     beforeAll(async () => {
       mocksUsers = await generateUser.generateMockUsers(1);
     });
@@ -420,27 +421,26 @@ describe('UserServiceV2', () => {
   });
 
   describe('#suggest', () => {
-    let mockUsers: MockUserDetail[];
     let authorizer: any;
 
     beforeAll(async () => {
-      mockUsers = await generateUser.generateMockUsers(3);
+      mocksUsers = await generateUser.generateMockUsers(3);
 
       jest.spyOn(dataService, 'getFollowingSuggestions').mockResolvedValue([
         {
-          userId: mockUsers[0].user._id,
+          userId: mocksUsers[0].user._id,
           engagements: 200,
         },
         {
-          userId: mockUsers[1].user._id,
+          userId: mocksUsers[1].user._id,
           engagements: 50,
         },
       ]);
 
       authorizer = {
-        account: mockUsers[2].account,
-        user: mockUsers[2].user,
-        credential: mockUsers[2].credential,
+        account: mocksUsers[2].account,
+        user: mocksUsers[2].user,
+        credential: mocksUsers[2].credential,
       };
     });
 
@@ -459,7 +459,7 @@ describe('UserServiceV2', () => {
       const usersFiltered = await (suggestServiceV2 as any).querySuggestByCache(
         authorizer.credential.accessToken,
         {
-          untilId: mockUsers[0].user.id,
+          untilId: mocksUsers[0].user.id,
           hasRelationshipExpansion: false,
         },
       );
@@ -470,7 +470,7 @@ describe('UserServiceV2', () => {
       const usersFiltered = await (suggestServiceV2 as any).querySuggestByCache(
         authorizer.credential.accessToken,
         {
-          sinceId: mockUsers[1].user.id,
+          sinceId: mocksUsers[1].user.id,
           hasRelationshipExpansion: false,
         },
       );
@@ -488,7 +488,6 @@ describe('UserServiceV2', () => {
   });
 
   describe('updatePDPA', () => {
-    let mocksUsers: MockUserDetail[];
     beforeAll(async () => {
       mocksUsers = await generateUser.generateMockUsers(2);
       Environment.PDPA_ACCEPT_DATES = ['20200701'];
@@ -504,9 +503,8 @@ describe('UserServiceV2', () => {
     });
   });
   describe('getReferral', () => {
-    let mockUsers: MockUserDetail[];
     beforeAll(async () => {
-      mockUsers = await generateUser.generateMockUsers(2);
+      mocksUsers = await generateUser.generateMockUsers(2);
 
       guestDemo = await authService.createAccount({
         deviceUUID: `testuuid1`,
@@ -524,7 +522,7 @@ describe('UserServiceV2', () => {
         password: '12345678Ab',
         displayName: `Test1`,
         castcleId: `test1`,
-        referral: mockUsers[0].user.displayId,
+        referral: mocksUsers[0].user.displayId,
       });
     });
     it('should get user referee', async () => {
@@ -533,8 +531,8 @@ describe('UserServiceV2', () => {
           maxResults: 10,
           hasRelationshipExpansion: false,
         },
-        mockUsers[0].user,
-        mockUsers[1].user,
+        mocksUsers[0].user,
+        mocksUsers[1].user,
         true,
       );
 
@@ -546,15 +544,66 @@ describe('UserServiceV2', () => {
         {
           hasRelationshipExpansion: false,
         },
-        mockUsers[0].user,
-        mockUsers[1].user,
+        mocksUsers[0].user,
+        mocksUsers[1].user,
         false,
       );
 
       expect(referrer.payload).not.toBeNull();
     });
   });
+  describe('updateEmail', () => {
+    let mockUser: User;
+    let mockAccount: Account;
 
+    beforeAll(async () => {
+      mocksUsers = await generateUser.generateMockUsers(2);
+      mockAccount = await repository.createAccount({
+        preferences: {
+          languages: ['th', 'th'],
+        },
+      });
+      mockAccount.isGuest = false;
+      await mockAccount.save();
+      mockUser = await repository.createUser({
+        ownerAccount: mockAccount._id,
+        displayId: `mock-update-email`,
+        displayName: `mock`,
+        type: UserType.PEOPLE,
+      });
+    });
+    it('should be update email that account email is exists.', async () => {
+      await expect(
+        userServiceV2.updateEmail(
+          mocksUsers[0].account,
+          mocksUsers[0].user,
+          'mock@mock.com',
+          '0.0.0.0',
+        ),
+      ).rejects.toThrow(new CastcleException('EMAIL_CAN_NOT_CHANGE'));
+    });
+
+    it('should be update email that account email is duplicate.', async () => {
+      await expect(
+        userServiceV2.updateEmail(
+          mockAccount,
+          mockUser,
+          mocksUsers[1].account.email,
+          '0.0.0.0',
+        ),
+      ).rejects.toThrow(new CastcleException('DUPLICATE_EMAIL'));
+    });
+    it('should be update email that account without email and not duplicate.', async () => {
+      const userResponse = await userServiceV2.updateEmail(
+        mockAccount,
+        mockUser,
+        'mock-update-email1@mock.com',
+        '0.0.0.0',
+      );
+
+      expect(userResponse).toBeDefined();
+    });
+  });
   it('should be defined', () => {
     expect(repository).toBeDefined();
     expect(userServiceV2).toBeDefined();

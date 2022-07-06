@@ -68,14 +68,28 @@ export const createCastcleMeta = (
 };
 
 export const createCastcleFilter = (filter: any, queryOption: QueryOption) => {
-  if (queryOption.sinceId) {
-    filter._id = {
-      $gt: mongoose.Types.ObjectId(queryOption.sinceId),
-    };
-  } else if (queryOption.untilId) {
-    filter._id = {
-      $lt: mongoose.Types.ObjectId(queryOption.untilId),
-    };
+  if (queryOption.reversePagination) {
+    if (queryOption.sinceId) {
+      filter._id = {
+        $lt: mongoose.Types.ObjectId(queryOption.sinceId),
+      };
+    }
+    if (queryOption.untilId) {
+      filter._id = {
+        $gt: mongoose.Types.ObjectId(queryOption.untilId),
+      };
+    }
+  } else {
+    if (queryOption.sinceId) {
+      filter._id = {
+        $gt: mongoose.Types.ObjectId(queryOption.sinceId),
+      };
+    }
+    if (queryOption.untilId) {
+      filter._id = {
+        $lt: mongoose.Types.ObjectId(queryOption.untilId),
+      };
+    }
   }
   return filter;
 };
