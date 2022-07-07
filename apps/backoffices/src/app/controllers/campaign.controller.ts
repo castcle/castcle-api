@@ -16,17 +16,21 @@ import {
 } from '../guards/permisson.guard';
 import { HeaderBackofficeInterceptor } from '../interceptors/header-backoffice.interceptor';
 import { Permission } from '../models/authentication.enum';
-import { CampaignDto, GetCampaignParams } from '../models/campaign.dto';
+import {
+  CampaignDto,
+  GetCampaignParams,
+  UpdateCampaignDto,
+} from '../models/campaign.dto';
 import { CampaignService } from '../services/campaign.service';
 
-@CastcleControllerV2({ path: 'backoffices/campaigns' })
+@CastcleControllerV2({ path: 'backoffices' })
 export class CampaignController {
   constructor(private campaignService: CampaignService) {}
 
   @UseInterceptors(HeaderBackofficeInterceptor)
   @UseGuards(CredentialGuard, PermissionGuard)
   @RequiredPermissions(Permission.Manage)
-  @Post()
+  @Post('campaigns')
   @HttpCode(201)
   createCampaign(@Body() campaign: CampaignDto) {
     return this.campaignService.createCampaign(campaign);
@@ -35,7 +39,7 @@ export class CampaignController {
   @UseInterceptors(HeaderBackofficeInterceptor)
   @UseGuards(CredentialGuard, PermissionGuard)
   @RequiredPermissions(Permission.Manage)
-  @Get()
+  @Get('campaigns')
   @HttpCode(200)
   getCampaigns() {
     return this.campaignService.getCampaigns();
@@ -44,11 +48,11 @@ export class CampaignController {
   @UseInterceptors(HeaderBackofficeInterceptor)
   @UseGuards(CredentialGuard, PermissionGuard)
   @RequiredPermissions(Permission.Manage)
-  @Put(':campaignId')
+  @Put('campaigns/:campaignId')
   @HttpCode(201)
   updateCampaign(
     @Param() { campaignId }: GetCampaignParams,
-    @Body() campaign: CampaignDto,
+    @Body() campaign: UpdateCampaignDto,
   ) {
     return this.campaignService.updateCampaign(campaignId, campaign);
   }

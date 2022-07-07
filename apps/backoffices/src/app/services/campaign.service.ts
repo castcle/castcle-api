@@ -3,7 +3,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CampaignDto } from '../models/campaign.dto';
+import { CampaignDto, UpdateCampaignDto } from '../models/campaign.dto';
 
 @Injectable()
 export class CampaignService {
@@ -25,7 +25,7 @@ export class CampaignService {
 
   async updateCampaign(
     campaignId: string,
-    { name, startDate, endDate }: CampaignDto,
+    { name, startDate, endDate }: UpdateCampaignDto,
   ) {
     const updateCampaign = await this.campaignModel.updateOne(
       { _id: campaignId },

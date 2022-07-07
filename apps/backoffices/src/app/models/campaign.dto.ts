@@ -50,6 +50,21 @@ export class CampaignDto {
   endDate: Date;
 }
 
+export class UpdateCampaignDto {
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  @IsNotEmpty()
+  @IsDateString()
+  startDate: Date;
+
+  @IsNotEmpty()
+  @IsDateString()
+  @Validate(IsAfterDate, ['startDate'])
+  endDate: Date;
+}
+
 export class GetCampaignParams {
   @IsMongoId()
   @IsString()
