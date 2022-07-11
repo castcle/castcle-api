@@ -1078,6 +1078,11 @@ export class Repository {
     return this.feedItemModel.updateOne(filter, feedItem, queryOptions);
   }
 
+  findFeedItems = (
+    filter: FilterQuery<FeedItem>,
+    queryOptions?: QueryOptions,
+  ) => this.feedItemModel.find(filter, queryOptions);
+
   saveFeedItemFromContents(
     contents: GetContentCastDto,
     viewerAccountId: string,

@@ -125,6 +125,7 @@ export class AuthenticationService {
     const { deletedCount } = await this.staffModel
       .deleteOne({ _id: Types.ObjectId(staffId) })
       .exec();
+
     if (deletedCount === 0) throw new CastcleException('STAFF_NOT_FOUND');
   }
 }

@@ -250,12 +250,13 @@ export class Environment {
     .sort((a, b) => b.localeCompare(a));
 
   //Backoffice
-  static BACKOFFICE_API_KEY = process.env.BACKOFFICE_API_KEY;
+  static BACKOFFICE_API_KEY = process.env.BACKOFFICE_API_KEY || '';
   static BACKOFFICE_JWT_ACCESS_SECRET =
-    process.env.BACKOFFICE_JWT_ACCESS_SECRET;
-  static BACKOFFICE_DB_DATABASE_NAME = process.env.BACKOFFICE_DB_DATABASE_NAME;
+    process.env.BACKOFFICE_JWT_ACCESS_SECRET || 'secret';
+  static BACKOFFICE_DB_DATABASE_NAME =
+    process.env.BACKOFFICE_DB_DATABASE_NAME || '';
   static BACKOFFICE_JWT_ACCESS_EXPIRES_IN = Number(
-    process.env.BACKOFFICE_JWT_ACCESS_EXPIRES_IN || 0,
+    process.env.BACKOFFICE_JWT_ACCESS_EXPIRES_IN || 1000 * 60,
   );
   static BACKOFFICE_DB_USERNAME = process.env.BACKOFFICE_DB_USERNAME;
   static BACKOFFICE_DB_PASSWORD = process.env.BACKOFFICE_DB_PASSWORD;
