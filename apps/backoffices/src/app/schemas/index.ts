@@ -1,5 +1,6 @@
 import {
   AdsCampaignSchema,
+  CampaignSchema,
   ContentSchema,
   ReportingSchema,
   UserSchema,
@@ -17,6 +18,7 @@ export const CastcleDatabaseReadonly = MongooseModule.forFeature(
   [
     { name: 'AdsCampaign', schema: AdsCampaignSchema },
     { name: 'Content', schema: ContentSchema },
+    { name: 'Campaign', schema: CampaignSchema },
     { name: 'User', schema: UserSchema },
     { name: 'Reporting', schema: ReportingSchema },
   ],

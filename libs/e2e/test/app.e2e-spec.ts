@@ -5,6 +5,8 @@ import {
   testAuthenticationsFlow,
   testAuthenticationsSocialFlow,
 } from './modules/authentications';
+import { testCampaignFlow } from './modules/backoffices/campaign-flow.spec';
+import { testStaffFlow } from './modules/backoffices/staff-flow.spec';
 import {
   testCommentsFlow,
   testContentsFlow,
@@ -23,10 +25,12 @@ import { testQuoteCastsFlow } from './modules/users/quotecasts-flow.spec';
 import { testRecastsFlow } from './modules/users/recasts-flow.spec';
 import {
   closeAuthenticationsModule,
+  closeBackofficesModule,
   closeFeedsModule,
   closePagesModule,
   closeUsersModule,
   setupAuthenticationsModule,
+  setupBackofficesModule,
   setupFeedsModule,
   setupPagesModule,
   setupUsersModule,
@@ -44,6 +48,7 @@ describe('Castcle E2E Tests', () => {
       useNewUrlParser: true,
     });
     await setupAuthenticationsModule();
+    await setupBackofficesModule();
     await initializeUsers();
     await setupUsersModule();
     await setupPagesModule();
@@ -52,6 +57,7 @@ describe('Castcle E2E Tests', () => {
 
   afterAll(async () => {
     await closeAuthenticationsModule();
+    await closeBackofficesModule();
     await closeUsersModule();
     await closePagesModule();
     await closeFeedsModule();
@@ -118,6 +124,16 @@ describe('Castcle E2E Tests', () => {
 
     describe('- Reply Comment Flow', () => {
       testReplyCommentsFlow();
+    });
+  });
+
+  describe('# Backoffices Microservice', () => {
+    describe('- Staff Flow', () => {
+      testStaffFlow();
+    });
+
+    describe('- Campaign Flow', () => {
+      testCampaignFlow();
     });
   });
 });
