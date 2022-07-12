@@ -34,16 +34,16 @@ import {
   pipelineOfGetWalletRecentFromType,
 } from '../aggregations';
 import {
-  WalletRecentResponse,
-  WalletResponse,
+  RecentWalletResponse,
+  RecentWalletsResponse,
   WalletResponseOptions,
 } from '../dtos';
 import {
   CACCOUNT_NO,
   CastcleNumber,
   TopUpDto,
-  TransactionDto,
   TransactionFilter,
+  TransferDto,
   WalletHistoryResponseDto,
   WalletType,
 } from '../models';
@@ -64,7 +64,7 @@ export class TAccountService {
     private repository: Repository,
   ) {}
 
-  toWalletResponse(
+  toRecentWalletResponse(
     user: User,
     shortcut?: WalletShortcut,
     overwrites?: WalletResponseOptions,
@@ -86,7 +86,7 @@ export class TAccountService {
       createdAt: shortcut?.createdAt ?? user.createdAt,
       updatedAt: shortcut?.updatedAt ?? user.updatedAt,
       ...overwrites,
-    } as WalletResponse;
+    } as RecentWalletResponse;
   }
 
   getFindQueryForChild(caccount: CAccount) {
@@ -135,7 +135,7 @@ export class TAccountService {
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
 
-  async validateTransfer(transferDTO: TransactionDto) {
+  async validateTransfer(transferDTO: TransferDto) {
     //value from equal value to
     if (
       !(
@@ -177,7 +177,7 @@ export class TAccountService {
     return true;
   }
 
-  async transfers(transferDTO: TransactionDto, session?: ClientSession) {
+  async transfers(transferDTO: TransferDto, session?: ClientSession) {
     //check if balance available
     if (await this.validateTransfer(transferDTO))
       return new this._transactionModel(transferDTO).save({ session: session });
@@ -243,33 +243,33 @@ export class TAccountService {
   }
   /**
    * Use for dev only
-   * @param topupDto
+   * @param topUpDto
    * @returns
    */
-  topup(topupDto: TopUpDto) {
-    switch (topupDto.type) {
+  topUp(topUpDto: TopUpDto) {
+    switch (topUpDto.type) {
       case WalletType.ADS:
         return new this._transactionModel({
           from: {
             type: WalletType.EXTERNAL_DEPOSIT,
-            value: topupDto.value,
+            value: topUpDto.value,
           },
           to: [
             {
               type: WalletType.ADS,
-              value: topupDto.value,
-              user: topupDto.userId,
+              value: topUpDto.value,
+              user: topUpDto.userId,
             },
           ],
           ledgers: [
             {
               credit: {
                 caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
-                value: topupDto.value,
+                value: topUpDto.value,
               },
               debit: {
                 caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
-                value: topupDto.value,
+                value: topUpDto.value,
               },
             },
           ],
@@ -278,24 +278,24 @@ export class TAccountService {
         return new this._transactionModel({
           from: {
             type: WalletType.EXTERNAL_DEPOSIT,
-            value: topupDto.value,
+            value: topUpDto.value,
           },
           to: [
             {
               type: WalletType.PERSONAL,
-              value: topupDto.value,
-              user: topupDto.userId,
+              value: topUpDto.value,
+              user: topUpDto.userId,
             },
           ],
           ledgers: [
             {
               credit: {
                 caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
-                value: topupDto.value,
+                value: topUpDto.value,
               },
               debit: {
                 caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
-                value: topupDto.value,
+                value: topUpDto.value,
               },
             },
           ],
@@ -308,7 +308,7 @@ export class TAccountService {
   async getAllWalletRecent(
     userId: string,
     keyword?: { [key: string]: string },
-  ): Promise<WalletRecentResponse> {
+  ): Promise<RecentWalletsResponse> {
     const transactions = !keyword
       ? await this._transactionModel.aggregate<GetWalletRecentResponse>([
           pipelineOfGetWalletRecentFromType(userId),
@@ -327,7 +327,7 @@ export class TAccountService {
       .exec();
 
     return {
-      castcle: users.map((user) => this.toWalletResponse(user, null)),
+      castcle: users.map((user) => this.toRecentWalletResponse(user, null)),
       other: [], // TODO !!! Implement external chain
     };
   }
