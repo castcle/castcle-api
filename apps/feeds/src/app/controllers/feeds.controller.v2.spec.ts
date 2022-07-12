@@ -100,11 +100,15 @@ describe('FeedsControllerV2', () => {
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.USER),
+          provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.NOTIFICATION),
+          provide: getQueueToken(QueueName.REPORTING),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
       ],

@@ -142,6 +142,7 @@ type UserQuery = {
   sinceId?: string;
   type?: UserType;
   untilId?: string;
+  visibility?: EntityVisibility;
 };
 
 type EngagementQuery = {
@@ -209,6 +210,7 @@ type ContentQuery = {
   };
   untilId?: string;
   viewer?: User;
+  visibility?: EntityVisibility;
 };
 
 type HashtagQuery = {
@@ -234,12 +236,14 @@ type WalletShortcutQuery = {
 
 type MetadataQuery = {
   type?: MetadataType;
+  subject?: string;
 };
 
 type ReportingQuery = {
-  subject: string;
-  payload: User | Content;
-  by: Types.ObjectId;
+  by?: Types.ObjectId;
+  payloadId?: Types.ObjectId;
+  subject?: string;
+  user?: Types.ObjectId;
 };
 
 @Injectable()
@@ -415,6 +419,8 @@ export class Repository {
     if (filter.excludeAuthor?.length)
       query['author.id'] = { $nin: filter.excludeAuthor };
 
+    if (filter.visibility) query.visibility = filter.visibility;
+
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
         sinceId: filter.sinceId,
@@ -511,6 +517,7 @@ export class Repository {
       {};
 
     if (filter.type) query.type = filter.type;
+    if (filter.subject) query['payload.slug'] = filter.subject;
 
     return query;
   }
@@ -518,8 +525,9 @@ export class Repository {
   private getReportingQuery(filter: ReportingQuery) {
     const query: FilterQuery<Reporting> = {};
 
+    if (filter.user) query.user = filter.user;
     if (filter.subject) query.subject = filter.subject;
-    if (filter.payload) query.payload = filter.payload;
+    if (filter.payloadId) query['payload._id'] = filter.payloadId;
     if (filter.subject) query.subject = filter.subject;
 
     return query;
@@ -707,6 +715,8 @@ export class Repository {
     }
 
     if (filter.castcleId) query.displayId = filter.castcleId;
+
+    if (filter.visibility) query.visibility = filter.visibility;
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -1326,6 +1336,15 @@ export class Repository {
       .exec();
   }
 
+  findReportingSubject(
+    filter?: MetadataQuery,
+    queryOptions?: QueryOptions,
+  ): Promise<Metadata<ReportingSubject>> {
+    return this.metadataModel
+      .findOne(this.getMetadataQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
   async getPublicUsers({
     requestedBy,
     filter,
@@ -1376,6 +1395,18 @@ export class Repository {
 
   createReporting(dto: AnyKeys<Reporting>) {
     return new this.reportingModel(dto).save();
+  }
+
+  updateReportings(
+    filter: ReportingQuery,
+    updateQuery: UpdateQuery<Reporting>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.reportingModel.updateMany(
+      this.getReportingQuery(filter),
+      updateQuery,
+      queryOptions,
+    );
   }
 
   findReporting(filter: ReportingQuery, queryOptions?: QueryOptions) {

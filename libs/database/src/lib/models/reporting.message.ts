@@ -21,24 +21,7 @@
  * or have any questions.
  */
 
-export enum QueueName {
-  CAMPAIGN = 'campaign',
-  CONTENT = 'content',
-  NOTIFICATION = 'notification',
-  USER = 'user',
-  SOCIAL_REWARD = 'social-reward',
-  REPORTING = 'reporting',
-}
-
-export enum QueueStatus {
-  CANCELLED = 'cancelled',
-  DONE = 'done',
-  FAILED = 'failed',
-  WAITING = 'waiting',
-}
-
-export enum QueueTopic {
-  CLAIM_AIRDROP = 'claim-airdrop',
-  DISTRIBUTE_SOCIAL_REWARD = 'distribute-social-reward',
-  UPDATE_CONTENT_FARMING = 'update-content-farming',
+export class ReportingMessage {
+  subject: string;
+  content: string;
 }

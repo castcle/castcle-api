@@ -88,6 +88,10 @@ describe('SearchServiceV2', () => {
           provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
+        {
+          provide: getQueueToken(QueueName.REPORTING),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 

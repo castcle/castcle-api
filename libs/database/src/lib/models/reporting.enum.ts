@@ -21,12 +21,17 @@
  * or have any questions.
  */
 
-export enum ReportType {
+export enum ReportingAction {
+  APPEAL = 'Appeal',
+  REPORT = 'Report',
+}
+
+export enum ReportingType {
   CONTENT = 'content',
   USER = 'user',
 }
 
-export enum ReportStatus {
+export enum ReportingStatus {
   REVIEWING = 'reviewing',
   DONE = 'done',
   APPEAL = 'appeal',

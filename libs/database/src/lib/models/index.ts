@@ -49,6 +49,7 @@ export * from './otp.model';
 export * from './queue.enum';
 export * from './queue.model';
 export * from './reporting.enum';
+export * from './reporting.message';
 export * from './reporting.model';
 export * from './social-sync.enum';
 export * from './user.enum';

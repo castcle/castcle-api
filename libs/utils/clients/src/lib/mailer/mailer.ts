@@ -26,6 +26,13 @@ import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { createTransport } from 'nodemailer';
 import { getRegistrationHtml } from './templates/registration';
+import {
+  ContentReport,
+  Reporting,
+  UserReport,
+  getHtmlReportingContent,
+  getHtmlReportingUser,
+} from './templates/reporting';
 
 @Injectable()
 export class Mailer {
@@ -63,55 +70,28 @@ export class Mailer {
     }
   }
 
-  async sendReportContentEmail(
-    user: UserReport,
-    targetContent: {
-      _id: string;
-      payload: any;
-      author: UserReport;
-    },
-    message: string,
-  ) {
+  async sendReportingEmail(subject: string, templateContent: string) {
     try {
       const info = await this.transporter.sendMail({
         from: 'castcle-noreply" <no-reply@castcle.com>',
-        subject: `Report content: ${targetContent._id}`,
+        subject: subject,
         to: Environment.SMTP_ADMIN_EMAIL,
-        text: `Content: ${targetContent._id} has been reported.
-  Author: ${targetContent.author.displayName} (${targetContent.author._id})
-  Body: ${JSON.stringify(targetContent.payload, null, 2)}
-
-  ReportedBy: ${user.displayName} (${user._id})
-  Message: ${message ?? ''}`,
+        html: templateContent,
       });
 
       this.logger.log(`Report has been submitted ${info.messageId}`);
     } catch (error) {
-      this.logger.error(error, `sendReportContentEmail:${targetContent._id}`);
+      this.logger.error(error, `${subject}`);
     }
   }
 
-  async sendReportUserEmail(
-    user: UserReport,
-    targetUser: UserReport,
-    message: string,
+  generateHTMLReport<T extends ContentReport | UserReport>(
+    targetContent: T,
+    reporting: Reporting,
   ) {
-    try {
-      const info = await this.transporter.sendMail({
-        from: 'castcle-noreply" <no-reply@castcle.com>',
-        subject: `Report user: ${targetUser._id}`,
-        to: Environment.SMTP_ADMIN_EMAIL,
-        text: `User ${targetUser.displayName} (${
-          targetUser._id
-        }) has been reported.
-  Reported by: ${user.displayName} (${user._id})
-  Message: ${message ?? ''}`,
-      });
-
-      this.logger.log(`Report has been submitted ${info.messageId}`);
-    } catch (error) {
-      this.logger.error(error, `sendReportUserEmail:${targetUser}`);
-    }
+    return reporting.type === 'user'
+      ? getHtmlReportingUser(targetContent as UserReport, reporting)
+      : getHtmlReportingContent(targetContent as ContentReport, reporting);
   }
 
   async sendPasswordToStaff(email: string, password: string) {
@@ -129,8 +109,3 @@ export class Mailer {
     }
   }
 }
-
-type UserReport = {
-  _id: string;
-  displayName: string;
-};
