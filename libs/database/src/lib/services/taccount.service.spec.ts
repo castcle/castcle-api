@@ -339,13 +339,13 @@ describe('TAccount Service', () => {
       expect(result.payload).toEqual(expect.arrayContaining(expectArr));
     });
   });
-  describe('topup()', () => {
+  describe('top up()', () => {
     let mockUserId;
     beforeAll(() => {
       mockUserId = Types.ObjectId();
     });
-    it('should be able topup ads account', async () => {
-      await service.topup({
+    it('should be able top up ads account', async () => {
+      await service.topUp({
         type: WalletType.ADS,
         value: 500,
         userId: String(mockUserId),
@@ -354,8 +354,8 @@ describe('TAccount Service', () => {
         await service.getAccountBalance(mockUserId, WalletType.ADS),
       ).toEqual(500);
     });
-    it('should be able topup personal account', async () => {
-      await service.topup({
+    it('should be able top up personal account', async () => {
+      await service.topUp({
         type: WalletType.PERSONAL,
         value: 700,
         userId: String(mockUserId),
@@ -365,6 +365,7 @@ describe('TAccount Service', () => {
       ).toEqual(700);
     });
   });
+
   describe('getAllWalletRecent()', () => {
     let mocksUsers: MockUserDetail[];
 

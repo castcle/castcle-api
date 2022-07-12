@@ -54,6 +54,7 @@ export * from './guest-feed-item.schema';
 export * from './hashtag-item.schema';
 export * from './hashtag.schema';
 export * from './metadata.schema';
+export * from './network.schema';
 export * from './notification.schema';
 export * from './organic-statistic.schema';
 export * from './otp.schema';

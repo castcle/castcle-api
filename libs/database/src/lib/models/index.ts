@@ -41,6 +41,7 @@ export * from './feed.enum';
 export * from './feed.model';
 export * from './language.model';
 export * from './metadata.enum';
+export * from './network.enum';
 export * from './notification.message';
 export * from './number.model';
 export * from './otp.enum';

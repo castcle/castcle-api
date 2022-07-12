@@ -99,6 +99,7 @@ import {
   FeedItem,
   Hashtag,
   Metadata,
+  Network,
   Notification,
   Otp,
   OtpModel,
@@ -266,6 +267,7 @@ export class Repository {
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
     @InjectModel('Metadata')
     private metadataModel: Model<Metadata<any>>,
+    @InjectModel('Network') private networkModel: Model<Network>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Queue') private queueModel: Model<Queue>,
@@ -1465,5 +1467,9 @@ export class Repository {
       );
 
     return `${castcleId}${availableId ? availableId?.number : ''}`;
+  }
+
+  async findNetwork(chainId: string): Promise<Network> {
+    return this.networkModel.findOne({ chainId });
   }
 }

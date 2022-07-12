@@ -21,24 +21,8 @@
  * or have any questions.
  */
 
-import { MicroTransaction, TLedger } from '../schemas';
-import { TransactionFilter, TransactionType } from './wallet.enum';
-
-class TransactionData {
-  type: TransactionType;
-  filter: TransactionFilter;
-  payload?: any;
-}
-
-class ClaimAirdrop {
-  campaignId: string;
-  type: TransactionType.AIRDROP;
-  filter: TransactionFilter.AIRDROP_REFERAL;
-}
-
-export class TransferDto {
-  from: MicroTransaction;
-  to: MicroTransaction[];
-  data?: TransactionData | ClaimAirdrop;
-  ledgers: TLedger[];
+export enum NetworkType {
+  INTERNAL = 'internal',
+  MAINNET = 'mainnet',
+  TESTNET = 'testnet',
 }

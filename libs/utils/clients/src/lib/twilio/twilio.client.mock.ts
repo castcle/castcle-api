@@ -20,16 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { HttpModule } from '@nestjs/axios';
-import { Test, TestingModule } from '@nestjs/testing';
-import { TwilioClient } from './twilio.client';
 
 export class TwilioClientMock {
   async requestOtp() {
     return {
-      sid: 'VEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      service_sid: 'VAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      account_sid: 'ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      sid: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      service_sid: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      account_sid: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
       to: '+15017122661',
       channel: 'sms',
       status: 'pending',
@@ -54,11 +51,11 @@ export class TwilioClientMock {
           channel_id: null,
         },
       ],
-      url: 'https://verify.twilio.com/v2/Services/VAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Verifications/VEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      url: 'https://verify.twilio.com/v2/Services/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Verifications/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
     };
   }
 
-  async verifyOtp(receiver: string, otp: string) {
+  async verifyOtp(_: string, otp: string) {
     if (otp === '123456') {
       return { status: 'approved' };
     } else {
@@ -70,20 +67,3 @@ export class TwilioClientMock {
     return true;
   }
 }
-
-describe('TwilioClient', () => {
-  let service: TwilioClient;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [TwilioClient],
-      imports: [HttpModule],
-    }).compile();
-
-    service = module.get<TwilioClient>(TwilioClient);
-  });
-
-  it('TwilioClient - should be defined', () => {
-    expect(service).toBeDefined();
-  });
-});

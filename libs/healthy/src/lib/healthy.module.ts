@@ -25,15 +25,17 @@ import { DynamicModule, Module } from '@nestjs/common';
 import { RouterModule } from '@nestjs/core';
 import { HealthyController } from './healthy.controller';
 
-@Module({})
 export class CastcleHealthyModule {
   static register(options: { pathPrefix: string }): DynamicModule {
+    @Module({})
+    class HealthyModule {}
+
     return {
-      module: CastcleHealthyModule,
+      module: HealthyModule,
       controllers: [HealthyController],
       imports: [
         RouterModule.register([
-          { path: options.pathPrefix, module: CastcleHealthyModule },
+          { path: options.pathPrefix, module: HealthyModule },
         ]),
       ],
     };

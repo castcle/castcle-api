@@ -22,34 +22,33 @@
  */
 
 import {
+  EntityVisibility,
+  NetworkType,
+  Repository,
   TAccountService,
+  TransactionDto,
   User,
-  WalletShortcutService,
   WalletType,
 } from '@castcle-api/database';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
-import { WalletHistoryQueryDto, WalletResponse } from '../dtos';
+import { WalletResponse } from '../dtos';
 
 @Injectable()
 export class WalletService {
   constructor(
-    private taccountService: TAccountService,
-    private walletShortcutService: WalletShortcutService,
+    private repository: Repository,
+    private tAccountService: TAccountService,
   ) {}
 
   async getWalletBalance(user: User): Promise<WalletResponse> {
-    const personalBalance = await this.taccountService.getAccountBalance(
-      user.id,
-      WalletType.PERSONAL,
-    );
-    const adsCreditBalance = await this.taccountService.getAccountBalance(
-      user.id,
-      WalletType.ADS,
-    );
-    const farmingBalance = await this.taccountService.getAccountBalance(
-      user.id,
-      WalletType.FARM_LOCKED,
-    );
+    const [adsCreditBalance, farmingBalance, personalBalance] =
+      await Promise.all([
+        this.tAccountService.getAccountBalance(user.id, WalletType.ADS),
+        this.tAccountService.getAccountBalance(user.id, WalletType.FARM_LOCKED),
+        this.tAccountService.getAccountBalance(user.id, WalletType.PERSONAL),
+      ]);
+
     return {
       id: user.id,
       displayName: user.displayName,
@@ -61,11 +60,31 @@ export class WalletService {
     };
   }
 
-  getWalletHistory(user: User, query: WalletHistoryQueryDto) {
-    return this.taccountService.getWalletHistory(user.id, query.filter);
-  }
+  async reviewTransaction({
+    chainId,
+    address,
+    amount,
+    requestedBy,
+  }: TransactionDto & { requestedBy: string }) {
+    const [network, balance] = await Promise.all([
+      this.repository.findNetwork(chainId),
+      this.tAccountService.getAccountBalance(requestedBy, WalletType.PERSONAL),
+    ]);
 
-  getAllWalletRecent(userId: string, keyword?: { [key: string]: string }) {
-    return this.taccountService.getAllWalletRecent(userId, keyword);
+    if (!network) {
+      throw new CastcleException('NETWORK_NOT_FOUND');
+    }
+    if (network.visibility !== EntityVisibility.Publish) {
+      throw new CastcleException('NETWORK_TEMPORARILY_DISABLED');
+    }
+    if (amount > balance) {
+      throw new CastcleException('NOT_ENOUGH_BALANCE');
+    }
+    if (network.type !== NetworkType.INTERNAL) {
+      return;
+    }
+
+    const receiver = await this.repository.findUser({ _id: address });
+    if (!receiver) throw new CastcleException('RECEIVER_NOT_FOUND');
   }
 }

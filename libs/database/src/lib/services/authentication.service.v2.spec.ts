@@ -34,7 +34,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
 import { GoogleClientMock } from 'libs/utils/clients/src/lib/google/google.client.spec';
-import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.spec';
+import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.mock';
 import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.client.spec';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
