@@ -28,6 +28,7 @@ import { Environment } from './environments';
 import {
   getBullModuleOptions,
   getCacheModuleOptions,
+  getMongooseBackofficeAppModuleOptions,
   getMongooseBackofficeModuleOptions,
   getMongooseModuleOptions,
 } from './factories';
@@ -69,7 +70,7 @@ export class CastcleMongooseModule {}
       connectionName: Environment.BACKOFFICE_DB_DATABASE_NAME,
     }),
     MongooseModule.forRootAsync({
-      useFactory: () => getMongooseModuleOptions(),
+      useFactory: () => getMongooseBackofficeAppModuleOptions(),
       connectionName: Environment.DB_DATABASE_NAME,
     }),
   ],

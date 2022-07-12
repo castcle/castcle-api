@@ -15,6 +15,11 @@ jest.mock('libs/environments/src/lib/factories', () => ({
     useNewUrlParser: true,
     useUnifiedTopology: true,
   }),
+  getMongooseBackofficeAppModuleOptions: () => ({
+    uri: global.mongoUri,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  }),
 }));
 
 jest.mock('libs/logger/src/lib/logger', () => ({
