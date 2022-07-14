@@ -44,7 +44,7 @@ export class AdminScheduler {
     for (let i = 0; i < actionQueues.length; i++) {
       const actionQ = actionQueues[i];
       try {
-        await this.taccountService.topup(actionQ.payload.data);
+        await this.taccountService.topUp(actionQ.payload.data);
         actionQ.status = QueueStatus.DONE;
       } catch (e) {
         actionQ.status = QueueStatus.FAILED;

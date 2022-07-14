@@ -21,24 +21,26 @@
  * or have any questions.
  */
 
-import { MicroTransaction, TLedger } from '../schemas';
-import { TransactionFilter, TransactionType } from './wallet.enum';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { NetworkType } from '../models';
+import { CastcleBase } from './base.schema';
 
-class TransactionData {
-  type: TransactionType;
-  filter: TransactionFilter;
-  payload?: any;
+@Schema({ timestamps: true })
+export class Network extends CastcleBase {
+  @Prop()
+  name: string;
+
+  @Prop({ type: String })
+  type: NetworkType;
+
+  @Prop()
+  rpcUrl: string;
+
+  @Prop()
+  chainId: string;
+
+  @Prop()
+  blockExplorerUrl?: string;
 }
 
-class ClaimAirdrop {
-  campaignId: string;
-  type: TransactionType.AIRDROP;
-  filter: TransactionFilter.AIRDROP_REFERAL;
-}
-
-export class TransferDto {
-  from: MicroTransaction;
-  to: MicroTransaction[];
-  data?: TransactionData | ClaimAirdrop;
-  ledgers: TLedger[];
-}
+export const NetworkSchema = SchemaFactory.createForClass(Network);

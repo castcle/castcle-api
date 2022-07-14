@@ -39,7 +39,7 @@ export class WalletShortcutService {
   async createWalletShortcut(body: ShortcutInternalDto, accountId: string) {
     //TODO !!! Now! Check internal chain only.
     if (body.chainId !== Environment.CHAIN_INTERNAL)
-      throw new CastcleException('INTERNAL_CHAIN_NOT_FOUND');
+      throw new CastcleException('NETWORK_NOT_FOUND');
 
     const user = await this.repository.findUser({ _id: body.userId });
     if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
@@ -57,7 +57,7 @@ export class WalletShortcutService {
       account: accountId,
     });
 
-    return this.taccountService.toWalletResponse(user, newShortcut);
+    return this.taccountService.toRecentWalletResponse(user, newShortcut);
   }
 
   async getWalletShortcut(accountId: string) {
@@ -83,11 +83,11 @@ export class WalletShortcutService {
 
     const shortcutResponses = walletShortcuts.map((shortcut) => {
       const user = users.find((user) => String(user._id) === shortcut.address);
-      return this.taccountService.toWalletResponse(user, shortcut);
+      return this.taccountService.toRecentWalletResponse(user, shortcut);
     });
 
     const accountResponses = usersOwner.map((user) => {
-      return this.taccountService.toWalletResponse(user, undefined, {
+      return this.taccountService.toRecentWalletResponse(user, undefined, {
         id: null,
         order: undefined,
       });
