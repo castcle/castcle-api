@@ -1408,6 +1408,7 @@ export class ContentServiceV2 {
       accountId,
       maxResults,
     );
+    console.log('suggestContents', suggestContents);
     const suggestContentIds = suggestContents.payload.map((c) => c.content);
     const [contents] = await this.repository.aggregationContent({
       viewer,
@@ -1475,6 +1476,23 @@ export class ContentServiceV2 {
       hasRelationshipExpansion,
     );
   };
+
+  offViewFeedItem(accountId: string, feedItemId: string) {
+    return this.repository
+      .updateFeedItem(
+        {
+          viewer: accountId as any,
+          _id: feedItemId,
+          offViewAt: {
+            $exists: false,
+          },
+        },
+        {
+          offViewAt: new Date(),
+        },
+      )
+      .exec();
+  }
 
   async reportContent(requestedBy: User, body: ReportContentDto) {
     const targetContent = await this.repository.findContent({
