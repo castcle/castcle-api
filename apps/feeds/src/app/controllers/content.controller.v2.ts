@@ -27,6 +27,7 @@ import {
   EngagementType,
   GetContentDto,
   PaginationQuery,
+  ReportingStatus,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -59,14 +60,14 @@ export class ContentControllerV2 {
 
   @CastcleAuth(CacheKeyName.Contents)
   @Get(':contentId')
-  async getContent(
+  getContent(
     @Param() { contentId }: GetContentDto,
     @Auth() authorizer: Authorizer,
     @Query() { hasRelationshipExpansion }: PaginationQuery,
   ) {
     this.logger.log(`Get casts from content : ${contentId}`);
 
-    return await this.contentServiceV2.getContent(
+    return this.contentServiceV2.getContent(
       contentId,
       authorizer.user,
       hasRelationshipExpansion,
@@ -117,14 +118,14 @@ export class ContentControllerV2 {
 
   @CastcleBasicAuth()
   @Get(':contentId/liking-users')
-  async getLikingCast(
+  getLikingCast(
     @Auth() authorizer: Authorizer,
     @Param() { contentId }: GetContentDto,
     @Query() query: PaginationQuery,
   ) {
     this.logger.log(`Get Liking from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
-    return await this.contentServiceV2.getEngagementCast(
+    return this.contentServiceV2.getEngagementCast(
       contentId,
       authorizer.account,
       query,
@@ -135,14 +136,14 @@ export class ContentControllerV2 {
 
   @CastcleBasicAuth()
   @Get(':contentId/recasts')
-  async getRecastBy(
+  getRecastBy(
     @Auth() authorizer: Authorizer,
     @Param() { contentId }: GetContentDto,
     @Query() query: PaginationQuery,
   ) {
     this.logger.log(`Get Recasts from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
-    return await this.contentServiceV2.getEngagementCast(
+    return this.contentServiceV2.getEngagementCast(
       contentId,
       authorizer.account,
       query,
@@ -153,14 +154,14 @@ export class ContentControllerV2 {
 
   @CastcleBasicAuth()
   @Get(':contentId/quotecasts')
-  async getQuoteCastBy(
+  getQuoteCastBy(
     @Auth() authorizer: Authorizer,
     @Param() { contentId }: GetContentDto,
     @Query() query: PaginationQuery,
   ) {
     this.logger.log(`Get quote casts from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
-    return await this.contentServiceV2.getQuoteByCast(
+    return this.contentServiceV2.getQuoteByCast(
       contentId,
       query,
       authorizer.user,
@@ -192,15 +193,40 @@ export class ContentControllerV2 {
 
   @CastcleAuth(CacheKeyName.Contents)
   @Get(':contentId/participates')
-  async getParticipates(
+  getParticipates(
     @Auth() authorizer: Authorizer,
     @Param() { contentId }: GetContentDto,
   ) {
     if (authorizer.account.isGuest) throw new CastcleException('FORBIDDEN');
 
-    return await this.contentServiceV2.getParticipates(
+    return this.contentServiceV2.getParticipates(contentId, authorizer.account);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
+  @Post(':contentId/appeal')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async appealContent(
+    @Auth() { user }: Authorizer,
+    @Param() { contentId }: GetContentDto,
+  ) {
+    await this.contentServiceV2.updateAppealContent(
       contentId,
-      authorizer.account,
+      user,
+      ReportingStatus.APPEAL,
+    );
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
+  @Post(':contentId/not-appeal')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async notAppealContent(
+    @Auth() { user }: Authorizer,
+    @Param() { contentId }: GetContentDto,
+  ) {
+    await this.contentServiceV2.updateAppealContent(
+      contentId,
+      user,
+      ReportingStatus.NOT_APPEAL,
     );
   }
 }

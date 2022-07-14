@@ -173,6 +173,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
       { name: QueueName.CAMPAIGN },
       { name: QueueName.CONTENT },
       { name: QueueName.NOTIFICATION },
+      { name: QueueName.REPORTING },
       { name: QueueName.USER },
     ),
     HttpModule,

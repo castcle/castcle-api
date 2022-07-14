@@ -23,6 +23,7 @@
 
 import { CacheStore, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { Mailer } from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
@@ -47,6 +48,7 @@ import {
   NotificationSource,
   NotificationType,
   PaginationQuery,
+  ReportContentDto,
   ResponseDto,
   ResponseParticipate,
   ShortPayload,
@@ -57,7 +59,12 @@ import {
   ContentMessage,
   ContentMessageEvent,
   EngagementType,
+  MetadataType,
   QueueName,
+  ReportingAction,
+  ReportingMessage,
+  ReportingStatus,
+  ReportingType,
   TransactionFilter,
   TransactionType,
   UserType,
@@ -87,19 +94,23 @@ import { UserServiceV2 } from './user.service.v2';
 export class ContentServiceV2 {
   private logger = new CastLogger(ContentServiceV2.name);
   constructor(
-    private notificationServiceV2: NotificationServiceV2,
-    private tAccountService: TAccountService,
-    private repository: Repository,
     @InjectModel('ContentFarming')
     private contentFarmingModel: Model<ContentFarming>,
     @InjectModel('Content')
     private contentModel: Model<Content>,
-    private hashtagService: HashtagService,
     @InjectQueue(QueueName.CONTENT)
     private contentQueue: Queue<ContentMessage>,
+    @InjectQueue(QueueName.REPORTING)
+    private reportingQueue: Queue<ReportingMessage>,
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
+    private notificationServiceV2: NotificationServiceV2,
+    private tAccountService: TAccountService,
+    private repository: Repository,
+    private hashtagService: HashtagService,
     private dataService: DataService,
     private userServiceV2: UserServiceV2,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private mailerService: Mailer,
   ) {}
 
   private toContentsResponses = async (
@@ -203,7 +214,7 @@ export class ContentServiceV2 {
         meta: { resultCount: 0 },
       });
 
-    const usersId = bundleContents.authors.map((item) => item._id);
+    const usersId = bundleContents.authors?.map((item) => item._id);
 
     const relationships =
       viewer && hasRelationshipExpansion
@@ -215,7 +226,7 @@ export class ContentServiceV2 {
             .exec()
         : [];
 
-    const includesUsers = bundleContents.authors.map((author) => {
+    const includesUsers = bundleContents.authors?.map((author) => {
       const relationshipUser = relationships?.find(
         (relationship) =>
           String(relationship.followedUser) === String(author._id),
@@ -1462,6 +1473,150 @@ export class ContentServiceV2 {
       newFeeds,
       viewer,
       hasRelationshipExpansion,
+    );
+  };
+
+  async reportContent(requestedBy: User, body: ReportContentDto) {
+    const targetContent = await this.repository.findContent({
+      _id: body.targetContentId,
+    });
+
+    if (!targetContent) throw new CastcleException('CONTENT_NOT_FOUND');
+
+    if (String(targetContent.author.id) === String(requestedBy.id))
+      throw new CastcleException('FORBIDDEN');
+
+    const reportingExists = await this.repository.findReporting({
+      payloadId: targetContent._id,
+      subject: body.subject,
+      by: requestedBy._id,
+    });
+
+    if (reportingExists) throw new CastcleException('REPORTING_IS_EXIST');
+
+    const engagementFilter = {
+      user: requestedBy._id,
+      targetRef: { $ref: 'content', $id: targetContent._id },
+      type: EngagementType.Report,
+    };
+
+    const { payload } = await this.toContentResponse({
+      contents: [targetContent],
+      authors: [],
+    });
+
+    const reportingSubject = await this.repository.findReportingSubject({
+      type: MetadataType.REPORTING_SUBJECT,
+      subject: body.subject,
+    });
+
+    if (!reportingSubject)
+      throw new CastcleException('REPORTING_SUBJECT_NOT_FOUND');
+
+    await Promise.all([
+      this.repository.updateEngagement(
+        engagementFilter,
+        { ...engagementFilter, visibility: EntityVisibility.Publish },
+        { upsert: true },
+      ),
+      this.repository.createReporting({
+        by: requestedBy._id,
+        message: body.message,
+        payload: targetContent,
+        subject: body.subject,
+        type: ReportingType.CONTENT,
+        user: targetContent.author.id,
+      }),
+      this.reportingQueue.add(
+        {
+          subject: `${ReportingAction.REPORT} content : (OID : ${targetContent._id})`,
+          content: this.mailerService.generateHTMLReport(payload, {
+            action: ReportingAction.REPORT,
+            message: body.message,
+            reportedBy: requestedBy.displayName,
+            subject: reportingSubject.payload.name,
+            type: ReportingType.CONTENT,
+            user: {
+              id: targetContent.author.id,
+              castcleId: targetContent.author.castcleId,
+              displayName: targetContent.author.displayName,
+            },
+          }),
+        },
+        {
+          removeOnComplete: true,
+        },
+      ),
+    ]);
+  }
+
+  updateAppealContent = async (
+    contentId: string,
+    requestedBy: User,
+    status: ReportingStatus,
+  ) => {
+    const content = await this.repository.findContent({
+      _id: contentId,
+      author: requestedBy._id,
+      visibility: EntityVisibility.Illegal,
+    });
+
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
+
+    if (String(content.author.id) !== String(requestedBy.id))
+      throw new CastcleException('FORBIDDEN');
+    const reporting = await this.repository.findReporting({
+      user: requestedBy._id,
+      payloadId: content._id,
+    });
+
+    if (!reporting) return;
+
+    await this.repository.updateReportings(
+      {
+        user: requestedBy._id,
+        payloadId: content._id,
+      },
+      {
+        $set: { status },
+      },
+    );
+
+    content.reportedStatus = status;
+    await content.save();
+
+    if (status === ReportingStatus.NOT_APPEAL) return;
+
+    const { payload } = await this.toContentResponse({
+      contents: [content],
+      authors: [],
+    });
+
+    const reportingSubject = await this.repository.findReportingSubject({
+      type: MetadataType.REPORTING_SUBJECT,
+      subject: reporting.subject,
+    });
+
+    await this.reportingQueue.add(
+      {
+        subject: `${ReportingAction.APPEAL} content : (OID : ${content._id})`,
+        content: this.mailerService.generateHTMLReport(payload, {
+          action: ReportingAction.APPEAL,
+          actionBy: reporting.actionBy,
+          message: reporting.message,
+          reportedBy: requestedBy.displayName,
+          subject: reportingSubject.payload.name,
+          type: ReportingType.CONTENT,
+          user: {
+            id: content.author.id,
+            castcleId: content.author.castcleId,
+            displayName: content.author.displayName,
+          },
+        }),
+      },
+      {
+        removeOnComplete: true,
+      },
     );
   };
 }
