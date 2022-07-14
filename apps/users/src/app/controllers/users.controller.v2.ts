@@ -47,6 +47,7 @@ import {
   ReplyCommentParam,
   ReportContentDto,
   ReportUserDto,
+  ReportingStatus,
   ResponseDto,
   SocialSyncServiceV2,
   SuggestionServiceV2,
@@ -840,7 +841,7 @@ export class UsersControllerV2 {
       ? authorizer.user
       : await this.userService.getUser(userId);
 
-    await this.userService.reportContent(user, body);
+    await this.contentServiceV2.reportContent(user, body);
   }
 
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
@@ -920,5 +921,37 @@ export class UsersControllerV2 {
       : await this.userService.getUser(userId);
 
     return this.userService.getReferral(query, user, authorizer.user, false);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @Post(':userId/appeal')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async appealUser(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.getUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    await this.userService.updateAppealUser(user, ReportingStatus.APPEAL);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @Post(':userId/not-appeal')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async notAppealUser(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.getUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    await this.userService.updateAppealUser(user, ReportingStatus.NOT_APPEAL);
   }
 }

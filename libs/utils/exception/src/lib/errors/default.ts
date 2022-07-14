@@ -382,4 +382,9 @@ export const DefaultErrors = {
     code: '9001',
     message: 'Staff not found.',
   },
+  REPORTING_SUBJECT_NOT_FOUND: {
+    statusCode: '404',
+    code: '8010',
+    message: 'Reporting subject is not found. Please try again.',
+  },
 };
