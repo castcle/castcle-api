@@ -1430,7 +1430,6 @@ export class ContentServiceV2 {
       viewer,
     );
     return {
-      includes: contentsReponse.includes,
       payload: feedItems.map(
         (f) =>
           ({
@@ -1452,6 +1451,7 @@ export class ContentServiceV2 {
             ),
           } as FeedItemPayloadItem),
       ),
+      includes: contentsReponse.includes,
     } as FeedItemResponse;
   };
 
