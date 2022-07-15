@@ -20,7 +20,7 @@ export const testCampaignFlow = () => {
     await BackofficesRequest.getCampaigns()
       .auth(accessToken, { type: 'bearer' })
       .expect(({ body }) => {
-        expect(body).toHaveLength(0);
+        expect(body.payload).toHaveLength(0);
       });
   });
 
@@ -46,8 +46,8 @@ export const testCampaignFlow = () => {
     await BackofficesRequest.getCampaigns()
       .auth(accessToken, { type: 'bearer' })
       .expect(({ body }) => {
-        expect(body).toHaveLength(1);
-        newCampaign = body[0];
+        expect(body.payload).toHaveLength(1);
+        newCampaign = body.payload[0];
       });
   });
 
