@@ -1253,6 +1253,8 @@ export class ContentServiceV2 {
     if (content.isRecast || content.isQuote) {
       await this.repository.deleteEngagements({ itemId: content._id });
     }
+    //pause ads
+    await this.repository.pauseAdsFromContentId(contentId);
   };
 
   getParticipates = async (contentId: string, account: Account) => {
