@@ -267,7 +267,7 @@ export class Repository {
     @InjectModel('Content') private contentModel: Model<Content>,
     @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
-    @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
+    @InjectModel('FeedItemV2') private feedItemModel: Model<FeedItem>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
     @InjectModel('Metadata')
     private metadataModel: Model<Metadata<any>>,

@@ -62,7 +62,7 @@ export class CampaignService {
     private accountModel: Model<Account>,
     @InjectModel('Campaign')
     private campaignModel: Model<Campaign>,
-    @InjectModel('FeedItem')
+    @InjectModel('FeedItemV2')
     private feedModel: Model<FeedItem>,
     @InjectModel('Queue')
     private queueModel: Model<Queue<ClaimAirdropPayload>>,
