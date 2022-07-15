@@ -44,6 +44,7 @@ import {
   PaginationQuery,
   QuoteCastDto,
   RankerService,
+  RemoveFarmParam,
   ReplyCommentParam,
   ReportContentDto,
   ReportUserDto,
@@ -953,5 +954,40 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     await this.userService.updateAppealUser(user, ReportingStatus.NOT_APPEAL);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @Post(':userId/farming/cast')
+  async farmingCast(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Body('targetContentId') targetContentId: string,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.getUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+    return this.contentServiceV2.pipeContentFarming(
+      await this.contentServiceV2.farm(targetContentId, userId),
+      userId,
+    );
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @Delete(':userId/farming/:farmingId')
+  async unfarm(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, farmingId }: RemoveFarmParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.getUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+    return this.contentServiceV2.pipeContentFarming(
+      await this.contentServiceV2.unfarmByFarmingId(farmingId, userId),
+      userId,
+    );
   }
 }
