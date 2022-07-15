@@ -38,3 +38,9 @@ export enum ReportingStatus {
   NOT_APPEAL = 'not-appeal',
   CLOSED = 'closed',
 }
+
+export enum ReportingIllegal {
+  ILLEGAL = 'illegal',
+  NOT_ILLEGAL = 'not-illegal',
+  AUTO_DELETE = 'auto-delete',
+}

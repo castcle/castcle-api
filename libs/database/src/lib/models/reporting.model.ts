@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { ReportingStatus } from './reporting.enum';
+import { ReportingIllegal, ReportingStatus } from './reporting.enum';
 
 export class ReportingSubject {
   slug: string;
@@ -33,6 +33,7 @@ export class ReportingActionBy {
   firstName: string;
   lastName: string;
   email: string;
-  action: ReportingStatus;
+  action: ReportingIllegal;
   status: ReportingStatus;
+  subjectByAdmin?: string;
 }

@@ -82,4 +82,5 @@ export const Configs = {
   AssetsPath: {
     SuggestWords: 'metadata/suggestion-words.json',
   },
+  DefaultLanguage: 'en',
 };

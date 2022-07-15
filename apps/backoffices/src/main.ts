@@ -32,7 +32,7 @@ import {
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const port = process.env.PORT || 3339;
+  const port = process.env.PORT || 3330;
   const fastifyAdapter = new FastifyAdapter();
 
   fastifyAdapter
