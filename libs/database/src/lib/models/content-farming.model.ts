@@ -29,7 +29,7 @@ export type ContentFarmingCDF = {
 };
 
 export class ContentFarmingResponse {
-  'id':string;
+  'id': string;
   'number': number;
   'balance': {
     farmed: number;
