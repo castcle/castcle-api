@@ -1,4 +1,4 @@
-import { Campaign } from '@castcle-api/database';
+import { Campaign, CampaignType } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -15,7 +15,7 @@ export class CampaignService {
 
   async createCampaign(campaign: CampaignDto) {
     const campaignExist = await this.campaignModel.findOne({
-      type: campaign.type,
+      type: campaign.type as CampaignType,
     });
 
     if (campaignExist) throw new CastcleException('CAMPAIGN_TYPE_IS_EXIST');
