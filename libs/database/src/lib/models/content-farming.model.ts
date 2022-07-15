@@ -29,6 +29,7 @@ export type ContentFarmingCDF = {
 };
 
 export class ContentFarmingResponse {
+  'id':string;
   'number': number;
   'balance': {
     farmed: number;
@@ -49,6 +50,7 @@ export class ContentFarmingResponse {
     farmNo: number,
   ) {
     //this.number
+    this.id = contentFarming.id;
     this.number = farmNo;
     this.balance.available = currentBalance;
     this.balance.total = currentBalance + lockedBalance;
