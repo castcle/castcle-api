@@ -1,3 +1,4 @@
+import { ResponseDto } from '@castcle-api/database';
 import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
 import {
   Body,
@@ -41,8 +42,10 @@ export class CampaignController {
   @RequiredPermissions(Permission.Manage)
   @Get('campaigns')
   @HttpCode(200)
-  getCampaigns() {
-    return this.campaignService.getCampaigns();
+  async getCampaigns() {
+    return ResponseDto.ok({
+      payload: await this.campaignService.getCampaigns(),
+    });
   }
 
   @UseInterceptors(HeaderBackofficeInterceptor)
