@@ -49,6 +49,7 @@ import {
   ContentPayloadItem,
   ContentType,
   EntityVisibility,
+  FeedItemResponse,
   NotificationType,
   ResponseDto,
   ShortPayload,
@@ -883,8 +884,9 @@ describe('ContentServiceV2', () => {
       });
     });
     describe('generateFeeds()', () => {
+      let feedResponse: FeedItemResponse;
       it('should save recent feed in feedItems', async () => {
-        const feedResponse = await service.generateFeeds(
+        feedResponse = await service.generateFeeds(
           { maxResults: 20 } as any,
           mocksUsers[0].account.id,
           mocksUsers[0].user,
@@ -917,6 +919,15 @@ describe('ContentServiceV2', () => {
         for (let i = 0; i < dbFeeds.length; i++) {
           expect(feedIds).toContain(dbFeeds[i].id);
         }
+      });
+      describe('#offViewFeeds', () => {
+        it('should off view feed return success', async () => {
+          const offView = await service.offViewFeedItem(
+            mocksUsers[0].account.id,
+            feedResponse.payload[0].id,
+          );
+          expect(offView.ok).toEqual(1);
+        });
       });
     });
   });
