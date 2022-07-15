@@ -22,7 +22,6 @@
  */
 
 import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
-import { HttpCacheIndividualInterceptor } from '@castcle-api/utils/interceptors';
 import {
   Body,
   Get,
@@ -50,7 +49,7 @@ import { ReportingService } from '../services/reporting.service';
 export class ReportingController {
   constructor(private reportingService: ReportingService) {}
 
-  @UseInterceptors(HeaderBackofficeInterceptor, HttpCacheIndividualInterceptor)
+  @UseInterceptors(HeaderBackofficeInterceptor)
   @UseGuards(CredentialGuard, PermissionGuard)
   @RequiredPermissions(Permission.Manage)
   @Get('reporting')
