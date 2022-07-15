@@ -795,6 +795,70 @@ export class ContentServiceV2 {
     } else return this.createContentFarming(contentId, userId);
   };
 
+  unfarmByFarmingId = async (farmingId: string, userId: string) => {
+    const contentFarming = await this.contentFarmingModel.findById(farmingId);
+    try {
+      if (
+        contentFarming &&
+        contentFarming.status === ContentFarmingStatus.Farming
+      ) {
+        if (String(contentFarming.user) !== userId) {
+          throw new CastcleException('FORBIDDEN');
+        }
+        contentFarming.status = ContentFarmingStatus.Farmed;
+        contentFarming.endedAt = new Date();
+        const session = await this.contentFarmingModel.startSession();
+        await session.withTransaction(async () => {
+          await contentFarming.save();
+          await this.contentModel.updateOne(
+            { _id: contentFarming.content },
+            {
+              $push: {
+                farming: contentFarming,
+              },
+            },
+          );
+          await this.tAccountService.transfers({
+            from: {
+              type: WalletType.FARM_LOCKED,
+              user: String(contentFarming.user),
+              value: contentFarming.farmAmount,
+            },
+            to: [
+              {
+                type: WalletType.PERSONAL,
+                user: String(contentFarming.user),
+                value: contentFarming.farmAmount,
+              },
+            ],
+            data: {
+              type: TransactionType.UNFARMING,
+              filter: TransactionFilter.CONTENT_FARMING,
+            },
+            ledgers: [
+              {
+                debit: {
+                  caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                  value: contentFarming.farmAmount,
+                },
+                credit: {
+                  caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                  value: contentFarming.farmAmount,
+                },
+              },
+            ],
+          });
+        });
+        session.endSession();
+        return contentFarming;
+      } else {
+        throw new CastcleException('CONTENT_FARMING_NOT_FOUND');
+      }
+    } catch (e) {
+      throw new CastcleException('CONTENT_FARMING_NOT_FOUND');
+    }
+  };
+
   unfarm = async (contentId: string, userId: string) => {
     const contentFarming = await this.getContentFarming(contentId, userId);
     if (
