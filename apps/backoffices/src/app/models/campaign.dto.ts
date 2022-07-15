@@ -1,7 +1,5 @@
-import { CampaignType } from '@castcle-api/database';
 import {
   IsDateString,
-  IsEnum,
   IsMongoId,
   IsNotEmpty,
   IsNumber,
@@ -20,8 +18,7 @@ export class CampaignDto {
   name: string;
 
   @IsNotEmpty()
-  @IsEnum(CampaignType)
-  type: CampaignType;
+  type: string;
 
   @IsNotEmpty()
   @IsNumber()
