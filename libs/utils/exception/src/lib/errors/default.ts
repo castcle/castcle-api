@@ -387,4 +387,9 @@ export const DefaultErrors = {
     code: '8010',
     message: 'Reporting subject is not found. Please try again.',
   },
+  REPORTING_NOT_FOUND: {
+    statusCode: '404',
+    code: '8011',
+    message: 'Reporting is not found. Please try again.',
+  },
 };

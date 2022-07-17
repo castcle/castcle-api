@@ -3,7 +3,10 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { CastcleBackofficeSchemas, CastcleDatabaseReadonly } from '../schemas';
+import {
+  BackOfficeMongooseForFeatures,
+  CastcleDatabaseReadonly,
+} from '../schemas';
 import { CampaignService } from './campaign.service';
 
 describe('Campaign', () => {
@@ -17,7 +20,7 @@ describe('Campaign', () => {
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         CastcleDatabaseReadonly,
-        CastcleBackofficeSchemas,
+        BackOfficeMongooseForFeatures,
       ],
       providers: [CampaignService],
     }).compile();
@@ -50,6 +53,7 @@ describe('Campaign', () => {
           rewardsPerClaim: 1,
           startDate: new Date(),
           endDate: new Date(),
+          maxClaims: 1,
         }),
       ).resolves.toBeUndefined();
     });
@@ -64,6 +68,7 @@ describe('Campaign', () => {
           rewardsPerClaim: 1,
           startDate: new Date(),
           endDate: new Date(),
+          maxClaims: 1,
         }),
       ).rejects.toEqual(new CastcleException('CAMPAIGN_TYPE_IS_EXIST'));
     });

@@ -1253,6 +1253,8 @@ export class ContentServiceV2 {
     if (content.isRecast || content.isQuote) {
       await this.repository.deleteEngagements({ itemId: content._id });
     }
+    //pause ads
+    await this.repository.pauseAdsFromContentId(contentId);
   };
 
   getParticipates = async (contentId: string, account: Account) => {
@@ -1639,16 +1641,25 @@ export class ContentServiceV2 {
   ) => {
     const content = await this.repository.findContent({
       _id: contentId,
-      author: requestedBy._id,
       visibility: EntityVisibility.Illegal,
     });
 
     if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
-    if (String(content.author.id) !== String(requestedBy.id))
+    const userOwners = await this.repository.findUsers({
+      _id: content.author.id,
+    });
+
+    if (
+      userOwners.every(
+        (user) =>
+          String(user.ownerAccount) !== String(requestedBy.ownerAccount),
+      )
+    )
       throw new CastcleException('FORBIDDEN');
+
     const reporting = await this.repository.findReporting({
-      user: requestedBy._id,
+      user: content.author.id as any,
       payloadId: content._id,
     });
 
@@ -1656,7 +1667,7 @@ export class ContentServiceV2 {
 
     await this.repository.updateReportings(
       {
-        user: requestedBy._id,
+        user: content.author.id as any,
         payloadId: content._id,
       },
       {
