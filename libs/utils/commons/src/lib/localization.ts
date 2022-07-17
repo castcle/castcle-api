@@ -316,6 +316,34 @@ export class CastcleLocalization {
         return `Your ads is declined. Please check again`;
     }
   };
+
+  static getTemplateIllegalDone = (language: string) => {
+    switch (language) {
+      case LocalizationLang.Thai:
+        return `Cast violates Castcle Terms and Agreement. Please review`;
+      default:
+        return `Cast violates Castcle Terms and Agreement. Please review`;
+    }
+  };
+
+  static getTemplateIllegalClosed = (language: string) => {
+    switch (language) {
+      case LocalizationLang.Thai:
+        return `Your cast has been removed by Castcle's admin`;
+      default:
+        return `Your cast has been removed by Castcle's admin`;
+    }
+  };
+
+  static getTemplateNotIllegal = (language: string) => {
+    switch (language) {
+      case LocalizationLang.Thai:
+        return `Your Cast has been reviewed. It will become visible again`;
+      default:
+        return `Your Cast has been reviewed. It will become visible again`;
+    }
+  };
+
   static getTemplateLikeComment = (
     language: string,
     displayNames: string[],

@@ -21,26 +21,52 @@
  * or have any questions.
  */
 
-import { CastcleBackofficeMongooseModule } from '@castcle-api/environments';
+import {
+  DatabaseModule,
+  MongooseAsyncFeatures,
+  MongooseForFeatures,
+  NotificationServiceV2,
+  QueueName,
+} from '@castcle-api/database';
+import {
+  CastcleBackofficeMongooseModule,
+  CastcleBullModule,
+} from '@castcle-api/environments';
 import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Mailer } from '@castcle-api/utils/clients';
+import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { AuthenticationController } from './controllers/authentication.controller';
 import { CampaignController } from './controllers/campaign.controller';
-import { CastcleBackofficeSchemas, CastcleDatabaseReadonly } from './schemas';
+import { ReportingController } from './controllers/reporting.controller';
+import { BackOfficeMongooseForFeatures } from './schemas';
 import { AuthenticationService } from './services/authentication.service';
 import { CampaignService } from './services/campaign.service';
-
+import { ReportingService } from './services/reporting.service';
 @Module({
   imports: [
+    DatabaseModule,
+    BullModule.registerQueue({ name: QueueName.NOTIFICATION }),
+    CastcleBackofficeMongooseModule,
+    BackOfficeMongooseForFeatures,
+    CastcleBullModule,
     CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
     CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
-    CastcleBackofficeMongooseModule,
-    CastcleBackofficeSchemas,
-    CastcleDatabaseReadonly,
+    MongooseAsyncFeatures,
+    MongooseForFeatures,
   ],
-  controllers: [AuthenticationController, CampaignController],
-  providers: [AuthenticationService, CampaignService, Mailer],
+  controllers: [
+    AuthenticationController,
+    CampaignController,
+    ReportingController,
+  ],
+  providers: [
+    AuthenticationService,
+    CampaignService,
+    ReportingService,
+    NotificationServiceV2,
+    Mailer,
+  ],
 })
 export class AppModule {}

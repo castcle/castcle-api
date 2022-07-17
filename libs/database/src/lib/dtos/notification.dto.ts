@@ -43,6 +43,9 @@ export enum NotificationType {
   AdsApprove = 'ad-approve',
   AdsDecline = 'ad-decline',
   Follow = 'follow',
+  IllegalDone = 'illegal-done',
+  IllegalClosed = 'illegal-closed',
+  NotIllegal = 'not-illegal',
 }
 
 export enum NotificationSource {

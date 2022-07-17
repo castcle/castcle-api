@@ -78,7 +78,9 @@ import {
   MetadataType,
   OtpObjective,
   QueueStatus,
+  ReportingStatus,
   ReportingSubject,
+  ReportingType,
   SearchType,
   UserType,
 } from '../models';
@@ -143,6 +145,7 @@ type UserQuery = {
   type?: UserType;
   untilId?: string;
   visibility?: EntityVisibility;
+  visibilities?: EntityVisibility[];
 };
 
 type EngagementQuery = {
@@ -211,6 +214,7 @@ type ContentQuery = {
   untilId?: string;
   viewer?: User;
   visibility?: EntityVisibility;
+  visibilities?: EntityVisibility[];
 };
 
 type HashtagQuery = {
@@ -241,9 +245,13 @@ type MetadataQuery = {
 
 type ReportingQuery = {
   by?: Types.ObjectId;
-  payloadId?: Types.ObjectId;
+  payloadId?: Types.ObjectId | Types.ObjectId[];
   subject?: string;
   user?: Types.ObjectId;
+  _id?: string;
+  type?: ReportingType;
+  status?: ReportingStatus[];
+  createdAt_lt?: Date;
 };
 
 @Injectable()
@@ -420,6 +428,7 @@ export class Repository {
       query['author.id'] = { $nin: filter.excludeAuthor };
 
     if (filter.visibility) query.visibility = filter.visibility;
+    if (filter.visibilities) query.visibility = { $in: filter.visibilities };
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -525,10 +534,16 @@ export class Repository {
   private getReportingQuery(filter: ReportingQuery) {
     const query: FilterQuery<Reporting> = {};
 
-    if (filter.user) query.user = filter.user;
-    if (filter.subject) query.subject = filter.subject;
+    if (filter._id) query._id = filter._id;
+    if (filter.createdAt_lt) query.createdAt = { $lt: filter.createdAt_lt };
     if (filter.payloadId) query['payload._id'] = filter.payloadId;
+    if (isArray(filter.payloadId))
+      query['payload._id'] = { $in: filter.payloadId };
+    if (filter.status) query.status = { $in: filter.status };
     if (filter.subject) query.subject = filter.subject;
+    if (filter.subject) query.subject = filter.subject;
+    if (filter.type) query.type = filter.type;
+    if (filter.user) query.user = filter.user;
 
     return query;
   }
@@ -717,6 +732,7 @@ export class Repository {
     if (filter.castcleId) query.displayId = filter.castcleId;
 
     if (filter.visibility) query.visibility = filter.visibility;
+    if (filter.visibilities) query.visibility = { $in: filter.visibilities };
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -1426,6 +1442,16 @@ export class Repository {
     return this.reportingModel
       .findOne(this.getReportingQuery(filter), {}, queryOptions)
       .exec();
+  }
+
+  findReportings(filter: ReportingQuery, queryOptions?: QueryOptions) {
+    return this.reportingModel
+      .find(this.getReportingQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
+  aggregateReporting(pipeline: any[]) {
+    return this.reportingModel.aggregate(pipeline);
   }
 
   createWallerShortcut(dto: AnyKeys<WalletShortcut>) {
