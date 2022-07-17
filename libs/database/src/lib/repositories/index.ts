@@ -1242,6 +1242,19 @@ export class Repository {
     return collectedCast / totalCost;
   };
 
+  pauseAdsFromContentId = async (contentId: string) =>
+    this.adsCampaignModel.updateOne(
+      {
+        adsRef: {
+          $ref: 'content',
+          $id: contentId,
+        },
+      },
+      {
+        boostStatus: AdsBoostStatus.Pause,
+      },
+    );
+
   async deleteCastcleAccount(account: Account) {
     const users = await this.userModel.find({ ownerAccount: account._id });
     const userIds = users.map((user) => user._id);
