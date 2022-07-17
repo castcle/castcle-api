@@ -78,7 +78,9 @@ import {
   MetadataType,
   OtpObjective,
   QueueStatus,
+  ReportingStatus,
   ReportingSubject,
+  ReportingType,
   SearchType,
   UserType,
 } from '../models';
@@ -99,6 +101,7 @@ import {
   FeedItem,
   Hashtag,
   Metadata,
+  Network,
   Notification,
   Otp,
   OtpModel,
@@ -141,6 +144,8 @@ type UserQuery = {
   sinceId?: string;
   type?: UserType;
   untilId?: string;
+  visibility?: EntityVisibility;
+  visibilities?: EntityVisibility[];
 };
 
 type EngagementQuery = {
@@ -208,6 +213,8 @@ type ContentQuery = {
   };
   untilId?: string;
   viewer?: User;
+  visibility?: EntityVisibility;
+  visibilities?: EntityVisibility[];
 };
 
 type HashtagQuery = {
@@ -233,12 +240,18 @@ type WalletShortcutQuery = {
 
 type MetadataQuery = {
   type?: MetadataType;
+  subject?: string;
 };
 
 type ReportingQuery = {
-  subject: string;
-  payload: User | Content;
-  by: Types.ObjectId;
+  by?: Types.ObjectId;
+  payloadId?: Types.ObjectId | Types.ObjectId[];
+  subject?: string;
+  user?: Types.ObjectId;
+  _id?: string;
+  type?: ReportingType;
+  status?: ReportingStatus[];
+  createdAt_lt?: Date;
 };
 
 @Injectable()
@@ -262,10 +275,11 @@ export class Repository {
     @InjectModel('Content') private contentModel: Model<Content>,
     @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
-    @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
+    @InjectModel('FeedItemV2') private feedItemModel: Model<FeedItem>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
     @InjectModel('Metadata')
     private metadataModel: Model<Metadata<any>>,
+    @InjectModel('Network') private networkModel: Model<Network>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Queue') private queueModel: Model<Queue>,
@@ -413,6 +427,9 @@ export class Repository {
     if (filter.excludeAuthor?.length)
       query['author.id'] = { $nin: filter.excludeAuthor };
 
+    if (filter.visibility) query.visibility = filter.visibility;
+    if (filter.visibilities) query.visibility = { $in: filter.visibilities };
+
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
         sinceId: filter.sinceId,
@@ -509,6 +526,7 @@ export class Repository {
       {};
 
     if (filter.type) query.type = filter.type;
+    if (filter.subject) query['payload.slug'] = filter.subject;
 
     return query;
   }
@@ -516,9 +534,16 @@ export class Repository {
   private getReportingQuery(filter: ReportingQuery) {
     const query: FilterQuery<Reporting> = {};
 
+    if (filter._id) query._id = filter._id;
+    if (filter.createdAt_lt) query.createdAt = { $lt: filter.createdAt_lt };
+    if (filter.payloadId) query['payload._id'] = filter.payloadId;
+    if (isArray(filter.payloadId))
+      query['payload._id'] = { $in: filter.payloadId };
+    if (filter.status) query.status = { $in: filter.status };
     if (filter.subject) query.subject = filter.subject;
-    if (filter.payload) query.payload = filter.payload;
     if (filter.subject) query.subject = filter.subject;
+    if (filter.type) query.type = filter.type;
+    if (filter.user) query.user = filter.user;
 
     return query;
   }
@@ -705,6 +730,9 @@ export class Repository {
     }
 
     if (filter.castcleId) query.displayId = filter.castcleId;
+
+    if (filter.visibility) query.visibility = filter.visibility;
+    if (filter.visibilities) query.visibility = { $in: filter.visibilities };
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -1078,6 +1106,11 @@ export class Repository {
     return this.feedItemModel.updateOne(filter, feedItem, queryOptions);
   }
 
+  findFeedItems = (
+    filter: FilterQuery<FeedItem>,
+    queryOptions?: QueryOptions,
+  ) => this.feedItemModel.find(filter, queryOptions);
+
   saveFeedItemFromContents(
     contents: GetContentCastDto,
     viewerAccountId: string,
@@ -1225,6 +1258,19 @@ export class Repository {
     return collectedCast / totalCost;
   };
 
+  pauseAdsFromContentId = async (contentId: string) =>
+    this.adsCampaignModel.updateOne(
+      {
+        adsRef: {
+          $ref: 'content',
+          $id: contentId,
+        },
+      },
+      {
+        boostStatus: AdsBoostStatus.Pause,
+      },
+    );
+
   async deleteCastcleAccount(account: Account) {
     const users = await this.userModel.find({ ownerAccount: account._id });
     const userIds = users.map((user) => user._id);
@@ -1319,6 +1365,15 @@ export class Repository {
       .exec();
   }
 
+  findReportingSubject(
+    filter?: MetadataQuery,
+    queryOptions?: QueryOptions,
+  ): Promise<Metadata<ReportingSubject>> {
+    return this.metadataModel
+      .findOne(this.getMetadataQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
   async getPublicUsers({
     requestedBy,
     filter,
@@ -1371,10 +1426,32 @@ export class Repository {
     return new this.reportingModel(dto).save();
   }
 
+  updateReportings(
+    filter: ReportingQuery,
+    updateQuery: UpdateQuery<Reporting>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.reportingModel.updateMany(
+      this.getReportingQuery(filter),
+      updateQuery,
+      queryOptions,
+    );
+  }
+
   findReporting(filter: ReportingQuery, queryOptions?: QueryOptions) {
     return this.reportingModel
       .findOne(this.getReportingQuery(filter), {}, queryOptions)
       .exec();
+  }
+
+  findReportings(filter: ReportingQuery, queryOptions?: QueryOptions) {
+    return this.reportingModel
+      .find(this.getReportingQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
+  aggregateReporting(pipeline: any[]) {
+    return this.reportingModel.aggregate(pipeline);
   }
 
   createWallerShortcut(dto: AnyKeys<WalletShortcut>) {
@@ -1460,5 +1537,9 @@ export class Repository {
       );
 
     return `${castcleId}${availableId ? availableId?.number : ''}`;
+  }
+
+  async findNetwork(chainId: string): Promise<Network> {
+    return this.networkModel.findOne({ chainId });
   }
 }

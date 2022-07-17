@@ -23,7 +23,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
-import { ReportStatus, ReportType } from '../models';
+import { ReportingActionBy, ReportingStatus, ReportingType } from '../models';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
 import { User } from './user.schema';
@@ -48,10 +48,10 @@ export class Reporting extends CastcleBase {
 
   @Prop({
     required: true,
-    type: ReportType,
+    type: String,
     index: true,
   })
-  type: ReportType;
+  type: ReportingType;
 
   @Prop({
     required: true,
@@ -67,11 +67,11 @@ export class Reporting extends CastcleBase {
 
   @Prop({
     required: true,
-    type: ReportStatus,
-    default: ReportStatus.REVIEWING,
+    type: String,
+    default: ReportingStatus.REVIEWING,
     index: true,
   })
-  status: ReportStatus;
+  status: ReportingStatus;
 
   @Prop({
     required: true,
@@ -79,6 +79,12 @@ export class Reporting extends CastcleBase {
     index: true,
   })
   subject: string;
+
+  @Prop({
+    type: Array,
+    index: true,
+  })
+  actionBy?: ReportingActionBy[];
 }
 
 export const ReportingSchema = SchemaFactory.createForClass(Reporting);

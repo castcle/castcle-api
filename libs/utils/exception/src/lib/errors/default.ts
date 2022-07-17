@@ -336,15 +336,10 @@ export const DefaultErrors = {
     code: '8001',
     message: 'Invalid transaction data',
   },
-  STAFF_NOT_FOUND: {
-    statusCode: '404',
-    code: '9001',
-    message: 'Staff not found.',
-  },
-  INTERNAL_CHAIN_NOT_FOUND: {
+  NETWORK_NOT_FOUND: {
     statusCode: '404',
     code: '8002',
-    message: 'The chain id could not be found.',
+    message: 'Network not found',
   },
   WALLET_SHORTCUT_IS_EXIST: {
     statusCode: '400',
@@ -353,7 +348,48 @@ export const DefaultErrors = {
   },
   REPORTING_IS_EXIST: {
     statusCode: '400',
-    code: '8003',
+    code: '8004',
     message: 'Reporting is already exists.',
+  },
+  CAMPAIGN_TYPE_IS_EXIST: {
+    statusCode: '400',
+    code: '8005',
+    message:
+      'The Campaign type of Campaign already exists. Please choose another type.',
+  },
+  CAMPAIGN_NOT_FOUND: {
+    statusCode: '404',
+    code: '8006',
+    message: 'Campaign could not be found. Please try again.',
+  },
+  NETWORK_TEMPORARILY_DISABLED: {
+    statusCode: '400',
+    code: '8007',
+    message: 'Network has been temporarily disabled.',
+  },
+  NOT_ENOUGH_BALANCE: {
+    statusCode: '400',
+    code: '8008',
+    message: 'Wallet does not have sufficient balance.',
+  },
+  RECEIVER_NOT_FOUND: {
+    statusCode: '404',
+    code: '8009',
+    message: 'Receiver not found',
+  },
+  STAFF_NOT_FOUND: {
+    statusCode: '404',
+    code: '9001',
+    message: 'Staff not found.',
+  },
+  REPORTING_SUBJECT_NOT_FOUND: {
+    statusCode: '404',
+    code: '8010',
+    message: 'Reporting subject is not found. Please try again.',
+  },
+  REPORTING_NOT_FOUND: {
+    statusCode: '404',
+    code: '8011',
+    message: 'Reporting is not found. Please try again.',
   },
 };

@@ -36,7 +36,7 @@ class ClaimAirdrop {
   filter: TransactionFilter.AIRDROP_REFERAL;
 }
 
-export class TransactionDto {
+export class TransferDto {
   from: MicroTransaction;
   to: MicroTransaction[];
   data?: TransactionData | ClaimAirdrop;

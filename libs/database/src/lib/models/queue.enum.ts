@@ -27,6 +27,7 @@ export enum QueueName {
   NOTIFICATION = 'notification',
   USER = 'user',
   SOCIAL_REWARD = 'social-reward',
+  REPORTING = 'reporting',
 }
 
 export enum QueueStatus {

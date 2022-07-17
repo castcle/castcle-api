@@ -55,6 +55,7 @@ import {
   GuestFeedItemSchema,
   HashtagSchema,
   MetadataSchema,
+  NetworkSchema,
   NotificationSchema,
   OtpSchema,
   QueueSchema,
@@ -82,7 +83,6 @@ import { MetadataServiceV2 } from './services/metadata.service.v2';
 import { NotificationService } from './services/notification.service';
 import { NotificationServiceV2 } from './services/notification.service.v2';
 import { RankerService } from './services/ranker.service';
-import { RankerServiceV2 } from './services/ranker.service.v2';
 import { SearchService } from './services/search.service';
 import { SearchServiceV2 } from './services/search.service.v2';
 import { SocialSyncService } from './services/social-sync.service';
@@ -115,6 +115,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
   { name: 'Hashtag', schema: HashtagSchema },
   { name: 'Metadata', schema: MetadataSchema },
+  { name: 'Network', schema: NetworkSchema },
   { name: 'Notification', schema: NotificationSchema },
   { name: 'Otp', schema: OtpSchema },
   { name: 'Queue', schema: QueueSchema },
@@ -125,7 +126,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'Credential', useFactory: () => CredentialSchema },
-  { name: 'FeedItem', useFactory: () => FeedItemSchema },
+  { name: 'FeedItemV2', useFactory: () => FeedItemSchema },
   { name: 'Relationship', useFactory: () => RelationshipSchema },
   { name: 'Revision', useFactory: () => RevisionSchema },
   { name: 'SocialSync', useFactory: () => SocialSyncSchema },
@@ -138,7 +139,12 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'Content',
     useFactory: ContentSchemaFactory,
-    inject: [getModelToken('Revision')],
+    inject: [
+      getModelToken('Revision'),
+      getModelToken('FeedItemV2'),
+      getModelToken('User'),
+      getModelToken('Relationship'),
+    ],
   },
   {
     name: 'Account',
@@ -157,7 +163,11 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'Engagement',
     useFactory: EngagementSchemaFactory,
-    inject: [getModelToken('Content'), getModelToken('Comment')],
+    inject: [
+      getModelToken('Content'),
+      getModelToken('Comment'),
+      getModelToken('FeedItemV2'),
+    ],
   },
 ]);
 
@@ -171,6 +181,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
       { name: QueueName.CAMPAIGN },
       { name: QueueName.CONTENT },
       { name: QueueName.NOTIFICATION },
+      { name: QueueName.REPORTING },
       { name: QueueName.USER },
     ),
     HttpModule,
@@ -194,7 +205,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     NotificationService,
     NotificationServiceV2,
     RankerService,
-    RankerServiceV2,
+
     Repository,
     SearchService,
     SearchServiceV2,
@@ -223,7 +234,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     NotificationService,
     NotificationServiceV2,
     RankerService,
-    RankerServiceV2,
+    Repository,
     SearchService,
     SearchServiceV2,
     SocialSyncService,
@@ -257,7 +268,7 @@ export {
   NotificationService,
   NotificationServiceV2,
   RankerService,
-  RankerServiceV2,
+  Repository,
   SearchService,
   SearchServiceV2,
   SocialSyncService,

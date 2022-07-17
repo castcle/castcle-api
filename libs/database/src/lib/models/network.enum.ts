@@ -21,27 +21,8 @@
  * or have any questions.
  */
 
-import { Injectable } from '@nestjs/common';
-import { Repository } from '../repositories';
-
-@Injectable()
-export class RankerServiceV2 {
-  constructor(private repository: Repository) {}
-
-  offViewFeedItem(accountId: string, feedItemId: string) {
-    return this.repository
-      .updateFeedItem(
-        {
-          viewer: accountId as any,
-          _id: feedItemId,
-          offScreenAt: {
-            $exists: false,
-          },
-        },
-        {
-          offScreenAt: new Date(),
-        },
-      )
-      .exec();
-  }
+export enum NetworkType {
+  INTERNAL = 'internal',
+  MAINNET = 'mainnet',
+  TESTNET = 'testnet',
 }

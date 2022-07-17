@@ -50,3 +50,21 @@ export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
+
+export const getMongooseBackofficeModuleOptions =
+  (): MongooseModuleOptions => ({
+    uri: Environment.BACKOFFICE_DB_URI,
+    useCreateIndex: true,
+    useFindAndModify: false,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+
+export const getMongooseBackofficeAppModuleOptions =
+  (): MongooseModuleOptions => ({
+    uri: Environment.BACKOFFICE_APP_DB_URI,
+    useCreateIndex: true,
+    useFindAndModify: false,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });

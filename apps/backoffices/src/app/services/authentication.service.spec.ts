@@ -2,7 +2,11 @@ import { Mailer } from '@castcle-api/utils/clients';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { CastcleBackofficeSchemas, CastcleDatabaseReadonly } from '../schemas';
+import { StaffRole } from '../models/authentication.enum';
+import {
+  BackOfficeMongooseForFeatures,
+  CastcleDatabaseReadonly,
+} from '../schemas';
 import { AuthenticationService } from './authentication.service';
 
 describe('Authentication', () => {
@@ -16,7 +20,7 @@ describe('Authentication', () => {
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         CastcleDatabaseReadonly,
-        CastcleBackofficeSchemas,
+        BackOfficeMongooseForFeatures,
       ],
       providers: [AuthenticationService, Mailer],
     }).compile();
@@ -44,6 +48,7 @@ describe('Authentication', () => {
         email: 'test@gmail.com',
         firstName: 'test',
         lastName: 'test',
+        role: StaffRole.ADMINISTRATOR,
       });
 
       expect(newUser).toBeDefined();

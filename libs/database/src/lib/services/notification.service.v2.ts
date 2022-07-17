@@ -176,6 +176,15 @@ export class NotificationServiceV2 {
       case NotificationType.AdsDecline:
         return CastcleLocalization.getTemplateAdsDecline(language);
 
+      case NotificationType.IllegalDone:
+        return CastcleLocalization.getTemplateIllegalDone(language);
+
+      case NotificationType.IllegalClosed:
+        return CastcleLocalization.getTemplateIllegalClosed(language);
+
+      case NotificationType.NotIllegal:
+        return CastcleLocalization.getTemplateNotIllegal(language);
+
       default:
         return CastcleLocalization.getTemplateFollow(
           language,
@@ -193,9 +202,13 @@ export class NotificationServiceV2 {
     const userSort = [];
 
     if (
-      [NotificationType.AdsApprove, NotificationType.AdsDecline].some(
-        (type) => type !== notify.type,
-      )
+      [
+        NotificationType.AdsApprove,
+        NotificationType.AdsDecline,
+        NotificationType.IllegalDone,
+        NotificationType.IllegalClosed,
+        NotificationType.NotIllegal,
+      ].every((type) => type !== notify.type)
     ) {
       this.#logger.log('Reverse latest user.');
 
@@ -250,7 +263,11 @@ export class NotificationServiceV2 {
     );
 
     this.#logger.log('Prepare message show display name.', message);
-    return { message, user: userSort[0], haveUser: userSort.length };
+    return {
+      message,
+      user: userSort ? userSort[0] : undefined,
+      haveUser: userSort.length,
+    };
   };
 
   private prepareNotification = (
@@ -487,8 +504,13 @@ export class NotificationServiceV2 {
     }
 
     if (
-      notificationData.type === NotificationType.Tag ||
-      notificationData.type === NotificationType.Follow
+      [
+        NotificationType.Tag,
+        NotificationType.Follow,
+        NotificationType.IllegalDone,
+        NotificationType.IllegalClosed,
+        NotificationType.NotIllegal,
+      ].some((type) => type === notificationData.type)
     ) {
       await this.repository.createNotification({
         ...notificationData,
