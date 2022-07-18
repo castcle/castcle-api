@@ -95,8 +95,8 @@ describe('UserServiceV2', () => {
         CacheModule.register(),
         CastcleBullModule,
         HttpModule,
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         MongooseModule.forRoot(mongod.getUri()),
       ],
       providers: [

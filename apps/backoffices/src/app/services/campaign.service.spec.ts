@@ -1,12 +1,8 @@
-import { CampaignType } from '@castcle-api/database';
+import { BackofficeDatabaseModule, CampaignType } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import {
-  BackOfficeMongooseForFeatures,
-  CastcleDatabaseReadonly,
-} from '../schemas';
+import { BackOfficeMongooseForFeatures } from '../schemas';
 import { CampaignService } from './campaign.service';
 
 describe('Campaign', () => {
@@ -16,12 +12,9 @@ describe('Campaign', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryReplSet.create();
+    global.mongoUri = mongod.getUri();
     moduleRef = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot(mongod.getUri()),
-        CastcleDatabaseReadonly,
-        BackOfficeMongooseForFeatures,
-      ],
+      imports: [BackofficeDatabaseModule, BackOfficeMongooseForFeatures],
       providers: [CampaignService],
     }).compile();
 

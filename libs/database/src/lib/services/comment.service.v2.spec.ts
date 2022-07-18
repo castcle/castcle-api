@@ -72,8 +72,8 @@ describe('CommentServiceV2', () => {
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         HttpModule,
       ],
       providers: [

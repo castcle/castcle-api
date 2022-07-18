@@ -71,8 +71,8 @@ describe('WalletController', () => {
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         HttpModule,
       ],
       controllers: [WalletController],

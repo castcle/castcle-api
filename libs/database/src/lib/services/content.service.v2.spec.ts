@@ -96,8 +96,8 @@ describe('ContentServiceV2', () => {
         CacheModule.register(),
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         AuthenticationServiceV2,

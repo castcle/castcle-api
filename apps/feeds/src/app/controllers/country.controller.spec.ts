@@ -45,8 +45,8 @@ describe('CountryController', () => {
       imports: [
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         CacheModule.register({
           store: 'memory',
           ttl: 1000,

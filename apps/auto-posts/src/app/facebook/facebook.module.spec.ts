@@ -64,6 +64,7 @@ describe('FacebookController', () => {
 
   beforeAll(async () => {
     mongo = await MongoMemoryReplSet.create();
+
     moduleRef = await Test.createTestingModule({
       imports: [MongooseModule.forRoot(mongo.getUri()), FacebookModule],
     })

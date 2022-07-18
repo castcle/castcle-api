@@ -24,6 +24,7 @@
 import {
   AnalyticService,
   AuthenticationServiceV2,
+  BackofficeDatabaseModule,
   CampaignService,
   ContentServiceV2,
   ContentType,
@@ -34,8 +35,6 @@ import {
   MetadataType,
   MockUserDetail,
   MockUserService,
-  MongooseAsyncFeatures,
-  MongooseForFeatures,
   NotificationServiceV2,
   QueueName,
   ReportingStatus,
@@ -56,7 +55,7 @@ import { Token } from '@castcle-api/utils/commons';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
+import { getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Model } from 'mongoose';
@@ -89,14 +88,13 @@ describe('ReportingService', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
+    global.mongoUri = mongod.getUri();
     moduleRef = await Test.createTestingModule({
       imports: [
-        CacheModule.register(),
+        BackofficeDatabaseModule,
         BackOfficeMongooseForFeatures,
+        CacheModule.register(),
         HttpModule,
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        MongooseModule.forRoot(mongod.getUri()),
       ],
       providers: [
         AuthenticationService,

@@ -62,8 +62,8 @@ describe('NotificationsController', () => {
     app = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         CacheModule.register({
           store: 'memory',
           ttl: 1000,

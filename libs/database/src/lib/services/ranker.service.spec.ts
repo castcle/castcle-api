@@ -61,8 +61,8 @@ describe('Ranker Service', () => {
         CacheModule.register(),
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         ContentService,

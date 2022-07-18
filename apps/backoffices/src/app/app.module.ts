@@ -22,16 +22,11 @@
  */
 
 import {
-  DatabaseModule,
-  MongooseAsyncFeatures,
-  MongooseForFeatures,
+  BackofficeDatabaseModule,
   NotificationServiceV2,
   QueueName,
 } from '@castcle-api/database';
-import {
-  CastcleBackofficeMongooseModule,
-  CastcleBullModule,
-} from '@castcle-api/environments';
+import { CastcleBullModule } from '@castcle-api/environments';
 import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Mailer } from '@castcle-api/utils/clients';
@@ -46,15 +41,12 @@ import { CampaignService } from './services/campaign.service';
 import { ReportingService } from './services/reporting.service';
 @Module({
   imports: [
-    DatabaseModule,
-    BullModule.registerQueue({ name: QueueName.NOTIFICATION }),
-    CastcleBackofficeMongooseModule,
+    BackofficeDatabaseModule,
     BackOfficeMongooseForFeatures,
+    BullModule.registerQueue({ name: QueueName.NOTIFICATION }),
     CastcleBullModule,
     CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
     CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
-    MongooseAsyncFeatures,
-    MongooseForFeatures,
   ],
   controllers: [
     AuthenticationController,
