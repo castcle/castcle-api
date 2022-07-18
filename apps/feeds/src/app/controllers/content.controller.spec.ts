@@ -71,8 +71,8 @@ describe('ContentController', () => {
           store: 'memory',
           ttl: 1000,
         }),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       controllers: [ContentController],
       providers: [

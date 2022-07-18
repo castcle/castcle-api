@@ -41,8 +41,8 @@ describe('SearchService', () => {
     moduleRef = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [HashtagService, SearchService],
     }).compile();

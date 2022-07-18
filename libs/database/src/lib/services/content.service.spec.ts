@@ -116,8 +116,8 @@ describe('ContentService', () => {
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         AuthenticationService,

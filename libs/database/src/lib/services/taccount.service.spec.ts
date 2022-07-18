@@ -90,8 +90,8 @@ describe('TAccount Service', () => {
       imports: [
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         AuthenticationServiceV2,
