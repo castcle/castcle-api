@@ -72,7 +72,13 @@ import {
   WalletType,
 } from '../models';
 import { Repository } from '../repositories';
-import { Content, ContentFarming, FeedItem, Metadata } from '../schemas';
+import {
+  Content,
+  ContentFarming,
+  FeedItem,
+  Metadata,
+  Transaction,
+} from '../schemas';
 import { CampaignService } from './campaign.service';
 import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
@@ -88,6 +94,7 @@ describe('ContentServiceV2', () => {
   let mocksUsers: MockUserDetail[];
   let generateUser: MockUserService;
   let dataService: DataService;
+  let transactionModel: Model<Transaction>;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -141,6 +148,7 @@ describe('ContentServiceV2', () => {
     service = moduleRef.get(ContentServiceV2);
     tAccountService = moduleRef.get(TAccountService);
     dataService = moduleRef.get<DataService>(DataService);
+    transactionModel = moduleRef.get(getModelToken('Transaction'));
 
     mocksUsers = await generateUser.generateMockUsers(5);
 
@@ -315,7 +323,7 @@ describe('ContentServiceV2', () => {
       await mockDeposit(
         mockFarmingUsers[1].user,
         initialBalance,
-        tAccountService._transactionModel,
+        transactionModel,
       );
       const balance = await tAccountService.getAccountBalance(
         mockFarmingUsers[1].user.id,
@@ -328,16 +336,12 @@ describe('ContentServiceV2', () => {
     describe('#createContentFarming', () => {
       let contentFarming: ContentFarming;
       beforeAll(async () => {
-        expect(
-          await tAccountService._transactionModel.countDocuments(),
-        ).toEqual(1);
+        expect(await transactionModel.countDocuments()).toEqual(1);
         contentFarming = await service.createContentFarming(
           testContents[0].id,
           mockFarmingUsers[1].user.id,
         );
-        expect(
-          await tAccountService._transactionModel.countDocuments(),
-        ).toEqual(2);
+        expect(await transactionModel.countDocuments()).toEqual(2);
       });
       it('should be able to create content farming instance if have balance > 5% total', async () => {
         expect(String(contentFarming.content)).toEqual(testContents[0].id);

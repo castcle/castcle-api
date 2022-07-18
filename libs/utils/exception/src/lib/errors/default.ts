@@ -392,4 +392,9 @@ export const DefaultErrors = {
     code: '8011',
     message: 'Reporting is not found. Please try again.',
   },
+  PAYMENT_TO_OWN_WALLET: {
+    statusCode: '400',
+    code: '8012',
+    message: 'Payment to your own wallet is not supported.',
+  },
 };
