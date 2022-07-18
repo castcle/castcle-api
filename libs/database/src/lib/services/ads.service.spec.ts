@@ -74,8 +74,8 @@ describe('AdsService', () => {
         CacheModule.register(),
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         AdsService,
