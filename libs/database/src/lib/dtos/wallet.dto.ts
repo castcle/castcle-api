@@ -22,10 +22,13 @@
  */
 
 import { CastcleImage } from '@castcle-api/utils/aws';
+import { RemoveLeadingZero } from '@castcle-api/utils/commons';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsEmail,
+  IsMobilePhone,
   IsMongoId,
   IsNotEmpty,
   IsNotEmptyObject,
@@ -121,4 +124,54 @@ export class ReviewTransactionDto {
   @ValidateNested()
   @IsNotEmptyObject()
   transaction: TransactionDto;
+}
+
+class VerifyTransactionByEmailDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  refCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}
+
+class VerifyTransactionByMobileDto {
+  @IsMobilePhone()
+  @RemoveLeadingZero()
+  mobileNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  countryCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  refCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}
+
+class VerifyTransactionDto {
+  @Type(() => VerifyTransactionByEmailDto)
+  @ValidateNested()
+  @IsNotEmptyObject()
+  email: VerifyTransactionByEmailDto;
+
+  @Type(() => VerifyTransactionByMobileDto)
+  @ValidateNested()
+  @IsNotEmptyObject()
+  mobile: VerifyTransactionByMobileDto;
+}
+
+export class SendTransactionDto extends ReviewTransactionDto {
+  @Type(() => VerifyTransactionDto)
+  @ValidateNested()
+  @IsNotEmptyObject()
+  verification: VerifyTransactionDto;
 }

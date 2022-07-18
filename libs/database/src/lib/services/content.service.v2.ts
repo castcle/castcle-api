@@ -666,7 +666,7 @@ export class ContentServiceV2 {
       try {
         session.startTransaction();
         await contentFarming.save();
-        await this.tAccountService.transfers({
+        await this.tAccountService.transfer({
           from: {
             type: WalletType.PERSONAL,
             user: userId,
@@ -725,7 +725,7 @@ export class ContentServiceV2 {
       contentFarming.farmAmount = farmAmount;
       await session.withTransaction(async () => {
         await contentFarming.save();
-        await this.tAccountService.transfers({
+        await this.tAccountService.transfer({
           from: {
             type: WalletType.PERSONAL,
             user: String(contentFarming.user),
@@ -818,7 +818,7 @@ export class ContentServiceV2 {
               },
             },
           );
-          await this.tAccountService.transfers({
+          await this.tAccountService.transfer({
             from: {
               type: WalletType.FARM_LOCKED,
               user: String(contentFarming.user),
@@ -878,7 +878,7 @@ export class ContentServiceV2 {
             },
           },
         );
-        await this.tAccountService.transfers({
+        await this.tAccountService.transfer({
           from: {
             type: WalletType.FARM_LOCKED,
             user: String(contentFarming.user),
@@ -934,7 +934,7 @@ export class ContentServiceV2 {
           },
         },
       );
-      await this.tAccountService.transfers({
+      await this.tAccountService.transfer({
         from: {
           type: WalletType.FARM_LOCKED,
           user: String(contentFarming.user),

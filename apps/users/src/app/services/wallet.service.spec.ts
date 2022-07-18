@@ -23,6 +23,7 @@
 import {
   AnalyticService,
   AuthenticationService,
+  AuthenticationServiceV2,
   CampaignService,
   ContentService,
   HashtagService,
@@ -32,20 +33,28 @@ import {
   NotificationServiceV2,
   QueueName,
   TAccountService,
+  Transaction,
   UserService,
   UserServiceV2,
   WalletShortcutService,
   generateMockUsers,
   mockDeposit,
 } from '@castcle-api/database';
-import { Mailer } from '@castcle-api/utils/clients';
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Model } from 'mongoose';
 import { WalletResponse } from '../dtos';
 import { WalletService } from './wallet.service';
 
@@ -56,7 +65,7 @@ describe('WalletService', () => {
   let userServiceV1: UserService;
   let authService: AuthenticationService;
   let mocksUsers: MockUserDetail[];
-  let tAccountService: TAccountService;
+  let transactionModel: Model<Transaction>;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -72,6 +81,7 @@ describe('WalletService', () => {
       providers: [
         AnalyticService,
         AuthenticationService,
+        AuthenticationServiceV2,
         ContentService,
         TAccountService,
         WalletService,
@@ -79,6 +89,10 @@ describe('WalletService', () => {
         UserService,
         UserServiceV2,
         WalletShortcutService,
+        { provide: FacebookClient, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
+        { provide: TwilioClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: HashtagService, useValue: {} },
         { provide: Mailer, useValue: {} },
@@ -109,18 +123,14 @@ describe('WalletService', () => {
     service = app.get<WalletService>(WalletService);
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
-    tAccountService = app.get<TAccountService>(TAccountService);
+    transactionModel = app.get(getModelToken('Transaction'));
 
     mocksUsers = await generateMockUsers(2, 0, {
       userService: userServiceV1,
       accountService: authService,
     });
     //init
-    await mockDeposit(
-      mocksUsers[0].user,
-      5555,
-      tAccountService._transactionModel,
-    );
+    await mockDeposit(mocksUsers[0].user, 5555, transactionModel);
   });
 
   describe('getWalletBalance()', () => {

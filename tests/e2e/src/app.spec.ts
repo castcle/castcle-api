@@ -15,6 +15,7 @@ import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.clien
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Query } from 'mongoose';
 import { testReviewTransaction } from './routes/review-transaction.spec';
+import { testSendTransaction } from './routes/send-transaction.spec';
 import { request } from './utils.spec';
 
 describe('Castcle E2E Tests', () => {
@@ -63,4 +64,5 @@ describe('Castcle E2E Tests', () => {
   });
 
   testReviewTransaction();
+  testSendTransaction();
 });

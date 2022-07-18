@@ -471,7 +471,7 @@ export class AdsService {
           //transferFrom ads owner to locked account
           //debit personal account or ads_credit account of adsowner
           //credit ads ownner locked_for ads
-          tx = await this.taccountService.transfers({
+          tx = await this.taccountService.transfer({
             from: {
               user: adsCampaign.owner as unknown as string,
               type:
@@ -616,7 +616,7 @@ export class AdsService {
     reward: AdsSocialReward,
     session: mongoose.ClientSession,
   ) => {
-    return this.taccountService.transfers(
+    return this.taccountService.transfer(
       {
         from: {
           type: WalletType.CASTCLE_SOCIAL,
@@ -681,7 +681,7 @@ export class AdsService {
         },
       });
     }
-    return this.taccountService.transfers(
+    return this.taccountService.transfer(
       {
         from: {
           type: WalletType.CASTCLE_SOCIAL,
@@ -753,7 +753,7 @@ export class AdsService {
           { _id: { $in: currentCfs.map((c) => c.content) } },
           { 'farming.isDistributed': true },
         );
-        await this.taccountService.transfers(
+        await this.taccountService.transfer(
           {
             from: {
               type: WalletType.CASTCLE_SOCIAL,
@@ -765,7 +765,7 @@ export class AdsService {
           session,
         );
       } else {
-        await this.taccountService.transfers(
+        await this.taccountService.transfer(
           {
             from: {
               type: WalletType.CASTCLE_SOCIAL,
