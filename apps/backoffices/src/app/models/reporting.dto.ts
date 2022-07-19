@@ -49,7 +49,7 @@ export class GetReportingQuery {
 }
 
 class ReportingPayload {
-  _id: string;
+  id: string;
   reportBy: string[];
   status: string;
   type: string;
@@ -59,6 +59,7 @@ class ReportingPayload {
 }
 
 class ReportedBy {
+  id: string;
   message: string;
   user: User;
   subject: {
