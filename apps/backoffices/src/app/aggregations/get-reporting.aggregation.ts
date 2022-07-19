@@ -90,6 +90,7 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
               },
               {
                 $project: {
+                  _id: 0,
                   slug: '$payload.slug',
                   name: '$payload.name',
                 },

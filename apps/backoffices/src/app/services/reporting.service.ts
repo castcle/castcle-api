@@ -92,7 +92,27 @@ export class ReportingService {
     return Promise.all(
       reportings.map(async (reporting) => {
         return {
-          ...reporting,
+          id: reporting.id,
+          status: reporting.status,
+          type: reporting.type,
+          user: users
+            ?.find((user) => String(user._id) === String(reporting.user))
+            ?.toPublicResponse(),
+          content:
+            reporting.type === ReportingType.CONTENT
+              ? signedContentPayloadItem(
+                  toUnsignedContentPayloadItem(
+                    await this.repository.findContent({
+                      _id: reporting.id,
+                      visibilities: [
+                        EntityVisibility.Illegal,
+                        EntityVisibility.Publish,
+                        EntityVisibility.Deleted,
+                      ],
+                    }),
+                  ),
+                )
+              : undefined,
           reportBy: reporting.reportBy.map((id) => {
             const payloadReportBy = reportedBy.find(
               ({ type, user }) =>
@@ -109,8 +129,10 @@ export class ReportingService {
             );
 
             return {
-              ...payloadReportBy,
+              id: payloadReportBy.id,
               user: reportByUser?.toPublicResponse(),
+              subject: payloadReportBy.subject,
+              message: payloadReportBy.message,
               payload:
                 reporting.type === ReportingType.USER
                   ? reportUser?.toPublicResponse()
@@ -119,26 +141,12 @@ export class ReportingService {
                         payloadReportBy?.payload as Content,
                       ),
                     ),
+              createdAt: payloadReportBy.createdAt,
+              updatedAt: payloadReportBy.updatedAt,
             };
           }),
-          content:
-            reporting.type === ReportingType.CONTENT
-              ? signedContentPayloadItem(
-                  toUnsignedContentPayloadItem(
-                    await this.repository.findContent({
-                      _id: reporting.id,
-                      visibilities: [
-                        EntityVisibility.Illegal,
-                        EntityVisibility.Publish,
-                        EntityVisibility.Deleted,
-                      ],
-                    }),
-                  ),
-                )
-              : undefined,
-          user: users
-            ?.find((user) => String(user._id) === String(reporting.user))
-            ?.toPublicResponse(),
+          createdAt: reporting.createdAt,
+          updatedAt: reporting.updatedAt,
         };
       }),
     );
