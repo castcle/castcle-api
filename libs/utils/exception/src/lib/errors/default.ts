@@ -441,4 +441,14 @@ export const DefaultErrors = {
     code: '8012',
     message: 'Payment to your own wallet is not supported.',
   },
+  REPORTING_APPEAL_IS_EXISTS: {
+    statusCode: '400',
+    code: '8013',
+    message: 'Reporting is appeal is already exists.',
+  },
+  REPORTING_STATUS_NOT_FOUND: {
+    statusCode: '400',
+    code: '8013',
+    message: 'Reporting status not found. Please try again.',
+  },
 };

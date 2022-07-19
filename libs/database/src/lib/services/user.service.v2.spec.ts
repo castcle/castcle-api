@@ -710,6 +710,10 @@ describe('UserServiceV2', () => {
     });
 
     it('should update reportedStatus content and reporting status equal "appeal"', async () => {
+      reportedUser.reportedStatus = ReportingStatus.ILLEGAL;
+      reportedUser.reportedSubject = 'test';
+      reportedUser = await reportedUser.save();
+
       await userServiceV2.updateAppealUser(
         reportedUser,
         ReportingStatus.APPEAL,
@@ -734,6 +738,11 @@ describe('UserServiceV2', () => {
     });
 
     it('should update reportedStatus content and reporting status equal "not-appeal"', async () => {
+      reportedUser.reportedStatus = ReportingStatus.ILLEGAL;
+      reportedUser.reportedSubject = 'test';
+      reportedUser.markModified('reportedStatus');
+      reportedUser = await reportedUser.save();
+
       await userServiceV2.updateAppealUser(
         reportedUser,
         ReportingStatus.NOT_APPEAL,
