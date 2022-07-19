@@ -6,7 +6,7 @@ import { Model } from 'mongoose';
 import { CampaignDto, UpdateCampaignDto } from '../models/campaign.dto';
 
 @Injectable()
-export class CampaignService {
+export class CampaignBackofficeService {
   constructor(@InjectModel('Campaign') public campaignModel: Model<Campaign>) {}
 
   getCampaigns() {
