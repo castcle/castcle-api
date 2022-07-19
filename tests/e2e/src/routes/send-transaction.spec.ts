@@ -386,7 +386,9 @@ export const testSendTransaction = () =>
           },
         })
         .expect(({ body }) => {
-          expect(body.message).toEqual('Invalid OTP code. Please try again.');
+          expect(body.message).toEqual(
+            'Invalid email OTP code. Please try again.',
+          );
         })
         .expect(400);
     });
@@ -414,7 +416,7 @@ export const testSendTransaction = () =>
               retry: 0,
               sentAt: [new Date()],
               action: OtpObjective.SEND_TOKEN,
-              channel: TwilioChannel.MOBILE,
+              channel: TwilioChannel.SMS,
               receiver: '+66812341234',
               account: user.profile.id,
               expireDate: new Date('3000'),
@@ -497,7 +499,7 @@ export const testSendTransaction = () =>
               retry: 0,
               sentAt: [new Date()],
               action: OtpObjective.SEND_TOKEN,
-              channel: TwilioChannel.MOBILE,
+              channel: TwilioChannel.SMS,
               receiver: '+66812341234',
               account: user.profile.id,
               expireDate: new Date('3000'),

@@ -122,7 +122,7 @@ export class WalletService {
     });
 
     await this.authService.verifyOtp({
-      channel: TwilioChannel.MOBILE,
+      channel: TwilioChannel.SMS,
       objective: OtpObjective.SEND_TOKEN,
       receiver:
         verification.mobile.countryCode + verification.mobile.mobileNumber,
