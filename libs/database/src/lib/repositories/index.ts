@@ -544,6 +544,7 @@ export class Repository {
     if (filter.subject) query.subject = filter.subject;
     if (filter.type) query.type = filter.type;
     if (filter.user) query.user = filter.user;
+    if (filter.by) query.by = filter.by;
 
     return query;
   }
