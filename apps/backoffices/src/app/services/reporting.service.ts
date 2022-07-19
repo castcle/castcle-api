@@ -195,6 +195,7 @@ export class ReportingService {
 
     await Promise.all(
       reportings.map(async (reporting) => {
+        if (reporting.status === ReportingStatus.CLOSED) return;
         reporting.status = ReportingStatus.CLOSED;
         (reporting.actionBy ??= []).push({
           firstName: staff.firstName,
@@ -202,6 +203,8 @@ export class ReportingService {
           email: staff.email,
           action: ReportingIllegal.NOT_ILLEGAL,
           status: ReportingStatus.CLOSED,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
         reporting.markModified('actionBy');
         await reporting.save();
@@ -230,6 +233,7 @@ export class ReportingService {
 
         const userOwner = await this.repository.findUser({
           _id: reporting.user as any,
+          visibilities: [EntityVisibility.Publish, EntityVisibility.Illegal],
         });
 
         const accountOwner = await this.repository.findAccount({
@@ -278,7 +282,7 @@ export class ReportingService {
     await Promise.all(
       reportings.map(async (reporting) => {
         const status = this.checkingStatusActive(reporting.status);
-        if (!status) return;
+        if (!status && reporting.status === ReportingStatus.CLOSED) return;
         reporting.status = status;
         (reporting.actionBy ??= []).push({
           firstName: staff.firstName,
@@ -287,6 +291,8 @@ export class ReportingService {
           action: ReportingIllegal.ILLEGAL,
           status: status,
           subject: body.subjectByAdmin,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
         reporting.markModified('actionBy');
         await reporting.save();
@@ -328,6 +334,10 @@ export class ReportingService {
             ? (contentReporting as User)
             : await this.repository.findUser({
                 _id: reporting.user as any,
+                visibilities: [
+                  EntityVisibility.Publish,
+                  EntityVisibility.Illegal,
+                ],
               });
 
         const accountOwner = await this.repository.findAccount({
@@ -411,6 +421,8 @@ export class ReportingService {
               email: staff.email,
               action: ReportingIllegal.AUTO_DELETE,
               status: ReportingStatus.CLOSED,
+              createdAt: new Date(),
+              updatedAt: new Date(),
             },
           },
         },

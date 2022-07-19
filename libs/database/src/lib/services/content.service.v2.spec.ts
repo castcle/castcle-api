@@ -1013,6 +1013,10 @@ describe('ContentServiceV2', () => {
     });
 
     it('should update reportedStatus content and reporting status equal "appeal"', async () => {
+      reportContent.reportedStatus = ReportingStatus.ILLEGAL;
+      reportContent.reportedSubject = 'test';
+      reportContent = await reportContent.save();
+
       await service.updateAppealContent(
         reportContent._id,
         mocksUsers[0].user,
@@ -1038,6 +1042,11 @@ describe('ContentServiceV2', () => {
     });
 
     it('should update reportedStatus content and reporting status equal "not-appeal"', async () => {
+      reportContent.reportedStatus = ReportingStatus.ILLEGAL;
+      reportContent.reportedSubject = 'test';
+      reportContent.markModified('reportedStatus');
+      reportContent = await reportContent.save();
+
       await service.updateAppealContent(
         reportContent._id,
         mocksUsers[0].user,

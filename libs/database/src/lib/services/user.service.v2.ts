@@ -95,7 +95,10 @@ export class UserServiceV2 {
   ) {}
 
   getUser = async (userId: string) => {
-    const user = await this.repository.findUser({ _id: userId });
+    const user = await this.repository.findUser({
+      _id: userId,
+      visibilities: [EntityVisibility.Publish, EntityVisibility.Illegal],
+    });
     if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
     return user;
   };
@@ -735,47 +738,53 @@ export class UserServiceV2 {
     });
   }
 
-  updateAppealUser = async (requestedBy: User, status: ReportingStatus) => {
-    if (requestedBy.visibility !== EntityVisibility.Illegal)
+  updateAppealUser = async (user: User, status: ReportingStatus) => {
+    if (user.visibility !== EntityVisibility.Illegal)
       throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const reporting = await this.repository.findReporting({
-      payloadId: requestedBy._id,
-      user: requestedBy._id,
+      payloadId: user._id,
+      user: user._id,
     });
 
     if (!reporting) return;
 
+    if (!user?.reportedStatus)
+      throw new CastcleException('REPORTING_STATUS_NOT_FOUND');
+
+    if (user?.reportedStatus !== ReportingStatus.ILLEGAL)
+      throw new CastcleException('REPORTING_APPEAL_IS_EXISTS');
+
     await this.repository.updateReportings(
       {
-        user: requestedBy._id,
+        user: user._id,
       },
       {
         $set: { status },
       },
     );
 
-    requestedBy.reportedStatus = status;
-    await requestedBy.save();
+    user.reportedStatus = status;
+    await user.save();
 
     if (status === ReportingStatus.NOT_APPEAL) return;
 
     await this.reportingQueue.add(
       {
-        subject: `${ReportingAction.APPEAL} user : (OID : ${requestedBy._id})`,
+        subject: `${ReportingAction.APPEAL} user : (OID : ${user._id})`,
         content: this.mailerService.generateHTMLReport(
-          requestedBy.toPublicResponse(),
+          user.toPublicResponse(),
           {
             action: ReportingAction.APPEAL,
             actionBy: reporting.actionBy,
             message: reporting.message,
-            reportedBy: requestedBy.displayName,
+            reportedBy: user.displayName,
             subject: reporting.subject,
             type: ReportingType.USER,
             user: {
-              id: requestedBy.id,
-              castcleId: requestedBy.displayId,
-              displayName: requestedBy.displayName,
+              id: user.id,
+              castcleId: user.displayId,
+              displayName: user.displayName,
             },
           },
         ),

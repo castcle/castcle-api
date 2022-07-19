@@ -1647,6 +1647,12 @@ export class ContentServiceV2 {
 
     if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
+    if (!content?.reportedStatus)
+      throw new CastcleException('REPORTING_STATUS_NOT_FOUND');
+
+    if (content?.reportedStatus !== ReportingStatus.ILLEGAL)
+      throw new CastcleException('REPORTING_APPEAL_IS_EXISTS');
+
     const userOwners = await this.repository.findUsers({
       _id: content.author.id,
     });
