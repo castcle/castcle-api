@@ -83,6 +83,11 @@ export class ReportingService {
 
     const users = await this.repository.findUsers({
       _id: [...userIds, ...reportUserIds, ...payloadIds],
+      visibilities: [
+        EntityVisibility.Publish,
+        EntityVisibility.Illegal,
+        EntityVisibility.Deleted,
+      ],
     });
     return Promise.all(
       reportings.map(async (reporting) => {
