@@ -122,17 +122,51 @@ export const DefaultErrors = {
     code: '3008',
     message: 'Invalid OTP code. Please try again.',
   },
+  INVALID_EMAIL_OTP: {
+    statusCode: '400',
+    code: '3008',
+    message: 'Invalid email OTP code. Please try again.',
+  },
+  INVALID_SMS_OTP: {
+    statusCode: '400',
+    code: '3008',
+    message: 'Invalid SMS OTP code. Please try again.',
+  },
   EXPIRED_OTP: {
     statusCode: '400',
     code: '3009',
     message:
       'The OTP has been requested past the time limit, please press the "Get OTP" button to request a new code again.',
   },
+  EXPIRED_EMAIL_OTP: {
+    statusCode: '400',
+    code: '3009',
+    message:
+      'The email OTP has been requested past the time limit, please press the "Get OTP" button to request a new code again.',
+  },
+  EXPIRED_SMS_OTP: {
+    statusCode: '400',
+    code: '3009',
+    message:
+      'The SMS OTP has been requested past the time limit, please press the "Get OTP" button to request a new code again.',
+  },
   LOCKED_OTP: {
     statusCode: '400',
     code: '3010',
     message:
       'Enter an incorrect OTP more than 3 times. Please enter your phone number or email to request a new OTP again.',
+  },
+  LOCKED_EMAIL_OTP: {
+    statusCode: '400',
+    code: '3010',
+    message:
+      'Enter an incorrect email OTP more than 3 times. Please enter your email to request a new OTP again.',
+  },
+  LOCKED_SMS_OTP: {
+    statusCode: '400',
+    code: '3010',
+    message:
+      'Enter an incorrect SMS OTP more than 3 times. Please enter your phone number to request a new OTP again.',
   },
   INVALID_PASSWORD: {
     statusCode: '400',
@@ -143,6 +177,16 @@ export const DefaultErrors = {
     statusCode: '400',
     code: '3012',
     message: 'The request exceeded the time limit.',
+  },
+  INVALID_EMAIL_REF_CODE: {
+    statusCode: '400',
+    code: '3012',
+    message: 'Invalid email ref code. Please try again.',
+  },
+  INVALID_SMS_REF_CODE: {
+    statusCode: '400',
+    code: '3012',
+    message: 'Invalid SMS ref code. Please try again.',
   },
   INVALID_ROLE: {
     statusCode: '400',
