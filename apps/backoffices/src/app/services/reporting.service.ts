@@ -91,28 +91,36 @@ export class ReportingService {
     });
     return Promise.all(
       reportings.map(async (reporting) => {
+        const content =
+          reporting.type === ReportingType.CONTENT
+            ? await this.repository.findContent({
+                _id: reporting.id,
+                visibilities: [
+                  EntityVisibility.Illegal,
+                  EntityVisibility.Publish,
+                  EntityVisibility.Deleted,
+                ],
+              })
+            : undefined;
+
+        const user = users?.find((user) => user.id === String(reporting.user));
+
         return {
           id: reporting.id,
           status: reporting.status,
           type: reporting.type,
-          user: users
-            ?.find((user) => String(user._id) === String(reporting.user))
-            ?.toPublicResponse(),
-          content:
-            reporting.type === ReportingType.CONTENT
-              ? signedContentPayloadItem(
-                  toUnsignedContentPayloadItem(
-                    await this.repository.findContent({
-                      _id: reporting.id,
-                      visibilities: [
-                        EntityVisibility.Illegal,
-                        EntityVisibility.Publish,
-                        EntityVisibility.Deleted,
-                      ],
-                    }),
-                  ),
-                )
-              : undefined,
+          user: {
+            ...user?.toPublicResponse(),
+            visibility: user?.visibility,
+          },
+          content: content
+            ? {
+                ...signedContentPayloadItem(
+                  toUnsignedContentPayloadItem(content),
+                ),
+                visibility: content?.visibility,
+              }
+            : undefined,
           reportBy: reporting.reportBy.map((id) => {
             const payloadReportBy = reportedBy.find(
               ({ type, user }) =>
@@ -120,12 +128,11 @@ export class ReportingService {
             );
 
             const reportUser = users?.find(
-              (user) =>
-                String(user._id) === String(payloadReportBy?.payload?._id),
+              (user) => user.id === String(payloadReportBy?.payload?._id),
             );
 
             const reportByUser = users?.find(
-              (user) => String(user._id) === String(payloadReportBy?.user),
+              (user) => user.id === String(payloadReportBy?.user),
             );
 
             return {
