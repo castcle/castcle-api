@@ -23,7 +23,6 @@
 
 export enum TwilioChannel {
   EMAIL = 'email',
-  MOBILE = 'mobile',
   SMS = 'sms',
 }
 

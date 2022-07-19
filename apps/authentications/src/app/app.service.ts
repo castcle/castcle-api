@@ -386,11 +386,10 @@ export class AppService {
           TwilioChannel.EMAIL,
           objective,
           credential,
-          request.channel,
         );
         break;
       }
-      case TwilioChannel.MOBILE: {
+      case 'mobile': {
         const exOtp = await this.validateExistingOtp(
           objective,
           credential,
@@ -419,7 +418,6 @@ export class AppService {
           TwilioChannel.SMS,
           objective,
           credential,
-          request.channel,
         );
         break;
       }
@@ -447,7 +445,6 @@ export class AppService {
     channel: TwilioChannel,
     objective: OtpObjective,
     credential: CredentialRequest,
-    otpChannel: TwilioChannel,
   ): Promise<Otp> {
     let sid = '';
     this.logger.log('Send Otp');
@@ -478,7 +475,7 @@ export class AppService {
       account,
       objective,
       credential.$credential.account._id,
-      otpChannel,
+      channel,
       false,
       receiver,
       sid,
@@ -585,7 +582,9 @@ export class AppService {
         account,
         objective,
         credential.$credential.account._id,
-        request.channel,
+        request.channel === TwilioChannel.EMAIL
+          ? TwilioChannel.EMAIL
+          : TwilioChannel.SMS,
         true,
         receiver,
       );
