@@ -3,10 +3,10 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { BackOfficeMongooseForFeatures } from '../schemas';
-import { CampaignService } from './campaign.service';
+import { CampaignBackofficeService } from './campaign.service';
 
 describe('Campaign', () => {
-  let service: CampaignService;
+  let service: CampaignBackofficeService;
   let mongod: MongoMemoryReplSet;
   let moduleRef: TestingModule;
 
@@ -15,10 +15,10 @@ describe('Campaign', () => {
     global.mongoUri = mongod.getUri();
     moduleRef = await Test.createTestingModule({
       imports: [BackofficeDatabaseModule, BackOfficeMongooseForFeatures],
-      providers: [CampaignService],
+      providers: [CampaignBackofficeService],
     }).compile();
 
-    service = moduleRef.get<CampaignService>(CampaignService);
+    service = moduleRef.get(CampaignBackofficeService);
   });
 
   afterAll(async () => {

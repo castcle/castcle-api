@@ -23,6 +23,7 @@
 
 import {
   BackofficeDatabaseModule,
+  CampaignService,
   NotificationServiceV2,
   QueueName,
 } from '@castcle-api/database';
@@ -37,13 +38,16 @@ import { CampaignController } from './controllers/campaign.controller';
 import { ReportingController } from './controllers/reporting.controller';
 import { BackOfficeMongooseForFeatures } from './schemas';
 import { AuthenticationService } from './services/authentication.service';
-import { CampaignService } from './services/campaign.service';
+import { CampaignBackofficeService } from './services/campaign.service';
 import { ReportingService } from './services/reporting.service';
 @Module({
   imports: [
     BackofficeDatabaseModule,
     BackOfficeMongooseForFeatures,
-    BullModule.registerQueue({ name: QueueName.NOTIFICATION }),
+    BullModule.registerQueue(
+      { name: QueueName.CAMPAIGN },
+      { name: QueueName.NOTIFICATION },
+    ),
     CastcleBullModule,
     CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
     CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
@@ -55,6 +59,7 @@ import { ReportingService } from './services/reporting.service';
   ],
   providers: [
     AuthenticationService,
+    CampaignBackofficeService,
     CampaignService,
     ReportingService,
     NotificationServiceV2,
