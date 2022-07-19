@@ -814,7 +814,6 @@ export class AuthenticationServiceV2 {
       receiver: email,
       refCode,
       otp: otpCode,
-      account,
     });
 
     if (objective !== OtpObjective.MERGE_ACCOUNT) return { otp };
@@ -846,11 +845,10 @@ export class AuthenticationServiceV2 {
       receiver: countryCode + mobileNumber,
       refCode,
       otp: otpCode,
-      account: existingAccount,
     });
   }
 
-  private async verifyOtp({
+  async verifyOtp({
     channel,
     objective,
     receiver,
@@ -862,7 +860,6 @@ export class AuthenticationServiceV2 {
     receiver: string;
     refCode: string;
     otp: string;
-    account: Account;
   }) {
     const existingOtp = await this.repository.findOtp({
       channel,

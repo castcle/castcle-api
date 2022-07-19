@@ -195,9 +195,9 @@ describe('ReportingService', () => {
     });
   });
 
-  afterAll(async () => {
-    await Promise.all([moduleRef.close(), mongod.stop()]);
-  });
+  // afterAll(async () => {
+  //   await Promise.all([moduleRef.close(), mongod.stop()]);
+  // });
 
   describe('getReporting', () => {
     it('should get reporting filter type content', async () => {
@@ -232,7 +232,7 @@ describe('ReportingService', () => {
 
       await service.updateIllegal(
         {
-          id: reporting.id,
+          id: reporting.payload._id,
           type: ReportingType.CONTENT,
           subjectByAdmin: 'testsubjectByAdmin',
         },
@@ -241,14 +241,14 @@ describe('ReportingService', () => {
 
       const content = await repository.findContent({
         _id: reporting.payload._id,
-        visibility: EntityVisibility.Illegal,
+        visibilities: [EntityVisibility.Illegal, EntityVisibility.Publish],
       });
 
       expect(content.visibility).toEqual(EntityVisibility.Illegal);
 
       await service.updateNotIllegal(
         {
-          id: reporting.id,
+          id: reporting.payload._id,
           type: ReportingType.CONTENT,
           subjectByAdmin: 'testsubjectByAdmin',
         },
@@ -269,9 +269,7 @@ describe('ReportingService', () => {
       expect(reportingAfter.actionBy[0].firstName).toEqual(staffData.firstName);
       expect(reportingAfter.actionBy[0].lastName).toEqual(staffData.lastName);
       expect(reportingAfter.actionBy[0].email).toEqual(staffData.email);
-      expect(reportingAfter.actionBy[0].subjectByAdmin).toEqual(
-        'testsubjectByAdmin',
-      );
+      expect(reportingAfter.actionBy[0].subject).toEqual('testsubjectByAdmin');
     });
   });
 
@@ -284,7 +282,7 @@ describe('ReportingService', () => {
 
       await service.updateIllegal(
         {
-          id: reporting.id,
+          id: reporting.payload._id,
           type: ReportingType.USER,
           subjectByAdmin: 'testsubjectByAdmin',
         },
@@ -300,7 +298,7 @@ describe('ReportingService', () => {
 
       await service.updateIllegal(
         {
-          id: reporting.id,
+          id: reporting.payload._id,
           type: ReportingType.USER,
           subjectByAdmin: 'testsubjectByAdmin2',
         },
@@ -321,9 +319,7 @@ describe('ReportingService', () => {
       expect(reportingAfter.actionBy[0].firstName).toEqual(staffData.firstName);
       expect(reportingAfter.actionBy[0].lastName).toEqual(staffData.lastName);
       expect(reportingAfter.actionBy[0].email).toEqual(staffData.email);
-      expect(reportingAfter.actionBy[0].subjectByAdmin).toEqual(
-        'testsubjectByAdmin',
-      );
+      expect(reportingAfter.actionBy[0].subject).toEqual('testsubjectByAdmin');
     });
   });
 });

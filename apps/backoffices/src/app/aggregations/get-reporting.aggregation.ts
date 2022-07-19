@@ -59,6 +59,18 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
             updatedAt: { $first: '$updatedAt' },
           },
         },
+        {
+          $project: {
+            _id: 0,
+            id: '$_id',
+            reportBy: 1,
+            status: 1,
+            type: 1,
+            user: 1,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        },
       ],
       reportedBy: [
         {
@@ -88,6 +100,8 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
         },
         {
           $project: {
+            _id: 0,
+            id: '$_id',
             message: 1,
             payload: 1,
             createdAt: 1,

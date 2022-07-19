@@ -24,17 +24,19 @@
 import {
   EntityVisibility,
   NetworkType,
+  OtpObjective,
   TAccountService,
   WalletType,
 } from '@castcle-api/database';
+import { TwilioChannel } from '@castcle-api/utils/clients';
 import { getModelToken } from '@nestjs/mongoose';
 import { app, registerUser, request } from '../utils.spec';
 
-export const testReviewTransaction = () =>
-  describe('wallets/:userId/send/review', () => {
+export const testSendTransaction = () =>
+  describe('wallets/:userId/send/confirm', () => {
     it('should throw UNAUTHORIZED when sending request without credential', async () => {
       await request()
-        .post('/v2/wallets/me/send/review')
+        .post('/v2/wallets/me/send/confirm')
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -51,7 +53,7 @@ export const testReviewTransaction = () =>
       const user = await registerUser();
 
       await request()
-        .post('/v2/wallets/me/send/review')
+        .post('/v2/wallets/me/send/confirm')
         .auth(user.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
@@ -61,7 +63,10 @@ export const testReviewTransaction = () =>
         .send({})
         .expect(({ body }) => {
           expect(body.message.sort()).toEqual(
-            ['transaction must be a non-empty object'].sort(),
+            [
+              'transaction must be a non-empty object',
+              'verification must be a non-empty object',
+            ].sort(),
           );
         })
         .expect(400);
@@ -71,14 +76,14 @@ export const testReviewTransaction = () =>
       const user = await registerUser();
 
       await request()
-        .post('/v2/wallets/me/send/review')
+        .post('/v2/wallets/me/send/confirm')
         .auth(user.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
           Platform: 'CastcleOS',
         })
-        .send({ transaction: {} })
+        .send({ transaction: {}, verification: { email: {}, mobile: {} } })
         .expect(({ body }) => {
           expect(body.message.sort()).toEqual(
             [
@@ -88,6 +93,20 @@ export const testReviewTransaction = () =>
               'transaction.address must be a string',
               'transaction.amount must be a positive number',
               'transaction.amount must be a number conforming to the specified constraints',
+              'verification.email must be a non-empty object',
+              'verification.email.email must be an email',
+              'verification.email.otp must be a string',
+              'verification.email.otp should not be empty',
+              'verification.email.refCode must be a string',
+              'verification.email.refCode should not be empty',
+              'verification.mobile must be a non-empty object',
+              'verification.mobile.countryCode must be a string',
+              'verification.mobile.countryCode should not be empty',
+              'verification.mobile.mobileNumber must be a phone number',
+              'verification.mobile.otp must be a string',
+              'verification.mobile.otp should not be empty',
+              'verification.mobile.refCode must be a string',
+              'verification.mobile.refCode should not be empty',
             ].sort(),
           );
         })
@@ -99,7 +118,7 @@ export const testReviewTransaction = () =>
       const receiver = await registerUser();
 
       await request()
-        .post(`/v2/wallets/${receiver.profile.id}/send/review`)
+        .post(`/v2/wallets/${receiver.profile.id}/send/confirm`)
         .auth(user.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
@@ -111,6 +130,19 @@ export const testReviewTransaction = () =>
             chainId: 'internal',
             address: user.profile.id,
             amount: 1,
+          },
+          verification: {
+            email: {
+              email: user.profile.email,
+              otp: '123456',
+              refCode: '123456',
+            },
+            mobile: {
+              countryCode: '+66',
+              mobileNumber: '0812341234',
+              otp: '123456',
+              refCode: '123456',
+            },
           },
         })
         .expect(({ body }) => {
@@ -125,7 +157,7 @@ export const testReviewTransaction = () =>
       const user = await registerUser();
 
       await request()
-        .post('/v2/wallets/me/send/review')
+        .post('/v2/wallets/me/send/confirm')
         .auth(user.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
@@ -137,6 +169,19 @@ export const testReviewTransaction = () =>
             chainId: 'internal',
             address: user.profile.id,
             amount: 1,
+          },
+          verification: {
+            email: {
+              email: user.profile.email,
+              otp: '123456',
+              refCode: '123456',
+            },
+            mobile: {
+              countryCode: '+66',
+              mobileNumber: '0812341234',
+              otp: '123456',
+              refCode: '123456',
+            },
           },
         })
         .expect(({ body }) => {
@@ -157,7 +202,7 @@ export const testReviewTransaction = () =>
       });
 
       await request()
-        .post('/v2/wallets/me/send/review')
+        .post('/v2/wallets/me/send/confirm')
         .auth(user.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
@@ -169,6 +214,19 @@ export const testReviewTransaction = () =>
             chainId: 'internal',
             address: user.profile.id,
             amount: 1,
+          },
+          verification: {
+            email: {
+              email: user.profile.email,
+              otp: '123456',
+              refCode: '123456',
+            },
+            mobile: {
+              countryCode: '+66',
+              mobileNumber: '0812341234',
+              otp: '123456',
+              refCode: '123456',
+            },
           },
         })
         .expect(({ body }) => {
@@ -191,7 +249,7 @@ export const testReviewTransaction = () =>
       });
 
       await request()
-        .post('/v2/wallets/me/send/review')
+        .post('/v2/wallets/me/send/confirm')
         .auth(user.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
@@ -203,6 +261,19 @@ export const testReviewTransaction = () =>
             chainId: 'internal',
             address: user.profile.id,
             amount: 1,
+          },
+          verification: {
+            email: {
+              email: user.profile.email,
+              otp: '123456',
+              refCode: '123456',
+            },
+            mobile: {
+              countryCode: '+66',
+              mobileNumber: '0812341234',
+              otp: '123456',
+              refCode: '123456',
+            },
           },
         })
         .expect(({ body }) => {
@@ -232,7 +303,7 @@ export const testReviewTransaction = () =>
       ]);
 
       await request()
-        .post('/v2/wallets/me/send/review')
+        .post('/v2/wallets/me/send/confirm')
         .auth(user.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
@@ -245,6 +316,19 @@ export const testReviewTransaction = () =>
             address: user.profile.id,
             amount: 1,
           },
+          verification: {
+            email: {
+              email: user.profile.email,
+              otp: '123456',
+              refCode: '123456',
+            },
+            mobile: {
+              countryCode: '+66',
+              mobileNumber: '0812341234',
+              otp: '123456',
+              refCode: '123456',
+            },
+          },
         })
         .expect(({ body }) => {
           expect(body.message).toEqual(
@@ -254,7 +338,7 @@ export const testReviewTransaction = () =>
         .expect(400);
     });
 
-    it('should return NO_CONTENT when internal transaction has been reviewed successfully', async () => {
+    it('should return INVALID_OTP when OTP or ref code is invalid', async () => {
       const user = await registerUser();
       const receiver = await registerUser();
 
@@ -274,7 +358,7 @@ export const testReviewTransaction = () =>
       ]);
 
       await request()
-        .post('/v2/wallets/me/send/review')
+        .post('/v2/wallets/me/send/confirm')
         .auth(user.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
@@ -287,11 +371,107 @@ export const testReviewTransaction = () =>
             address: receiver.profile.id,
             amount: 1,
           },
+          verification: {
+            email: {
+              email: user.profile.email,
+              otp: '123456',
+              refCode: '123456',
+            },
+            mobile: {
+              countryCode: '+66',
+              mobileNumber: '0812341234',
+              otp: '123456',
+              refCode: '123456',
+            },
+          },
+        })
+        .expect(({ body }) => {
+          expect(body.message).toEqual('Invalid OTP code. Please try again.');
+        })
+        .expect(400);
+    });
+
+    it('should return NO_CONTENT when internal transaction has been reviewed successfully', async () => {
+      const user = await registerUser();
+      const receiver = await registerUser();
+
+      await Promise.all([
+        app()
+          .get(getModelToken('Otp'))
+          .create([
+            {
+              refCode: '123456',
+              retry: 0,
+              sentAt: [new Date()],
+              action: OtpObjective.SEND_TOKEN,
+              channel: TwilioChannel.EMAIL,
+              receiver: user.profile.email,
+              account: user.profile.id,
+              expireDate: new Date('3000'),
+            },
+            {
+              refCode: '123456',
+              retry: 0,
+              sentAt: [new Date()],
+              action: OtpObjective.SEND_TOKEN,
+              channel: TwilioChannel.MOBILE,
+              receiver: '+66812341234',
+              account: user.profile.id,
+              expireDate: new Date('3000'),
+            },
+          ]),
+        app().get(getModelToken('Network')).create({
+          name: 'Castcle Wallet',
+          type: NetworkType.INTERNAL,
+          rpc: 'internal',
+          chainId: 'internal',
+          visibility: EntityVisibility.Publish,
+        }),
+        app().get(TAccountService).topUp({
+          type: WalletType.PERSONAL,
+          value: 1,
+          userId: user.profile.id,
+        }),
+      ]);
+
+      await request()
+        .post('/v2/wallets/me/send/confirm')
+        .auth(user.accessToken, { type: 'bearer' })
+        .set({
+          'Accept-Language': 'en',
+          Device: 'CastclePhone',
+          Platform: 'CastcleOS',
+        })
+        .send({
+          transaction: {
+            chainId: 'internal',
+            address: receiver.profile.id,
+            amount: 1,
+          },
+          verification: {
+            email: {
+              email: user.profile.email,
+              otp: '123456',
+              refCode: '123456',
+            },
+            mobile: {
+              countryCode: '+66',
+              mobileNumber: '0812341234',
+              otp: '123456',
+              refCode: '123456',
+            },
+          },
         })
         .expect(({ body }) => {
           expect(body.message).toBeUndefined();
         })
         .expect(204);
+
+      await expect(
+        app()
+          .get(TAccountService)
+          .getAccountBalance(user.profile.id, WalletType.PERSONAL),
+      ).resolves.toEqual(0);
     });
 
     it('should return NO_CONTENT when external transaction has been reviewed successfully', async () => {
@@ -299,6 +479,30 @@ export const testReviewTransaction = () =>
       const receiver = await registerUser();
 
       await Promise.all([
+        app()
+          .get(getModelToken('Otp'))
+          .create([
+            {
+              refCode: '123456',
+              retry: 0,
+              sentAt: [new Date()],
+              action: OtpObjective.SEND_TOKEN,
+              channel: TwilioChannel.EMAIL,
+              receiver: user.profile.email,
+              account: user.profile.id,
+              expireDate: new Date('3000'),
+            },
+            {
+              refCode: '123456',
+              retry: 0,
+              sentAt: [new Date()],
+              action: OtpObjective.SEND_TOKEN,
+              channel: TwilioChannel.MOBILE,
+              receiver: '+66812341234',
+              account: user.profile.id,
+              expireDate: new Date('3000'),
+            },
+          ]),
         app().get(getModelToken('Network')).create({
           name: 'Castcle Mainnet',
           type: NetworkType.MAINNET,
@@ -314,7 +518,7 @@ export const testReviewTransaction = () =>
       ]);
 
       await request()
-        .post('/v2/wallets/me/send/review')
+        .post('/v2/wallets/me/send/confirm')
         .auth(user.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
@@ -327,10 +531,29 @@ export const testReviewTransaction = () =>
             address: receiver.profile.id,
             amount: 1,
           },
+          verification: {
+            email: {
+              email: user.profile.email,
+              otp: '123456',
+              refCode: '123456',
+            },
+            mobile: {
+              countryCode: '+66',
+              mobileNumber: '0812341234',
+              otp: '123456',
+              refCode: '123456',
+            },
+          },
         })
         .expect(({ body }) => {
           expect(body.message).toBeUndefined();
         })
         .expect(204);
+
+      await expect(
+        app()
+          .get(TAccountService)
+          .getAccountBalance(user.profile.id, WalletType.PERSONAL),
+      ).resolves.toEqual(0);
     });
   });

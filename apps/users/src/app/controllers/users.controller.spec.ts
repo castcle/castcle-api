@@ -60,6 +60,7 @@ import {
   SocialSyncService,
   SocialSyncServiceV2,
   TAccountService,
+  Transaction,
   UpdateUserDto,
   User,
   UserField,
@@ -78,12 +79,13 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { DownloaderMock } from 'libs/utils/aws/src/lib/downloader.spec';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Model } from 'mongoose';
 import { UserSettingsDto } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
 import { UsersController } from './users.controller';
@@ -100,7 +102,7 @@ describe('AppController', () => {
   let socialSyncService: SocialSyncService;
   let notifyService: NotificationService;
   let adsService: AdsService;
-  let taccountService: TAccountService;
+  let transactionModel: Model<Transaction>;
 
   beforeAll(async () => {
     const DownloaderProvider = {
@@ -168,7 +170,7 @@ describe('AppController', () => {
     socialSyncService = app.get<SocialSyncService>(SocialSyncService);
     notifyService = app.get<NotificationService>(NotificationService);
     adsService = app.get<AdsService>(AdsService);
-    taccountService = app.get<TAccountService>(TAccountService);
+    transactionModel = app.get(getModelToken('Transaction'));
 
     const result = await authService.createAccount({
       device: 'iPhone',
@@ -1255,7 +1257,7 @@ describe('AppController', () => {
         type: ContentType.Short,
       });
 
-      await new taccountService._transactionModel({
+      await new transactionModel({
         from: {
           type: WalletType.CASTCLE_TREASURY,
           value: 999999,
@@ -1325,7 +1327,7 @@ describe('AppController', () => {
         type: ContentType.Short,
       });
 
-      await new taccountService._transactionModel({
+      await new transactionModel({
         from: {
           type: WalletType.CASTCLE_TREASURY,
           value: 999999,
@@ -1556,7 +1558,7 @@ describe('AppController', () => {
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
         dailyBidType: AdsBidType.Auto,
       };
-      await new taccountService._transactionModel({
+      await new transactionModel({
         from: {
           type: WalletType.CASTCLE_TREASURY,
           value: 999999,

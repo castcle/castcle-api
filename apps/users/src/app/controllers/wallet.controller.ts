@@ -26,6 +26,7 @@ import {
   GetShortcutParam,
   GetUserParam,
   ReviewTransactionDto,
+  SendTransactionDto,
   ShortcutInternalDto,
   ShortcutSortDto,
   TAccountService,
@@ -106,8 +107,28 @@ export class WalletController {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.walletService.reviewTransaction({
+    await this.walletService.reviewTransaction({
       ...transaction,
+      requestedBy: user.id,
+    });
+  }
+
+  @CastcleBasicAuth()
+  @Post(':userId/send/confirm')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async sendTransaction(
+    @Auth() authorizer: Authorizer,
+    @Body() dto: SendTransactionDto,
+    @Param() { isMe, userId }: GetUserParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.getUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    await this.walletService.sendTransaction({
+      ...dto,
       requestedBy: user.id,
     });
   }
