@@ -115,6 +115,7 @@ import {
   User,
   UxEngagement,
 } from '../schemas';
+import { FeedItemV2 } from '../schemas/feed-item-v2.schema';
 import { WalletShortcut } from '../schemas/wallet-shortcut.schema';
 import { createCastcleFilter } from '../utils/common';
 
@@ -273,7 +274,8 @@ export class Repository {
     @InjectModel('Content') private contentModel: Model<Content>,
     @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
-    @InjectModel('FeedItemV2') private feedItemModel: Model<FeedItem>,
+    @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
+    @InjectModel('FeedItemV2') private feedItemV2Model: Model<FeedItemV2>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
     @InjectModel('Metadata')
     private metadataModel: Model<Metadata<any>>,
@@ -1102,20 +1104,45 @@ export class Repository {
   }
 
   updateFeedItem(
-    filter: FilterQuery<FeedItem>,
-    feedItem: UpdateQuery<FeedItem>,
+    filter: FilterQuery<FeedItemV2>,
+    feedItem: UpdateQuery<FeedItemV2>,
     queryOptions?: QueryOptions,
   ) {
-    return this.feedItemModel.updateOne(filter, feedItem, queryOptions);
+    return this.feedItemV2Model.updateOne(filter, feedItem, queryOptions);
+  }
+
+  async seenFeedItem(
+    account: Account,
+    feedItemId: string,
+    credential: Credential,
+  ) {
+    return this.feedItemV2Model
+      .updateOne(
+        {
+          viewer: account._id,
+          _id: feedItemId,
+          seenAt: {
+            $exists: false,
+          },
+        },
+        {
+          seenAt: new Date(),
+          seenCredential: credential._id,
+        },
+      )
+      .exec();
   }
 
   findFeedItems = (
-    filter: FilterQuery<FeedItem>,
+    filter: FilterQuery<FeedItemV2>,
     queryOptions?: QueryOptions,
-  ) => this.feedItemModel.find(filter, queryOptions);
+  ) => this.feedItemV2Model.find(filter, queryOptions);
 
-  saveFeedItemFromContents(contents: GetCastDto, viewerAccountId: string) {
-    return this.feedItemModel.insertMany(
+  saveFeedItemFromContents(
+    contents: GetContentCastDto,
+    viewerAccountId: string,
+  ) {
+    return this.feedItemV2Model.insertMany(
       contents.contents.map((c) => ({
         viewer: viewerAccountId,
         content: c._id,
