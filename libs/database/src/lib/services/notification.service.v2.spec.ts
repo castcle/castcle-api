@@ -43,7 +43,6 @@ import {
   NotificationService,
   UserServiceV2,
 } from '../database.module';
-import { ContentType } from '../dtos';
 import {
   NotificationRef,
   NotificationSource,
@@ -51,7 +50,7 @@ import {
 } from '../dtos/notification.dto';
 import { MockUserService } from '../mocks';
 import { MockUserDetail } from '../mocks/user.mocks';
-import { QueueName } from '../models';
+import { ContentType, QueueName } from '../models';
 import { Comment, Content, Notification } from '../schemas';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';

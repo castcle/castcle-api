@@ -23,6 +23,7 @@
 
 import { CacheStore, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
@@ -35,16 +36,15 @@ import { Model, Types } from 'mongoose';
 import {
   Author,
   CastcleIncludes,
-  ContentPayloadItem,
-  ContentType,
   CreateContentDto,
   EntityVisibility,
   FeedItemPayloadItem,
   FeedItemResponse,
   FeedQuery,
-  GetContentCastDto,
+  GetCastDto,
   GetSearchQuery,
   Meta,
+  Metrics,
   NotificationSource,
   NotificationType,
   PaginationQuery,
@@ -58,9 +58,11 @@ import {
   ContentFarmingStatus,
   ContentMessage,
   ContentMessageEvent,
+  ContentType,
   EngagementType,
   MetadataType,
   QueueName,
+  ReferencedTypeCast,
   ReportingAction,
   ReportingMessage,
   ReportingStatus,
@@ -79,9 +81,9 @@ import {
   Account,
   Content,
   ContentFarming,
+  Engagement,
   FeedItem,
   User,
-  signedContentPayloadItem,
   toUnsignedContentPayloadItem,
 } from '../schemas';
 import { DataService } from './data.service';
@@ -112,157 +114,185 @@ export class ContentServiceV2 {
     private userServiceV2: UserServiceV2,
     private mailerService: Mailer,
   ) {}
+  toCastPayload = (dto: {
+    content: Content;
+    metrics?: Metrics;
+    engagements?: Engagement[];
+    reportedStatus?: string;
+    reportedSubject?: string;
+  }) => {
+    return {
+      id: dto.content.id ?? dto.content._id,
+      authorId: dto.content.author.id,
+      type: dto.content.type,
+      message: (dto.content.payload as ShortPayload)?.message,
+      link: (dto.content.payload as ShortPayload)?.link
+        ? (dto.content.payload as ShortPayload)?.link.map((link) => {
+            if (!link?.image) return link;
+            return CastcleImage.sign(link.image as CastcleImage);
+          })
+        : undefined,
+      photo: {
+        contents: (dto.content.payload as ShortPayload)?.photo?.contents
+          ? (dto.content.payload as ShortPayload)?.photo?.contents.map(
+              (image) => CastcleImage.sign(image),
+            )
+          : [],
+      },
+      metrics: dto.metrics ?? {
+        likeCount: dto.content.engagements?.like?.count | 0,
+        commentCount: dto.content.engagements?.comment?.count | 0,
+        quoteCount: dto.content.engagements?.quote?.count | 0,
+        recastCount: dto.content.engagements?.recast?.count | 0,
+      },
+      participate: {
+        liked:
+          dto.engagements?.some(({ type }) => type === EngagementType.Like) ??
+          false,
+        commented:
+          dto.engagements?.some(
+            ({ type }) => type === EngagementType.Comment,
+          ) ?? false,
+        quoted:
+          dto.engagements?.some(({ type }) => type === EngagementType.Quote) ??
+          false,
+        recasted:
+          dto.engagements?.some(({ type }) => type === EngagementType.Recast) ??
+          false,
+        reported:
+          dto.engagements?.some(({ type }) => type === EngagementType.Report) ??
+          false,
+      },
+      referencedCasts:
+        dto.content.isRecast || dto.content.isQuote
+          ? {
+              type: dto.content.isRecast
+                ? ReferencedTypeCast.Recasted
+                : ReferencedTypeCast.Quoted,
+              id: dto.content.originalPost._id,
+            }
+          : undefined,
+      reportedStatus: dto.reportedStatus,
+      reportedSubject: dto.reportedSubject,
+      createdAt: dto.content.createdAt.toISOString(),
+      updatedAt: dto.content.updatedAt.toISOString(),
+    };
+  };
 
   private toContentsResponses = async (
-    bundleContents: GetContentCastDto,
+    {
+      contents,
+      casts,
+      authors,
+      engagements,
+      metrics,
+      engagementsOriginal,
+      metricsOriginal,
+    }: GetCastDto,
     hasRelationshipExpansion?: boolean,
-    viewer?: User,
-    countContents?: number,
+    requestedBy?: User,
   ) => {
-    const payloadContents = bundleContents.contents.map((content) =>
-      signedContentPayloadItem(
-        toUnsignedContentPayloadItem(
-          content,
-          bundleContents.engagements,
-          bundleContents.metrics?.find(
-            (metric) => String(metric._id) === String(content._id),
-          ),
-        ),
-      ),
+    const users = requestedBy
+      ? await this.repository.findUsers({
+          _id: contents.map(({ author }) => author.id),
+          visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+        })
+      : [];
+
+    const payloadContents = contents.map((content) =>
+      this.toCastPayload({
+        content,
+        engagements,
+        metrics: metrics?.find((metric) => String(metric._id) === content.id),
+        reportedStatus: users.some(
+          (user) =>
+            String(requestedBy?.ownerAccount) === String(user.ownerAccount),
+        )
+          ? content.reportedStatus
+          : undefined,
+        reportedSubject: users.some(
+          (user) =>
+            String(requestedBy?.ownerAccount) === String(user.ownerAccount),
+        )
+          ? content.reportedSubject
+          : undefined,
+      }),
     );
 
-    if (!bundleContents.contents)
-      return ResponseDto.ok({
-        payload: [],
-        includes: { casts: [], users: [] },
-        meta: { resultCount: 0 },
-      });
+    const payloadCasts = casts?.map((cast) =>
+      this.toCastPayload({
+        content: cast,
+        engagements: engagementsOriginal,
+        metrics: metricsOriginal?.find(
+          (metric) => String(metric._id) === cast.id,
+        ),
+      }),
+    );
 
-    const usersId = bundleContents.authors.map((item) => item._id);
+    const relationships = requestedBy
+      ? await this.repository.findRelationships({
+          userId: requestedBy._id,
+          followedUser: authors.map((item) => item.id) as any,
+        })
+      : [];
 
-    const relationships =
-      viewer && hasRelationshipExpansion
-        ? await this.repository
-            .findRelationships({
-              userId: viewer._id,
-              followedUser: usersId,
-            })
-            .exec()
-        : [];
-
-    const includesUsers = bundleContents.authors.map((author) => {
-      const relationshipUser = relationships?.find(
+    const includesUsers = authors?.map((author) => {
+      const relationship = relationships?.find(
         (relationship) =>
-          String(relationship.followedUser) === String(author._id),
+          String(relationship.followedUser) === String(author.id),
       );
-      return new Author(author as any).toIncludeUser({
-        blocked: hasRelationshipExpansion
-          ? relationshipUser?.blocking ?? false
-          : undefined,
-        blocking: hasRelationshipExpansion
-          ? relationshipUser?.blocking ?? false
-          : undefined,
-        followed: hasRelationshipExpansion
-          ? relationshipUser?.following ?? false
-          : undefined,
-      });
-    });
 
-    const payloadCasts = bundleContents.casts?.map((cast) =>
-      signedContentPayloadItem(
-        toUnsignedContentPayloadItem(
-          cast,
-          bundleContents.engagementsOriginal,
-          bundleContents.metricsOriginal?.find(
-            (metric) => String(metric._id) === String(cast._id),
-          ),
-        ),
-      ),
-    );
+      return new Author(author).toIncludeUser(
+        hasRelationshipExpansion
+          ? {
+              blocked: relationship?.blocked ?? false,
+              blocking: relationship?.blocking ?? false,
+              followed: relationship?.following ?? false,
+            }
+          : {},
+      );
+    });
 
     return {
       payload: payloadContents,
       includes: new CastcleIncludes({
-        casts: payloadCasts,
+        casts: payloadCasts as any,
         users: includesUsers,
       }),
-      meta: Meta.fromDocuments(payloadContents as any, countContents),
-    } as ResponseDto;
+      meta: Meta.fromDocuments(payloadContents),
+    };
   };
 
   private toContentResponse = async (
-    bundleContents: GetContentCastDto,
+    {
+      contents,
+      casts,
+      authors,
+      engagements,
+      metrics,
+      engagementsOriginal,
+      metricsOriginal,
+    }: GetCastDto,
     hasRelationshipExpansion?: boolean,
-    viewer?: User,
+    requestedBy?: User,
   ) => {
-    const [payloadContent] = bundleContents.contents.map((content) =>
-      signedContentPayloadItem(
-        toUnsignedContentPayloadItem(
-          content,
-          bundleContents.engagements,
-          bundleContents.metrics?.find(
-            (metric) => String(metric._id) === String(content._id),
-          ),
-        ),
-      ),
+    const { payload, ...contentPayload } = await this.toContentsResponses(
+      {
+        contents,
+        casts,
+        authors,
+        engagements,
+        metrics,
+        engagementsOriginal,
+        metricsOriginal,
+      },
+      hasRelationshipExpansion,
+      requestedBy,
     );
-
-    if (!bundleContents.contents)
-      return ResponseDto.ok({
-        payload: [],
-        includes: { casts: [], users: [] },
-        meta: { resultCount: 0 },
-      });
-
-    const usersId = bundleContents.authors?.map((item) => item._id);
-
-    const relationships =
-      viewer && hasRelationshipExpansion
-        ? await this.repository
-            .findRelationships({
-              userId: viewer._id,
-              followedUser: usersId,
-            })
-            .exec()
-        : [];
-
-    const includesUsers = bundleContents.authors?.map((author) => {
-      const relationshipUser = relationships?.find(
-        (relationship) =>
-          String(relationship.followedUser) === String(author._id),
-      );
-      return new Author(author as any).toIncludeUser({
-        blocked: hasRelationshipExpansion
-          ? relationshipUser?.blocked ?? false
-          : undefined,
-        blocking: hasRelationshipExpansion
-          ? relationshipUser?.blocking ?? false
-          : undefined,
-        followed: hasRelationshipExpansion
-          ? relationshipUser?.following ?? false
-          : undefined,
-      });
+    return ResponseDto.ok({
+      payload: Object.assign({}, ...payload),
+      includes: contentPayload.includes,
     });
-
-    const payloadCasts = bundleContents.casts?.map((cast) =>
-      signedContentPayloadItem(
-        toUnsignedContentPayloadItem(
-          cast,
-          bundleContents.engagementsOriginal,
-          bundleContents.metricsOriginal?.find(
-            (metric) => String(metric._id) === String(cast._id),
-          ),
-        ),
-      ),
-    );
-
-    return {
-      payload: payloadContent,
-      includes: new CastcleIncludes({
-        casts: payloadCasts,
-        users: includesUsers,
-      }),
-    } as ResponseDto;
   };
 
   sortContentsByScore = async (accountId: string, contents: Content[]) => {
@@ -275,10 +305,7 @@ export class ContentServiceV2 {
     return score;
   };
 
-  private getContentMore = (
-    contents: GetContentCastDto,
-    contentsMore: GetContentCastDto,
-  ) => {
+  private getContentMore = (contents: GetCastDto, contentsMore: GetCastDto) => {
     contents.contents = [...contents.contents, ...contentsMore.contents];
 
     contents.casts = [
@@ -291,9 +318,7 @@ export class ContentServiceV2 {
     contents.authors = [
       ...contents.authors,
       ...contentsMore.authors.filter((author) =>
-        contents.authors.find(
-          (item) => String(author._id) !== String(item._id),
-        ),
+        contents.authors.find((item) => String(author.id) !== String(item.id)),
       ),
     ];
 
@@ -1161,30 +1186,53 @@ export class ContentServiceV2 {
     );
   };
 
-  getContents = async (
+  getUserContents = async (
     { hasRelationshipExpansion, ...query }: PaginationQuery,
     user?: User,
-    viewer?: User,
+    requestedBy?: User,
   ) => {
     const [contents] = await this.repository.aggregationContent({
-      viewer: user,
+      viewer: requestedBy,
       author: user?._id,
+      visibility:
+        String(user?.ownerAccount) === String(requestedBy?.ownerAccount)
+          ? [EntityVisibility.Publish, EntityVisibility.Illegal]
+          : undefined,
       ...query,
     });
 
-    return this.toContentsResponses(contents, hasRelationshipExpansion, viewer);
+    return this.toContentsResponses(
+      contents,
+      hasRelationshipExpansion,
+      requestedBy,
+    );
   };
 
   getContent = async (
     contentId: string,
-    viewer?: User,
+    requestedBy?: User,
     hasRelationshipExpansion?: boolean,
   ) => {
     const [contents] = await this.repository.aggregationContent({
-      viewer: viewer,
+      viewer: requestedBy,
       _id: contentId,
+      visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
     });
-    return this.toContentResponse(contents, hasRelationshipExpansion, viewer);
+
+    if (
+      contents.contents?.some(
+        (content) =>
+          requestedBy?.id !== String(content.author.id) &&
+          content.visibility === EntityVisibility.Illegal,
+      )
+    )
+      throw new CastcleException('CONTENT_NOT_FOUND');
+
+    return this.toContentResponse(
+      contents,
+      hasRelationshipExpansion,
+      requestedBy,
+    );
   };
 
   createContent = async (body: CreateContentDto, requestedBy: User) => {
@@ -1482,25 +1530,25 @@ export class ContentServiceV2 {
       maxResults: maxResults,
       _id: suggestContentIds,
     });
-    return contents as GetContentCastDto;
+    return contents as GetCastDto;
   };
 
-  toFeedReponse = async (
-    contentsCastDto: GetContentCastDto,
+  toFeedResponse = async (
+    contentsCastDto: GetCastDto,
     feedItems: FeedItem[],
     viewer: User,
     hasRelationshipExpansion: boolean,
   ) => {
-    const contentsReponse = await this.toContentsResponses(
+    const { payload, ...contentsResponse } = await this.toContentsResponses(
       contentsCastDto,
       hasRelationshipExpansion,
       viewer,
     );
     return {
       payload: feedItems.map(
-        (f) =>
+        (feed) =>
           ({
-            id: f.id,
+            id: feed.id,
             type: 'content',
             feature: {
               slug: 'feed',
@@ -1513,12 +1561,12 @@ export class ContentServiceV2 {
               name: 'For You',
               slug: 'forYou',
             },
-            payload: (contentsReponse.payload as ContentPayloadItem[]).find(
-              (p) => p.id === String(f.content),
+            payload: payload.find(
+              (content) => String(content.id) === String(feed.content),
             ),
           } as FeedItemPayloadItem),
       ),
-      includes: contentsReponse.includes,
+      ...contentsResponse,
     } as FeedItemResponse;
   };
 
@@ -1536,7 +1584,7 @@ export class ContentServiceV2 {
       contentsCastDto,
       accountId,
     );
-    return this.toFeedReponse(
+    return this.toFeedResponse(
       contentsCastDto,
       newFeeds,
       viewer,

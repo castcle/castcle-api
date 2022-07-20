@@ -241,7 +241,7 @@ describe('ReportingService', () => {
 
       const content = await repository.findContent({
         _id: reporting.payload._id,
-        visibilities: [EntityVisibility.Illegal, EntityVisibility.Publish],
+        visibility: [EntityVisibility.Illegal, EntityVisibility.Publish],
       });
 
       expect(content.visibility).toEqual(EntityVisibility.Illegal);

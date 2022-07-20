@@ -772,7 +772,7 @@ export class UsersControllerV2 {
 
     authorizer.requestAccessForAccount(authorizer.account._id);
 
-    return this.contentServiceV2.getContents(query, user, authorizer.user);
+    return this.contentServiceV2.getUserContents(query, user, authorizer.user);
   }
 
   @CastcleAuth(CacheKeyName.Users)

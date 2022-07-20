@@ -540,4 +540,6 @@ export class OwnerResponse extends PublicUserResponse {
   linkSocial?: LinkedSocials;
   syncSocial?: SyncSocials;
   pdpa?: boolean;
+  reportedStatus?: string;
+  reportedSubject?: string;
 }

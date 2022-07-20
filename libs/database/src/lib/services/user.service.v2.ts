@@ -97,7 +97,7 @@ export class UserServiceV2 {
   getUser = async (userId: string) => {
     const user = await this.repository.findUser({
       _id: userId,
-      visibilities: [EntityVisibility.Publish, EntityVisibility.Illegal],
+      visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
     });
     if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
     return user;
@@ -110,7 +110,10 @@ export class UserServiceV2 {
   ) => {
     const [user] = await this.repository.getPublicUsers({
       requestedBy: requestedBy,
-      filter: { _id: userId },
+      filter: {
+        _id: userId,
+        visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+      },
       expansionFields,
     });
 

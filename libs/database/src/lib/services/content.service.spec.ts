@@ -32,10 +32,10 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '../database.module';
-import { ContentType, EntityVisibility, SortDirection } from '../dtos';
+import { EntityVisibility, SortDirection } from '../dtos';
 import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
-import { QueueName } from '../models';
+import { ContentType, QueueName } from '../models';
 import { Account, Comment, Content, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';

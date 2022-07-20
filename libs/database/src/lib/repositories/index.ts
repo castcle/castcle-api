@@ -54,11 +54,10 @@ import {
 import {
   AccessTokenPayload,
   BlogPayload,
-  ContentType,
   CreateContentDto,
   CreateCredentialDto,
   EntityVisibility,
-  GetContentCastDto,
+  GetCastDto,
   NotificationSource,
   NotificationType,
   RefreshTokenPayload,
@@ -72,6 +71,7 @@ import {
   CACCOUNT_NO,
   CastcleIdMetadata,
   CastcleNumber,
+  ContentType,
   Country,
   KeywordType,
   Language,
@@ -144,8 +144,7 @@ type UserQuery = {
   sinceId?: string;
   type?: UserType;
   untilId?: string;
-  visibility?: EntityVisibility;
-  visibilities?: EntityVisibility[];
+  visibility?: EntityVisibility | EntityVisibility[];
 };
 
 type EngagementQuery = {
@@ -213,8 +212,7 @@ type ContentQuery = {
   };
   untilId?: string;
   viewer?: User;
-  visibility?: EntityVisibility;
-  visibilities?: EntityVisibility[];
+  visibility?: EntityVisibility | EntityVisibility[];
 };
 
 type HashtagQuery = {
@@ -427,8 +425,10 @@ export class Repository {
     if (filter.excludeAuthor?.length)
       query['author.id'] = { $nin: filter.excludeAuthor };
 
-    if (filter.visibility) query.visibility = filter.visibility;
-    if (filter.visibilities) query.visibility = { $in: filter.visibilities };
+    if (filter.visibility)
+      query.visibility = filter.visibility as EntityVisibility;
+    if (isArray(filter.visibility))
+      query.visibility = { $in: filter.visibility as EntityVisibility[] };
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -732,8 +732,10 @@ export class Repository {
 
     if (filter.castcleId) query.displayId = filter.castcleId;
 
-    if (filter.visibility) query.visibility = filter.visibility;
-    if (filter.visibilities) query.visibility = { $in: filter.visibilities };
+    if (filter.visibility)
+      query.visibility = filter.visibility as EntityVisibility;
+    if (isArray(filter.visibility))
+      query.visibility = { $in: filter.visibility as EntityVisibility[] };
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -753,7 +755,7 @@ export class Repository {
   }
 
   findUserCount(filter: UserQuery) {
-    return this.userModel.countDocuments(filter);
+    return this.userModel.countDocuments(filter as any);
   }
 
   updateUser(
@@ -761,7 +763,7 @@ export class Repository {
     user: UpdateQuery<User>,
     option?: QueryOptions,
   ) {
-    return this.userModel.updateOne(filter, user, option);
+    return this.userModel.updateOne(filter as any, user, option);
   }
 
   findEngagement(filter: EngagementQuery, queryOptions?: QueryOptions) {
@@ -1112,10 +1114,7 @@ export class Repository {
     queryOptions?: QueryOptions,
   ) => this.feedItemModel.find(filter, queryOptions);
 
-  saveFeedItemFromContents(
-    contents: GetContentCastDto,
-    viewerAccountId: string,
-  ) {
+  saveFeedItemFromContents(contents: GetCastDto, viewerAccountId: string) {
     return this.feedItemModel.insertMany(
       contents.contents.map((c) => ({
         viewer: viewerAccountId,
@@ -1386,11 +1385,22 @@ export class Repository {
     queryOptions?: QueryOptions;
     expansionFields?: UserField[];
   }) {
-    const users = await this.userModel.find(
+    let users = await this.userModel.find(
       this.getUserQuery(filter),
       {},
       queryOptions,
     );
+
+    if (
+      users.some(
+        (user) =>
+          String(requestedBy?.ownerAccount) !== String(user.ownerAccount),
+      )
+    )
+      users = users.filter(
+        (user) => user.visibility === EntityVisibility.Publish,
+      );
+
     const userIds = users.map((user) => user._id);
     const relationships =
       requestedBy && expansionFields?.includes(UserField.Relationships)

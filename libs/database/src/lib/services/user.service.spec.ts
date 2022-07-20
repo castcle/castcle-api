@@ -30,7 +30,6 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
-  ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   ShortPayload,
   UserField,
@@ -42,7 +41,7 @@ import {
 } from '../dtos/common.dto';
 import { PageDto, SocialPageDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
-import { QueueName, WalletType } from '../models';
+import { ContentType, QueueName, WalletType } from '../models';
 import {
   Account,
   Comment,
