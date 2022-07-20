@@ -127,7 +127,7 @@ export class SuggestionServiceV2 {
       sliceUsers = users.slice(0, pageQuery.maxResults);
     }
 
-    const usersConvert = await this.userServiceV2.getPublicUsers(
+    const { items } = await this.userServiceV2.getPublicUsers(
       user,
       { _id: sliceUsers.map((user) => user._id) },
       {},
@@ -135,7 +135,7 @@ export class SuggestionServiceV2 {
     );
 
     return {
-      payload: usersConvert,
+      payload: items,
       meta: Meta.fromDocuments(sliceUsers, users.length),
     };
   }
