@@ -198,7 +198,6 @@ const providers = [
   NotificationService,
   NotificationServiceV2,
   RankerService,
-
   Repository,
   SearchService,
   SearchServiceV2,
