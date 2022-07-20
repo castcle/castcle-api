@@ -23,12 +23,11 @@
 
 import { UseGuards, UseInterceptors, applyDecorators } from '@nestjs/common';
 import { CredentialGuard } from '../guards/credential.guard';
-import { PermissionGuard } from '../guards/permisson.guard';
 import { HeaderBackofficeInterceptor } from '../interceptors/header-backoffice.interceptor';
 
 export const BackofficeAuth = () => {
   return applyDecorators(
     UseInterceptors(HeaderBackofficeInterceptor),
-    UseGuards(CredentialGuard, PermissionGuard),
+    UseGuards(CredentialGuard),
   );
 };
