@@ -24,7 +24,9 @@
 import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
 import { Body, Post } from '@nestjs/common';
 import { BackofficeAuth } from '../decorators';
+import { RequiredPermissions } from '../guards/permisson.guard';
 import { ClaimAirdropDto } from '../models/airdrop.dto';
+import { Permission } from '../models/authentication.enum';
 import { AirdropsService } from '../services/airdrops.service';
 
 @CastcleControllerV2({ path: 'backoffices/airdrop' })
@@ -32,6 +34,7 @@ export class AirdropsController {
   constructor(private airdropsService: AirdropsService) {}
 
   @BackofficeAuth()
+  @RequiredPermissions(Permission.Manage)
   @Post('claim')
   claimAirdrop(@Body() { account, campaign }: ClaimAirdropDto) {
     return this.airdropsService.claimAirdrop(account, campaign);
