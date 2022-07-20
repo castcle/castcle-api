@@ -33,10 +33,12 @@ import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Mailer } from '@castcle-api/utils/clients';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
+import { AirdropsController } from './controllers/airdrops.controller';
 import { AuthenticationController } from './controllers/authentication.controller';
 import { CampaignController } from './controllers/campaign.controller';
 import { ReportingController } from './controllers/reporting.controller';
 import { BackOfficeMongooseForFeatures } from './schemas';
+import { AirdropsService } from './services/airdrops.service';
 import { AuthenticationService } from './services/authentication.service';
 import { CampaignBackofficeService } from './services/campaign.service';
 import { ReportingService } from './services/reporting.service';
@@ -53,11 +55,13 @@ import { ReportingService } from './services/reporting.service';
     CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
   ],
   controllers: [
+    AirdropsController,
     AuthenticationController,
     CampaignController,
     ReportingController,
   ],
   providers: [
+    AirdropsService,
     AuthenticationService,
     CampaignBackofficeService,
     CampaignService,
