@@ -29,7 +29,7 @@ import {
   ContentPayloadItem,
   ImagePayload,
   ShortPayload,
-} from '../dtos/content.dto';
+} from '../dtos';
 import { ReportingStatus } from '../models';
 import { CastcleBase } from './base.schema';
 import { ContentFarming } from './content-farming.schema';

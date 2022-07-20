@@ -752,13 +752,15 @@ describe('UsersControllerV2', () => {
           });
 
           expect(engagement.user).toEqual(mocksUsers[1].user._id);
-          expect(String(engagement.itemId)).toEqual(recast.payload.id);
+          expect(String(engagement.itemId)).toEqual(String(recast.payload.id));
           expect(engagement.targetRef.oid).toEqual(content._id);
           expect(engagement.type).toEqual(EngagementType.Recast);
 
           expect(recast.payload.authorId).toEqual(mocksUsers[1].user._id);
           expect(recast.payload.referencedCasts.id).toEqual(content._id);
-          expect(recast.includes.casts[0].id).toEqual(String(content._id));
+          expect(String(recast.includes.casts[0].id)).toEqual(
+            String(content._id),
+          );
         });
       });
       describe('#undoRecast()', () => {
@@ -845,13 +847,15 @@ describe('UsersControllerV2', () => {
       });
 
       expect(engagement.user).toEqual(mocksUsers[1].user._id);
-      expect(String(engagement.itemId)).toEqual(quotecast.payload.id);
+      expect(String(engagement.itemId)).toEqual(String(quotecast.payload.id));
       expect(engagement.targetRef.oid).toEqual(content._id);
       expect(engagement.type).toEqual(EngagementType.Quote);
 
       expect(quotecast.payload.authorId).toEqual(mocksUsers[1].user._id);
       expect(quotecast.payload.referencedCasts.id).toEqual(content._id);
-      expect(quotecast.includes.casts[0].id).toEqual(String(content._id));
+      expect(String(quotecast.includes.casts[0].id)).toEqual(
+        String(content._id),
+      );
     });
   });
 

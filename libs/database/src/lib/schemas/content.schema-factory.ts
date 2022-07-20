@@ -59,13 +59,6 @@ type ContentEngagement =
       }[];
     };
 
-/**
- * return engagement object such is liked, comment quoteCast recast so we have the exact amount of time they do
- * @param doc
- * @param engagementType
- * @param userId
- * @returns
- */
 const getEngagementObject = (
   doc: Content,
   engagementType: EngagementType,
@@ -157,7 +150,6 @@ export const toUnsignedContentPayloadItem = (
     message: (content.payload as ShortPayload)?.message,
     link: (content.payload as ShortPayload)?.link,
     photo: (content.payload as ShortPayload)?.photo,
-
     metrics: metrics
       ? {
           likeCount: metrics.likeCount,

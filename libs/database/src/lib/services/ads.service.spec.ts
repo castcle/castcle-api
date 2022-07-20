@@ -35,7 +35,7 @@ import {
   MongooseForFeatures,
   TAccountService,
 } from '../database.module';
-import { AdsQuery, AdsRequestDto, ContentType, ShortPayload } from '../dtos';
+import { AdsQuery, AdsRequestDto, ShortPayload } from '../dtos';
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import {
   AdsBidType,
@@ -46,6 +46,7 @@ import {
   AdsSocialReward,
   AdsStatus,
   CACCOUNT_NO,
+  ContentType,
   QueueName,
   WalletType,
 } from '../models';

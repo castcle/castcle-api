@@ -21,92 +21,76 @@
  * or have any questions.
  */
 import { Configs } from '@castcle-api/environments';
-import { CastcleImage, Image } from '@castcle-api/utils/aws';
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { TransformStringToEnum } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { OwnerVerification } from '../models';
+import {
+  ContentType,
+  LinkType,
+  OwnerVerification,
+  ReferencedTypeCast,
+} from '../models';
 import { CastcleMeta, QueryOption, SortBy } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 
+export class ReferencedCast {
+  id: string;
+  type: ReferencedTypeCast;
+}
+export class BlogPhoto {
+  cover: CastcleImage | Url;
+  contents: CastcleImage[] | Url[];
+}
+
+export class ShortPhoto {
+  contents: CastcleImage[] | Url[];
+}
+
+export class Metrics {
+  _id?: string;
+  likeCount: number;
+  commentCount: number;
+  quoteCount: number;
+  recastCount: number;
+}
+
+export class Participates {
+  liked: boolean;
+  commented: boolean;
+  quoted: boolean;
+  recasted: boolean;
+  reported: boolean;
+}
+
 export class Url {
-  @ApiProperty()
   image: string;
 }
 
-export enum LinkType {
-  Facebook = 'facebook',
-  Other = 'other',
-  Youtube = 'youtube',
-}
-
 export class Link {
-  @ApiProperty()
-  type: string | LinkType;
-
-  @ApiProperty()
   url: string;
-
-  @ApiProperty()
+  type?: string | LinkType;
   image?: string | CastcleImage;
-
-  @ApiProperty()
   title?: string;
-
-  @ApiProperty()
   description?: string;
-
-  @ApiProperty()
   imagePreview?: string | CastcleImage;
 }
 
-class BlogPhoto {
-  @ApiProperty()
-  cover: CastcleImage | Url;
-
-  @ApiProperty()
-  contents: CastcleImage[] | Url[];
-}
-
-class ShortPhoto {
-  @ApiProperty()
-  contents: CastcleImage[] | Url[];
-}
-
 export class ShortPayload {
-  @ApiProperty()
   message?: string;
-  @ApiProperty()
   photo?: ShortPhoto;
-  @ApiProperty()
   link?: Link[];
 }
 
 export class ImagePayload {
-  @ApiProperty()
   photo?: ShortPhoto;
 }
 
 export class BlogPayload {
-  @ApiProperty()
   header: string;
-  @ApiProperty()
   message: string;
-  @ApiProperty()
   photo?: BlogPhoto;
-
   link?: Link[];
-}
-
-export class QuotePayload {
-  source: any; //contain content._id
-  message?: string;
-  photo?: ShortPhoto;
-}
-
-export class RecastPayload {
-  source: any; //contain content._id
-  photo?: ShortPhoto;
 }
 
 class Feature {
@@ -228,12 +212,17 @@ export class ContentPayloadDto {
 
   @ApiProperty()
   createdAt: string;
+
   @ApiProperty()
   updatedAt: string;
 
+  @ApiProperty()
   isQuote?: boolean;
+
+  @ApiProperty()
   isRecast?: boolean;
 
+  @ApiProperty()
   isSign?: boolean;
 }
 
@@ -264,8 +253,8 @@ export class ContentPayloadItem {
     reported: boolean;
   };
   authorId: string;
-  'createdAt': string;
-  'updatedAt': string;
+  'createdAt': string | Date;
+  'updatedAt': string | Date;
 }
 
 export class SaveContentDto {
@@ -282,14 +271,6 @@ export class SaveContentDto {
   @IsNotEmpty()
   @ApiProperty()
   castcleId: string;
-}
-
-export enum ContentType {
-  Short = 'short',
-  Blog = 'blog',
-  Image = 'image',
-  Long = 'long',
-  Video = 'video',
 }
 
 export class CastcleContentQueryOptions extends QueryOption {
@@ -322,10 +303,10 @@ export class CastcleIncludes {
         ({ id }) => String(author.id) == String(id),
       );
 
-      if (authorIndex >= 0) return;
+      if (authorIndex > -1) return;
 
       author.avatar = author.avatar
-        ? new Image(author.avatar).toSignUrls()
+        ? CastcleImage.sign(author.avatar)
         : Configs.DefaultAvatarImages;
 
       authors.push(author);
