@@ -145,7 +145,9 @@ export class UserService {
       .findOne({
         ownerAccount: credential?.account?._id,
         type: UserType.PEOPLE,
-        visibility: EntityVisibility.Publish,
+        visibility: {
+          $in: [EntityVisibility.Publish, EntityVisibility.Illegal],
+        },
       })
       .exec();
 

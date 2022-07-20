@@ -47,7 +47,6 @@ import {
 } from '../database.module';
 import {
   ContentPayloadItem,
-  ContentType,
   EntityVisibility,
   FeedItemResponse,
   NotificationType,
@@ -62,6 +61,7 @@ import {
 } from '../mocks';
 import {
   ContentFarmingStatus,
+  ContentType,
   EngagementType,
   KeywordType,
   MetadataType,
@@ -205,7 +205,9 @@ describe('ContentServiceV2', () => {
         bundleContents,
       );
 
-      expect(contentResp.payload.id).toEqual(String(content.payload.id));
+      expect(String(contentResp.payload.id)).toEqual(
+        String(content.payload.id),
+      );
       expect(contentResp.payload.message).toEqual(
         (content.payload as ShortPayload).message,
       );
@@ -577,7 +579,9 @@ describe('ContentServiceV2', () => {
       );
 
       expect(recast.payload).toBeTruthy();
-      expect(recast.payload.id).toEqual(newRecast.recastContent.id);
+      expect(String(recast.payload.id)).toEqual(
+        String(newRecast.recastContent.id),
+      );
       expect(recast.payload.referencedCasts.id).toEqual(
         newRecast.recastContent.originalPost._id,
       );
@@ -599,7 +603,9 @@ describe('ContentServiceV2', () => {
       );
 
       expect(recast.payload).toBeTruthy();
-      expect(recast.payload.id).toEqual(newQuote.quoteContent.id);
+      expect(String(recast.payload.id)).toEqual(
+        String(newQuote.quoteContent.id),
+      );
       expect(recast.payload.referencedCasts.id).toEqual(
         newQuote.quoteContent.originalPost._id,
       );
@@ -614,7 +620,9 @@ describe('ContentServiceV2', () => {
         false,
       );
 
-      expect(contentResp.payload.id).toEqual(String(content.payload.id));
+      expect(String(contentResp.payload.id)).toEqual(
+        String(content.payload.id),
+      );
       expect(contentResp.payload.message).toEqual(
         (content.payload as ShortPayload).message,
       );
@@ -623,7 +631,7 @@ describe('ContentServiceV2', () => {
 
   describe('#getContents()', () => {
     it('should get cast is exists.', async () => {
-      const contentResp = await service.getContents(
+      const contentResp = await service.getUserContents(
         { hasRelationshipExpansion: false },
         mocksUsers[1].user,
       );
@@ -876,14 +884,17 @@ describe('ContentServiceV2', () => {
               author: Types.ObjectId(c.author.id),
             } as FeedItem),
         );
-        const feedResponse = await service.toFeedReponse(
+        const feedResponse = await service.toFeedResponse(
           response,
           mockFeedItems,
           mocksUsers[0].user,
           true,
         );
+
         expect(
-          feedResponse.payload.map((p) => (p.payload as ContentPayloadItem).id),
+          feedResponse.payload.map((p) =>
+            String((p.payload as ContentPayloadItem).id),
+          ),
         ).toEqual(mockFeedItems.map((f) => String(f.content)));
       });
     });
@@ -911,7 +922,9 @@ describe('ContentServiceV2', () => {
         );
 
         expect(
-          feedResponse.payload.map((p) => (p.payload as ContentPayloadItem).id),
+          feedResponse.payload.map((p) =>
+            String((p.payload as ContentPayloadItem).id),
+          ),
         ).toEqual(mockFeedItems.map((f) => String(f.content)));
         //expect to have those id in db
         const feedIds = feedResponse.payload.map((p) => p.id);

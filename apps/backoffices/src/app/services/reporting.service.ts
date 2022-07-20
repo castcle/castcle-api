@@ -23,6 +23,7 @@
 
 import {
   Content,
+  ContentServiceV2,
   EntityVisibility,
   NotificationServiceV2,
   NotificationSource,
@@ -34,8 +35,6 @@ import {
   ResponseDto,
   User,
   UserType,
-  signedContentPayloadItem,
-  toUnsignedContentPayloadItem,
 } from '@castcle-api/database';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -58,6 +57,7 @@ export class ReportingService {
   constructor(
     private repository: Repository,
     private notificationService: NotificationServiceV2,
+    private contentService: ContentServiceV2,
   ) {}
 
   private checkingStatusActive(status: ReportingStatus) {
@@ -83,7 +83,7 @@ export class ReportingService {
 
     const users = await this.repository.findUsers({
       _id: [...userIds, ...reportUserIds, ...payloadIds],
-      visibilities: [
+      visibility: [
         EntityVisibility.Publish,
         EntityVisibility.Illegal,
         EntityVisibility.Deleted,
@@ -95,7 +95,7 @@ export class ReportingService {
           reporting.type === ReportingType.CONTENT
             ? await this.repository.findContent({
                 _id: reporting.id,
-                visibilities: [
+                visibility: [
                   EntityVisibility.Illegal,
                   EntityVisibility.Publish,
                   EntityVisibility.Deleted,
@@ -115,9 +115,7 @@ export class ReportingService {
           },
           content: content
             ? {
-                ...signedContentPayloadItem(
-                  toUnsignedContentPayloadItem(content),
-                ),
+                ...this.contentService.toCastPayload({ content }),
                 visibility: content?.visibility,
               }
             : undefined,
@@ -136,20 +134,18 @@ export class ReportingService {
             );
 
             return {
-              id: payloadReportBy.id,
+              id: payloadReportBy?.id,
               user: reportByUser?.toPublicResponse(),
-              subject: payloadReportBy.subject,
-              message: payloadReportBy.message,
+              subject: payloadReportBy?.subject,
+              message: payloadReportBy?.message,
               payload:
                 reporting.type === ReportingType.USER
                   ? reportUser?.toPublicResponse()
-                  : signedContentPayloadItem(
-                      toUnsignedContentPayloadItem(
-                        payloadReportBy?.payload as Content,
-                      ),
-                    ),
-              createdAt: payloadReportBy.createdAt,
-              updatedAt: payloadReportBy.updatedAt,
+                  : this.contentService.toCastPayload({
+                      content: payloadReportBy?.payload as Content,
+                    }),
+              createdAt: payloadReportBy?.createdAt,
+              updatedAt: payloadReportBy?.updatedAt,
             };
           }),
           createdAt: reporting.createdAt,
@@ -233,7 +229,7 @@ export class ReportingService {
 
         const userOwner = await this.repository.findUser({
           _id: reporting.user as any,
-          visibilities: [EntityVisibility.Publish, EntityVisibility.Illegal],
+          visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
         });
 
         const accountOwner = await this.repository.findAccount({
@@ -301,14 +297,14 @@ export class ReportingService {
           reporting.type === ReportingType.USER
             ? await this.repository.findUser({
                 _id: reporting.payload._id,
-                visibilities: [
+                visibility: [
                   EntityVisibility.Illegal,
                   EntityVisibility.Publish,
                 ],
               })
             : await this.repository.findContent({
                 _id: reporting.payload._id,
-                visibilities: [
+                visibility: [
                   EntityVisibility.Illegal,
                   EntityVisibility.Publish,
                 ],
@@ -334,7 +330,7 @@ export class ReportingService {
             ? (contentReporting as User)
             : await this.repository.findUser({
                 _id: reporting.user as any,
-                visibilities: [
+                visibility: [
                   EntityVisibility.Publish,
                   EntityVisibility.Illegal,
                 ],

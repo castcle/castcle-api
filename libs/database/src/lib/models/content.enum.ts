@@ -21,35 +21,21 @@
  * or have any questions.
  */
 
-import { Model } from 'mongoose';
-import { ShortPayload } from '../dtos';
-import { ContentType } from '../models';
-import { Content, User } from '../schemas';
+export enum LinkType {
+  Facebook = 'facebook',
+  Other = 'other',
+  Youtube = 'youtube',
+}
 
-type MockContentOption = {
-  amount?: number;
-  type?: ContentType;
-};
+export enum ReferencedTypeCast {
+  Recasted = 'recasted',
+  Quoted = 'quoted',
+}
 
-export const mockContents = async (
-  user: User,
-  contentModel: Model<Content>,
-  option?: MockContentOption,
-) => {
-  const amount = option.amount ? option.amount : 1;
-  const type = option.type ? option.type : ContentType.Short;
-  const contents: Content[] = [];
-  for (let i = 0; i < amount; i++) {
-    const payload: ShortPayload = {
-      message: 'this is short ' + i,
-    };
-    const content = new contentModel({
-      type,
-      author: user.toAuthor(),
-      payload,
-      revisionCount: 1,
-    });
-    contents.push(await content.save());
-  }
-  return contents;
-};
+export enum ContentType {
+  Short = 'short',
+  Blog = 'blog',
+  Image = 'image',
+  Long = 'long',
+  Video = 'video',
+}

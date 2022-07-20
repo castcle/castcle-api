@@ -47,10 +47,10 @@ import {
   NotificationServiceV2,
   UserService,
 } from '../database.module';
-import { ContentType, NotificationSource, NotificationType } from '../dtos';
+import { NotificationSource, NotificationType } from '../dtos';
 import { MockUserService } from '../mocks';
 import { MockUserDetail } from '../mocks/user.mocks';
-import { QueueName } from '../models';
+import { ContentType, QueueName } from '../models';
 import { Comment, Content } from '../schemas';
 
 describe('CommentServiceV2', () => {
