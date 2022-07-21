@@ -1525,12 +1525,29 @@ export class ContentServiceV2 {
     );
     console.log('suggestContents', suggestContents);
     const suggestContentIds = suggestContents.payload.map((c) => c.content);
+
     const [contents] = await this.repository.aggregationContent({
       viewer,
       maxResults: maxResults,
       _id: suggestContentIds,
     });
-    return contents as GetCastDto;
+    contents.calledContents = [];
+    contents.newContents = [];
+    for (let i = 0; i < (contents as GetContentCastDto).contents.length; i++) {
+      const isCalled =
+        suggestContents.payload.findIndex(
+          (p) =>
+            p.called &&
+            p.content === (contents as GetContentCastDto).contents[i].id,
+        ) >= 0;
+      if (isCalled)
+        contents.calledContents.push(
+          (contents as GetContentCastDto).contents[i],
+        );
+      else
+        contents.newContents.push((contents as GetContentCastDto).contents[i]);
+    }
+    return contents as GetContentCastDto;
   };
 
   toFeedResponse = async (

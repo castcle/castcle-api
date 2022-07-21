@@ -1138,18 +1138,35 @@ export class Repository {
     queryOptions?: QueryOptions,
   ) => this.feedItemV2Model.find(filter, queryOptions);
 
-  saveFeedItemFromContents(
+  async saveFeedItemFromContents(
     contents: GetContentCastDto,
     viewerAccountId: string,
   ) {
-    return this.feedItemV2Model.insertMany(
-      contents.contents.map((c) => ({
-        viewer: viewerAccountId,
-        content: c._id,
-        author: c.author.id,
+    const calledFeeds = await this.feedItemV2Model.find({
+      content: {
+        $in: contents.contents.map((c) => c._id),
+      },
+    });
+    await this.feedItemV2Model.updateMany(
+      {
+        content: {
+          $in: contents.contents.map((c) => c._id),
+        },
+      },
+      {
         calledAt: new Date(),
-      })),
+      },
     );
+    return this.feedItemV2Model
+      .insertMany(
+        contents.newContents.map((c) => ({
+          viewer: viewerAccountId,
+          content: c._id,
+          author: c.author.id,
+          calledAt: new Date(),
+        })),
+      )
+      .then((items) => calledFeeds.concat(items));
   }
 
   findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {

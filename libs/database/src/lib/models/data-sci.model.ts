@@ -28,6 +28,7 @@ export type SuggestContentItem = {
     name: 'following-cast' | 'following-like' | 'trending' | 'default';
     user?: string[]; //userId
   };
+  called?: boolean;
 };
 
 export type SuggestUserItem = {
