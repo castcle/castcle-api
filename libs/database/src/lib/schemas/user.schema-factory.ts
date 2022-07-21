@@ -292,6 +292,9 @@ export const UserSchemaFactory = (
       passwordNotSet: !ownerAccount.password,
       verified: this.verified,
       pdpa: Boolean(ownerAccount.pdpa?.[Environment.PDPA_ACCEPT_DATES[0]]),
+      reportedStatus: this.reportedStatus,
+      reportedSubject: this.reportedSubject,
+      mobile: ownerAccount.mobile,
     };
 
     if (!dto?.expansionFields?.length) return response;

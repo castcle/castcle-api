@@ -67,8 +67,8 @@ describe('SearchesControllerV2', () => {
       imports: [
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         CacheModule.register(),
       ],
       controllers: [SearchesControllerV2],

@@ -21,16 +21,21 @@
  * or have any questions.
  */
 
-export enum TwilioChannel {
-  EMAIL = 'email',
-  SMS = 'sms',
+export enum LinkType {
+  Facebook = 'facebook',
+  Other = 'other',
+  Youtube = 'youtube',
 }
 
-export enum TwilioErrorMessage {
-  TOO_MANY_REQUESTS = 'Error: Too many requests',
+export enum ReferencedTypeCast {
+  Recasted = 'recasted',
+  Quoted = 'quoted',
 }
 
-export enum TwilioStatus {
-  APPROVED = 'approved',
-  CANCELED = 'canceled',
+export enum ContentType {
+  Short = 'short',
+  Blog = 'blog',
+  Image = 'image',
+  Long = 'long',
+  Video = 'video',
 }

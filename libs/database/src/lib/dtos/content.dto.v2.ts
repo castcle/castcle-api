@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleImage } from '@castcle-api/utils/aws';
 import {
   TransformSortStringToSortObject,
   TransformStringToArrayOfStrings,
@@ -33,16 +34,39 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { UserType } from '../models';
-import { Content, Engagement, User } from '../schemas';
+import { ContentType, ReportingStatus, UserType } from '../models';
+import { Content, Engagement } from '../schemas';
 import {
+  Author,
   BlogPayload,
-  ContentType,
   ImagePayload,
+  Link,
+  Metrics,
+  Participates,
+  ReferencedCast,
   ShortPayload,
 } from './content.dto';
 import { PaginationQuery } from './pagination.dto';
 import { GetUserParam } from './user.dto';
+
+export class CastPayload {
+  id: string;
+  authorId: string;
+  type: ContentType;
+  message: string;
+  photo: {
+    cover?: CastcleImage;
+    contents: CastcleImage[];
+  };
+  link: Link[];
+  referencedCasts?: ReferencedCast;
+  metrics: Metrics;
+  participate: Participates;
+  reportedStatus?: ReportingStatus;
+  reportedSubject?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export class ResponseParticipate {
   user: {
@@ -51,23 +75,19 @@ export class ResponseParticipate {
     displayName: string;
     type: UserType;
   };
-
-  participate: {
-    liked: boolean;
-    commented: boolean;
-    quoted: boolean;
-    recasted: boolean;
-    reported: boolean;
-  };
+  participate: Participates;
 }
-export class GetContentCastDto {
+
+export class GetCastDto {
   contents: Content[];
+  calledContents?: Content[];
+  newContents?: Content[];
   casts?: Content[];
-  authors?: User[];
+  authors?: Author[];
   engagements?: Engagement[];
-  metrics?: any[];
+  metrics?: Metrics[];
   engagementsOriginal?: Engagement[];
-  metricsOriginal?: any[];
+  metricsOriginal?: Metrics[];
 }
 
 export class GetContentDto {

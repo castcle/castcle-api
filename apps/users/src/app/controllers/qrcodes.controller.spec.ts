@@ -61,8 +61,8 @@ describe('QRCodeControllerV2', () => {
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         HttpModule,
       ],
       controllers: [QRCodeControllerV2],

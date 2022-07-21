@@ -29,7 +29,7 @@ import {
   ContentPayloadItem,
   ImagePayload,
   ShortPayload,
-} from '../dtos/content.dto';
+} from '../dtos';
 import { ReportingStatus } from '../models';
 import { CastcleBase } from './base.schema';
 import { ContentFarming } from './content-farming.schema';
@@ -74,6 +74,9 @@ export class ContentDocument extends CastcleBase {
 
   @Prop({ type: String })
   reportedStatus?: ReportingStatus;
+
+  @Prop({ type: String })
+  reportedSubject?: string;
 }
 
 export class Content extends ContentDocument {

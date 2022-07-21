@@ -4,8 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
-import { ContentType } from '../dtos';
-import { QueueName } from '../models';
+import { ContentType, QueueName } from '../models';
 import { Comment, Content, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
@@ -30,8 +29,8 @@ describe('CommentService', () => {
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         AuthenticationService,

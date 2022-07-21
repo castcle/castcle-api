@@ -1,12 +1,9 @@
+import { BackofficeDatabaseModule } from '@castcle-api/database';
 import { Mailer } from '@castcle-api/utils/clients';
-import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { StaffRole } from '../models/authentication.enum';
-import {
-  BackOfficeMongooseForFeatures,
-  CastcleDatabaseReadonly,
-} from '../schemas';
+import { BackOfficeMongooseForFeatures } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 
 describe('Authentication', () => {
@@ -16,12 +13,9 @@ describe('Authentication', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryReplSet.create();
+    global.mongoUri = mongod.getUri();
     moduleRef = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot(mongod.getUri()),
-        CastcleDatabaseReadonly,
-        BackOfficeMongooseForFeatures,
-      ],
+      imports: [BackofficeDatabaseModule, BackOfficeMongooseForFeatures],
       providers: [AuthenticationService, Mailer],
     }).compile();
 

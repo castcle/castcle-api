@@ -21,16 +21,22 @@
  * or have any questions.
  */
 
-export enum TwilioChannel {
-  EMAIL = 'email',
-  SMS = 'sms',
-}
+import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { Body, Post } from '@nestjs/common';
+import { BackofficeAuth } from '../decorators';
+import { RequiredPermissions } from '../guards/permisson.guard';
+import { ClaimAirdropDto } from '../models/airdrop.dto';
+import { Permission } from '../models/authentication.enum';
+import { AirdropsService } from '../services/airdrops.service';
 
-export enum TwilioErrorMessage {
-  TOO_MANY_REQUESTS = 'Error: Too many requests',
-}
+@CastcleControllerV2({ path: 'backoffices/airdrop' })
+export class AirdropsController {
+  constructor(private airdropsService: AirdropsService) {}
 
-export enum TwilioStatus {
-  APPROVED = 'approved',
-  CANCELED = 'canceled',
+  @BackofficeAuth()
+  @RequiredPermissions(Permission.Manage)
+  @Post('claim')
+  claimAirdrop(@Body() { account, campaign }: ClaimAirdropDto) {
+    return this.airdropsService.claimAirdrop(account, campaign);
+  }
 }

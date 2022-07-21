@@ -62,7 +62,7 @@ export class CampaignService {
     private accountModel: Model<Account>,
     @InjectModel('Campaign')
     private campaignModel: Model<Campaign>,
-    @InjectModel('FeedItemV2')
+    @InjectModel('FeedItem')
     private feedModel: Model<FeedItem>,
     @InjectModel('Queue')
     private queueModel: Model<Queue<ClaimAirdropPayload>>,
@@ -331,7 +331,7 @@ export class CampaignService {
           },
         } as TLedger),
     );
-    const transaction = await this.taccountService.transfers({
+    const transaction = await this.taccountService.transfer({
       from,
       to,
       data: {

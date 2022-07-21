@@ -29,7 +29,7 @@ import {
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
@@ -90,8 +90,8 @@ describe('TAccount Service', () => {
       imports: [
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         AuthenticationServiceV2,
@@ -109,9 +109,8 @@ describe('TAccount Service', () => {
 
     service = moduleRef.get(TAccountService);
     generateUser = moduleRef.get(MockUserService);
-
-    transactionModel = service._transactionModel;
-    cAccountModel = service._caccountModel;
+    transactionModel = moduleRef.get(getModelToken('Transaction'));
+    cAccountModel = moduleRef.get(getModelToken('CAccount'));
 
     // create caccount for mint
     const cAccounts = await cAccountModel.create([

@@ -54,11 +54,10 @@ import {
 import {
   AccessTokenPayload,
   BlogPayload,
-  ContentType,
   CreateContentDto,
   CreateCredentialDto,
   EntityVisibility,
-  GetContentCastDto,
+  GetCastDto,
   NotificationSource,
   NotificationType,
   RefreshTokenPayload,
@@ -72,6 +71,7 @@ import {
   CACCOUNT_NO,
   CastcleIdMetadata,
   CastcleNumber,
+  ContentType,
   Country,
   KeywordType,
   Language,
@@ -115,6 +115,7 @@ import {
   User,
   UxEngagement,
 } from '../schemas';
+import { FeedItemV2 } from '../schemas/feed-item-v2.schema';
 import { WalletShortcut } from '../schemas/wallet-shortcut.schema';
 import { createCastcleFilter } from '../utils/common';
 
@@ -144,8 +145,7 @@ type UserQuery = {
   sinceId?: string;
   type?: UserType;
   untilId?: string;
-  visibility?: EntityVisibility;
-  visibilities?: EntityVisibility[];
+  visibility?: EntityVisibility | EntityVisibility[];
 };
 
 type EngagementQuery = {
@@ -213,8 +213,7 @@ type ContentQuery = {
   };
   untilId?: string;
   viewer?: User;
-  visibility?: EntityVisibility;
-  visibilities?: EntityVisibility[];
+  visibility?: EntityVisibility | EntityVisibility[];
 };
 
 type HashtagQuery = {
@@ -275,7 +274,8 @@ export class Repository {
     @InjectModel('Content') private contentModel: Model<Content>,
     @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
-    @InjectModel('FeedItemV2') private feedItemModel: Model<FeedItem>,
+    @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
+    @InjectModel('FeedItemV2') private feedItemV2Model: Model<FeedItemV2>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
     @InjectModel('Metadata')
     private metadataModel: Model<Metadata<any>>,
@@ -427,8 +427,10 @@ export class Repository {
     if (filter.excludeAuthor?.length)
       query['author.id'] = { $nin: filter.excludeAuthor };
 
-    if (filter.visibility) query.visibility = filter.visibility;
-    if (filter.visibilities) query.visibility = { $in: filter.visibilities };
+    if (filter.visibility)
+      query.visibility = filter.visibility as EntityVisibility;
+    if (isArray(filter.visibility))
+      query.visibility = { $in: filter.visibility as EntityVisibility[] };
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -544,6 +546,7 @@ export class Repository {
     if (filter.subject) query.subject = filter.subject;
     if (filter.type) query.type = filter.type;
     if (filter.user) query.user = filter.user;
+    if (filter.by) query.by = filter.by;
 
     return query;
   }
@@ -731,8 +734,10 @@ export class Repository {
 
     if (filter.castcleId) query.displayId = filter.castcleId;
 
-    if (filter.visibility) query.visibility = filter.visibility;
-    if (filter.visibilities) query.visibility = { $in: filter.visibilities };
+    if (filter.visibility)
+      query.visibility = filter.visibility as EntityVisibility;
+    if (isArray(filter.visibility))
+      query.visibility = { $in: filter.visibility as EntityVisibility[] };
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -752,7 +757,7 @@ export class Repository {
   }
 
   findUserCount(filter: UserQuery) {
-    return this.userModel.countDocuments(filter);
+    return this.userModel.countDocuments(filter as any);
   }
 
   updateUser(
@@ -760,7 +765,7 @@ export class Repository {
     user: UpdateQuery<User>,
     option?: QueryOptions,
   ) {
-    return this.userModel.updateOne(filter, user, option);
+    return this.userModel.updateOne(filter as any, user, option);
   }
 
   findEngagement(filter: EngagementQuery, queryOptions?: QueryOptions) {
@@ -1099,30 +1104,69 @@ export class Repository {
   }
 
   updateFeedItem(
-    filter: FilterQuery<FeedItem>,
-    feedItem: UpdateQuery<FeedItem>,
+    filter: FilterQuery<FeedItemV2>,
+    feedItem: UpdateQuery<FeedItemV2>,
     queryOptions?: QueryOptions,
   ) {
-    return this.feedItemModel.updateOne(filter, feedItem, queryOptions);
+    return this.feedItemV2Model.updateOne(filter, feedItem, queryOptions);
+  }
+
+  async seenFeedItem(
+    account: Account,
+    feedItemId: string,
+    credential: Credential,
+  ) {
+    return this.feedItemV2Model
+      .updateOne(
+        {
+          viewer: account._id,
+          _id: feedItemId,
+          seenAt: {
+            $exists: false,
+          },
+        },
+        {
+          seenAt: new Date(),
+          seenCredential: credential._id,
+        },
+      )
+      .exec();
   }
 
   findFeedItems = (
-    filter: FilterQuery<FeedItem>,
+    filter: FilterQuery<FeedItemV2>,
     queryOptions?: QueryOptions,
-  ) => this.feedItemModel.find(filter, queryOptions);
+  ) => this.feedItemV2Model.find(filter, queryOptions);
 
-  saveFeedItemFromContents(
-    contents: GetContentCastDto,
+  async saveFeedItemFromContents(
+    contents: GetCastDto,
     viewerAccountId: string,
   ) {
-    return this.feedItemModel.insertMany(
-      contents.contents.map((c) => ({
-        viewer: viewerAccountId,
-        content: c._id,
-        author: c.author.id,
+    const calledFeeds = await this.feedItemV2Model.find({
+      content: {
+        $in: contents.contents.map((c) => c._id),
+      },
+    });
+    await this.feedItemV2Model.updateMany(
+      {
+        content: {
+          $in: contents.contents.map((c) => c._id),
+        },
+      },
+      {
         calledAt: new Date(),
-      })),
+      },
     );
+    return this.feedItemV2Model
+      .insertMany(
+        contents.newContents.map((c) => ({
+          viewer: viewerAccountId,
+          content: c._id,
+          author: c.author.id,
+          calledAt: new Date(),
+        })),
+      )
+      .then((items) => calledFeeds.concat(items));
   }
 
   findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {
@@ -1385,11 +1429,22 @@ export class Repository {
     queryOptions?: QueryOptions;
     expansionFields?: UserField[];
   }) {
-    const users = await this.userModel.find(
+    let users = await this.userModel.find(
       this.getUserQuery(filter),
       {},
       queryOptions,
     );
+
+    if (
+      users.some(
+        (user) =>
+          String(requestedBy?.ownerAccount) !== String(user.ownerAccount),
+      )
+    )
+      users = users.filter(
+        (user) => user.visibility === EntityVisibility.Publish,
+      );
+
     const userIds = users.map((user) => user._id);
     const relationships =
       requestedBy && expansionFields?.includes(UserField.Relationships)

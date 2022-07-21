@@ -21,16 +21,23 @@
  * or have any questions.
  */
 
-export enum TwilioChannel {
-  EMAIL = 'email',
-  SMS = 'sms',
-}
+import { Campaign, CampaignService } from '@castcle-api/database';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
-export enum TwilioErrorMessage {
-  TOO_MANY_REQUESTS = 'Error: Too many requests',
-}
+@Injectable()
+export class AirdropsService {
+  constructor(
+    @InjectModel('Campaign') private campaignModel: Model<Campaign>,
+    private campaignService: CampaignService,
+  ) {}
 
-export enum TwilioStatus {
-  APPROVED = 'approved',
-  CANCELED = 'canceled',
+  async claimAirdrop(accountId: string, campaignId: string) {
+    const campaign = await this.campaignModel.findOne({ _id: campaignId });
+    if (!campaign) throw new CastcleException('CAMPAIGN_NOT_FOUND');
+
+    return this.campaignService.claimCampaignsAirdrop(accountId, campaign.type);
+  }
 }

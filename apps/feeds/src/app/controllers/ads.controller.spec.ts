@@ -42,6 +42,7 @@ import {
   NotificationServiceV2,
   QueueName,
   TAccountService,
+  Transaction,
   UserService,
   UserServiceV2,
   generateMockUsers,
@@ -52,10 +53,11 @@ import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Model } from 'mongoose';
 import { AdsController } from './ads.controller';
 
 describe('AdsController', () => {
@@ -65,6 +67,7 @@ describe('AdsController', () => {
   let mocksUsers: MockUserDetail[];
   let userServiceV1: UserService;
   let authService: AuthenticationService;
+  let transactionModel: Model<Transaction>;
   let contentService: ContentServiceV2;
   let contentPayload: any;
 
@@ -74,8 +77,8 @@ describe('AdsController', () => {
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         HttpModule,
       ],
       controllers: [AdsController],
@@ -133,18 +136,14 @@ describe('AdsController', () => {
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentServiceV2>(ContentServiceV2);
-    const adsService = app.get<AdsService>(AdsService);
+    transactionModel = app.get(getModelToken('Transaction'));
 
     mocksUsers = await generateMockUsers(1, 1, {
       userService: userServiceV1,
       accountService: authService,
     });
 
-    await mockDeposit(
-      mocksUsers[0].user,
-      9999,
-      adsService.taccountService._transactionModel,
-    );
+    await mockDeposit(mocksUsers[0].user, 9999, transactionModel);
     contentPayload = await contentService.createContent(
       {
         castcleId: mocksUsers[0].user.displayId,

@@ -22,11 +22,11 @@ import {
   GetCampaignParams,
   UpdateCampaignDto,
 } from '../models/campaign.dto';
-import { CampaignService } from '../services/campaign.service';
+import { CampaignBackofficeService } from '../services/campaign.service';
 
 @CastcleControllerV2({ path: 'backoffices' })
 export class CampaignController {
-  constructor(private campaignService: CampaignService) {}
+  constructor(private campaignService: CampaignBackofficeService) {}
 
   @UseInterceptors(HeaderBackofficeInterceptor)
   @UseGuards(CredentialGuard, PermissionGuard)

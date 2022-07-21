@@ -22,47 +22,48 @@
  */
 
 import {
-  DatabaseModule,
-  MongooseAsyncFeatures,
-  MongooseForFeatures,
+  BackofficeDatabaseModule,
+  CampaignService,
   NotificationServiceV2,
   QueueName,
 } from '@castcle-api/database';
-import {
-  CastcleBackofficeMongooseModule,
-  CastcleBullModule,
-} from '@castcle-api/environments';
+import { CastcleBullModule } from '@castcle-api/environments';
 import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Mailer } from '@castcle-api/utils/clients';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
+import { AirdropsController } from './controllers/airdrops.controller';
 import { AuthenticationController } from './controllers/authentication.controller';
 import { CampaignController } from './controllers/campaign.controller';
 import { ReportingController } from './controllers/reporting.controller';
 import { BackOfficeMongooseForFeatures } from './schemas';
+import { AirdropsService } from './services/airdrops.service';
 import { AuthenticationService } from './services/authentication.service';
-import { CampaignService } from './services/campaign.service';
+import { CampaignBackofficeService } from './services/campaign.service';
 import { ReportingService } from './services/reporting.service';
 @Module({
   imports: [
-    DatabaseModule,
-    BullModule.registerQueue({ name: QueueName.NOTIFICATION }),
-    CastcleBackofficeMongooseModule,
+    BackofficeDatabaseModule,
     BackOfficeMongooseForFeatures,
+    BullModule.registerQueue(
+      { name: QueueName.CAMPAIGN },
+      { name: QueueName.NOTIFICATION },
+    ),
     CastcleBullModule,
     CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
     CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
-    MongooseAsyncFeatures,
-    MongooseForFeatures,
   ],
   controllers: [
+    AirdropsController,
     AuthenticationController,
     CampaignController,
     ReportingController,
   ],
   providers: [
+    AirdropsService,
     AuthenticationService,
+    CampaignBackofficeService,
     CampaignService,
     ReportingService,
     NotificationServiceV2,

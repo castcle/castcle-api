@@ -90,6 +90,9 @@ class UserDocument extends CastcleBase {
 
   @Prop({ type: String })
   reportedStatus?: ReportingStatus;
+
+  @Prop({ type: String })
+  reportedSubject?: string;
 }
 
 export type UserResponseOption = {

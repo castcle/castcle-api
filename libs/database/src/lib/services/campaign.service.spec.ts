@@ -51,8 +51,8 @@ describe('Campaign Service', () => {
       imports: [
         HttpModule,
         MongooseModule.forRoot(mongo.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         CampaignService,

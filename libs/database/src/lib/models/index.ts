@@ -34,6 +34,7 @@ export * from './campaign.enum';
 export * from './comment.enum';
 export * from './content-farming.enum';
 export * from './content-farming.model';
+export * from './content.enum';
 export * from './content.message';
 export * from './country.model';
 export * from './engagement.enum';

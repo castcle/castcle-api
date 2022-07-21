@@ -46,9 +46,6 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
     $facet: {
       reportings: [
         {
-          $sort: { createdAt: -1 },
-        },
-        {
           $group: {
             _id: '$payload._id',
             reportBy: { $addToSet: '$by' },
@@ -57,6 +54,21 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
             user: { $addToSet: '$user' },
             createdAt: { $first: '$createdAt' },
             updatedAt: { $first: '$updatedAt' },
+          },
+        },
+        {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $project: {
+            _id: 0,
+            id: '$_id',
+            reportBy: 1,
+            status: 1,
+            type: 1,
+            user: 1,
+            createdAt: 1,
+            updatedAt: 1,
           },
         },
       ],
@@ -78,6 +90,7 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
               },
               {
                 $project: {
+                  _id: 0,
                   slug: '$payload.slug',
                   name: '$payload.name',
                 },
@@ -88,6 +101,8 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
         },
         {
           $project: {
+            _id: 0,
+            id: '$_id',
             message: 1,
             payload: 1,
             createdAt: 1,

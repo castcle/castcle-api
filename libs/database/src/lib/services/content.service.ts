@@ -37,7 +37,6 @@ import {
   CommentDto,
   ContentPayloadItem,
   ContentResponse,
-  ContentType,
   ContentsResponse,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   EntityVisibility,
@@ -54,6 +53,7 @@ import {
   CommentType,
   ContentMessage,
   ContentMessageEvent,
+  ContentType,
   EngagementType,
   QueueName,
   UserType,
@@ -106,7 +106,7 @@ export class ContentService {
     public _engagementModel: Model<Engagement>,
     @InjectModel('Comment')
     public _commentModel: Model<Comment>,
-    @InjectModel('FeedItemV2')
+    @InjectModel('FeedItem')
     public _feedItemModel: Model<FeedItem>,
     public hashtagService: HashtagService,
     @InjectModel('GuestFeedItem')

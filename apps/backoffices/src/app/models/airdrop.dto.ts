@@ -21,16 +21,12 @@
  * or have any questions.
  */
 
-export enum TwilioChannel {
-  EMAIL = 'email',
-  SMS = 'sms',
-}
+import { IsMongoId } from 'class-validator';
 
-export enum TwilioErrorMessage {
-  TOO_MANY_REQUESTS = 'Error: Too many requests',
-}
+export class ClaimAirdropDto {
+  @IsMongoId()
+  account: string;
 
-export enum TwilioStatus {
-  APPROVED = 'approved',
-  CANCELED = 'canceled',
+  @IsMongoId()
+  campaign: string;
 }

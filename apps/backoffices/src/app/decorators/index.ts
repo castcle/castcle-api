@@ -21,16 +21,14 @@
  * or have any questions.
  */
 
-export enum TwilioChannel {
-  EMAIL = 'email',
-  SMS = 'sms',
-}
+import { UseGuards, UseInterceptors, applyDecorators } from '@nestjs/common';
+import { CredentialGuard } from '../guards/credential.guard';
+import { PermissionGuard } from '../guards/permisson.guard';
+import { HeaderBackofficeInterceptor } from '../interceptors/header-backoffice.interceptor';
 
-export enum TwilioErrorMessage {
-  TOO_MANY_REQUESTS = 'Error: Too many requests',
-}
-
-export enum TwilioStatus {
-  APPROVED = 'approved',
-  CANCELED = 'canceled',
-}
+export const BackofficeAuth = () => {
+  return applyDecorators(
+    UseInterceptors(HeaderBackofficeInterceptor),
+    UseGuards(CredentialGuard, PermissionGuard),
+  );
+};

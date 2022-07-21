@@ -75,7 +75,7 @@ export class FeedsControllerV2 {
     @Auth() { account, credential }: Authorizer,
     @Param() { id }: FeedParam,
   ) {
-    await this.suggestionServiceV2.seen(account, id, credential);
+    await this.suggestionServiceV2.seenV2(account, id, credential);
   }
 
   @CastcleBasicAuth()
