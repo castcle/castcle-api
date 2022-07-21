@@ -43,6 +43,62 @@ export class SuggestionServiceV2 {
     private repository: Repository,
   ) {}
 
+  async seenV2(account: Account, id: string, credential: Credential) {
+    await Promise.all([
+      this.repository.seenFeedItem(account, id, credential),
+      this.adsService.seenAds(id, credential.id),
+    ]);
+
+    const accountId = account.id;
+    const cacheSeen: string = await this.cacheManager.get(
+      CastcleCacheKey.ofSeen(accountId),
+    );
+
+    if (!cacheSeen) {
+      this.cacheManager.set(
+        CastcleCacheKey.ofSeen(accountId),
+        JSON.stringify({
+          seenCount: 1,
+          lastSeen: new Date(),
+        } as SeenState),
+      );
+    } else {
+      const currentSeen: SeenState = JSON.parse(cacheSeen);
+      this.cacheManager.set(
+        CastcleCacheKey.ofSeen(accountId),
+        JSON.stringify({
+          ...currentSeen,
+          seenCount: currentSeen.seenCount + 1,
+          lastSeen: new Date(),
+        } as SeenState),
+      );
+    }
+
+    const cacheSeenAds: string = await this.cacheManager.get(
+      CastcleCacheKey.ofSeenAds(accountId),
+    );
+
+    if (!cacheSeenAds) {
+      this.cacheManager.set(
+        CastcleCacheKey.ofSeenAds(accountId),
+        JSON.stringify({
+          seenCount: 1,
+          lastSeen: new Date(),
+        } as SeenState),
+      );
+    } else {
+      const currentSeenAds: SeenState = JSON.parse(cacheSeenAds);
+      this.cacheManager.set(
+        CastcleCacheKey.ofSeenAds(accountId),
+        JSON.stringify({
+          ...currentSeenAds,
+          seenCount: currentSeenAds.seenCount + 1,
+          lastSeen: new Date(),
+        } as SeenState),
+      );
+    }
+  }
+
   async seen(account: Account, id: string, credential: Credential) {
     await Promise.all([
       this.rankerService.seenFeedItem(account, id, credential),

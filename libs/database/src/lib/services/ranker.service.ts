@@ -66,7 +66,7 @@ export class RankerService {
   private logger = new CastLogger(RankerService.name);
 
   constructor(
-    @InjectModel('FeedItemV2')
+    @InjectModel('FeedItem')
     public _feedItemModel: Model<FeedItem>,
     @InjectModel('Content')
     public _contentModel: Model<Content>,

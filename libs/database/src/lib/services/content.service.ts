@@ -106,7 +106,7 @@ export class ContentService {
     public _engagementModel: Model<Engagement>,
     @InjectModel('Comment')
     public _commentModel: Model<Comment>,
-    @InjectModel('FeedItemV2')
+    @InjectModel('FeedItem')
     public _feedItemModel: Model<FeedItem>,
     public hashtagService: HashtagService,
     @InjectModel('GuestFeedItem')
