@@ -1139,7 +1139,7 @@ export class Repository {
   ) => this.feedItemV2Model.find(filter, queryOptions);
 
   async saveFeedItemFromContents(
-    contents: GetContentCastDto,
+    contents: GetCastDto,
     viewerAccountId: string,
   ) {
     const calledFeeds = await this.feedItemV2Model.find({

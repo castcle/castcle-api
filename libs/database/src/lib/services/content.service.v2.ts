@@ -1533,21 +1533,21 @@ export class ContentServiceV2 {
     });
     contents.calledContents = [];
     contents.newContents = [];
-    for (let i = 0; i < (contents as GetContentCastDto).contents.length; i++) {
+    for (let i = 0; i < (contents as GetCastDto).contents.length; i++) {
       const isCalled =
         suggestContents.payload.findIndex(
           (p) =>
             p.called &&
-            p.content === (contents as GetContentCastDto).contents[i].id,
+            p.content === (contents as GetCastDto).contents[i].id,
         ) >= 0;
       if (isCalled)
         contents.calledContents.push(
-          (contents as GetContentCastDto).contents[i],
+          (contents as GetCastDto).contents[i],
         );
       else
-        contents.newContents.push((contents as GetContentCastDto).contents[i]);
+        contents.newContents.push((contents as GetCastDto).contents[i]);
     }
-    return contents as GetContentCastDto;
+    return contents as GetCastDto;
   };
 
   toFeedResponse = async (
