@@ -189,6 +189,7 @@ export class ContentControllerV2 {
     authorizer.requireActivation();
 
     await this.contentServiceV2.deleteContent(contentId, authorizer.user);
+    
   }
 
   @CastcleAuth(CacheKeyName.Contents)
