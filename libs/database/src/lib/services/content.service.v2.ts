@@ -1537,15 +1537,11 @@ export class ContentServiceV2 {
       const isCalled =
         suggestContents.payload.findIndex(
           (p) =>
-            p.called &&
-            p.content === (contents as GetCastDto).contents[i].id,
+            p.called && p.content === (contents as GetCastDto).contents[i].id,
         ) >= 0;
       if (isCalled)
-        contents.calledContents.push(
-          (contents as GetCastDto).contents[i],
-        );
-      else
-        contents.newContents.push((contents as GetCastDto).contents[i]);
+        contents.calledContents.push((contents as GetCastDto).contents[i]);
+      else contents.newContents.push((contents as GetCastDto).contents[i]);
     }
     return contents as GetCastDto;
   };
