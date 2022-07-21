@@ -70,6 +70,7 @@ import {
   UxEngagementSchema,
   WalletShortcutSchema,
 } from './schemas';
+import { FeedItemV2Schema } from './schemas/feed-item-v2.schema';
 import { AdsService } from './services/ads.service';
 import { AnalyticService } from './services/analytic.service';
 import { AuthenticationService } from './services/authentication.service';
@@ -135,7 +136,8 @@ export const MongooseAsyncFeatures = (connectionName?: string) =>
   MongooseModule.forFeatureAsync(
     [
       { name: 'Credential', useFactory: () => CredentialSchema },
-      { name: 'FeedItemV2', useFactory: () => FeedItemSchema },
+      { name: 'FeedItem', useFactory: () => FeedItemSchema },
+      { name: 'FeedItemV2', useFactory: () => FeedItemV2Schema },
       { name: 'Relationship', useFactory: () => RelationshipSchema },
       { name: 'Revision', useFactory: () => RevisionSchema },
       { name: 'SocialSync', useFactory: () => SocialSyncSchema },

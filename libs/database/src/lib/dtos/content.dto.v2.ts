@@ -80,6 +80,8 @@ export class ResponseParticipate {
 
 export class GetCastDto {
   contents: Content[];
+  calledContents?: Content[];
+  newContents?: Content[];
   casts?: Content[];
   authors?: Author[];
   engagements?: Engagement[];
