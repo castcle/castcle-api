@@ -25,8 +25,11 @@ import {
   GetKeywordQuery,
   GetShortcutParam,
   GetUserParam,
+  ReviewTransactionDto,
+  SendTransactionDto,
   ShortcutInternalDto,
   ShortcutSortDto,
+  TAccountService,
   UserServiceV2,
   WalletShortcutService,
 } from '@castcle-api/database';
@@ -57,7 +60,8 @@ import { WalletService } from '../services/wallet.service';
 @CastcleControllerV2({ path: 'wallets' })
 export class WalletController {
   constructor(
-    private userServiceV2: UserServiceV2,
+    private tAccountService: TAccountService,
+    private userService: UserServiceV2,
     private walletService: WalletService,
     private walletShortcutService: WalletShortcutService,
   ) {}
@@ -70,7 +74,7 @@ export class WalletController {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userServiceV2.getUser(userId);
+      : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
     return this.walletService.getWalletBalance(user);
   }
@@ -84,9 +88,49 @@ export class WalletController {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userServiceV2.getUser(userId);
+      : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
-    return this.walletService.getWalletHistory(user, query);
+    return this.tAccountService.getWalletHistory(user.id, query.filter);
+  }
+
+  @CastcleBasicAuth()
+  @Post(':userId/send/review')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reviewTransaction(
+    @Auth() authorizer: Authorizer,
+    @Body() { transaction }: ReviewTransactionDto,
+    @Param() { isMe, userId }: GetUserParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.getUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    await this.walletService.reviewTransaction({
+      ...transaction,
+      requestedBy: user.id,
+    });
+  }
+
+  @CastcleBasicAuth()
+  @Post(':userId/send/confirm')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async sendTransaction(
+    @Auth() authorizer: Authorizer,
+    @Body() dto: SendTransactionDto,
+    @Param() { isMe, userId }: GetUserParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.getUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    await this.walletService.sendTransaction({
+      ...dto,
+      requestedBy: user.id,
+    });
   }
 
   @CastcleBasicAuth()
@@ -150,10 +194,10 @@ export class WalletController {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userServiceV2.getUser(userId);
+      : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.walletService.getAllWalletRecent(user.id);
+    return this.tAccountService.getAllWalletRecent(user.id);
   }
 
   @CastcleBasicAuth()
@@ -166,10 +210,10 @@ export class WalletController {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userServiceV2.getUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.walletService.getAllWalletRecent(user.id, keyword);
+    return this.tAccountService.getAllWalletRecent(user.id, keyword);
   }
 }

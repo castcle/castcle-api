@@ -46,6 +46,8 @@ export const Configs = {
       'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
     thumbnail:
       'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+    medium:
+      'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
     large:
       'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
     fullHd:
@@ -55,6 +57,8 @@ export const Configs = {
     original:
       'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
     thumbnail:
+      'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
+    medium:
       'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
     large:
       'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
@@ -78,4 +82,5 @@ export const Configs = {
   AssetsPath: {
     SuggestWords: 'metadata/suggestion-words.json',
   },
+  DefaultLanguage: 'en',
 };

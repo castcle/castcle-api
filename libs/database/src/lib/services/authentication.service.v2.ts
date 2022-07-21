@@ -814,7 +814,6 @@ export class AuthenticationServiceV2 {
       receiver: email,
       refCode,
       otp: otpCode,
-      account,
     });
 
     if (objective !== OtpObjective.MERGE_ACCOUNT) return { otp };
@@ -846,11 +845,10 @@ export class AuthenticationServiceV2 {
       receiver: countryCode + mobileNumber,
       refCode,
       otp: otpCode,
-      account: existingAccount,
     });
   }
 
-  private async verifyOtp({
+  async verifyOtp({
     channel,
     objective,
     receiver,
@@ -862,8 +860,8 @@ export class AuthenticationServiceV2 {
     receiver: string;
     refCode: string;
     otp: string;
-    account: Account;
   }) {
+    const isEmailOtp = channel === TwilioChannel.EMAIL;
     const existingOtp = await this.repository.findOtp({
       channel,
       objective,
@@ -872,31 +870,43 @@ export class AuthenticationServiceV2 {
     });
 
     if (!existingOtp) {
-      throw new CastcleException('INVALID_OTP');
+      throw new CastcleException(
+        isEmailOtp ? 'INVALID_EMAIL_OTP' : 'INVALID_SMS_OTP',
+      );
     }
     if (existingOtp.refCode !== refCode) {
-      throw new CastcleException('INVALID_REF_CODE');
+      throw new CastcleException(
+        isEmailOtp ? 'INVALID_EMAIL_REF_CODE' : 'INVALID_SMS_REF_CODE',
+      );
     }
     if (!existingOtp.isValid()) {
-      throw new CastcleException('EXPIRED_OTP');
+      throw new CastcleException(
+        isEmailOtp ? 'EXPIRED_EMAIL_OTP' : 'EXPIRED_SMS_OTP',
+      );
     }
     if (existingOtp.exceededMaxRetries()) {
       await this.twilioClient.cancelOtp(existingOtp.sid);
-      throw new CastcleException('LOCKED_OTP');
+      throw new CastcleException(
+        isEmailOtp ? 'LOCKED_EMAIL_OTP' : 'LOCKED_SMS_OTP',
+      );
     }
 
     try {
       const otpVerification = await this.twilioClient.verifyOtp(receiver, otp);
       if (otpVerification.status !== TwilioStatus.APPROVED) {
         await existingOtp.updateOne({ $inc: { retry: 1 } });
-        throw new CastcleException('INVALID_OTP');
+        throw new CastcleException(
+          isEmailOtp ? 'INVALID_EMAIL_OTP' : 'INVALID_SMS_OTP',
+        );
       }
       return existingOtp.markVerified().save();
     } catch (error) {
-      this.logger.error(error, 'verifyOtp');
+      this.logger.error(error, `verifyOtp:${channel}`);
       if (error instanceof CastcleException) throw error;
       await this.twilioClient.cancelOtp(existingOtp.sid);
-      throw new CastcleException('EXPIRED_OTP');
+      throw new CastcleException(
+        isEmailOtp ? 'EXPIRED_EMAIL_OTP' : 'EXPIRED_SMS_OTP',
+      );
     }
   }
 

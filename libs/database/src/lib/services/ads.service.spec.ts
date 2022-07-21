@@ -23,10 +23,10 @@
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   ContentService,
   DataService,
@@ -35,7 +35,7 @@ import {
   MongooseForFeatures,
   TAccountService,
 } from '../database.module';
-import { AdsQuery, AdsRequestDto, ContentType, ShortPayload } from '../dtos';
+import { AdsQuery, AdsRequestDto, ShortPayload } from '../dtos';
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import {
   AdsBidType,
@@ -46,11 +46,18 @@ import {
   AdsSocialReward,
   AdsStatus,
   CACCOUNT_NO,
+  ContentType,
   QueueName,
   WalletType,
 } from '../models';
 import { Repository } from '../repositories';
-import { AdsCampaign, AdsPlacement, Content } from '../schemas';
+import {
+  AdsCampaign,
+  AdsPlacement,
+  CAccount,
+  Content,
+  Transaction,
+} from '../schemas';
 import { AdsService } from './ads.service';
 import { AuthenticationService } from './authentication.service';
 import { UserService } from './user.service';
@@ -63,7 +70,8 @@ describe('AdsService', () => {
   let userService: UserService;
   let contentService: ContentService;
   let mocks: MockUserDetail[];
-  let taccountService: TAccountService;
+  let cAccountModel: Model<CAccount>;
+  let transactionModel: Model<Transaction>;
   let promoteContent: Content;
   let dataService: DataService;
 
@@ -74,8 +82,8 @@ describe('AdsService', () => {
         CacheModule.register(),
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         AdsService,
@@ -110,8 +118,10 @@ describe('AdsService', () => {
     authService = moduleRef.get<AuthenticationService>(AuthenticationService);
     userService = moduleRef.get<UserService>(UserService);
     contentService = moduleRef.get<ContentService>(ContentService);
-    taccountService = moduleRef.get<TAccountService>(TAccountService);
     dataService = moduleRef.get<DataService>(DataService);
+    transactionModel = moduleRef.get(getModelToken('Transaction'));
+    cAccountModel = moduleRef.get(getModelToken('CAccount'));
+
     mocks = await generateMockUsers(2, 1, {
       accountService: authService,
       userService: userService,
@@ -131,7 +141,7 @@ describe('AdsService', () => {
   });
   describe('#createAds', () => {
     it('should be able to create ads for promote Page', async () => {
-      await new taccountService._transactionModel({
+      await new transactionModel({
         from: {
           type: WalletType.CASTCLE_TREASURY,
           value: 999999,
@@ -163,7 +173,7 @@ describe('AdsService', () => {
       expect(ads.adsRef.$id).toEqual(mocks[0].pages[0]._id);
     });
     it('should be able to create ads for promote contents', async () => {
-      await new taccountService._transactionModel({
+      await new transactionModel({
         from: {
           type: WalletType.CASTCLE_TREASURY,
           value: 999999,
@@ -473,7 +483,7 @@ describe('AdsService', () => {
   });
   describe('Distrute Reward cases', () => {
     beforeAll(async () => {
-      const socialReward = await new service.taccountService._caccountModel({
+      const socialReward = await new cAccountModel({
         no: CACCOUNT_NO.SOCIAL_REWARD.NO,
         name: 'SOCIAL_REWARD',
         nature: 'credit',
@@ -482,7 +492,7 @@ describe('AdsService', () => {
           CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
         ],
       }).save();
-      await service.taccountService._caccountModel.insertMany([
+      await cAccountModel.insertMany([
         {
           no: CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO,
           name: 'SOCIAL_REWARD.ADS_CREDIT',
@@ -498,7 +508,7 @@ describe('AdsService', () => {
           child: [],
         },
       ]);
-      const liability = await new service.taccountService._caccountModel({
+      const liability = await new cAccountModel({
         no: CACCOUNT_NO.LIABILITY.NO,
         name: 'LIABILITY',
         nature: 'credit',
@@ -507,7 +517,7 @@ describe('AdsService', () => {
           CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
         ],
       }).save();
-      service.taccountService._caccountModel.insertMany([
+      cAccountModel.insertMany([
         {
           no: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
           name: 'LIABILITY.ADS_CREDIT',
@@ -541,7 +551,7 @@ describe('AdsService', () => {
           const campaign = Types.ObjectId();
           const viewer = Types.ObjectId();
           const topupValue = 100;
-          new service.taccountService._transactionModel({
+          new transactionModel({
             from: {
               type: WalletType.EXTERNAL_DEPOSIT,
               value: topupValue,
@@ -569,8 +579,7 @@ describe('AdsService', () => {
             CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
-          const session =
-            await service.taccountService._transactionModel.startSession();
+          const session = await transactionModel.startSession();
           const reward = {
             adsCost: 100,
             castcleShare: 30,
@@ -623,8 +632,8 @@ describe('AdsService', () => {
           const campaign = Types.ObjectId();
           const viewer = Types.ObjectId();
           const topupValue = 100;
-          await service.taccountService._transactionModel.deleteMany({});
-          new service.taccountService._transactionModel({
+          await transactionModel.deleteMany({});
+          new transactionModel({
             from: {
               type: WalletType.EXTERNAL_DEPOSIT,
               value: topupValue,
@@ -652,8 +661,7 @@ describe('AdsService', () => {
             CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
-          const session =
-            await service.taccountService._transactionModel.startSession();
+          const session = await transactionModel.startSession();
           const reward = {
             adsCost: 100,
             castcleShare: 30,
@@ -706,8 +714,8 @@ describe('AdsService', () => {
           const campaign = Types.ObjectId();
           const viewer = Types.ObjectId();
           const topupValue = 100;
-          await service.taccountService._transactionModel.deleteMany({});
-          new service.taccountService._transactionModel({
+          await transactionModel.deleteMany({});
+          new transactionModel({
             from: {
               type: WalletType.EXTERNAL_DEPOSIT,
               value: topupValue,
@@ -735,8 +743,7 @@ describe('AdsService', () => {
             CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
-          const session =
-            await service.taccountService._transactionModel.startSession();
+          const session = await transactionModel.startSession();
           const reward = {
             adsCost: 100,
             castcleShare: 30,
@@ -785,8 +792,8 @@ describe('AdsService', () => {
         const campaign = Types.ObjectId();
         const viewer = Types.ObjectId();
         const topupValue = 100;
-        await service.taccountService._transactionModel.deleteMany({});
-        new service.taccountService._transactionModel({
+        await transactionModel.deleteMany({});
+        new transactionModel({
           from: {
             type: WalletType.EXTERNAL_DEPOSIT,
             value: topupValue,
@@ -814,8 +821,7 @@ describe('AdsService', () => {
           CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
         );
         expect(balance).toEqual(topupValue);
-        const session =
-          await service.taccountService._transactionModel.startSession();
+        const session = await transactionModel.startSession();
         const reward = {
           adsCost: 100,
           castcleShare: 30,

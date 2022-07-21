@@ -34,6 +34,7 @@ import {
 } from '../dtos';
 import {
   OwnerVerification,
+  ReportingStatus,
   UserContact,
   UserProfile,
   UserType,
@@ -86,6 +87,12 @@ class UserDocument extends CastcleBase {
 
   @Prop({ type: Object })
   contact?: UserContact;
+
+  @Prop({ type: String })
+  reportedStatus?: ReportingStatus;
+
+  @Prop({ type: String })
+  reportedSubject?: string;
 }
 
 export type UserResponseOption = {

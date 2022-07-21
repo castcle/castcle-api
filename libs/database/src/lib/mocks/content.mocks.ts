@@ -22,7 +22,8 @@
  */
 
 import { Model } from 'mongoose';
-import { ContentType, ShortPayload } from '../dtos';
+import { ShortPayload } from '../dtos';
+import { ContentType } from '../models';
 import { Content, User } from '../schemas';
 
 type MockContentOption = {

@@ -122,17 +122,51 @@ export const DefaultErrors = {
     code: '3008',
     message: 'Invalid OTP code. Please try again.',
   },
+  INVALID_EMAIL_OTP: {
+    statusCode: '400',
+    code: '3008',
+    message: 'Invalid email OTP code. Please try again.',
+  },
+  INVALID_SMS_OTP: {
+    statusCode: '400',
+    code: '3008',
+    message: 'Invalid SMS OTP code. Please try again.',
+  },
   EXPIRED_OTP: {
     statusCode: '400',
     code: '3009',
     message:
       'The OTP has been requested past the time limit, please press the "Get OTP" button to request a new code again.',
   },
+  EXPIRED_EMAIL_OTP: {
+    statusCode: '400',
+    code: '3009',
+    message:
+      'The email OTP has been requested past the time limit, please press the "Get OTP" button to request a new code again.',
+  },
+  EXPIRED_SMS_OTP: {
+    statusCode: '400',
+    code: '3009',
+    message:
+      'The SMS OTP has been requested past the time limit, please press the "Get OTP" button to request a new code again.',
+  },
   LOCKED_OTP: {
     statusCode: '400',
     code: '3010',
     message:
       'Enter an incorrect OTP more than 3 times. Please enter your phone number or email to request a new OTP again.',
+  },
+  LOCKED_EMAIL_OTP: {
+    statusCode: '400',
+    code: '3010',
+    message:
+      'Enter an incorrect email OTP more than 3 times. Please enter your email to request a new OTP again.',
+  },
+  LOCKED_SMS_OTP: {
+    statusCode: '400',
+    code: '3010',
+    message:
+      'Enter an incorrect SMS OTP more than 3 times. Please enter your phone number to request a new OTP again.',
   },
   INVALID_PASSWORD: {
     statusCode: '400',
@@ -143,6 +177,16 @@ export const DefaultErrors = {
     statusCode: '400',
     code: '3012',
     message: 'The request exceeded the time limit.',
+  },
+  INVALID_EMAIL_REF_CODE: {
+    statusCode: '400',
+    code: '3012',
+    message: 'Invalid email ref code. Please try again.',
+  },
+  INVALID_SMS_REF_CODE: {
+    statusCode: '400',
+    code: '3012',
+    message: 'Invalid SMS ref code. Please try again.',
   },
   INVALID_ROLE: {
     statusCode: '400',
@@ -336,15 +380,10 @@ export const DefaultErrors = {
     code: '8001',
     message: 'Invalid transaction data',
   },
-  STAFF_NOT_FOUND: {
-    statusCode: '404',
-    code: '9001',
-    message: 'Staff not found.',
-  },
-  INTERNAL_CHAIN_NOT_FOUND: {
+  NETWORK_NOT_FOUND: {
     statusCode: '404',
     code: '8002',
-    message: 'The chain id could not be found.',
+    message: 'Network not found',
   },
   WALLET_SHORTCUT_IS_EXIST: {
     statusCode: '400',
@@ -353,7 +392,63 @@ export const DefaultErrors = {
   },
   REPORTING_IS_EXIST: {
     statusCode: '400',
-    code: '8003',
+    code: '8004',
     message: 'Reporting is already exists.',
+  },
+  CAMPAIGN_TYPE_IS_EXIST: {
+    statusCode: '400',
+    code: '8005',
+    message:
+      'The Campaign type of Campaign already exists. Please choose another type.',
+  },
+  CAMPAIGN_NOT_FOUND: {
+    statusCode: '404',
+    code: '8006',
+    message: 'Campaign could not be found. Please try again.',
+  },
+  NETWORK_TEMPORARILY_DISABLED: {
+    statusCode: '400',
+    code: '8007',
+    message: 'Network has been temporarily disabled.',
+  },
+  NOT_ENOUGH_BALANCE: {
+    statusCode: '400',
+    code: '8008',
+    message: 'Wallet does not have sufficient balance.',
+  },
+  RECEIVER_NOT_FOUND: {
+    statusCode: '404',
+    code: '8009',
+    message: 'Receiver not found',
+  },
+  STAFF_NOT_FOUND: {
+    statusCode: '404',
+    code: '9001',
+    message: 'Staff not found.',
+  },
+  REPORTING_SUBJECT_NOT_FOUND: {
+    statusCode: '404',
+    code: '8010',
+    message: 'Reporting subject is not found. Please try again.',
+  },
+  REPORTING_NOT_FOUND: {
+    statusCode: '404',
+    code: '8011',
+    message: 'Reporting is not found. Please try again.',
+  },
+  PAYMENT_TO_OWN_WALLET: {
+    statusCode: '400',
+    code: '8012',
+    message: 'Payment to your own wallet is not supported.',
+  },
+  REPORTING_APPEAL_IS_EXISTS: {
+    statusCode: '400',
+    code: '8013',
+    message: 'Reporting is appeal is already exists.',
+  },
+  REPORTING_STATUS_NOT_FOUND: {
+    statusCode: '400',
+    code: '8013',
+    message: 'Reporting status not found. Please try again.',
   },
 };

@@ -21,27 +21,14 @@
  * or have any questions.
  */
 
-import { Injectable } from '@nestjs/common';
-import { Repository } from '../repositories';
+import { UseGuards, UseInterceptors, applyDecorators } from '@nestjs/common';
+import { CredentialGuard } from '../guards/credential.guard';
+import { PermissionGuard } from '../guards/permisson.guard';
+import { HeaderBackofficeInterceptor } from '../interceptors/header-backoffice.interceptor';
 
-@Injectable()
-export class RankerServiceV2 {
-  constructor(private repository: Repository) {}
-
-  offViewFeedItem(accountId: string, feedItemId: string) {
-    return this.repository
-      .updateFeedItem(
-        {
-          viewer: accountId as any,
-          _id: feedItemId,
-          offScreenAt: {
-            $exists: false,
-          },
-        },
-        {
-          offScreenAt: new Date(),
-        },
-      )
-      .exec();
-  }
-}
+export const BackofficeAuth = () => {
+  return applyDecorators(
+    UseInterceptors(HeaderBackofficeInterceptor),
+    UseGuards(CredentialGuard, PermissionGuard),
+  );
+};

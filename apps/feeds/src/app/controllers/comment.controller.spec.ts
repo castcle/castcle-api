@@ -71,8 +71,8 @@ describe('CommentController', () => {
           store: 'memory',
           ttl: 1000,
         }),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       controllers: [CommentController],
       providers: [
@@ -95,11 +95,11 @@ describe('CommentController', () => {
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.USER),
+          provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.NOTIFICATION),
+          provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
       ],

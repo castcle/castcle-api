@@ -25,7 +25,6 @@ import {
   ContentServiceV2,
   FeedQuery,
   GetSearchQuery,
-  RankerServiceV2,
   SuggestionServiceV2,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
@@ -44,7 +43,6 @@ export class FeedsControllerV2 {
   constructor(
     private contentServiceV2: ContentServiceV2,
     private suggestionServiceV2: SuggestionServiceV2,
-    private rankerServiceV2: RankerServiceV2,
   ) {}
 
   @CastcleAuth(CacheKeyName.Feeds)
@@ -77,7 +75,7 @@ export class FeedsControllerV2 {
     @Auth() { account, credential }: Authorizer,
     @Param() { id }: FeedParam,
   ) {
-    await this.suggestionServiceV2.seen(account, id, credential);
+    await this.suggestionServiceV2.seenV2(account, id, credential);
   }
 
   @CastcleBasicAuth()
@@ -89,11 +87,11 @@ export class FeedsControllerV2 {
   ) {
     if (account.isGuest) return;
 
-    await this.rankerServiceV2.offViewFeedItem(account.id, id);
+    await this.contentServiceV2.offViewFeedItem(account.id, id);
   }
 
   @CastcleAuth(CacheKeyName.Feeds)
-  @Get('recent/feed/forYou')
+  @Get('recent/forYou')
   async getRecentFeeds(
     @Auth() { account, user }: Authorizer,
     @Query() query: FeedQuery,

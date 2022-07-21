@@ -67,8 +67,8 @@ describe('SearchesControllerV2', () => {
       imports: [
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         CacheModule.register(),
       ],
       controllers: [SearchesControllerV2],
@@ -89,11 +89,15 @@ describe('SearchesControllerV2', () => {
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.USER),
+          provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.NOTIFICATION),
+          provide: getQueueToken(QueueName.REPORTING),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
       ],

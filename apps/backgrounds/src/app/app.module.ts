@@ -24,10 +24,12 @@
 import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastcleTracingModule } from '@castcle-api/tracing';
+import { Mailer } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
 import { FirebaseModule } from 'nestjs-firebase';
 import { ContentConsumer } from './consumers/content.consumer';
 import { NotificationConsumer } from './consumers/notification.consumer';
+import { ReportingConsumer } from './consumers/reporting.consumer';
 import { UserConsumer } from './consumers/user.consumer';
 
 @Module({
@@ -44,6 +46,12 @@ import { UserConsumer } from './consumers/user.consumer';
       },
     }),
   ],
-  providers: [ContentConsumer, NotificationConsumer, UserConsumer],
+  providers: [
+    Mailer,
+    ContentConsumer,
+    NotificationConsumer,
+    ReportingConsumer,
+    UserConsumer,
+  ],
 })
 export class BackgroundModule {}

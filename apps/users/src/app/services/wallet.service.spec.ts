@@ -23,31 +23,38 @@
 import {
   AnalyticService,
   AuthenticationService,
+  AuthenticationServiceV2,
   CampaignService,
   ContentService,
   HashtagService,
-  KeywordType,
   MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationServiceV2,
   QueueName,
   TAccountService,
+  Transaction,
   UserService,
   UserServiceV2,
   WalletShortcutService,
   generateMockUsers,
   mockDeposit,
-  mockSend,
 } from '@castcle-api/database';
-import { Mailer } from '@castcle-api/utils/clients';
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Model } from 'mongoose';
 import { WalletResponse } from '../dtos';
 import { WalletService } from './wallet.service';
 
@@ -58,7 +65,7 @@ describe('WalletService', () => {
   let userServiceV1: UserService;
   let authService: AuthenticationService;
   let mocksUsers: MockUserDetail[];
-  let taccountService: TAccountService;
+  let transactionModel: Model<Transaction>;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -66,14 +73,15 @@ describe('WalletService', () => {
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         HttpModule,
       ],
       controllers: [],
       providers: [
         AnalyticService,
         AuthenticationService,
+        AuthenticationServiceV2,
         ContentService,
         TAccountService,
         WalletService,
@@ -81,6 +89,10 @@ describe('WalletService', () => {
         UserService,
         UserServiceV2,
         WalletShortcutService,
+        { provide: FacebookClient, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
+        { provide: TwilioClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: HashtagService, useValue: {} },
         { provide: Mailer, useValue: {} },
@@ -91,10 +103,6 @@ describe('WalletService', () => {
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.USER),
-          useValue: { add: jest.fn() },
-        },
-        {
           provide: getQueueToken(QueueName.CAMPAIGN),
           useValue: { add: jest.fn() },
         },
@@ -102,23 +110,27 @@ describe('WalletService', () => {
           provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
+        {
+          provide: getQueueToken(QueueName.REPORTING),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
     service = app.get<WalletService>(WalletService);
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
-    taccountService = app.get<TAccountService>(TAccountService);
+    transactionModel = app.get(getModelToken('Transaction'));
 
     mocksUsers = await generateMockUsers(2, 0, {
       userService: userServiceV1,
       accountService: authService,
     });
     //init
-    await mockDeposit(
-      mocksUsers[0].user,
-      5555,
-      taccountService._transactionModel,
-    );
+    await mockDeposit(mocksUsers[0].user, 5555, transactionModel);
   });
 
   describe('getWalletBalance()', () => {
@@ -133,59 +145,6 @@ describe('WalletService', () => {
         availableBalance: 5555,
         totalBalance: 5555,
       } as WalletResponse);
-    });
-  });
-
-  describe('getAllWalletRecent()', () => {
-    beforeAll(async () => {
-      await mockSend(
-        mocksUsers[0].user,
-        mocksUsers[1].user,
-        100,
-        taccountService._transactionModel,
-      );
-    });
-    it('should get wallet recent list', async () => {
-      const walletRecent = await service.getAllWalletRecent(
-        mocksUsers[0].user._id,
-      );
-
-      expect(String(walletRecent.castcle[0].userId)).toEqual(
-        String(mocksUsers[1].user.id),
-      );
-      expect(walletRecent.castcle[0].castcleId).toEqual(
-        mocksUsers[1].user.displayId,
-      );
-    });
-
-    it('should get wallet recent list by keyword', async () => {
-      const walletRecent = await service.getAllWalletRecent(
-        mocksUsers[0].user._id,
-        {
-          input: 'mock-1',
-          type: KeywordType.Word,
-        },
-      );
-
-      expect(String(walletRecent.castcle[0].userId)).toEqual(
-        String(mocksUsers[1].user.id),
-      );
-      expect(walletRecent.castcle[0].castcleId).toEqual(
-        mocksUsers[1].user.displayId,
-      );
-    });
-
-    it('should get wallet recent list is empty', async () => {
-      const walletRecent = await service.getAllWalletRecent(
-        mocksUsers[0].user._id,
-        {
-          input: 'test',
-          type: KeywordType.Word,
-        },
-      );
-
-      expect(walletRecent.castcle).toHaveLength(0);
-      expect(walletRecent.other).toHaveLength(0);
     });
   });
 

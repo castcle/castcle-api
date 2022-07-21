@@ -54,11 +54,10 @@ import {
 import {
   AccessTokenPayload,
   BlogPayload,
-  ContentType,
   CreateContentDto,
   CreateCredentialDto,
   EntityVisibility,
-  GetContentCastDto,
+  GetCastDto,
   NotificationSource,
   NotificationType,
   RefreshTokenPayload,
@@ -72,13 +71,16 @@ import {
   CACCOUNT_NO,
   CastcleIdMetadata,
   CastcleNumber,
+  ContentType,
   Country,
   KeywordType,
   Language,
   MetadataType,
   OtpObjective,
   QueueStatus,
+  ReportingStatus,
   ReportingSubject,
+  ReportingType,
   SearchType,
   UserType,
 } from '../models';
@@ -99,6 +101,7 @@ import {
   FeedItem,
   Hashtag,
   Metadata,
+  Network,
   Notification,
   Otp,
   OtpModel,
@@ -112,6 +115,7 @@ import {
   User,
   UxEngagement,
 } from '../schemas';
+import { FeedItemV2 } from '../schemas/feed-item-v2.schema';
 import { WalletShortcut } from '../schemas/wallet-shortcut.schema';
 import { createCastcleFilter } from '../utils/common';
 
@@ -141,6 +145,7 @@ type UserQuery = {
   sinceId?: string;
   type?: UserType;
   untilId?: string;
+  visibility?: EntityVisibility | EntityVisibility[];
 };
 
 type EngagementQuery = {
@@ -208,6 +213,7 @@ type ContentQuery = {
   };
   untilId?: string;
   viewer?: User;
+  visibility?: EntityVisibility | EntityVisibility[];
 };
 
 type HashtagQuery = {
@@ -233,12 +239,18 @@ type WalletShortcutQuery = {
 
 type MetadataQuery = {
   type?: MetadataType;
+  subject?: string;
 };
 
 type ReportingQuery = {
-  subject: string;
-  payload: User | Content;
-  by: Types.ObjectId;
+  by?: Types.ObjectId;
+  payloadId?: Types.ObjectId | Types.ObjectId[];
+  subject?: string;
+  user?: Types.ObjectId;
+  _id?: string;
+  type?: ReportingType;
+  status?: ReportingStatus[];
+  createdAt_lt?: Date;
 };
 
 @Injectable()
@@ -263,9 +275,11 @@ export class Repository {
     @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
+    @InjectModel('FeedItemV2') private feedItemV2Model: Model<FeedItemV2>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
     @InjectModel('Metadata')
     private metadataModel: Model<Metadata<any>>,
+    @InjectModel('Network') private networkModel: Model<Network>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Queue') private queueModel: Model<Queue>,
@@ -413,6 +427,11 @@ export class Repository {
     if (filter.excludeAuthor?.length)
       query['author.id'] = { $nin: filter.excludeAuthor };
 
+    if (filter.visibility)
+      query.visibility = filter.visibility as EntityVisibility;
+    if (isArray(filter.visibility))
+      query.visibility = { $in: filter.visibility as EntityVisibility[] };
+
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
         sinceId: filter.sinceId,
@@ -509,6 +528,7 @@ export class Repository {
       {};
 
     if (filter.type) query.type = filter.type;
+    if (filter.subject) query['payload.slug'] = filter.subject;
 
     return query;
   }
@@ -516,9 +536,17 @@ export class Repository {
   private getReportingQuery(filter: ReportingQuery) {
     const query: FilterQuery<Reporting> = {};
 
+    if (filter._id) query._id = filter._id;
+    if (filter.createdAt_lt) query.createdAt = { $lt: filter.createdAt_lt };
+    if (filter.payloadId) query['payload._id'] = filter.payloadId;
+    if (isArray(filter.payloadId))
+      query['payload._id'] = { $in: filter.payloadId };
+    if (filter.status) query.status = { $in: filter.status };
     if (filter.subject) query.subject = filter.subject;
-    if (filter.payload) query.payload = filter.payload;
     if (filter.subject) query.subject = filter.subject;
+    if (filter.type) query.type = filter.type;
+    if (filter.user) query.user = filter.user;
+    if (filter.by) query.by = filter.by;
 
     return query;
   }
@@ -706,6 +734,11 @@ export class Repository {
 
     if (filter.castcleId) query.displayId = filter.castcleId;
 
+    if (filter.visibility)
+      query.visibility = filter.visibility as EntityVisibility;
+    if (isArray(filter.visibility))
+      query.visibility = { $in: filter.visibility as EntityVisibility[] };
+
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
         sinceId: filter.sinceId,
@@ -724,7 +757,7 @@ export class Repository {
   }
 
   findUserCount(filter: UserQuery) {
-    return this.userModel.countDocuments(filter);
+    return this.userModel.countDocuments(filter as any);
   }
 
   updateUser(
@@ -732,7 +765,7 @@ export class Repository {
     user: UpdateQuery<User>,
     option?: QueryOptions,
   ) {
-    return this.userModel.updateOne(filter, user, option);
+    return this.userModel.updateOne(filter as any, user, option);
   }
 
   findEngagement(filter: EngagementQuery, queryOptions?: QueryOptions) {
@@ -1071,25 +1104,69 @@ export class Repository {
   }
 
   updateFeedItem(
-    filter: FilterQuery<FeedItem>,
-    feedItem: UpdateQuery<FeedItem>,
+    filter: FilterQuery<FeedItemV2>,
+    feedItem: UpdateQuery<FeedItemV2>,
     queryOptions?: QueryOptions,
   ) {
-    return this.feedItemModel.updateOne(filter, feedItem, queryOptions);
+    return this.feedItemV2Model.updateOne(filter, feedItem, queryOptions);
   }
 
-  saveFeedItemFromContents(
-    contents: GetContentCastDto,
+  async seenFeedItem(
+    account: Account,
+    feedItemId: string,
+    credential: Credential,
+  ) {
+    return this.feedItemV2Model
+      .updateOne(
+        {
+          viewer: account._id,
+          _id: feedItemId,
+          seenAt: {
+            $exists: false,
+          },
+        },
+        {
+          seenAt: new Date(),
+          seenCredential: credential._id,
+        },
+      )
+      .exec();
+  }
+
+  findFeedItems = (
+    filter: FilterQuery<FeedItemV2>,
+    queryOptions?: QueryOptions,
+  ) => this.feedItemV2Model.find(filter, queryOptions);
+
+  async saveFeedItemFromContents(
+    contents: GetCastDto,
     viewerAccountId: string,
   ) {
-    return this.feedItemModel.insertMany(
-      contents.contents.map((c) => ({
-        viewer: viewerAccountId,
-        content: c._id,
-        author: c.author.id,
+    const calledFeeds = await this.feedItemV2Model.find({
+      content: {
+        $in: contents.contents.map((c) => c._id),
+      },
+    });
+    await this.feedItemV2Model.updateMany(
+      {
+        content: {
+          $in: contents.contents.map((c) => c._id),
+        },
+      },
+      {
         calledAt: new Date(),
-      })),
+      },
     );
+    return this.feedItemV2Model
+      .insertMany(
+        contents.newContents.map((c) => ({
+          viewer: viewerAccountId,
+          content: c._id,
+          author: c.author.id,
+          calledAt: new Date(),
+        })),
+      )
+      .then((items) => calledFeeds.concat(items));
   }
 
   findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {
@@ -1225,6 +1302,19 @@ export class Repository {
     return collectedCast / totalCost;
   };
 
+  pauseAdsFromContentId = async (contentId: string) =>
+    this.adsCampaignModel.updateOne(
+      {
+        adsRef: {
+          $ref: 'content',
+          $id: contentId,
+        },
+      },
+      {
+        boostStatus: AdsBoostStatus.Pause,
+      },
+    );
+
   async deleteCastcleAccount(account: Account) {
     const users = await this.userModel.find({ ownerAccount: account._id });
     const userIds = users.map((user) => user._id);
@@ -1319,6 +1409,15 @@ export class Repository {
       .exec();
   }
 
+  findReportingSubject(
+    filter?: MetadataQuery,
+    queryOptions?: QueryOptions,
+  ): Promise<Metadata<ReportingSubject>> {
+    return this.metadataModel
+      .findOne(this.getMetadataQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
   async getPublicUsers({
     requestedBy,
     filter,
@@ -1330,11 +1429,22 @@ export class Repository {
     queryOptions?: QueryOptions;
     expansionFields?: UserField[];
   }) {
-    const users = await this.userModel.find(
+    let users = await this.userModel.find(
       this.getUserQuery(filter),
       {},
       queryOptions,
     );
+
+    if (
+      users.some(
+        (user) =>
+          String(requestedBy?.ownerAccount) !== String(user.ownerAccount),
+      )
+    )
+      users = users.filter(
+        (user) => user.visibility === EntityVisibility.Publish,
+      );
+
     const userIds = users.map((user) => user._id);
     const relationships =
       requestedBy && expansionFields?.includes(UserField.Relationships)
@@ -1371,10 +1481,32 @@ export class Repository {
     return new this.reportingModel(dto).save();
   }
 
+  updateReportings(
+    filter: ReportingQuery,
+    updateQuery: UpdateQuery<Reporting>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.reportingModel.updateMany(
+      this.getReportingQuery(filter),
+      updateQuery,
+      queryOptions,
+    );
+  }
+
   findReporting(filter: ReportingQuery, queryOptions?: QueryOptions) {
     return this.reportingModel
       .findOne(this.getReportingQuery(filter), {}, queryOptions)
       .exec();
+  }
+
+  findReportings(filter: ReportingQuery, queryOptions?: QueryOptions) {
+    return this.reportingModel
+      .find(this.getReportingQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
+  aggregateReporting(pipeline: any[]) {
+    return this.reportingModel.aggregate(pipeline);
   }
 
   createWallerShortcut(dto: AnyKeys<WalletShortcut>) {
@@ -1460,5 +1592,9 @@ export class Repository {
       );
 
     return `${castcleId}${availableId ? availableId?.number : ''}`;
+  }
+
+  async findNetwork(chainId: string): Promise<Network> {
+    return this.networkModel.findOne({ chainId });
   }
 }

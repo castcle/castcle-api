@@ -22,8 +22,8 @@ describe('MetadataServiceV2', () => {
       imports: [
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [MetadataServiceV2, Repository],
     }).compile();

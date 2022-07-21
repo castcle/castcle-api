@@ -25,8 +25,10 @@ import { CastLogger } from '@castcle-api/logger';
 import { Mailer } from '@castcle-api/utils/clients';
 import { CastcleQRCode, LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Queue } from 'bull';
 import { Model, Types } from 'mongoose';
 import {
   GetUserRelationParamsV2,
@@ -49,7 +51,6 @@ import {
   PageResponseDto,
   PaginationQuery,
   QRCodeImageSize,
-  ReportContentDto,
   ReportUserDto,
   ResponseDto,
   SortDirection,
@@ -60,8 +61,12 @@ import {
 import {
   AccountActivationType,
   CampaignType,
-  EngagementType,
-  ReportType,
+  MetadataType,
+  QueueName,
+  ReportingAction,
+  ReportingMessage,
+  ReportingStatus,
+  ReportingType,
   UserType,
 } from '../models';
 import { Repository } from '../repositories';
@@ -79,6 +84,8 @@ export class UserServiceV2 {
     private relationshipModel: Model<Relationship>,
     @InjectModel('User')
     private userModel: Model<User>,
+    @InjectQueue(QueueName.REPORTING)
+    private reportingQueue: Queue<ReportingMessage>,
     private analyticService: AnalyticService,
     private campaignService: CampaignService,
     private mailerService: Mailer,
@@ -88,7 +95,10 @@ export class UserServiceV2 {
   ) {}
 
   getUser = async (userId: string) => {
-    const user = await this.repository.findUser({ _id: userId });
+    const user = await this.repository.findUser({
+      _id: userId,
+      visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+    });
     if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
     return user;
   };
@@ -100,7 +110,10 @@ export class UserServiceV2 {
   ) => {
     const [user] = await this.repository.getPublicUsers({
       requestedBy: requestedBy,
-      filter: { _id: userId },
+      filter: {
+        _id: userId,
+        visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+      },
       expansionFields,
     });
 
@@ -340,87 +353,68 @@ export class UserServiceV2 {
     await user.unfollow(targetUser);
   }
 
-  async reportContent(user: User, body: ReportContentDto) {
-    const targetContent = await this.repository.findContent({
-      _id: body.targetContentId,
-    });
-
-    if (!targetContent) throw new CastcleException('CONTENT_NOT_FOUND');
-
-    const reportingExists = await this.repository.findReporting({
-      payload: targetContent,
-      subject: body.subject,
-      by: user._id,
-    });
-
-    if (reportingExists) throw new CastcleException('REPORTING_IS_EXIST');
-
-    const engagementFilter = {
-      user: user._id,
-      targetRef: { $ref: 'content', $id: targetContent._id },
-      type: EngagementType.Report,
-    };
-
-    await this.repository
-      .updateEngagement(
-        engagementFilter,
-        { ...engagementFilter, visibility: EntityVisibility.Publish },
-        { upsert: true },
-      )
+  async reportUser(requestedBy: User, body: ReportUserDto) {
+    const targetUser = await this.repository
+      .findUser({
+        _id: body.targetCastcleId,
+      })
       .exec();
-
-    await this.mailerService.sendReportContentEmail(
-      { _id: user._id, displayName: user.displayName },
-      {
-        _id: targetContent._id,
-        payload: targetContent.payload,
-        author: {
-          _id: targetContent.author.id,
-          displayName: targetContent.author.displayName,
-        },
-      },
-      body.message,
-    );
-
-    await this.repository.createReporting({
-      by: user._id,
-      message: body.message,
-      payload: targetContent,
-      subject: body.subject,
-      type: ReportType.CONTENT,
-      user: targetContent.author.id,
-    });
-  }
-
-  async reportUser(user: User, body: ReportUserDto) {
-    const targetUser = await this.repository.findUser({
-      _id: body.targetCastcleId,
-    });
 
     if (!targetUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
+    if (targetUser.id === requestedBy.id)
+      throw new CastcleException('FORBIDDEN');
+
     const reportingExists = await this.repository.findReporting({
-      payload: targetUser,
+      by: requestedBy._id,
+      payloadId: targetUser._id,
       subject: body.subject,
-      by: user._id,
+      user: targetUser._id,
     });
 
     if (reportingExists) throw new CastcleException('REPORTING_IS_EXIST');
 
-    await this.mailerService.sendReportUserEmail(
-      { _id: user._id, displayName: user.displayName },
-      { _id: targetUser._id, displayName: targetUser.displayName },
-      body.message,
-    );
-
-    await this.repository.createReporting({
-      by: user._id,
-      message: body.message,
-      payload: targetUser,
+    const reportingSubject = await this.repository.findReportingSubject({
+      type: MetadataType.REPORTING_SUBJECT,
       subject: body.subject,
-      type: ReportType.USER,
-      user: targetUser._id,
     });
+
+    if (!reportingSubject)
+      throw new CastcleException('REPORTING_SUBJECT_NOT_FOUND');
+
+    await Promise.all([
+      this.repository.createReporting({
+        by: requestedBy._id,
+        message: body.message,
+        payload: targetUser,
+        subject: body.subject,
+        type: ReportingType.USER,
+        user: targetUser._id,
+      }),
+      this.reportingQueue.add(
+        {
+          subject: `${ReportingAction.REPORT} user : (OID : ${targetUser._id})`,
+          content: this.mailerService.generateHTMLReport(
+            targetUser.toPublicResponse(),
+            {
+              action: ReportingAction.REPORT,
+              message: body.message,
+              reportedBy: requestedBy.displayName,
+              subject: reportingSubject.payload.name,
+              type: ReportingType.USER,
+              user: {
+                id: targetUser.id,
+                castcleId: targetUser.displayId,
+                displayName: targetUser.displayName,
+              },
+            },
+          ),
+        },
+        {
+          removeOnComplete: true,
+        },
+      ),
+    ]);
   }
 
   async updateMobile(
@@ -746,4 +740,61 @@ export class UserServiceV2 {
         : undefined,
     });
   }
+
+  updateAppealUser = async (user: User, status: ReportingStatus) => {
+    if (user.visibility !== EntityVisibility.Illegal)
+      throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
+    const reporting = await this.repository.findReporting({
+      payloadId: user._id,
+      user: user._id,
+    });
+
+    if (!reporting) return;
+
+    if (!user?.reportedStatus)
+      throw new CastcleException('REPORTING_STATUS_NOT_FOUND');
+
+    if (user?.reportedStatus !== ReportingStatus.ILLEGAL)
+      throw new CastcleException('REPORTING_APPEAL_IS_EXISTS');
+
+    await this.repository.updateReportings(
+      {
+        user: user._id,
+      },
+      {
+        $set: { status },
+      },
+    );
+
+    user.reportedStatus = status;
+    await user.save();
+
+    if (status === ReportingStatus.NOT_APPEAL) return;
+
+    await this.reportingQueue.add(
+      {
+        subject: `${ReportingAction.APPEAL} user : (OID : ${user._id})`,
+        content: this.mailerService.generateHTMLReport(
+          user.toPublicResponse(),
+          {
+            action: ReportingAction.APPEAL,
+            actionBy: reporting.actionBy,
+            message: reporting.message,
+            reportedBy: user.displayName,
+            subject: reporting.subject,
+            type: ReportingType.USER,
+            user: {
+              id: user.id,
+              castcleId: user.displayId,
+              displayName: user.displayName,
+            },
+          },
+        ),
+      },
+      {
+        removeOnComplete: true,
+      },
+    );
+  };
 }

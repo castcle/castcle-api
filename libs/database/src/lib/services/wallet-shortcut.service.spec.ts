@@ -56,8 +56,8 @@ describe('WalletShortcutService', () => {
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register(),
-        MongooseForFeatures,
-        MongooseAsyncFeatures,
+        MongooseForFeatures(),
+        MongooseAsyncFeatures(),
         HttpModule,
       ],
       providers: [

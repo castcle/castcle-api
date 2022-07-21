@@ -34,16 +34,16 @@ import {
   pipelineOfGetWalletRecentFromType,
 } from '../aggregations';
 import {
-  WalletRecentResponse,
-  WalletResponse,
+  RecentWalletResponse,
+  RecentWalletsResponse,
   WalletResponseOptions,
 } from '../dtos';
 import {
   CACCOUNT_NO,
   CastcleNumber,
   TopUpDto,
-  TransactionDto,
   TransactionFilter,
+  TransferDto,
   WalletHistoryResponseDto,
   WalletType,
 } from '../models';
@@ -59,12 +59,12 @@ import {
 @Injectable()
 export class TAccountService {
   constructor(
-    @InjectModel('Transaction') public _transactionModel: Model<Transaction>,
-    @InjectModel('CAccount') public _caccountModel: Model<CAccount>,
+    @InjectModel('Transaction') private transactionModel: Model<Transaction>,
+    @InjectModel('CAccount') private cAccountModel: Model<CAccount>,
     private repository: Repository,
   ) {}
 
-  toWalletResponse(
+  toRecentWalletResponse(
     user: User,
     shortcut?: WalletShortcut,
     overwrites?: WalletResponseOptions,
@@ -86,7 +86,7 @@ export class TAccountService {
       createdAt: shortcut?.createdAt ?? user.createdAt,
       updatedAt: shortcut?.updatedAt ?? user.updatedAt,
       ...overwrites,
-    } as WalletResponse;
+    } as RecentWalletResponse;
   }
 
   getFindQueryForChild(caccount: CAccount) {
@@ -115,11 +115,11 @@ export class TAccountService {
     const findFilter: FilterQuery<Transaction> = {
       $or: orQuery,
     };
-    return this._transactionModel.find(findFilter);
+    return this.transactionModel.find(findFilter);
   }
 
   async getLedgers(caccountNo: string) {
-    const caccount = await this._caccountModel.findOne({ no: caccountNo });
+    const caccount = await this.cAccountModel.findOne({ no: caccountNo });
     return this._getLedgers(caccount);
   }
 
@@ -128,65 +128,42 @@ export class TAccountService {
    * @param {string} accountId
    */
   getAccountBalance = async (userId: string, walletType: WalletType) => {
-    const [balance] =
-      await this._transactionModel.aggregate<GetBalanceResponse>(
-        pipelineOfGetBalanceFromWalletType(userId, walletType),
-      );
+    const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
+      pipelineOfGetBalanceFromWalletType(userId, walletType),
+    );
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
 
-  async validateTransfer(transferDTO: TransactionDto) {
-    //value from equal value to
-    if (
-      !(
-        transferDTO.from.value ===
-        transferDTO.to.reduce((prev, now) => prev + now.value, 0)
-      )
-    ) {
-      return false;
-    }
+  async validateTransfer({ from, to, ledgers }: TransferDto) {
+    const sumOfTo = to.reduce((total, { value }) => total + value, 0);
+    if (from.value !== sumOfTo) return false;
 
-    //debit credit is balance
-    const totalDebit = transferDTO.ledgers.reduce(
-      (prev, now) => prev + now.debit.value,
-      0,
+    const total = ledgers.reduce(
+      (total, { credit, debit }) => ({
+        credit: total.credit + credit.value,
+        debit: total.debit + debit.value,
+      }),
+      { credit: 0, debit: 0 },
     );
-    const totalCredit = transferDTO.ledgers.reduce(
-      (prev, now) => prev + now.credit.value,
-      0,
-    );
-    if (
-      !(totalDebit === totalCredit && totalDebit === transferDTO.from.value)
-    ) {
-      return false;
-    }
-    //validate source balance
-    if (transferDTO.from.user && transferDTO.from.value) {
-      const accountBalance = await this.getAccountBalance(
-        transferDTO.from.user,
-        transferDTO.from.type,
-      );
-      if (
-        !(accountBalance >= 0 && accountBalance - transferDTO.from.value >= 0)
-      )
-        return false;
-    }
-    //simulate after transfer there is no minus balance
-    //get all CAccount balance from ledgers
-    //add the ledgers info and check if they all 0
-    return true;
+
+    if (total.credit !== total.debit) return false;
+    if (total.debit !== from.value) return false;
+    if (!from.user) return true;
+
+    const balance = await this.getAccountBalance(from.user, from.type);
+    return balance >= from.value;
   }
 
-  async transfers(transferDTO: TransactionDto, session?: ClientSession) {
-    //check if balance available
-    if (await this.validateTransfer(transferDTO))
-      return new this._transactionModel(transferDTO).save({ session: session });
-    else throw new CastcleException('INVALID_TRANSACTIONS_DATA');
+  async transfer(dto: TransferDto, session?: ClientSession) {
+    const isValidDto = await this.validateTransfer(dto);
+    if (!isValidDto) throw new CastcleException('INVALID_TRANSACTIONS_DATA');
+
+    return new this.transactionModel(dto).save({ session: session });
   }
 
   async getBalance(caccountNo: string) {
     //get account First
-    const caccount = await this._caccountModel.findOne({ no: caccountNo });
+    const caccount = await this.cAccountModel.findOne({ no: caccountNo });
     const txs = await this._getLedgers(caccount);
     const allDebit = txs.reduce((totalDebit, currentTx) => {
       return (
@@ -219,7 +196,7 @@ export class TAccountService {
   }
 
   async getWalletHistory(userId: string, filter: TransactionFilter) {
-    const txs = await this._transactionModel.find({
+    const txs = await this.transactionModel.find({
       $or: [
         { 'from.user': userId, 'data.filter': filter },
         { 'to.user': userId, 'data.filter': filter },
@@ -243,59 +220,59 @@ export class TAccountService {
   }
   /**
    * Use for dev only
-   * @param topupDto
+   * @param topUpDto
    * @returns
    */
-  topup(topupDto: TopUpDto) {
-    switch (topupDto.type) {
+  topUp(topUpDto: TopUpDto) {
+    switch (topUpDto.type) {
       case WalletType.ADS:
-        return new this._transactionModel({
+        return new this.transactionModel({
           from: {
             type: WalletType.EXTERNAL_DEPOSIT,
-            value: topupDto.value,
+            value: topUpDto.value,
           },
           to: [
             {
               type: WalletType.ADS,
-              value: topupDto.value,
-              user: topupDto.userId,
+              value: topUpDto.value,
+              user: topUpDto.userId,
             },
           ],
           ledgers: [
             {
               credit: {
                 caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
-                value: topupDto.value,
+                value: topUpDto.value,
               },
               debit: {
                 caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
-                value: topupDto.value,
+                value: topUpDto.value,
               },
             },
           ],
         }).save();
       case WalletType.PERSONAL:
-        return new this._transactionModel({
+        return new this.transactionModel({
           from: {
             type: WalletType.EXTERNAL_DEPOSIT,
-            value: topupDto.value,
+            value: topUpDto.value,
           },
           to: [
             {
               type: WalletType.PERSONAL,
-              value: topupDto.value,
-              user: topupDto.userId,
+              value: topUpDto.value,
+              user: topUpDto.userId,
             },
           ],
           ledgers: [
             {
               credit: {
                 caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
-                value: topupDto.value,
+                value: topUpDto.value,
               },
               debit: {
                 caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
-                value: topupDto.value,
+                value: topUpDto.value,
               },
             },
           ],
@@ -308,9 +285,9 @@ export class TAccountService {
   async getAllWalletRecent(
     userId: string,
     keyword?: { [key: string]: string },
-  ): Promise<WalletRecentResponse> {
+  ): Promise<RecentWalletsResponse> {
     const transactions = !keyword
-      ? await this._transactionModel.aggregate<GetWalletRecentResponse>([
+      ? await this.transactionModel.aggregate<GetWalletRecentResponse>([
           pipelineOfGetWalletRecentFromType(userId),
         ])
       : undefined;
@@ -327,7 +304,7 @@ export class TAccountService {
       .exec();
 
     return {
-      castcle: users.map((user) => this.toWalletResponse(user, null)),
+      castcle: users.map((user) => this.toRecentWalletResponse(user, null)),
       other: [], // TODO !!! Implement external chain
     };
   }

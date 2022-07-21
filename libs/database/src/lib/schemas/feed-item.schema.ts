@@ -50,6 +50,9 @@ export class FeedItem extends CastcleBase {
   offScreenAt?: Date;
 
   @Prop({ type: Object })
+  offViewAt?: Date;
+
+  @Prop({ type: Object })
   aggregator?: FeedAggregator;
 
   @Prop({ type: Object })

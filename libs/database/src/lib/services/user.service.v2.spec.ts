@@ -33,9 +33,10 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { Model } from 'mongoose';
 import {
   AdsService,
   AnalyticService,
@@ -51,12 +52,19 @@ import {
   UserService,
   UserServiceV2,
 } from '../database.module';
-import { PaginationQuery, QRCodeImageSize } from '../dtos';
+import { EntityVisibility, PaginationQuery, QRCodeImageSize } from '../dtos';
 import { MockUserService } from '../mocks';
 import { MockUserDetail } from '../mocks/user.mocks';
-import { KeywordType, QueueName, UserType } from '../models';
+import {
+  KeywordType,
+  MetadataType,
+  QueueName,
+  ReportingStatus,
+  ReportingSubject,
+  UserType,
+} from '../models';
 import { Repository } from '../repositories';
-import { Account, Credential, User } from '../schemas';
+import { Account, Credential, Metadata, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
@@ -87,8 +95,8 @@ describe('UserServiceV2', () => {
         CacheModule.register(),
         CastcleBullModule,
         HttpModule,
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         MongooseModule.forRoot(mongod.getUri()),
       ],
       providers: [
@@ -113,13 +121,23 @@ describe('UserServiceV2', () => {
         { provide: GoogleClient, useValue: {} },
         { provide: TwitterClient, useValue: {} },
         { provide: TwilioClient, useValue: {} },
-        { provide: Mailer, useValue: { sendRegistrationEmail: jest.fn() } },
+        {
+          provide: Mailer,
+          useValue: {
+            sendRegistrationEmail: jest.fn(),
+            generateHTMLReport: jest.fn(),
+          },
+        },
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
         {
           provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.CONTENT),
+          provide: getQueueToken(QueueName.REPORTING),
           useValue: { add: jest.fn() },
         },
         {
@@ -157,6 +175,19 @@ describe('UserServiceV2', () => {
     });
 
     userDemo = await authService.getUserFromAccount(accountDemo.account);
+
+    const metadataModel = moduleRef.get<Model<Metadata<ReportingSubject>>>(
+      getModelToken('Metadata'),
+    );
+
+    await new metadataModel({
+      type: MetadataType.REPORTING_SUBJECT,
+      payload: {
+        slug: 'spam',
+        name: 'Spam',
+        order: 1,
+      },
+    }).save();
   });
 
   afterAll(async () => {
@@ -604,6 +635,138 @@ describe('UserServiceV2', () => {
       expect(userResponse).toBeDefined();
     });
   });
+
+  describe('reportUser', () => {
+    let reportedUser: User;
+    let reportedByUser: User;
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateUser.generateMockUsers(2);
+
+      reportedUser = mocksUsers[1].user;
+      reportedByUser = mocksUsers[0].user;
+    });
+
+    it('should error report user is reporting subject not found.', async () => {
+      await expect(
+        userServiceV2.reportUser(reportedByUser, {
+          targetCastcleId: reportedUser._id,
+          message: 'report user',
+          subject: 'test',
+        }),
+      ).rejects.toThrowError(
+        new CastcleException('REPORTING_SUBJECT_NOT_FOUND'),
+      );
+    });
+
+    it('should create report user.', async () => {
+      await userServiceV2.reportUser(reportedByUser, {
+        targetCastcleId: reportedUser._id,
+        message: 'report user',
+        subject: 'spam',
+      });
+
+      const reporting = await repository.findReporting({
+        by: reportedByUser._id,
+        payloadId: reportedUser._id,
+      });
+
+      expect(reporting.by).toEqual(reportedByUser._id);
+      expect(reporting.user).toEqual(reportedUser._id);
+      expect(reporting.message).toEqual('report user');
+      expect(reporting.subject).toEqual('spam');
+    });
+
+    it('should error report user is exists.', async () => {
+      await expect(
+        userServiceV2.reportUser(reportedByUser, {
+          targetCastcleId: reportedUser._id,
+          message: 'report user',
+          subject: 'spam',
+        }),
+      ).rejects.toThrowError(new CastcleException('REPORTING_IS_EXIST'));
+    });
+  });
+
+  describe('updateAppealUser', () => {
+    let reportedUser: User;
+    let reportedByUser: User;
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateUser.generateMockUsers(2);
+
+      reportedUser = mocksUsers[1].user;
+      reportedByUser = mocksUsers[0].user;
+
+      reportedUser = await repository.findUser({ _id: reportedUser.id });
+      await userServiceV2.reportUser(reportedByUser, {
+        targetCastcleId: reportedUser._id,
+        message: 'appeal user',
+        subject: 'spam',
+      });
+      reportedUser = await reportedUser
+        .set('visibility', EntityVisibility.Illegal)
+        .save();
+    });
+
+    it('should update reportedStatus content and reporting status equal "appeal"', async () => {
+      reportedUser.reportedStatus = ReportingStatus.ILLEGAL;
+      reportedUser.reportedSubject = 'test';
+      reportedUser = await reportedUser.save();
+
+      await userServiceV2.updateAppealUser(
+        reportedUser,
+        ReportingStatus.APPEAL,
+      );
+
+      const user = await repository.findUser({
+        _id: reportedUser._id,
+        visibility: EntityVisibility.Illegal,
+      });
+
+      const reporting = await repository.findReporting({
+        payloadId: reportedUser._id,
+      });
+
+      expect(user.id).toEqual(reportedUser.id);
+      expect(user.reportedStatus).not.toBeUndefined();
+      expect(user.reportedStatus).toEqual(ReportingStatus.APPEAL);
+
+      expect(reporting.by).toEqual(reportedByUser._id);
+      expect(reporting.status).toEqual(ReportingStatus.APPEAL);
+      expect(reporting.user).toEqual(reportedUser._id);
+    });
+
+    it('should update reportedStatus content and reporting status equal "not-appeal"', async () => {
+      reportedUser.reportedStatus = ReportingStatus.ILLEGAL;
+      reportedUser.reportedSubject = 'test';
+      reportedUser.markModified('reportedStatus');
+      reportedUser = await reportedUser.save();
+
+      await userServiceV2.updateAppealUser(
+        reportedUser,
+        ReportingStatus.NOT_APPEAL,
+      );
+
+      const user = await repository.findUser({
+        _id: reportedUser._id,
+        visibility: EntityVisibility.Illegal,
+      });
+
+      const reporting = await repository.findReporting({
+        payloadId: reportedUser._id,
+      });
+
+      expect(user.id).toEqual(reportedUser.id);
+      expect(user.reportedStatus).not.toBeUndefined();
+      expect(user.reportedStatus).toEqual(ReportingStatus.NOT_APPEAL);
+
+      expect(reporting.by).toEqual(reportedByUser._id);
+      expect(reporting.status).toEqual(ReportingStatus.NOT_APPEAL);
+      expect(reporting.user).toEqual(reportedUser._id);
+    });
+  });
+
   it('should be defined', () => {
     expect(repository).toBeDefined();
     expect(userServiceV2).toBeDefined();

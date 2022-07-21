@@ -437,6 +437,12 @@ export class GetUserParam {
   isMe = () => this.userId === 'me';
 }
 
+export class RemoveFarmParam extends GetUserParam {
+  @ApiProperty()
+  @IsString()
+  farmingId: string;
+}
+
 export class UpdateUserDtoV2 {
   @IsOptional()
   @IsString()
@@ -534,4 +540,6 @@ export class OwnerResponse extends PublicUserResponse {
   linkSocial?: LinkedSocials;
   syncSocial?: SyncSocials;
   pdpa?: boolean;
+  reportedStatus?: string;
+  reportedSubject?: string;
 }

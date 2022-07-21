@@ -23,6 +23,7 @@
 import {
   AnalyticService,
   AuthenticationService,
+  AuthenticationServiceV2,
   CampaignService,
   ContentService,
   HashtagService,
@@ -34,6 +35,7 @@ import {
   QueueName,
   TAccountService,
   TLedger,
+  Transaction,
   TransactionFilter,
   TransactionType,
   UserService,
@@ -43,15 +45,22 @@ import {
   generateMockUsers,
   mockDeposit,
 } from '@castcle-api/database';
-import { Mailer } from '@castcle-api/utils/clients';
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Model } from 'mongoose';
 import { WalletResponse } from '../dtos';
 import { WalletService } from '../services/wallet.service';
 import { WalletController } from './wallet.controller';
@@ -63,7 +72,7 @@ describe('WalletController', () => {
   let userServiceV1: UserService;
   let authService: AuthenticationService;
   let mocksUsers: MockUserDetail[];
-  let taccountService: TAccountService;
+  let transactionModel: Model<Transaction>;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -71,14 +80,15 @@ describe('WalletController', () => {
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         HttpModule,
       ],
       controllers: [WalletController],
       providers: [
         AnalyticService,
         AuthenticationService,
+        AuthenticationServiceV2,
         ContentService,
         Repository,
         TAccountService,
@@ -86,16 +96,16 @@ describe('WalletController', () => {
         UserServiceV2,
         WalletService,
         WalletShortcutService,
+        { provide: FacebookClient, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
+        { provide: TwilioClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: HashtagService, useValue: {} },
         { provide: Mailer, useValue: {} },
         { provide: NotificationServiceV2, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
-          useValue: { add: jest.fn() },
-        },
-        {
-          provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
         {
@@ -106,23 +116,27 @@ describe('WalletController', () => {
           provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
+        {
+          provide: getQueueToken(QueueName.REPORTING),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 
     appController = app.get(WalletController);
-    taccountService = app.get<TAccountService>(TAccountService);
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
+    transactionModel = app.get(getModelToken('Transaction'));
     mocksUsers = await generateMockUsers(2, 0, {
       userService: userServiceV1,
       accountService: authService,
     });
     //init
-    await mockDeposit(
-      mocksUsers[0].user,
-      5555,
-      taccountService._transactionModel,
-    );
+    await mockDeposit(mocksUsers[0].user, 5555, transactionModel);
   });
 
   describe('getUserWallet()', () => {
@@ -158,7 +172,6 @@ describe('WalletController', () => {
         mocksUsers[1].credential,
       );
       const fakeUserId = authorizer.user.id;
-      const transactionModel = taccountService._transactionModel;
       await new transactionModel({
         from: {
           type: WalletType.CASTCLE_MINT_CONTRACT,

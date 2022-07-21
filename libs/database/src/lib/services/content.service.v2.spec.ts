@@ -27,13 +27,14 @@ import {
   TwilioClient,
   TwitterClient,
 } from '@castcle-api/utils/clients';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   AnalyticService,
   AuthenticationServiceV2,
@@ -46,7 +47,8 @@ import {
 } from '../database.module';
 import {
   ContentPayloadItem,
-  ContentType,
+  EntityVisibility,
+  FeedItemResponse,
   NotificationType,
   ResponseDto,
   ShortPayload,
@@ -59,14 +61,24 @@ import {
 } from '../mocks';
 import {
   ContentFarmingStatus,
+  ContentType,
   EngagementType,
   KeywordType,
+  MetadataType,
   QueueName,
+  ReportingStatus,
+  ReportingSubject,
   SuggestContentItem,
   WalletType,
 } from '../models';
 import { Repository } from '../repositories';
-import { Content, ContentFarming, FeedItem } from '../schemas';
+import {
+  Content,
+  ContentFarming,
+  FeedItem,
+  Metadata,
+  Transaction,
+} from '../schemas';
 import { CampaignService } from './campaign.service';
 import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
@@ -82,6 +94,7 @@ describe('ContentServiceV2', () => {
   let mocksUsers: MockUserDetail[];
   let generateUser: MockUserService;
   let dataService: DataService;
+  let transactionModel: Model<Transaction>;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -90,8 +103,8 @@ describe('ContentServiceV2', () => {
         CacheModule.register(),
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         AuthenticationServiceV2,
@@ -108,7 +121,7 @@ describe('ContentServiceV2', () => {
         { provide: CampaignService, useValue: {} },
         { provide: FacebookClient, useValue: {} },
         { provide: GoogleClient, useValue: {} },
-        { provide: Mailer, useValue: {} },
+        { provide: Mailer, useValue: { generateHTMLReport: jest.fn() } },
         { provide: TwilioClient, useValue: {} },
         { provide: TwitterClient, useValue: {} },
         {
@@ -116,11 +129,15 @@ describe('ContentServiceV2', () => {
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.USER),
+          provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.NOTIFICATION),
+          provide: getQueueToken(QueueName.REPORTING),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
       ],
@@ -131,7 +148,13 @@ describe('ContentServiceV2', () => {
     service = moduleRef.get(ContentServiceV2);
     tAccountService = moduleRef.get(TAccountService);
     dataService = moduleRef.get<DataService>(DataService);
+    transactionModel = moduleRef.get(getModelToken('Transaction'));
+
     mocksUsers = await generateUser.generateMockUsers(5);
+
+    const metadataModel = moduleRef.get<Model<Metadata<ReportingSubject>>>(
+      getModelToken('Metadata'),
+    );
 
     const user = mocksUsers[0].user;
     content = await service.createContent(
@@ -142,6 +165,15 @@ describe('ContentServiceV2', () => {
       },
       user,
     );
+
+    await new metadataModel({
+      type: MetadataType.REPORTING_SUBJECT,
+      payload: {
+        slug: 'spam',
+        name: 'Spam',
+        order: 1,
+      },
+    }).save();
   });
 
   describe('#toContentsResponses()', () => {
@@ -173,7 +205,9 @@ describe('ContentServiceV2', () => {
         bundleContents,
       );
 
-      expect(contentResp.payload.id).toEqual(String(content.payload.id));
+      expect(String(contentResp.payload.id)).toEqual(
+        String(content.payload.id),
+      );
       expect(contentResp.payload.message).toEqual(
         (content.payload as ShortPayload).message,
       );
@@ -291,7 +325,7 @@ describe('ContentServiceV2', () => {
       await mockDeposit(
         mockFarmingUsers[1].user,
         initialBalance,
-        tAccountService._transactionModel,
+        transactionModel,
       );
       const balance = await tAccountService.getAccountBalance(
         mockFarmingUsers[1].user.id,
@@ -304,16 +338,12 @@ describe('ContentServiceV2', () => {
     describe('#createContentFarming', () => {
       let contentFarming: ContentFarming;
       beforeAll(async () => {
-        expect(
-          await tAccountService._transactionModel.countDocuments(),
-        ).toEqual(1);
+        expect(await transactionModel.countDocuments()).toEqual(1);
         contentFarming = await service.createContentFarming(
           testContents[0].id,
           mockFarmingUsers[1].user.id,
         );
-        expect(
-          await tAccountService._transactionModel.countDocuments(),
-        ).toEqual(2);
+        expect(await transactionModel.countDocuments()).toEqual(2);
       });
       it('should be able to create content farming instance if have balance > 5% total', async () => {
         expect(String(contentFarming.content)).toEqual(testContents[0].id);
@@ -549,7 +579,9 @@ describe('ContentServiceV2', () => {
       );
 
       expect(recast.payload).toBeTruthy();
-      expect(recast.payload.id).toEqual(newRecast.recastContent.id);
+      expect(String(recast.payload.id)).toEqual(
+        String(newRecast.recastContent.id),
+      );
       expect(recast.payload.referencedCasts.id).toEqual(
         newRecast.recastContent.originalPost._id,
       );
@@ -571,7 +603,9 @@ describe('ContentServiceV2', () => {
       );
 
       expect(recast.payload).toBeTruthy();
-      expect(recast.payload.id).toEqual(newQuote.quoteContent.id);
+      expect(String(recast.payload.id)).toEqual(
+        String(newQuote.quoteContent.id),
+      );
       expect(recast.payload.referencedCasts.id).toEqual(
         newQuote.quoteContent.originalPost._id,
       );
@@ -586,7 +620,9 @@ describe('ContentServiceV2', () => {
         false,
       );
 
-      expect(contentResp.payload.id).toEqual(String(content.payload.id));
+      expect(String(contentResp.payload.id)).toEqual(
+        String(content.payload.id),
+      );
       expect(contentResp.payload.message).toEqual(
         (content.payload as ShortPayload).message,
       );
@@ -595,7 +631,7 @@ describe('ContentServiceV2', () => {
 
   describe('#getContents()', () => {
     it('should get cast is exists.', async () => {
-      const contentResp = await service.getContents(
+      const contentResp = await service.getUserContents(
         { hasRelationshipExpansion: false },
         mocksUsers[1].user,
       );
@@ -848,16 +884,204 @@ describe('ContentServiceV2', () => {
               author: Types.ObjectId(c.author.id),
             } as FeedItem),
         );
-        const feedResponse = await service.toFeedReponse(
+        const feedResponse = await service.toFeedResponse(
           response,
           mockFeedItems,
           mocksUsers[0].user,
           true,
         );
+
         expect(
-          feedResponse.payload.map((p) => (p.payload as ContentPayloadItem).id),
+          feedResponse.payload.map((p) =>
+            String((p.payload as ContentPayloadItem).id),
+          ),
         ).toEqual(mockFeedItems.map((f) => String(f.content)));
       });
+    });
+    describe('generateFeeds()', () => {
+      let feedResponse: FeedItemResponse;
+      it('should save recent feed in feedItems', async () => {
+        feedResponse = await service.generateFeeds(
+          { maxResults: 20 } as any,
+          mocksUsers[0].account.id,
+          mocksUsers[0].user,
+        );
+        const response = await service.getRecentContents(
+          { maxResults: 20 } as any,
+          mocksUsers[0].account.id,
+          mocksUsers[0].user,
+        );
+        const mockFeedItems = response.contents.map(
+          (c) =>
+            ({
+              id: Types.ObjectId(),
+              content: c._id,
+              viewer: mocksUsers[0].account._id,
+              author: Types.ObjectId(c.author.id),
+            } as FeedItem),
+        );
+
+        expect(
+          feedResponse.payload.map((p) =>
+            String((p.payload as ContentPayloadItem).id),
+          ),
+        ).toEqual(mockFeedItems.map((f) => String(f.content)));
+        //expect to have those id in db
+        const feedIds = feedResponse.payload.map((p) => p.id);
+        const dbFeeds = await repository.findFeedItems({
+          _id: {
+            $in: feedIds,
+          },
+        });
+        for (let i = 0; i < dbFeeds.length; i++) {
+          expect(feedIds).toContain(dbFeeds[i].id);
+        }
+      });
+      describe('#offViewFeeds', () => {
+        it('should off view feed return success', async () => {
+          const offView = await service.offViewFeedItem(
+            mocksUsers[0].account.id,
+            feedResponse.payload[0].id,
+          );
+          expect(offView.ok).toEqual(1);
+        });
+      });
+    });
+  });
+  describe('reportContent', () => {
+    let reportContent: Content;
+    beforeAll(async () => {
+      const { payload } = await service.createContent(
+        {
+          payload: { message: 'content report' },
+          type: ContentType.Short,
+          castcleId: mocksUsers[0].user.displayId,
+        },
+        mocksUsers[0].user,
+      );
+      reportContent = await repository.findContent({ _id: payload.id });
+    });
+
+    it('should error report content is reporting subject not found.', async () => {
+      await expect(
+        service.reportContent(mocksUsers[1].user, {
+          targetContentId: reportContent._id,
+          message: 'report content',
+          subject: 'test',
+        }),
+      ).rejects.toThrowError(
+        new CastcleException('REPORTING_SUBJECT_NOT_FOUND'),
+      );
+    });
+
+    it('should create report content.', async () => {
+      await service.reportContent(mocksUsers[1].user, {
+        targetContentId: reportContent._id,
+        message: 'report content',
+        subject: 'spam',
+      });
+
+      const reporting = await repository.findReporting({
+        by: mocksUsers[1].user._id,
+        payloadId: reportContent._id,
+      });
+
+      expect(reporting.by).toEqual(mocksUsers[1].user._id);
+      expect(reporting.user).toEqual(mocksUsers[0].user._id);
+      expect(reporting.message).toEqual('report content');
+      expect(reporting.subject).toEqual('spam');
+    });
+
+    it('should error report content is exists.', async () => {
+      await expect(
+        service.reportContent(mocksUsers[1].user, {
+          targetContentId: reportContent._id,
+          message: 'report content',
+          subject: 'spam',
+        }),
+      ).rejects.toThrowError(new CastcleException('REPORTING_IS_EXIST'));
+    });
+  });
+
+  describe('updateAppealContent', () => {
+    let reportContent: Content;
+    beforeAll(async () => {
+      const { payload } = await service.createContent(
+        {
+          payload: { message: 'content appeal' },
+          type: ContentType.Short,
+          castcleId: mocksUsers[0].user.displayId,
+        },
+        mocksUsers[0].user,
+      );
+      reportContent = await repository.findContent({ _id: payload.id });
+      await service.reportContent(mocksUsers[1].user, {
+        targetContentId: reportContent._id,
+        message: 'appeal content',
+        subject: 'spam',
+      });
+      reportContent = await reportContent
+        .set('visibility', EntityVisibility.Illegal)
+        .save();
+    });
+
+    it('should update reportedStatus content and reporting status equal "appeal"', async () => {
+      reportContent.reportedStatus = ReportingStatus.ILLEGAL;
+      reportContent.reportedSubject = 'test';
+      reportContent = await reportContent.save();
+
+      await service.updateAppealContent(
+        reportContent._id,
+        mocksUsers[0].user,
+        ReportingStatus.APPEAL,
+      );
+
+      const content = await repository.findContent({
+        _id: reportContent._id,
+        visibility: EntityVisibility.Illegal,
+      });
+
+      const reporting = await repository.findReporting({
+        payloadId: reportContent._id,
+      });
+
+      expect(content.id).toEqual(reportContent.id);
+      expect(content.reportedStatus).not.toBeUndefined();
+      expect(content.reportedStatus).toEqual(ReportingStatus.APPEAL);
+
+      expect(reporting.by).toEqual(mocksUsers[1].user._id);
+      expect(reporting.status).toEqual(ReportingStatus.APPEAL);
+      expect(reporting.user).toEqual(mocksUsers[0].user._id);
+    });
+
+    it('should update reportedStatus content and reporting status equal "not-appeal"', async () => {
+      reportContent.reportedStatus = ReportingStatus.ILLEGAL;
+      reportContent.reportedSubject = 'test';
+      reportContent.markModified('reportedStatus');
+      reportContent = await reportContent.save();
+
+      await service.updateAppealContent(
+        reportContent._id,
+        mocksUsers[0].user,
+        ReportingStatus.NOT_APPEAL,
+      );
+
+      const content = await repository.findContent({
+        _id: reportContent._id,
+        visibility: EntityVisibility.Illegal,
+      });
+
+      const reporting = await repository.findReporting({
+        payloadId: reportContent._id,
+      });
+
+      expect(content.id).toEqual(reportContent.id);
+      expect(content.reportedStatus).not.toBeUndefined();
+      expect(content.reportedStatus).toEqual(ReportingStatus.NOT_APPEAL);
+
+      expect(reporting.by).toEqual(mocksUsers[1].user._id);
+      expect(reporting.status).toEqual(ReportingStatus.NOT_APPEAL);
+      expect(reporting.user).toEqual(mocksUsers[0].user._id);
     });
   });
 

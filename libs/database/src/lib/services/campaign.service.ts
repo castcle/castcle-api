@@ -331,7 +331,7 @@ export class CampaignService {
           },
         } as TLedger),
     );
-    const transaction = await this.taccountService.transfers({
+    const transaction = await this.taccountService.transfer({
       from,
       to,
       data: {

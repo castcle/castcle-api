@@ -22,34 +22,41 @@
  */
 
 import {
+  AuthenticationServiceV2,
+  CACCOUNT_NO,
+  EntityVisibility,
+  NetworkType,
+  OtpObjective,
+  Repository,
+  SendTransactionDto,
   TAccountService,
+  TransactionDto,
+  TransactionFilter,
+  TransactionType,
   User,
-  WalletShortcutService,
   WalletType,
 } from '@castcle-api/database';
+import { TwilioChannel } from '@castcle-api/utils/clients';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
-import { WalletHistoryQueryDto, WalletResponse } from '../dtos';
+import { WalletResponse } from '../dtos';
 
 @Injectable()
 export class WalletService {
   constructor(
-    private taccountService: TAccountService,
-    private walletShortcutService: WalletShortcutService,
+    private authService: AuthenticationServiceV2,
+    private repository: Repository,
+    private tAccountService: TAccountService,
   ) {}
 
   async getWalletBalance(user: User): Promise<WalletResponse> {
-    const personalBalance = await this.taccountService.getAccountBalance(
-      user.id,
-      WalletType.PERSONAL,
-    );
-    const adsCreditBalance = await this.taccountService.getAccountBalance(
-      user.id,
-      WalletType.ADS,
-    );
-    const farmingBalance = await this.taccountService.getAccountBalance(
-      user.id,
-      WalletType.FARM_LOCKED,
-    );
+    const [adsCreditBalance, farmingBalance, personalBalance] =
+      await Promise.all([
+        this.tAccountService.getAccountBalance(user.id, WalletType.ADS),
+        this.tAccountService.getAccountBalance(user.id, WalletType.FARM_LOCKED),
+        this.tAccountService.getAccountBalance(user.id, WalletType.PERSONAL),
+      ]);
+
     return {
       id: user.id,
       displayName: user.displayName,
@@ -61,11 +68,101 @@ export class WalletService {
     };
   }
 
-  getWalletHistory(user: User, query: WalletHistoryQueryDto) {
-    return this.taccountService.getWalletHistory(user.id, query.filter);
+  async reviewTransaction({
+    chainId,
+    address,
+    amount,
+    requestedBy,
+  }: TransactionDto & { requestedBy: string }) {
+    const [network, balance] = await Promise.all([
+      this.repository.findNetwork(chainId),
+      this.tAccountService.getAccountBalance(requestedBy, WalletType.PERSONAL),
+    ]);
+
+    if (!network) {
+      throw new CastcleException('NETWORK_NOT_FOUND');
+    }
+    if (network.visibility !== EntityVisibility.Publish) {
+      throw new CastcleException('NETWORK_TEMPORARILY_DISABLED');
+    }
+    if (amount > balance) {
+      throw new CastcleException('NOT_ENOUGH_BALANCE');
+    }
+    if (network.type !== NetworkType.INTERNAL) {
+      return { isInternalNetwork: false };
+    }
+
+    const receiver = await this.repository.findUser({ _id: address });
+    if (!receiver) {
+      throw new CastcleException('RECEIVER_NOT_FOUND');
+    }
+    if (requestedBy === receiver.id) {
+      throw new CastcleException('PAYMENT_TO_OWN_WALLET');
+    }
+
+    return { isInternalNetwork: true };
   }
 
-  getAllWalletRecent(userId: string, keyword?: { [key: string]: string }) {
-    return this.taccountService.getAllWalletRecent(userId, keyword);
+  async sendTransaction({
+    transaction,
+    verification,
+    requestedBy,
+  }: SendTransactionDto & { requestedBy: string }) {
+    const { isInternalNetwork } = await this.reviewTransaction({
+      ...transaction,
+      requestedBy,
+    });
+
+    await this.authService.verifyOtp({
+      channel: TwilioChannel.EMAIL,
+      objective: OtpObjective.SEND_TOKEN,
+      receiver: verification.email.email,
+      refCode: verification.email.refCode,
+      otp: verification.email.otp,
+    });
+
+    await this.authService.verifyOtp({
+      channel: TwilioChannel.SMS,
+      objective: OtpObjective.SEND_TOKEN,
+      receiver:
+        verification.mobile.countryCode + verification.mobile.mobileNumber,
+      refCode: verification.mobile.refCode,
+      otp: verification.mobile.otp,
+    });
+
+    await this.tAccountService.transfer({
+      from: {
+        user: requestedBy,
+        type: WalletType.PERSONAL,
+        value: transaction.amount,
+      },
+      to: [
+        {
+          user: transaction.address,
+          type: isInternalNetwork
+            ? WalletType.PERSONAL
+            : WalletType.EXTERNAL_WITHDRAW,
+          value: transaction.amount,
+        },
+      ],
+      ledgers: [
+        {
+          credit: {
+            caccountNo: isInternalNetwork
+              ? CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL
+              : CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+            value: transaction.amount,
+          },
+          debit: {
+            caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+            value: transaction.amount,
+          },
+        },
+      ],
+      data: {
+        filter: TransactionFilter.WALLET_BALANCE,
+        type: TransactionType.SEND,
+      },
+    });
   }
 }

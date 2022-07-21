@@ -66,8 +66,8 @@ describe('SearchServiceV2', () => {
         CacheModule.register(),
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         AuthenticationServiceV2,
@@ -86,6 +86,10 @@ describe('SearchServiceV2', () => {
         { provide: TwitterClient, useValue: {} },
         {
           provide: getQueueToken(QueueName.NOTIFICATION),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.REPORTING),
           useValue: { add: jest.fn() },
         },
       ],

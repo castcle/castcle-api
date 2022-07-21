@@ -58,7 +58,7 @@ import { AppleClientMock } from 'libs/utils/clients/src/lib/apple/apple.client.s
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
 import { GoogleClientMock } from 'libs/utils/clients/src/lib/google/google.client.spec';
 import { TelegramClientMock } from 'libs/utils/clients/src/lib/telegram/telegram.client.spec';
-import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.spec';
+import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.mock';
 import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.client.spec';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AppService } from '../app.service';
@@ -162,8 +162,8 @@ describe('AppController', () => {
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         HttpModule,
       ],
       controllers: [AuthenticationController],

@@ -65,8 +65,8 @@ describe('NotificationService', () => {
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
       ],
       providers: [
         ContentService,
@@ -173,7 +173,7 @@ describe('NotificationService', () => {
     it('should get all notification in db with source as default option', async () => {
       const notification = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
       expect(notification).toHaveLength(3);
     });
@@ -183,6 +183,7 @@ describe('NotificationService', () => {
         result.credentialDocument,
         {
           source: NotificationSource.Page,
+          hasRelationshipExpansion: false,
         },
       );
       expect(notification).toHaveLength(1);
@@ -192,7 +193,7 @@ describe('NotificationService', () => {
     it('should get notification filter with sinceId in db', async () => {
       const notification = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
       const filterId = notification[1].id;
       const notiResult = await service.getNotificationAll(
@@ -200,6 +201,7 @@ describe('NotificationService', () => {
         {
           sinceId: filterId,
           source: NotificationSource.System,
+          hasRelationshipExpansion: false,
         },
       );
       expect(notiResult).toHaveLength(0);
@@ -208,7 +210,7 @@ describe('NotificationService', () => {
     it('should get notification filter with untilId in db', async () => {
       const notification = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
       const filterId = notification[1].id;
       const notiResult = await service.getNotificationAll(
@@ -216,6 +218,7 @@ describe('NotificationService', () => {
         {
           untilId: filterId,
           source: NotificationSource.Profile,
+          hasRelationshipExpansion: false,
         },
       );
 
@@ -227,7 +230,7 @@ describe('NotificationService', () => {
     it('should get notification in db with id', async () => {
       const allNotification = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
       const notification = await service.getFromId(allNotification[0].id);
       expect(notification).toEqual(allNotification[0]);
@@ -248,7 +251,7 @@ describe('NotificationService', () => {
     it('should update read flag notification in db', async () => {
       const allNotification = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
       const updateRead = allNotification[0];
       const notificationId = updateRead.id;
@@ -269,11 +272,11 @@ describe('NotificationService', () => {
       const resultUpdate = await service.flagReadAll(result.credentialDocument);
       const profileNoti = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
       const pageNoti = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
 
       expect(resultUpdate.n).toEqual(3);
@@ -316,7 +319,7 @@ describe('NotificationService', () => {
 
       const notifyData = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
 
       expect(notifyData).toBeDefined();
@@ -342,7 +345,7 @@ describe('NotificationService', () => {
 
       const notifyData = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
 
       expect(notifyData).toBeDefined();
@@ -439,7 +442,7 @@ describe('NotificationService', () => {
     it('should create notification message in db', async () => {
       const notification = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
       const userOwner = await userService.getUserAndPagesFromAccountId(
         result.accountDocument.id,
@@ -458,7 +461,7 @@ describe('NotificationService', () => {
     it('should create notification messages in db', async () => {
       const notification = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
 
       const message = await (service as any).generateMessagesToNotifications(
@@ -473,7 +476,7 @@ describe('NotificationService', () => {
     it('should create notification messages in db', async () => {
       const notification = await service.getNotificationAll(
         result.credentialDocument,
-        {},
+        { hasRelationshipExpansion: false },
       );
       const userOwner = await userService.getUserAndPagesFromAccountId(
         result.accountDocument.id,
