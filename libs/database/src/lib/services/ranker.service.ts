@@ -145,6 +145,7 @@ export class RankerService {
       await this._defaultContentModel.aggregate<GetGuestFeedContentsResponse>(
         pipeline,
       );
+    //hot fix for defaultFeed
 
     if (!feedResponses.defaultFeeds.length && !feedResponses.guestFeeds.length)
       return {
@@ -152,11 +153,13 @@ export class RankerService {
         includes: { casts: [], users: [] },
         meta: { resultCount: 0 },
       } as FeedItemResponse;
-
-    const mergeFeeds = [
-      ...feedResponses.defaultFeeds,
-      ...feedResponses.guestFeeds,
-    ];
+    //hot fix guest has id
+    const newDefaultFeeds = feedResponses.defaultFeeds.map((t) => {
+      delete t.id;
+      delete t._id;
+      return t;
+    });
+    const mergeFeeds = [...newDefaultFeeds, ...feedResponses.guestFeeds];
 
     const payloadFeeds = await this._feedItemsToPayloadItems(
       mergeFeeds,
