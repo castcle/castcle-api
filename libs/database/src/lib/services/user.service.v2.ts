@@ -527,7 +527,7 @@ export class UserServiceV2 {
   }
 
   async getUserByKeyword(
-    { userFields, ...query }: GetKeywordQuery,
+    { userFields, maxResults, ...query }: GetKeywordQuery,
     requestedBy: User,
   ) {
     const blocking = await this.getUserRelationships(requestedBy, true);
@@ -535,6 +535,7 @@ export class UserServiceV2 {
     const users = await this.repository.getPublicUsers({
       requestedBy: requestedBy,
       filter: { excludeRelationship: blocking, ...query },
+      queryOptions: { limit: maxResults, sort: { createdAt: -1 } },
       expansionFields: userFields,
     });
 
