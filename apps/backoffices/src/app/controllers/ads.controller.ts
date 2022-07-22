@@ -21,47 +21,22 @@
  * or have any questions.
  */
 
-export enum AdsObjective {
-  Engagement = 'engagement',
-  Reach = 'reach',
-}
+import { AdsService } from '@castcle-api/database';
+import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { Get, Query } from '@nestjs/common';
+import { BackofficeAuth } from '../decorators';
+import { GetAdsDto } from '../models/ads.dto';
 
-export enum AdsStatus {
-  Processing = 'processing',
-  Declined = 'declined',
-  Approved = 'approved',
-}
+@CastcleControllerV2({ path: 'backoffices/ads' })
+export class AdsController {
+  constructor(private adsService: AdsService) {}
 
-export enum AdsBoostStatus {
-  Unknown = 'unknown',
-  Running = 'running',
-  Pause = 'pause',
-  End = 'end',
-}
+  @BackofficeAuth()
+  @Get()
+  async getAds(@Query() dto: GetAdsDto) {
+    const ads = await this.adsService.find(dto);
+    const adsResponses = await this.adsService.convertAdsToAdResponses(ads);
 
-export enum AdsBoostType {
-  Content = 'content',
-  Page = 'page',
-}
-
-export enum AdsEngagementKey {
-  Likes = 'likes',
-  Recasts = 'recasts',
-  Quotes = 'quotecasts',
-  Comments = 'comments',
-  Saved = 'saved',
-  Farm = 'farm',
-  Reward = 'rewardDistributed',
-}
-
-export enum FilterInterval {
-  All = 'all',
-  Today = 'today',
-  Week = 'week',
-  Month = 'month',
-}
-
-export enum AdsBidType {
-  Auto = 'auto',
-  CostPerAccount = 'cost-per-account',
+    return { payload: adsResponses };
+  }
 }

@@ -33,6 +33,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isArray, isBoolean, isMongoId, isString } from 'class-validator';
+import { DBRef } from 'mongodb';
 import {
   AnyKeys,
   ClientSession,
@@ -1304,15 +1305,8 @@ export class Repository {
 
   pauseAdsFromContentId = async (contentId: string) =>
     this.adsCampaignModel.updateOne(
-      {
-        adsRef: {
-          $ref: 'content',
-          $id: contentId,
-        },
-      },
-      {
-        boostStatus: AdsBoostStatus.Pause,
-      },
+      { adsRef: new DBRef('content', new Types.ObjectId(contentId)) },
+      { boostStatus: AdsBoostStatus.Pause },
     );
 
   async deleteCastcleAccount(account: Account) {

@@ -173,19 +173,17 @@ describe('AdsController', () => {
         paymentMethod: AdsPaymentMethod.TOKEN_WALLET,
         castcleId: mocksUsers[0].pages[0].id,
       });
-      expect(result).toEqual(
-        expect.objectContaining({
-          campaignMessage: 'test u',
-          campaignName: 'test u',
-          dailyBidType: AdsBidType.Auto,
-          dailyBudget: 1,
-          duration: 2,
-          objective: AdsObjective.Engagement,
-          adStatus: AdsStatus.Processing,
-          boostStatus: AdsBoostStatus.Unknown,
-          boostType: 'page',
-        }),
-      );
+      expect(result).toMatchObject({
+        campaignMessage: 'test u',
+        campaignName: 'test u',
+        dailyBidType: AdsBidType.Auto,
+        dailyBudget: 1,
+        duration: 2,
+        objective: AdsObjective.Engagement,
+        adStatus: AdsStatus.Processing,
+        boostStatus: AdsBoostStatus.Unknown,
+        boostType: 'page',
+      });
     });
   });
   describe('create Content Ads', () => {
