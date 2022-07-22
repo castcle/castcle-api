@@ -103,6 +103,8 @@ describe('AppController', () => {
   let notifyService: NotificationService;
   let adsService: AdsService;
   let transactionModel: Model<Transaction>;
+  let adsModel: Model<AdsCampaign>;
+  let contentModel: Model<Content>;
 
   beforeAll(async () => {
     const DownloaderProvider = {
@@ -171,6 +173,8 @@ describe('AppController', () => {
     notifyService = app.get<NotificationService>(NotificationService);
     adsService = app.get<AdsService>(AdsService);
     transactionModel = app.get(getModelToken('Transaction'));
+    adsModel = app.get(getModelToken('AdsCampaign'));
+    contentModel = app.get(getModelToken('Content'));
 
     const result = await authService.createAccount({
       device: 'iPhone',
@@ -1305,8 +1309,8 @@ describe('AppController', () => {
       );
     });
     afterAll(() => {
-      adsService._adsCampaignModel.deleteMany({});
-      adsService._contentModel.deleteMany({});
+      adsModel.deleteMany({});
+      contentModel.deleteMany({});
     });
   });
 
@@ -1367,8 +1371,8 @@ describe('AppController', () => {
       expect(adsResponse.campaignMessage).toBe(mockAds.detail.message);
     });
     afterAll(() => {
-      adsService._adsCampaignModel.deleteMany({});
-      adsService._contentModel.deleteMany({});
+      adsModel.deleteMany({});
+      contentModel.deleteMany({});
     });
   });
 
@@ -1585,9 +1589,7 @@ describe('AppController', () => {
           dailyBidType: AdsBidType.Auto,
         };
         await adsService.updateAdsById(mockAds.id, adsUpdate);
-        const adsCampaign = await adsService._adsCampaignModel
-          .findById(mockAds.id)
-          .exec();
+        const adsCampaign = await adsModel.findById(mockAds.id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.detail.name).toEqual(adsUpdate.campaignName);
@@ -1611,7 +1613,7 @@ describe('AppController', () => {
           dailyBidType: AdsBidType.Auto,
         };
         ads = await adsService.createAds(mocks[0].pages[0], adsInput);
-        await adsService._adsCampaignModel.updateOne(
+        await adsModel.updateOne(
           { _id: ads._id },
           {
             $set: {
@@ -1624,9 +1626,7 @@ describe('AppController', () => {
           { credential: mocks[0].credential, user: mocks[0].user } as any,
           ads._id,
         );
-        const adsCampaign = await adsService._adsCampaignModel
-          .findById(ads.id)
-          .exec();
+        const adsCampaign = await adsModel.findById(ads.id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Running);
@@ -1644,9 +1644,7 @@ describe('AppController', () => {
           { credential: mocks[0].credential, user: mocks[0].user } as any,
           ads._id,
         );
-        const adsCampaign = await adsService._adsCampaignModel
-          .findById(ads.id)
-          .exec();
+        const adsCampaign = await adsModel.findById(ads.id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
@@ -1664,9 +1662,7 @@ describe('AppController', () => {
           { credential: mocks[0].credential, user: mocks[0].user } as any,
           ads._id,
         );
-        const adsCampaign = await adsService._adsCampaignModel
-          .findById(ads.id)
-          .exec();
+        const adsCampaign = await adsModel.findById(ads.id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.End);
@@ -1684,16 +1680,14 @@ describe('AppController', () => {
     describe('#deleteAds', () => {
       it('should be able delete ads is correct.', async () => {
         await adsService.deleteAdsById(mockAds.id);
-        const adsCampaign = await adsService._adsCampaignModel
-          .findById(mockAds.id)
-          .exec();
+        const adsCampaign = await adsModel.findById(mockAds.id).exec();
 
         expect(adsCampaign).toBeNull();
       });
     });
     afterAll(() => {
-      adsService._adsCampaignModel.deleteMany({});
-      adsService._contentModel.deleteMany({});
+      adsModel.deleteMany({});
+      contentModel.deleteMany({});
     });
   });
 

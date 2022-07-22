@@ -34,7 +34,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ContentType, ReportingStatus, UserType } from '../models';
+import { ContentType, UserType } from '../models';
 import { Content, Engagement } from '../schemas';
 import {
   Author,
@@ -52,7 +52,7 @@ import { GetUserParam } from './user.dto';
 export class CastPayload {
   id: string;
   authorId: string;
-  type: ContentType;
+  type: string;
   message: string;
   photo: {
     cover?: CastcleImage;
@@ -62,7 +62,7 @@ export class CastPayload {
   referencedCasts?: ReferencedCast;
   metrics: Metrics;
   participate: Participates;
-  reportedStatus?: ReportingStatus;
+  reportedStatus?: string;
   reportedSubject?: string;
   createdAt: string;
   updatedAt: string;
@@ -139,4 +139,14 @@ export class GetContentQuery extends PaginationQuery {
   @IsObject()
   @TransformSortStringToSortObject()
   sortBy?: string;
+}
+
+export class GetFarmingParam {
+  @IsNotEmpty()
+  @IsMongoId()
+  userId: string;
+
+  @IsNotEmpty()
+  @IsMongoId()
+  contentId: string;
 }

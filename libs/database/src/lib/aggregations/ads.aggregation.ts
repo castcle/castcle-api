@@ -22,6 +22,7 @@
  */
 
 import { Environment } from '@castcle-api/environments';
+import { DBRef } from 'mongodb';
 import { AdsAuctionAggregateDto } from '../dtos/ads.dto';
 import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
 
@@ -65,7 +66,7 @@ export type GetAdsPriceResponse = {
   total: number;
   price: number;
   ads: any[]; //objectId
-  adsRef: any[]; //dbRefs
+  adsRef: DBRef[]; //dbRefs
 };
 
 export const pipe2AdsAuctionPrice = () => {
@@ -99,7 +100,7 @@ export const pipe2AdsAuctionPrice = () => {
   ];
 };
 
-export const pipe2AvaialableAdsCampaign = () => [
+export const pipe2AvailableAdsCampaign = () => [
   {
     $addFields: {
       budgetLeft: {

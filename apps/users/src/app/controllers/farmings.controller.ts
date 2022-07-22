@@ -20,51 +20,32 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import {
-  AdsRequestDto,
-  AdsService,
-  UserServiceV2,
-} from '@castcle-api/database';
+import { ContentServiceV2, PaginationQuery } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import {
   Auth,
   Authorizer,
-  CastcleClearCacheAuth,
+  CastcleAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { Body, Post } from '@nestjs/common';
+import { Get, Query } from '@nestjs/common';
 
-@CastcleControllerV2({ path: 'ads' })
-export class AdsController {
-  constructor(
-    private adsService: AdsService,
-    private userService: UserServiceV2,
-  ) {}
+@CastcleControllerV2({ path: 'farmings' })
+export class FarmingsController {
+  constructor(private contentService: ContentServiceV2) {}
 
-  @CastcleClearCacheAuth(CacheKeyName.Feeds)
-  @Post('user')
-  async createUserAds(
-    @Auth() authorizer: Authorizer,
-    @Body() adsRequestDto: AdsRequestDto,
-  ) {
-    authorizer.requireActivation();
-    const user = await this.userService.getUser(adsRequestDto.castcleId);
-    authorizer.requestAccessForAccount(user.ownerAccount);
-    const ad = await this.adsService.createAds(authorizer.user, adsRequestDto);
-    const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
-    return adResponse;
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('active')
+  async farmingActive(@Auth() authorizer: Authorizer) {
+    return this.contentService.farmingActive(authorizer.user.id);
   }
 
-  @CastcleClearCacheAuth(CacheKeyName.Feeds)
-  @Post('cast')
-  async createCastAds(
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('history')
+  async farmingHistory(
     @Auth() authorizer: Authorizer,
-    @Body() adsRequestDto: AdsRequestDto,
+    @Query() query: PaginationQuery,
   ) {
-    authorizer.requireActivation();
-    const ad = await this.adsService.createAds(authorizer.user, adsRequestDto);
-    const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
-    return adResponse;
+    return this.contentService.farmingHistory(query, authorizer.user.id);
   }
 }

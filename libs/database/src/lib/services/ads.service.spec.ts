@@ -70,10 +70,12 @@ describe('AdsService', () => {
   let userService: UserService;
   let contentService: ContentService;
   let mocks: MockUserDetail[];
+  let adsCampaignModel: Model<AdsCampaign>;
   let cAccountModel: Model<CAccount>;
   let transactionModel: Model<Transaction>;
   let promoteContent: Content;
   let dataService: DataService;
+  let tAccountService: TAccountService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -119,8 +121,10 @@ describe('AdsService', () => {
     userService = moduleRef.get<UserService>(UserService);
     contentService = moduleRef.get<ContentService>(ContentService);
     dataService = moduleRef.get<DataService>(DataService);
+    tAccountService = moduleRef.get(TAccountService);
     transactionModel = moduleRef.get(getModelToken('Transaction'));
     cAccountModel = moduleRef.get(getModelToken('CAccount'));
+    adsCampaignModel = moduleRef.get(getModelToken('AdsCampaign'));
 
     mocks = await generateMockUsers(2, 1, {
       accountService: authService,
@@ -154,7 +158,7 @@ describe('AdsService', () => {
           },
         ],
       }).save();
-      const adsIput = {
+      const adDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
         castcleId: mocks[0].pages[0].id,
@@ -163,15 +167,16 @@ describe('AdsService', () => {
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       } as AdsRequestDto;
-      const ads = await service.createAds(mocks[0].pages[0], adsIput);
-      expect(ads.detail.dailyBudget).toEqual(adsIput.dailyBudget);
-      expect(ads.detail.duration).toEqual(adsIput.duration);
-      expect(ads.objective).toEqual(adsIput.objective);
-      expect(ads.detail.message).toEqual(adsIput.campaignMessage);
-      expect(ads.detail.name).toEqual(adsIput.campaignName);
+      const ads = await service.createAds(mocks[0].pages[0], adDto);
+      expect(ads.detail.dailyBudget).toEqual(adDto.dailyBudget);
+      expect(ads.detail.duration).toEqual(adDto.duration);
+      expect(ads.objective).toEqual(adDto.objective);
+      expect(ads.detail.message).toEqual(adDto.campaignMessage);
+      expect(ads.detail.name).toEqual(adDto.campaignName);
       expect(ads.adsRef).not.toBeUndefined();
-      expect(ads.adsRef.$id).toEqual(mocks[0].pages[0]._id);
+      expect(ads.adsRef.oid).toEqual(mocks[0].pages[0]._id);
     });
+
     it('should be able to create ads for promote contents', async () => {
       await new transactionModel({
         from: {
@@ -204,7 +209,7 @@ describe('AdsService', () => {
       expect(ads.detail.message).toEqual(adsIput.campaignMessage);
       expect(ads.detail.name).toEqual(adsIput.campaignName);
       expect(ads.adsRef).not.toBeUndefined();
-      expect(ads.adsRef.$id).toEqual(promoteContent._id);
+      expect(ads.adsRef.oid).toEqual(promoteContent._id);
     });
   });
   describe('#listAds', () => {
@@ -269,9 +274,7 @@ describe('AdsService', () => {
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
       await service.updateAdsById(ads.id, adsUpdate);
-      const adsCampaign = await service._adsCampaignModel
-        .findById(ads.id)
-        .exec();
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign).toBeTruthy();
       expect(adsCampaign.detail.name).toEqual(adsUpdate.campaignName);
@@ -296,9 +299,7 @@ describe('AdsService', () => {
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
       await service.deleteAdsById(ads.id);
-      const adsCampaign = await service._adsCampaignModel
-        .findById(ads.id)
-        .exec();
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign).toBeNull();
     });
@@ -317,7 +318,7 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
-      await service._adsCampaignModel.updateOne(
+      await adsCampaignModel.updateOne(
         { _id: ads._id },
         {
           $set: {
@@ -327,9 +328,7 @@ describe('AdsService', () => {
       );
 
       await service.updateAdsBoostStatus(ads.id, AdsBoostStatus.Pause);
-      const adsCampaign = await service._adsCampaignModel
-        .findById(ads.id)
-        .exec();
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign).toBeTruthy();
       expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
@@ -341,8 +340,8 @@ describe('AdsService', () => {
     const adsCampaigns: AdsCampaign[] = [];
     beforeAll(async () => {
       //remove all adsCampaign
-      await service._adsCampaignModel.remove({});
-      expect(await service._adsCampaignModel.countDocuments()).toEqual(0);
+      await adsCampaignModel.remove({});
+      expect(await adsCampaignModel.countDocuments()).toEqual(0);
       const mockRelevanceScores = [
         0.1, 0.3, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.15, 0.22, 0.23, 0.34, 0.67,
         0.87,
@@ -575,7 +574,7 @@ describe('AdsService', () => {
               },
             ],
           }).save();
-          const balance = await service.taccountService.getBalance(
+          const balance = await tAccountService.getBalance(
             CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
@@ -602,16 +601,15 @@ describe('AdsService', () => {
             reward,
             session,
           );
-          const newBalance = await service.taccountService.getBalance(
+          const newBalance = await tAccountService.getBalance(
             CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(newBalance).not.toEqual(topupValue);
           for (let i = 0; i < authors.length; i++) {
-            const authorBalance =
-              await service.taccountService.getAccountBalance(
-                String(authors[i]),
-                WalletType.PERSONAL,
-              );
+            const authorBalance = await tAccountService.getAccountBalance(
+              String(authors[i]),
+              WalletType.PERSONAL,
+            );
             expect(authorBalance).toEqual(reward.farmingShare / authors.length);
           }
         });
@@ -657,7 +655,7 @@ describe('AdsService', () => {
               },
             ],
           }).save();
-          const balance = await service.taccountService.getBalance(
+          const balance = await tAccountService.getBalance(
             CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
@@ -684,16 +682,15 @@ describe('AdsService', () => {
             reward,
             session,
           );
-          const newBalance = await service.taccountService.getBalance(
+          const newBalance = await tAccountService.getBalance(
             CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(newBalance).not.toEqual(topupValue);
           for (let i = 0; i < authors.length; i++) {
-            const authorBalance =
-              await service.taccountService.getAccountBalance(
-                String(authors[i]),
-                WalletType.PERSONAL,
-              );
+            const authorBalance = await tAccountService.getAccountBalance(
+              String(authors[i]),
+              WalletType.PERSONAL,
+            );
             expect(authorBalance).toEqual(reward.creatorShare / authors.length);
           }
         });
@@ -739,7 +736,7 @@ describe('AdsService', () => {
               },
             ],
           }).save();
-          const balance = await service.taccountService.getBalance(
+          const balance = await tAccountService.getBalance(
             CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
@@ -766,12 +763,12 @@ describe('AdsService', () => {
             reward,
             session,
           );
-          const viewerBalance = await service.taccountService.getAccountBalance(
+          const viewerBalance = await tAccountService.getAccountBalance(
             String(viewer),
             WalletType.PERSONAL,
           );
           expect(viewerBalance).toEqual(reward.viewerShare);
-          const newBalance = await service.taccountService.getBalance(
+          const newBalance = await tAccountService.getBalance(
             CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(newBalance).not.toEqual(topupValue);
@@ -817,7 +814,7 @@ describe('AdsService', () => {
             },
           ],
         }).save();
-        const balance = await service.taccountService.getBalance(
+        const balance = await tAccountService.getBalance(
           CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
         );
         expect(balance).toEqual(topupValue);
@@ -844,17 +841,17 @@ describe('AdsService', () => {
           reward,
           session,
         );
-        const newBalance = await service.taccountService.getBalance(
+        const newBalance = await tAccountService.getBalance(
           CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
         );
         expect(newBalance).not.toEqual(topupValue);
-        const viewerBalance = await service.taccountService.getAccountBalance(
+        const viewerBalance = await tAccountService.getAccountBalance(
           String(viewer),
           WalletType.PERSONAL,
         );
         expect(viewerBalance).toEqual(reward.viewerShare);
         for (let i = 0; i < authors.length; i++) {
-          const authorBalance = await service.taccountService.getAccountBalance(
+          const authorBalance = await tAccountService.getAccountBalance(
             String(authors[i]),
             WalletType.PERSONAL,
           );
@@ -866,7 +863,7 @@ describe('AdsService', () => {
     });
   });
   afterAll(() => {
-    service._adsCampaignModel.deleteMany({});
+    adsCampaignModel.deleteMany({});
     userService._accountModel.deleteMany({});
     userService._userModel.deleteMany({});
     contentService._contentModel.deleteMany({});

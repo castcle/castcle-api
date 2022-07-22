@@ -14,7 +14,6 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Observable } from 'rxjs';
 import { Permission, StaffRole } from '../models/authentication.enum';
 import { Staff } from '../schemas/staff.schema';
 
@@ -22,19 +21,21 @@ import { Staff } from '../schemas/staff.schema';
 export class PermissionGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const permissions = this.reflector.get<Permission[]>(
+  canActivate(context: ExecutionContext): boolean {
+    const requiredPermissions = this.reflector.get<Permission[]>(
       'permissions',
       context.getHandler(),
     );
-    if (!permissions?.length) return false;
 
+    if (!requiredPermissions?.length) return true;
+
+    const request = context.switchToHttp().getRequest();
     const staff = Token.decodeToken<Staff>(getTokenFromRequest(request));
     const ability = this.createStaffAbility(staff);
-    return permissions.every((permission) => ability.can(permission, staff));
+
+    return requiredPermissions.every((permission) =>
+      ability.can(permission, staff),
+    );
   }
 
   createStaffAbility(staff: Staff) {

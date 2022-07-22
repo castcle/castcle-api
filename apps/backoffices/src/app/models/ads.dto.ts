@@ -21,47 +21,19 @@
  * or have any questions.
  */
 
-export enum AdsObjective {
-  Engagement = 'engagement',
-  Reach = 'reach',
-}
+import { AdsBoostStatus, AdsBoostType, AdsStatus } from '@castcle-api/database';
+import { IsEnum, IsOptional } from 'class-validator';
 
-export enum AdsStatus {
-  Processing = 'processing',
-  Declined = 'declined',
-  Approved = 'approved',
-}
+export class GetAdsDto {
+  @IsOptional()
+  @IsEnum(AdsStatus)
+  adStatus: AdsStatus;
 
-export enum AdsBoostStatus {
-  Unknown = 'unknown',
-  Running = 'running',
-  Pause = 'pause',
-  End = 'end',
-}
+  @IsOptional()
+  @IsEnum(AdsBoostStatus)
+  boostStatus: AdsBoostStatus;
 
-export enum AdsBoostType {
-  Content = 'content',
-  Page = 'page',
-}
-
-export enum AdsEngagementKey {
-  Likes = 'likes',
-  Recasts = 'recasts',
-  Quotes = 'quotecasts',
-  Comments = 'comments',
-  Saved = 'saved',
-  Farm = 'farm',
-  Reward = 'rewardDistributed',
-}
-
-export enum FilterInterval {
-  All = 'all',
-  Today = 'today',
-  Week = 'week',
-  Month = 'month',
-}
-
-export enum AdsBidType {
-  Auto = 'auto',
-  CostPerAccount = 'cost-per-account',
+  @IsOptional()
+  @IsEnum(AdsBoostType)
+  boostType: AdsBoostType;
 }

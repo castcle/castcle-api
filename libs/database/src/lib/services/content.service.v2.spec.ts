@@ -1085,6 +1085,103 @@ describe('ContentServiceV2', () => {
     });
   });
 
+  describe('lookupFarming', () => {
+    let content: Content;
+    beforeAll(async () => {
+      const { payload } = await service.createContent(
+        {
+          payload: { message: 'content farming' },
+          type: ContentType.Short,
+          castcleId: mocksUsers[0].user.displayId,
+        },
+        mocksUsers[0].user,
+      );
+      content = await repository.findContent({ _id: payload.id });
+
+      await service.farm(content.id, mocksUsers[1].user.id);
+    });
+    it('should return response of content farming status "farming"', async () => {
+      const contentFarming = await service.lookupFarming(
+        content.id,
+        mocksUsers[1].user.id,
+      );
+
+      expect(contentFarming.id).not.toBeNull();
+      expect(contentFarming.createdAt).not.toBeNull();
+      expect(contentFarming.number).toEqual(1);
+      expect(contentFarming.content.id).toEqual(content.id);
+      expect(contentFarming.status).toEqual(ContentFarmingStatus.Farming);
+    });
+
+    it('should return response of content farming status "farmed"', async () => {
+      const contentFarming = await service.lookupFarming(
+        content.id,
+        mocksUsers[1].user.id,
+      );
+
+      await service.unfarmByFarmingId(contentFarming.id, mocksUsers[1].user.id);
+
+      const contentFarmingEnded = await service.lookupFarming(
+        content.id,
+        mocksUsers[1].user.id,
+      );
+
+      expect(contentFarmingEnded.id).toBeNull();
+      expect(contentFarmingEnded.createdAt).toBeNull();
+      expect(contentFarmingEnded.number).toEqual(1);
+      expect(contentFarmingEnded.content.id).toEqual(content.id);
+      expect(contentFarmingEnded.status).toEqual(ContentFarmingStatus.Farmed);
+    });
+  });
+
+  describe('farmingActive', () => {
+    let content: Content;
+    beforeAll(async () => {
+      const { payload } = await service.createContent(
+        {
+          payload: { message: 'content farming' },
+          type: ContentType.Short,
+          castcleId: mocksUsers[0].user.displayId,
+        },
+        mocksUsers[0].user,
+      );
+      content = await repository.findContent({ _id: payload.id });
+
+      await service.farm(content.id, mocksUsers[1].user.id);
+    });
+    it('should return response of content farming status "farming"', async () => {
+      const contentFarmings = await service.farmingActive(
+        mocksUsers[1].user.id,
+      );
+
+      expect(contentFarmings.payload[0].number).toEqual(2);
+      expect(contentFarmings.payload[0].content.id).toEqual(content.id);
+      expect(contentFarmings.payload[0].status).toEqual(
+        ContentFarmingStatus.Farming,
+      );
+    });
+  });
+
+  describe('farmingHistory', () => {
+    it('should return response of content farming status "farmed"', async () => {
+      const contentFarmings = await service.farmingHistory(
+        { maxResults: 25, hasRelationshipExpansion: false },
+        mocksUsers[1].user.id,
+      );
+
+      expect(contentFarmings.payload[0].farmedAt).not.toBeNull();
+      expect(String(contentFarmings.payload[0].content.authorId)).toEqual(
+        mocksUsers[0].user.id,
+      );
+      expect(contentFarmings.payload[0].content.message).toEqual(
+        'content farming',
+      );
+      expect(contentFarmings.payload[0].status).toEqual(
+        ContentFarmingStatus.Farmed,
+      );
+    });
+  });
+
   afterAll(async () => {
     await moduleRef.close();
     await mongod.stop();
