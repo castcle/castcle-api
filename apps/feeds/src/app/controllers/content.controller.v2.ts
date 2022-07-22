@@ -74,6 +74,9 @@ export class ContentControllerV2 {
     );
   }
 
+  /**
+   * @deprecated The method should not be used. Please use [GET] users/:userId/farming/cast/:contentId
+   */
   @CastcleAuth(CacheKeyName.Contents)
   @Get(':contentId/farming')
   async getContentFarming(
@@ -84,12 +87,15 @@ export class ContentControllerV2 {
     return this.contentServiceV2.pipeContentFarming(
       await this.contentServiceV2.getContentFarming(
         contentId,
-        authorizer.account.id,
+        authorizer.user.id,
       ),
-      authorizer.account.id,
+      authorizer.user.id,
     );
   }
 
+  /**
+   * @deprecated The method should not be used. Please use [POST] users/:userId/farming/cast
+   */
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Post(':contentId/farm')
   async farmContent(
@@ -98,11 +104,14 @@ export class ContentControllerV2 {
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
     return this.contentServiceV2.pipeContentFarming(
-      await this.contentServiceV2.farm(contentId, authorizer.account.id),
-      authorizer.account.id,
+      await this.contentServiceV2.farm(contentId, authorizer.user.id),
+      authorizer.user.id,
     );
   }
 
+  /**
+   * @deprecated The method should not be used. Please use [DELETE] users/:userId/farming/:farmingId
+   */
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Delete(':contentId/farm')
   async unfarmContent(
@@ -111,8 +120,8 @@ export class ContentControllerV2 {
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
     return this.contentServiceV2.pipeContentFarming(
-      await this.contentServiceV2.unfarm(contentId, authorizer.account.id),
-      authorizer.account.id,
+      await this.contentServiceV2.unfarm(contentId, authorizer.user.id),
+      authorizer.user.id,
     );
   }
 
