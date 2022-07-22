@@ -26,25 +26,23 @@ import { CastcleDate } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { DBRef } from 'mongodb';
+import { ClientSession, Document, FilterQuery, Model, Types } from 'mongoose';
 import {
   GetAdsPriceResponse,
-  pipe2AvaialableAdsCampaign,
+  pipe2AvailableAdsCampaign,
 } from '../aggregations/ads.aggregation';
 import {
+  AdsQuery,
+  AdsRequestDto,
+  AdsResponse,
   ContentPayloadItem,
   FeedItemPayloadItem,
   FeedItemResponse,
-  PageResponseDto,
 } from '../dtos';
 import {
-  AdsCampaignResponseDto,
-  AdsQuery,
-  AdsRequestDto,
-} from '../dtos/ads.dto';
-import {
   AdsBoostStatus,
+  AdsBoostType,
   AdsCpm,
   AdsPaymentMethod,
   AdsPlacementContent,
@@ -58,14 +56,13 @@ import {
 } from '../models';
 import { Repository } from '../repositories/index';
 import {
-  AdsCampaign,
+  AdsCampaign as Ad,
   AdsPlacement,
   Content,
   ContentFarming,
   MicroTransaction,
   TLedger,
   User,
-  toSignedContentPayloadItem,
 } from '../schemas';
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { createCastcleFilter } from '../utils/common';
@@ -82,22 +79,86 @@ const mockOracleService = {
 
 @Injectable()
 export class AdsService {
+  private logger = new CastLogger(AdsService.name);
+
   constructor(
-    @InjectModel('AdsCampaign')
-    public _adsCampaignModel: Model<AdsCampaign>,
-    @InjectModel('AdsPlacement') public _adsPlacementModel: Model<AdsPlacement>,
-    @InjectModel('Content')
-    public _contentModel: Model<Content>,
-    @InjectModel('User')
-    public _userModel: Model<User>,
-    public taccountService: TAccountService,
-    public dataService: DataService,
-    @InjectModel('ContentFarming')
-    public _contentFarmingModel: Model<ContentFarming>,
+    @InjectModel('AdsCampaign') private adsModel: Model<Ad>,
+    @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
+    @InjectModel('Content') private contentModel: Model<Content>,
+    @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('ContentFarming') private farmingModel: Model<ContentFarming>,
+    private dataService: DataService,
+    private tAccountService: TAccountService,
     private repository: Repository,
   ) {}
 
-  private logger = new CastLogger(AdsService.name);
+  async find(dto: {
+    adStatus: AdsStatus;
+    boostStatus: AdsBoostStatus;
+    boostType: AdsBoostType;
+  }) {
+    const query: FilterQuery<Ad> = {};
+    if (dto.adStatus) query.status = dto.adStatus;
+    if (dto.boostStatus) query.boostStatus = dto.boostStatus;
+    if (dto.boostType) query['adsRef.$ref'] = dto.boostType;
+
+    const campaigns = await this.adsModel
+      .find(query)
+      .sort({ createdAt: 'desc' });
+
+    return campaigns;
+  }
+
+  private isContentAd = (ad: { adsRef: DBRef }) => {
+    return ad.adsRef.namespace === AdsBoostType.Content;
+  };
+
+  private isPayloadOf = (ad: { adsRef: DBRef }) => {
+    return ({ _id }: Document) => String(_id) === String(ad.adsRef.oid);
+  };
+
+  convertAdsToAdResponses = async (ads: Ad[]) => {
+    const contentIds = [];
+    const userIds = [];
+
+    ads.forEach((ad) => {
+      (this.isContentAd(ad) ? userIds : contentIds).push(ad.adsRef.oid);
+    });
+
+    const [contents, users] = await Promise.all([
+      this.contentModel.find({ _id: { $in: contentIds } }),
+      this.userModel.find({ _id: { $in: userIds } }),
+    ]);
+
+    return ads.map<AdsResponse>((ad) => ({
+      campaignName: ad.detail.name,
+      campaignMessage: ad.detail.message,
+      adStatus: ad.status,
+      boostStatus: ad.boostStatus,
+      boostType: this.isContentAd(ad)
+        ? AdsBoostType.Content
+        : AdsBoostType.Page,
+      campaignCode: ad.detail.code,
+      dailyBudget: ad.detail.dailyBudget,
+      duration: ad.detail.duration,
+      dailyBidType: ad.detail.dailyBidType,
+      dailyBidValue: ad.detail.dailyBidValue,
+      objective: ad.objective,
+      payload: this.isContentAd(ad)
+        ? contents.find(this.isPayloadOf(ad))?.toContentPayloadItem()
+        : users.find(this.isPayloadOf(ad))?.toPublicResponse(),
+      engagement: ad.statistics.engagements,
+      statistics: {
+        CPM: ad.statistics.cpm,
+        budgetSpent: ad.statistics.budgetSpent,
+        dailySpent: ad.statistics.dailySpent,
+        impression: { organic: 0, paid: 0 },
+        reach: { organic: 0, paid: 0 },
+      },
+      createdAt: ad.createdAt,
+      updatedAt: ad.updatedAt,
+    }));
+  };
 
   selectContentAds = async (
     adsPrice: GetAdsPriceResponse,
@@ -113,7 +174,7 @@ export class AdsService {
       contentScore[a] > contentScore[b] ? -1 : 1,
     );
     const adsIndex = adsPrice.adsRef.findIndex(
-      (item) => String(item.$id || item.oid) === sortedContentIds[0],
+      (item) => String(item.oid) === sortedContentIds[0],
     );
     return adsPrice.ads[adsIndex];
   };
@@ -122,21 +183,23 @@ export class AdsService {
     adsPrice: GetAdsPriceResponse,
     viewerAccountId: string,
   ) => {
-    const allContentAdsIds = adsPrice.adsRef
-      .filter((item) => item.$ref === 'content' || item.namespace === 'content')
-      .map((item) => String(item.$id ? item.$id : item.oid));
-    const allUserAdsIds = adsPrice.adsRef
-      .filter((item) => item.$ref === 'user' || item.namespace === 'user')
-      .map((item) => String(item.$id ? item.$id : item.oid));
-    if (allContentAdsIds.length > 0 && allUserAdsIds.length > 0) {
+    const contentIds = [];
+    const userIds = [];
+
+    adsPrice.adsRef.forEach((adsRef) => {
+      (this.isContentAd({ adsRef }) ? userIds : contentIds).push(adsRef.oid);
+    });
+
+    if (contentIds.length && userIds.length) {
       const selectedContentAds = await this.selectContentAds(
         adsPrice,
         viewerAccountId,
-        allContentAdsIds,
+        contentIds,
       );
-      return selectedContentAds
-        ? selectedContentAds
-        : adsPrice.ads[Math.floor(Math.random() * adsPrice.ads.length)];
+      return (
+        selectedContentAds ||
+        adsPrice.ads[Math.floor(Math.random() * adsPrice.ads.length)]
+      );
     }
     return adsPrice.ads[Math.floor(Math.random() * adsPrice.ads.length)];
   };
@@ -145,7 +208,7 @@ export class AdsService {
     contentIds: AdsPlacementContent[],
     viewerAccountId: string,
   ) => {
-    const session = await this._adsPlacementModel.startSession();
+    const session = await this.adsPlacementModel.startSession();
     try {
       session.startTransaction();
       const cpm = await this.auctionAds(viewerAccountId);
@@ -153,7 +216,7 @@ export class AdsService {
         accountId: viewerAccountId,
         type: UserType.PEOPLE,
       });
-      const adsPlacement = new this._adsPlacementModel({
+      const adsPlacement = new this.adsPlacementModel({
         campaign: cpm.adsCampaignId,
         contents: contentIds.map((c) => c.contentId),
         cost: {
@@ -186,17 +249,10 @@ export class AdsService {
       contentIds,
       viewerAccountId,
     );
-    const campaign = await this._adsCampaignModel.findById(
-      adsplacement.campaign,
-    );
+    const campaign = await this.adsModel.findById(adsplacement.campaign);
     let adsItem: FeedItemPayloadItem;
-    if (
-      campaign.adsRef.$ref === 'content' ||
-      campaign.adsRef.namespace === 'content'
-    ) {
-      const content = await this._contentModel.findById(
-        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid,
-      );
+    if (campaign.adsRef.namespace === 'content') {
+      const content = await this.contentModel.findById(campaign.adsRef.oid);
       adsItem = {
         id: adsplacement.id,
         type: 'ads-content',
@@ -216,9 +272,7 @@ export class AdsService {
         campaignMessage: campaign.detail.message,
       };
     } else {
-      const page = await this._userModel.findById(
-        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid,
-      );
+      const page = await this.userModel.findById(campaign.adsRef.oid);
       adsItem = {
         id: adsplacement.id,
         type: 'ads-page',
@@ -242,9 +296,6 @@ export class AdsService {
     return feeds;
   };
 
-  getCode = (user: User) =>
-    `${user.id.toUpperCase().slice(19)}${new Date().getTime()}`;
-
   /**
    * Validate if ads owner can create ads or not
    * @param user
@@ -252,7 +303,7 @@ export class AdsService {
    * @returns
    */
   validateAds = async (user: User, adsRequest: AdsRequestDto) => {
-    const balance = await this.taccountService.getAccountBalance(
+    const balance = await this.tAccountService.getAccountBalance(
       user.id,
       adsRequest.paymentMethod === AdsPaymentMethod.ADS_CREDIT
         ? WalletType.ADS
@@ -262,17 +313,17 @@ export class AdsService {
     if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
       return false;
     if (adsRequest.castcleId && user.id !== adsRequest.castcleId) {
-      const page = await this._userModel.findById(adsRequest.castcleId);
+      const page = await this.userModel.findById(adsRequest.castcleId);
       return String(page.ownerAccount) === String(user.ownerAccount);
     } else if (adsRequest.contentId) {
-      const content = await this._contentModel.findById(adsRequest.contentId);
+      const content = await this.contentModel.findById(adsRequest.contentId);
       return String(content.author.id) === String(user._id);
     }
     return true;
   };
 
   updateAllAdsStatus = async () => {
-    const runningCampaigns = await this._adsCampaignModel.find({
+    const runningCampaigns = await this.adsModel.find({
       boostStatus: AdsBoostStatus.Running,
     });
     //update daily Spent
@@ -284,21 +335,17 @@ export class AdsService {
    * Create a ads campaign
    * @param user
    * @param adsRequest
-   * @returns {AdsCampaign}
+   * @returns {Ad}
    */
   createAds = async (user: User, adsRequest: AdsRequestDto) => {
     const adsRef = adsRequest.castcleId
-      ? {
-          $ref: 'user',
-          $id: new mongoose.Types.ObjectId(adsRequest.castcleId),
-        }
-      : {
-          $ref: 'content',
-          $id: new mongoose.Types.ObjectId(adsRequest.contentId),
-        };
+      ? new DBRef('user', new Types.ObjectId(adsRequest.castcleId))
+      : new DBRef('content', new Types.ObjectId(adsRequest.contentId));
+
     if (!(await this.validateAds(user, adsRequest)))
       throw new CastcleException('INVALID_TRANSACTIONS_DATA');
-    const campaign = new this._adsCampaignModel({
+
+    return new this.adsModel({
       adsRef: adsRef,
       owner: user.id,
       objective: adsRequest.objective,
@@ -315,60 +362,11 @@ export class AdsService {
       statistics: DefaultAdsStatistic,
       status: AdsStatus.Processing,
       boostStatus: AdsBoostStatus.Unknown,
-    });
-    return campaign.save();
+    }).save();
   };
 
-  transformAdsCampaignToAdsResponse = async (campaign: AdsCampaign) => {
-    let payload: ContentPayloadItem | PageResponseDto; // = {};
-    if (campaign.adsRef.$ref === 'user' || campaign.adsRef.oref === 'user') {
-      const page = await this._userModel.findById(
-        campaign.adsRef.$id || campaign.adsRef.oid,
-      );
-      payload = page.toPageResponse();
-    } else {
-      const content = await this._contentModel.findById(
-        campaign.adsRef.$id || campaign.adsRef.oid,
-      );
-      console.log('transformAdsCampaignToAdsResponse.content', content);
-      payload = toSignedContentPayloadItem(content);
-    }
-    return {
-      campaignName: campaign.detail.name,
-      campaignMessage: campaign.detail.message,
-      adStatus: campaign.status,
-      boostStatus: campaign.boostStatus,
-      boostType:
-        campaign.adsRef.$ref === 'user' || campaign.adsRef.oref
-          ? 'page'
-          : 'content',
-      campaignCode: campaign.detail.code,
-      dailyBudget: campaign.detail.dailyBudget,
-      duration: campaign.detail.duration,
-      dailyBidType: campaign.detail.dailyBidType,
-      dailyBidValue: campaign.detail.dailyBidValue,
-      objective: campaign.objective,
-      payload: payload,
-      engagement: campaign.statistics.engagements, // this could use,
-      statistics: {
-        CPM: campaign.statistics.cpm,
-        budgetSpent: campaign.statistics.budgetSpent,
-        dailySpent: campaign.statistics.dailySpent,
-        impression: {
-          organic: 0, // need to embed organic stat to content,
-          paid: 0,
-        },
-        reach: {
-          organic: 0,
-          paid: 0,
-        },
-      },
-      createdAt: campaign.createdAt,
-      updatedAt: campaign.updatedAt,
-    } as AdsCampaignResponseDto;
-  };
   async _getUserIds(ownerAccount: any, _id: any) {
-    const pages = await this._userModel.find({
+    const pages = await this.userModel.find({
       ownerAccount: ownerAccount,
       type: UserType.PAGE,
     });
@@ -382,7 +380,7 @@ export class AdsService {
     { sinceId, untilId, maxResults, filter, timezone }: AdsQuery,
   ) {
     const ids = await this._getUserIds(ownerAccount, _id);
-    const filters: FilterQuery<AdsCampaign> = createCastcleFilter(
+    const filters: FilterQuery<Ad> = createCastcleFilter(
       { owner: { $in: ids } },
       {
         sinceId,
@@ -401,7 +399,7 @@ export class AdsService {
       };
     }
 
-    return this._adsCampaignModel
+    return this.adsModel
       .find(filters)
       .limit(maxResults)
       .sort({ createdAt: -1, _id: -1 });
@@ -410,7 +408,7 @@ export class AdsService {
   async lookupAds({ _id, ownerAccount }: User, adsId: string) {
     const ids = await this._getUserIds(ownerAccount, _id);
     ids.push(_id);
-    return this._adsCampaignModel
+    return this.adsModel
       .findOne({
         owner: { $in: ids },
         _id: adsId,
@@ -419,7 +417,7 @@ export class AdsService {
   }
 
   async updateAdsById(adsId: string, adsRequest: AdsRequestDto) {
-    return this._adsCampaignModel.updateOne(
+    return this.adsModel.updateOne(
       { _id: adsId, status: AdsStatus.Processing },
       {
         $set: {
@@ -435,14 +433,14 @@ export class AdsService {
     );
   }
   async deleteAdsById(adsId: string) {
-    return this._adsCampaignModel.deleteOne({
+    return this.adsModel.deleteOne({
       _id: adsId,
       status: AdsStatus.Processing,
     });
   }
 
   async updateAdsBoostStatus(adsId: string, adsBoostStatus: AdsBoostStatus) {
-    return this._adsCampaignModel.updateOne(
+    return this.adsModel.updateOne(
       { _id: adsId, status: AdsStatus.Approved },
       {
         $set: {
@@ -453,17 +451,17 @@ export class AdsService {
   }
 
   seenAds = async (adsPlacementId: string, seenByCredentialId: string) => {
-    const adsPlacement = await this._adsPlacementModel.findById(adsPlacementId);
-    const session = await this._adsPlacementModel.startSession();
+    const adsPlacement = await this.adsPlacementModel.findById(adsPlacementId);
+    const session = await this.adsPlacementModel.startSession();
     let tx;
     await session.withTransaction(async () => {
       try {
         if (adsPlacement && !adsPlacement.seenAt) {
           adsPlacement.seenAt = new Date();
-          adsPlacement.seenCredential = mongoose.Types.ObjectId(
+          adsPlacement.seenCredential = new Types.ObjectId(
             seenByCredentialId,
           ) as any;
-          const adsCampaign = await this._adsCampaignModel.findById(
+          const adsCampaign = await this.adsModel.findById(
             adsPlacement.campaign,
           );
           const estAdsCostCAST =
@@ -471,7 +469,7 @@ export class AdsService {
           //transferFrom ads owner to locked account
           //debit personal account or ads_credit account of adsowner
           //credit ads ownner locked_for ads
-          tx = await this.taccountService.transfer({
+          tx = await this.tAccountService.transfer({
             from: {
               user: adsCampaign.owner as unknown as string,
               type:
@@ -511,7 +509,7 @@ export class AdsService {
           adsCampaign.statistics.budgetSpent += adsPlacement.cost.UST;
           adsCampaign.statistics.dailySpent += adsPlacement.cost.UST;
           adsCampaign.statistics.lastSeenAt = new Date();
-          const adsOwnerBalance = await this.taccountService.getAccountBalance(
+          const adsOwnerBalance = await this.tAccountService.getAccountBalance(
             String(adsCampaign.owner),
             adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
               ? WalletType.ADS
@@ -544,8 +542,8 @@ export class AdsService {
 
   getAds = async (accountId: string) => {
     //select all ads that user Balance > budget
-    const ads = await this._adsCampaignModel
-      .aggregate(pipe2AvaialableAdsCampaign())
+    const ads = await this.adsModel
+      .aggregate(pipe2AvailableAdsCampaign())
       .exec();
     const releventScore = await this.dataService.personalizeContents(
       accountId,
@@ -591,7 +589,7 @@ export class AdsService {
       const adsplacement = adsPlacements[i]; //sometimes use forEach there would be a bug in await
       adsplacement.cost.CAST = adsplacement.cost.UST * castRate;
       const reward = new AdsSocialReward(paymentType, adsplacement.cost);
-      const session = await this._adsPlacementModel.startSession();
+      const session = await this.adsPlacementModel.startSession();
       session.withTransaction(async () => {
         await this.distributeAdsReward(adsplacement, reward, session);
         adsplacement.isModified('cost');
@@ -604,7 +602,7 @@ export class AdsService {
   distributeAdsReward = async (
     adsplacement: AdsPlacement,
     reward: AdsSocialReward,
-    session: mongoose.ClientSession,
+    session: ClientSession,
   ) => {
     await this.distributeContentFarmingReward(adsplacement, reward, session);
     await this.distributeContentCreatorReward(adsplacement, reward, session);
@@ -614,9 +612,9 @@ export class AdsService {
   distributeViewerReward = async (
     adsplacement: AdsPlacement,
     reward: AdsSocialReward,
-    session: mongoose.ClientSession,
+    session: ClientSession,
   ) => {
-    return this.taccountService.transfer(
+    return this.tAccountService.transfer(
       {
         from: {
           type: WalletType.CASTCLE_SOCIAL,
@@ -653,7 +651,7 @@ export class AdsService {
   distributeContentCreatorReward = async (
     adsplacement: AdsPlacement,
     reward: AdsSocialReward,
-    session: mongoose.ClientSession,
+    session: ClientSession,
   ) => {
     const creatorRewardPerContent =
       reward.creatorShare / adsplacement.contents.length;
@@ -681,7 +679,7 @@ export class AdsService {
         },
       });
     }
-    return this.taccountService.transfer(
+    return this.tAccountService.transfer(
       {
         from: {
           type: WalletType.CASTCLE_SOCIAL,
@@ -697,13 +695,13 @@ export class AdsService {
   distributeContentFarmingReward = async (
     adsplacement: AdsPlacement,
     reward: AdsSocialReward,
-    session: mongoose.ClientSession,
+    session: ClientSession,
   ) => {
     // const creatorPool = reward.creatorShare + reward.farmingShare;
     const creatorRewardPerContent =
       reward.farmingShare / adsplacement.contents.length; //creatorPool / adsplacement.contents.length;
 
-    const cfs = await this._contentFarmingModel.find({
+    const cfs = await this.farmingModel.find({
       content: {
         $in: adsplacement.contents.map((c) => String(c)),
       },
@@ -742,18 +740,18 @@ export class AdsService {
             },
           });
         }
-        await this._contentFarmingModel.updateMany(
+        await this.farmingModel.updateMany(
           { _id: { $in: currentCfs.map((c) => c.id) } },
           {
             isDistributed: true,
           },
           { session: session },
         );
-        await this._contentModel.updateMany(
+        await this.contentModel.updateMany(
           { _id: { $in: currentCfs.map((c) => c.content) } },
           { 'farming.isDistributed': true },
         );
-        await this.taccountService.transfer(
+        await this.tAccountService.transfer(
           {
             from: {
               type: WalletType.CASTCLE_SOCIAL,
@@ -765,7 +763,7 @@ export class AdsService {
           session,
         );
       } else {
-        await this.taccountService.transfer(
+        await this.tAccountService.transfer(
           {
             from: {
               type: WalletType.CASTCLE_SOCIAL,

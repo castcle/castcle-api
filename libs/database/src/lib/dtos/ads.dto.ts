@@ -29,11 +29,16 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { AdsBidType, AdsObjective, FilterInterval } from '../models';
+import {
+  AdsBidType,
+  AdsBoostType,
+  AdsObjective,
+  FilterInterval,
+} from '../models';
 import { AdsCampaign } from '../schemas';
 import { ContentPayloadItem } from './content.dto';
 import { PaginationQuery } from './pagination.dto';
-import { PageResponseDto } from './user.dto';
+import { PublicUserResponse } from './user.dto';
 
 export class AdsAuctionAggregateDto {
   campaign: AdsCampaign;
@@ -91,42 +96,44 @@ export class AdsRequestDto {
   castcleId?: string;
 }
 
-export class AdsCampaignResponseDto {
-  'campaignName': string;
-  'campaignMessage': string;
-  'campaignCode': string;
-  'objective': string;
-  'dailyBudget': number;
-  'dailyBidType': AdsBidType;
-  'dailyBidValue': number;
-  'duration': number;
-  'adStatus': string;
-  'boostStatus': string;
-  'boostType': 'page' | 'content';
-  'payload': ContentPayloadItem | PageResponseDto;
-  'statistics': AdsCampaignStatisticResponse;
-  'engagement': any;
-  'createdAt': Date;
-  'updatedAt': Date;
+export class AdsResponse {
+  campaignName: string;
+  campaignMessage: string;
+  campaignCode: string;
+  objective: string;
+  dailyBudget: number;
+  dailyBidType: AdsBidType;
+  dailyBidValue: number;
+  duration: number;
+  adStatus: string;
+  boostStatus: string;
+  boostType: AdsBoostType;
+  payload: ContentPayloadItem | PublicUserResponse;
+  statistics: AdsCampaignStatisticResponse;
+  engagement: any;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export class AdsCampaignStatisticResponse {
-  'budgetSpent': number;
-  'dailySpent': number;
-  'impression': {
+  budgetSpent: number;
+  dailySpent: number;
+  impression: {
     organic: number;
     paid: number;
   };
-  'reach': {
+  reach: {
     organic: number;
     paid: number;
   };
-  'CPM': number;
+  CPM: number;
 }
+
 export class AdsQuery extends PaginationQuery {
   @IsOptional()
   @IsEnum(FilterInterval)
   filter?: FilterInterval;
+
   @IsOptional()
   @IsString()
   timezone = '+00:00';
