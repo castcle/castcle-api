@@ -100,7 +100,7 @@ export class Mailer {
         from: 'castcle-noreply" <no-reply@castcle.com>',
         subject: `Password for login backoffice of Castcle.`,
         to: email,
-        text: `Your password to login backoffice is ${password}`,
+        text: `Your password to login backoffice is ${password}.\n Please login on https://appsmith.castcle.com/applications/6226cb9d0f0e86471bbb9210/pages/624156a092fd361e5c4401f2?branch=master`,
       });
 
       this.logger.log(`Password has been submitted ${info.messageId}`);
