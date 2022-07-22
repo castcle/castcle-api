@@ -14,6 +14,7 @@ import { AppModule as UsersModule } from 'apps/users/src/app/app.module';
 import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.mock';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Query } from 'mongoose';
+import { testContentFarming } from './routes/content-farming.spec';
 import { testReviewTransaction } from './routes/review-transaction.spec';
 import { testSendTransaction } from './routes/send-transaction.spec';
 import { request } from './utils.spec';
@@ -65,4 +66,5 @@ describe('Castcle E2E Tests', () => {
 
   testReviewTransaction();
   testSendTransaction();
+  testContentFarming();
 });

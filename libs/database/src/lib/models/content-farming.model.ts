@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastPayload } from '../dtos';
 import { ContentFarming } from '../schemas';
 
 export type ContentFarmingCDF = {
@@ -31,29 +32,43 @@ export type ContentFarmingCDF = {
 export class ContentFarmingResponse {
   'id': string;
   'number': number;
-  'balance': {
-    farmed: number;
-    available: number;
-    total: number;
-    farming: number;
-  } = {
-    farmed: 0,
-    available: 0,
-    total: 0,
-    farming: 0,
-  };
+  'content'?: CastPayload;
+  'balance':
+    | {
+        farmed: number;
+        available: number;
+        farming: number;
+        total: number;
+      }
+    | number =
+    {
+      farmed: 0,
+      available: 0,
+      farming: 0,
+      total: 0,
+    } || 0;
   'status': string;
+  'createdAt'?: Date;
+  'updatedAt'?: Date;
+  'farmedAt'?: Date;
+
   constructor(
     contentFarming: ContentFarming,
     currentBalance: number,
     lockedBalance: number,
     farmNo: number,
+    contentPayload?: CastPayload,
+    isCurrentBalance?: boolean,
   ) {
-    //this.number
     this.id = contentFarming.id;
     this.number = farmNo;
-    this.balance.available = currentBalance;
-    this.balance.total = currentBalance + lockedBalance;
+    this.content = contentPayload;
+    this.balance['available'] = currentBalance;
+    this.balance['total'] = currentBalance + lockedBalance;
     this.status = contentFarming.status;
+    this.createdAt = contentFarming.createdAt;
+    this.updatedAt = contentFarming.updatedAt;
+    this.farmedAt = contentFarming.endedAt;
+    if (isCurrentBalance) this.balance = currentBalance;
   }
 }
