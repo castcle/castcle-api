@@ -24,11 +24,9 @@
 import {
   AdsRequestDto,
   AdsService,
-  ContentServiceV2,
   UserServiceV2,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
@@ -39,12 +37,9 @@ import { Body, Post } from '@nestjs/common';
 
 @CastcleControllerV2({ path: 'ads' })
 export class AdsController {
-  private logger = new CastLogger(AdsController.name);
-
   constructor(
     private adsService: AdsService,
     private userService: UserServiceV2,
-    private contentService: ContentServiceV2,
   ) {}
 
   @CastcleClearCacheAuth(CacheKeyName.Feeds)
@@ -53,12 +48,12 @@ export class AdsController {
     @Auth() authorizer: Authorizer,
     @Body() adsRequestDto: AdsRequestDto,
   ) {
-    this.logger.log('creatcreateUserAds()', JSON.stringify(adsRequestDto));
     authorizer.requireActivation();
     const user = await this.userService.getUser(adsRequestDto.castcleId);
     authorizer.requestAccessForAccount(user.ownerAccount);
-    const ads = await this.adsService.createAds(authorizer.user, adsRequestDto);
-    return this.adsService.transformAdsCampaignToAdsResponse(ads);
+    const ad = await this.adsService.createAds(authorizer.user, adsRequestDto);
+    const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
+    return adResponse;
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Feeds)
@@ -67,9 +62,9 @@ export class AdsController {
     @Auth() authorizer: Authorizer,
     @Body() adsRequestDto: AdsRequestDto,
   ) {
-    this.logger.log('createCastAds()', JSON.stringify(adsRequestDto));
     authorizer.requireActivation();
-    const ads = await this.adsService.createAds(authorizer.user, adsRequestDto);
-    return this.adsService.transformAdsCampaignToAdsResponse(ads);
+    const ad = await this.adsService.createAds(authorizer.user, adsRequestDto);
+    const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
+    return adResponse;
   }
 }

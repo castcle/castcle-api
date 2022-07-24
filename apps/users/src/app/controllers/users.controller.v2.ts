@@ -32,6 +32,7 @@ import {
   GetContentDto,
   GetContentQuery,
   GetDateDto,
+  GetFarmingParam,
   GetFollowQuery,
   GetKeywordQuery,
   GetSourceContentParam,
@@ -989,5 +990,18 @@ export class UsersControllerV2 {
       await this.contentServiceV2.unfarmByFarmingId(farmingId, userId),
       userId,
     );
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get(':userId/farming/cast/:contentId')
+  async lookupFarming(
+    @Auth() authorizer: Authorizer,
+    @Param() { userId, contentId }: GetFarmingParam,
+  ) {
+    const user = await this.userService.getUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    return this.contentServiceV2.lookupFarming(contentId, userId);
   }
 }

@@ -21,7 +21,14 @@
  * or have any questions.
  */
 
-import { OwnerResponse } from '@castcle-api/database';
+import {
+  CastPayload,
+  ContentServiceV2,
+  ContentType,
+  OwnerResponse,
+  User,
+} from '@castcle-api/database';
+import { getModelToken } from '@nestjs/mongoose';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import * as supertest from 'supertest';
 
@@ -65,4 +72,26 @@ export const registerUser = async (name = Date.now().toString()) => {
     profile: OwnerResponse;
     pages: OwnerResponse[];
   };
+};
+
+export const createContent = async (userId: string) => {
+  const user: User = await app()
+    .get(getModelToken('User'))
+    .findById(userId)
+    .exec();
+
+  const { payload: contentPayload } = await app()
+    .get(ContentServiceV2)
+    .createContent(
+      {
+        type: ContentType.Short,
+        payload: {
+          message: `content ${Date.now().toString()}`,
+        },
+        castcleId: user.displayId,
+      },
+      user,
+    );
+
+  return contentPayload as CastPayload;
 };

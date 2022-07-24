@@ -39,6 +39,11 @@ export enum AdsBoostStatus {
   End = 'end',
 }
 
+export enum AdsBoostType {
+  Content = 'content',
+  Page = 'page',
+}
+
 export enum AdsEngagementKey {
   Likes = 'likes',
   Recasts = 'recasts',
@@ -48,6 +53,7 @@ export enum AdsEngagementKey {
   Farm = 'farm',
   Reward = 'rewardDistributed',
 }
+
 export enum FilterInterval {
   All = 'all',
   Today = 'today',

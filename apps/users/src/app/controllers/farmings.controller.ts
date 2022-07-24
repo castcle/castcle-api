@@ -20,28 +20,32 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { ContentServiceV2, PaginationQuery } from '@castcle-api/database';
+import { CacheKeyName } from '@castcle-api/environments';
+import {
+  Auth,
+  Authorizer,
+  CastcleAuth,
+  CastcleControllerV2,
+} from '@castcle-api/utils/decorators';
+import { Get, Query } from '@nestjs/common';
 
-export type SuggestContentItem = {
-  content: string;
-  score: number;
-  aggregator: {
-    name: 'following-cast' | 'following-like' | 'trending' | 'default';
-    user?: string[]; //userId
-  };
-  calledAt?: boolean;
-};
+@CastcleControllerV2({ path: 'farmings' })
+export class FarmingsController {
+  constructor(private contentService: ContentServiceV2) {}
 
-export type SuggestUserItem = {
-  user: string;
-  score: number;
-  aggregator: {
-    name: 'following' | 'trending' | 'default';
-    user?: string[]; //userId
-  };
-};
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('active')
+  async farmingActive(@Auth() authorizer: Authorizer) {
+    return this.contentService.farmingActive(authorizer.user.id);
+  }
 
-export type PersonalizeAdsItem = {
-  user?: string;
-  content?: string;
-  score: number;
-};
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('history')
+  async farmingHistory(
+    @Auth() authorizer: Authorizer,
+    @Query() query: PaginationQuery,
+  ) {
+    return this.contentService.farmingHistory(query, authorizer.user.id);
+  }
+}

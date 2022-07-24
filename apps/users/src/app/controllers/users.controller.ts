@@ -547,12 +547,9 @@ export class UsersController {
     @Auth() { user }: Authorizer,
     @Body() adsRequestDto: AdsRequestDto,
   ) {
-    //check if
-    const campaign = await this.adsService.createAds(user, adsRequestDto);
-    const response = await this.adsService.transformAdsCampaignToAdsResponse(
-      campaign,
-    );
-    return response;
+    const ad = await this.adsService.createAds(user, adsRequestDto);
+    const [adsResponse] = await this.adsService.convertAdsToAdResponses([ad]);
+    return adsResponse;
   }
 
   @ApiOkResponse({
@@ -1558,18 +1555,16 @@ export class UsersController {
   @CastcleBasicAuth()
   @Get('me/advertise')
   async listAds(@Auth() { user }: Authorizer, @Query() adsQuery: AdsQuery) {
-    const adsCampaigns = await this.adsService.getListAds(user, adsQuery);
-    if (!adsCampaigns) return { payload: null };
-    const adsResponses = await Promise.all(
-      adsCampaigns.map((adsCampaign) =>
-        this.adsService.transformAdsCampaignToAdsResponse(adsCampaign),
-      ),
-    );
+    const ads = await this.adsService.getListAds(user, adsQuery);
+    if (!ads) return { payload: null };
+
+    const adsResponses = await this.adsService.convertAdsToAdResponses(ads);
     return ResponseDto.ok({
       payload: adsResponses,
-      meta: createCastcleMeta(adsCampaigns),
+      meta: createCastcleMeta(ads),
     });
   }
+
   /**
    * @param {Authorizer}  account Authorizer that has account from interceptor or passport
    * @param {string} adsId - string
@@ -1578,9 +1573,10 @@ export class UsersController {
   @CastcleBasicAuth()
   @Get('me/advertise/:id')
   async lookupAds(@Auth() { user }: Authorizer, @Param('id') adsId: string) {
-    const adsCampaign = await this.adsService.lookupAds(user, adsId);
-    if (!adsCampaign) return;
-    return this.adsService.transformAdsCampaignToAdsResponse(adsCampaign);
+    const ad = await this.adsService.lookupAds(user, adsId);
+    if (!ad) return;
+    const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
+    return adResponse;
   }
 
   /**

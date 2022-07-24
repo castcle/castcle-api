@@ -21,27 +21,22 @@
  * or have any questions.
  */
 
-export type SuggestContentItem = {
-  content: string;
-  score: number;
-  aggregator: {
-    name: 'following-cast' | 'following-like' | 'trending' | 'default';
-    user?: string[]; //userId
-  };
-  calledAt?: boolean;
-};
+import { AdsService } from '@castcle-api/database';
+import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { Get, Query } from '@nestjs/common';
+import { BackofficeAuth } from '../decorators';
+import { GetAdsDto } from '../models/ads.dto';
 
-export type SuggestUserItem = {
-  user: string;
-  score: number;
-  aggregator: {
-    name: 'following' | 'trending' | 'default';
-    user?: string[]; //userId
-  };
-};
+@CastcleControllerV2({ path: 'backoffices/ads' })
+export class AdsController {
+  constructor(private adsService: AdsService) {}
 
-export type PersonalizeAdsItem = {
-  user?: string;
-  content?: string;
-  score: number;
-};
+  @BackofficeAuth()
+  @Get()
+  async getAds(@Query() dto: GetAdsDto) {
+    const ads = await this.adsService.find(dto);
+    const adsResponses = await this.adsService.convertAdsToAdResponses(ads);
+
+    return { payload: adsResponses };
+  }
+}
