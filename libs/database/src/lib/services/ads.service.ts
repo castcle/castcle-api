@@ -131,13 +131,14 @@ export class AdsService {
     ]);
 
     return ads.map<AdsResponse>((ad) => ({
+      id: ad.id,
       campaignName: ad.detail.name,
       campaignMessage: ad.detail.message,
       adStatus: ad.status,
       boostStatus: ad.boostStatus,
       boostType: this.isContentAd(ad)
         ? AdsBoostType.Content
-        : AdsBoostType.Page,
+        : AdsBoostType.User,
       campaignCode: ad.detail.code,
       dailyBudget: ad.detail.dailyBudget,
       duration: ad.detail.duration,

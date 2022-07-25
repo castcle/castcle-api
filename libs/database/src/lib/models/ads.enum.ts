@@ -27,9 +27,11 @@ export enum AdsObjective {
 }
 
 export enum AdsStatus {
-  Processing = 'processing',
-  Declined = 'declined',
   Approved = 'approved',
+  Cancelled = 'cancelled',
+  Declined = 'declined',
+  Processing = 'processing',
+  Suspended = 'suspended',
 }
 
 export enum AdsBoostStatus {
@@ -41,7 +43,7 @@ export enum AdsBoostStatus {
 
 export enum AdsBoostType {
   Content = 'content',
-  Page = 'page',
+  User = 'user',
 }
 
 export enum AdsEngagementKey {

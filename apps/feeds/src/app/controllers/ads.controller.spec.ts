@@ -182,7 +182,7 @@ describe('AdsController', () => {
         objective: AdsObjective.Engagement,
         adStatus: AdsStatus.Processing,
         boostStatus: AdsBoostStatus.Unknown,
-        boostType: 'page',
+        boostType: 'user',
       });
     });
   });
