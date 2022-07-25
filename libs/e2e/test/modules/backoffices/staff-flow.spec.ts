@@ -41,7 +41,43 @@ export const testStaffFlow = () => {
       });
   });
 
-  it('STEP 4: Should return all staff in collection', async () => {
+  it('STEP 4: Should change password staff error', async () => {
+    await BackofficesRequest.changePassword()
+      .auth(accessToken, { type: 'bearer' })
+      .send({
+        oldPassword: 'testtest',
+        newPassword: 'changeNaja',
+      })
+      .expect(({ status }) => {
+        expect(status).toEqual(400);
+      });
+  });
+
+  it('STEP 5: Should change password staff', async () => {
+    await BackofficesRequest.changePassword()
+      .auth(accessToken, { type: 'bearer' })
+      .send({
+        oldPassword: 'test',
+        newPassword: 'changeNaja',
+      })
+      .expect(({ status }) => {
+        expect(status).toEqual(200);
+      });
+  });
+
+  it('STEP 6: Should relogin after change password', async () => {
+    await BackofficesRequest.login()
+      .send({
+        email: 'test@castcle.com',
+        password: 'changeNaja',
+      })
+      .expect(({ body }) => {
+        expect(body.accessToken).toBeDefined();
+        accessToken = body.accessToken;
+      });
+  });
+
+  it('STEP 7: Should return all staff in collection', async () => {
     await BackofficesRequest.getStaffs()
       .auth(accessToken, { type: 'bearer' })
       .expect(({ body }) => {
@@ -50,7 +86,7 @@ export const testStaffFlow = () => {
       });
   });
 
-  it('STEP 5: Should reset password user is exist', async () => {
+  it('STEP 8: Should reset password user is exist', async () => {
     await BackofficesRequest.resetPassword(newStaff._id)
       .auth(accessToken, { type: 'bearer' })
       .expect(({ status }) => {
@@ -58,7 +94,7 @@ export const testStaffFlow = () => {
       });
   });
 
-  it('STEP 6: Should reset password failed if user does not exist ', async () => {
+  it('STEP 9: Should reset password failed if user does not exist ', async () => {
     await BackofficesRequest.resetPassword('62beba95da7ae63fcf187dd3')
       .auth(accessToken, { type: 'bearer' })
       .expect(({ status }) => {
@@ -66,9 +102,21 @@ export const testStaffFlow = () => {
       });
   });
 
-  it('STEP 7: Should Delete user', async () => {
+  it('STEP 10: Should Delete user', async () => {
     await BackofficesRequest.deleteStaff(newStaff._id)
       .auth(accessToken, { type: 'bearer' })
+      .expect(({ status }) => {
+        expect(status).toEqual(200);
+      });
+  });
+
+  it('STEP 11: Should reset password to default', async () => {
+    await BackofficesRequest.changePassword()
+      .auth(accessToken, { type: 'bearer' })
+      .send({
+        oldPassword: 'changeNaja',
+        newPassword: 'test',
+      })
       .expect(({ status }) => {
         expect(status).toEqual(200);
       });

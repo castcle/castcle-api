@@ -23,6 +23,8 @@ export class BackofficesRequest {
   static login = () => BackofficesRequest.post(`/v2/backoffices/login/email`);
   static logout = () => BackofficesRequest.post(`/v2/backoffices/logout`);
   static createStaff = () => BackofficesRequest.post(`/v2/backoffices/staff`);
+  static changePassword = () =>
+    BackofficesRequest.put(`/v2/backoffices/staff/change-password`);
   static getStaffs = () => BackofficesRequest.get(`/v2/backoffices/staff`);
   static deleteStaff = (staffId: string) =>
     BackofficesRequest.delete(`/v2/backoffices/staff/${staffId}`);

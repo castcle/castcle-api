@@ -13,7 +13,7 @@ import {
   StaffDto,
 } from '../models/authentication.dto';
 import { StaffStatus } from '../models/authentication.enum';
-import { Staff, StaffDocument } from '../schemas/staff.schema';
+import { StaffDocument } from '../schemas/staff.schema';
 
 @Injectable()
 export class AuthenticationService {
