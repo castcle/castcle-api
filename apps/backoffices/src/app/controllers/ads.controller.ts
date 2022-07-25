@@ -23,9 +23,11 @@
 
 import { AdsService } from '@castcle-api/database';
 import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
-import { Get, Query } from '@nestjs/common';
+import { Body, Get, Param, Post, Query } from '@nestjs/common';
 import { BackofficeAuth } from '../decorators';
-import { GetAdsDto } from '../models/ads.dto';
+import { RequiredPermissions } from '../guards/permisson.guard';
+import { GetAdParam, GetAdsDto, ManageAdDto } from '../models/ads.dto';
+import { Permission } from '../models/authentication.enum';
 
 @CastcleControllerV2({ path: 'backoffices/ads' })
 export class AdsController {
@@ -38,5 +40,22 @@ export class AdsController {
     const adsResponses = await this.adsService.convertAdsToAdResponses(ads);
 
     return { payload: adsResponses };
+  }
+
+  @BackofficeAuth()
+  @RequiredPermissions(Permission.Manage)
+  @Post(':adId/approve')
+  async approveAd(@Param() { adId }: GetAdParam) {
+    await this.adsService.approveAd(adId);
+  }
+
+  @BackofficeAuth()
+  @RequiredPermissions(Permission.Manage)
+  @Post(':adId/decline')
+  async declineAd(
+    @Body() { reason }: ManageAdDto,
+    @Param() { adId }: GetAdParam,
+  ) {
+    await this.adsService.declineAd(adId, reason);
   }
 }
