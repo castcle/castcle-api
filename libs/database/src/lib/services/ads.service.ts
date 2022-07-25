@@ -93,14 +93,14 @@ export class AdsService {
   ) {}
 
   async find(dto: {
-    adStatus: AdsStatus;
-    boostStatus: AdsBoostStatus;
-    boostType: AdsBoostType;
+    adStatus: AdsStatus[];
+    boostStatus: AdsBoostStatus[];
+    boostType: AdsBoostType[];
   }) {
     const query: FilterQuery<Ad> = {};
-    if (dto.adStatus) query.status = dto.adStatus;
-    if (dto.boostStatus) query.boostStatus = dto.boostStatus;
-    if (dto.boostType) query['adsRef.$ref'] = dto.boostType;
+    if (dto.adStatus) query.status = { $in: dto.adStatus };
+    if (dto.boostStatus) query.boostStatus = { $in: dto.boostStatus };
+    if (dto.boostType) query['adsRef.$ref'] = { $in: dto.boostType };
 
     const campaigns = await this.adsModel
       .find(query)
