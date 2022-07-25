@@ -208,7 +208,7 @@ type ContentQuery = {
   message?: string;
   originalPost?: string;
   sinceId?: string;
-  type?: string[];
+  type?: ContentType[];
   sortBy?: {
     [key: string]: string;
   };
