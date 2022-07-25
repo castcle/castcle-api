@@ -577,14 +577,14 @@ export class UserServiceV2 {
 
     const followingUsersId = userRelation.flatMap(({ _id, followedUser }) => {
       return {
-        userId: followedUser[0]?._id,
+        id: followedUser[0]?._id,
         relationshipId: _id,
       };
     });
 
     const users = await this.repository.getPublicUsers({
       requestedBy: viewer,
-      filter: { _id: followingUsersId.map((f) => f.userId) },
+      filter: { _id: followingUsersId.map((f) => f.id) },
       expansionFields: followQuery.userFields,
     });
 
@@ -624,14 +624,14 @@ export class UserServiceV2 {
 
     const followingUsersId = userRelation.flatMap(({ _id, user }) => {
       return {
-        userId: user[0]?._id,
+        id: user[0]?._id,
         relationshipId: _id,
       };
     });
 
     const users = await this.repository.getPublicUsers({
       requestedBy: viewer,
-      filter: { _id: followingUsersId.map((f) => f.userId) },
+      filter: { _id: followingUsersId.map((f) => f.id) },
       expansionFields: followQuery.userFields,
     });
 
@@ -644,13 +644,13 @@ export class UserServiceV2 {
   }
 
   mergeRelationUser(
-    followingIds,
+    followingIds: { id: string; relationshipId: string }[],
     users,
   ): (PageResponseDto | UserResponseDto)[] {
     const relationUsers = [];
     followingIds.forEach((follower) => {
       const user = users.find(
-        (user) => String(user.id) === String(follower.userId),
+        (user) => String(user.id) === String(follower.id),
       );
 
       if (user) {

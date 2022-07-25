@@ -328,7 +328,7 @@ describe('UserServiceV2', () => {
         },
       );
       expect(followingUser).not.toBeNull();
-      expect((followingUser.users[0] as any).userId).toEqual(user2._id);
+      expect((followingUser.users[0] as any).id).toEqual(user2._id);
     });
 
     it('should return followers user after create follow relationship', async () => {
