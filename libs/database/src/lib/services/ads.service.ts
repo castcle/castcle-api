@@ -122,7 +122,7 @@ export class AdsService {
     const userIds = [];
 
     ads.forEach((ad) => {
-      (this.isContentAd(ad) ? userIds : contentIds).push(ad.adsRef.oid);
+      (this.isContentAd(ad) ? contentIds : userIds).push(ad.adsRef.oid);
     });
 
     const [contents, users] = await Promise.all([
