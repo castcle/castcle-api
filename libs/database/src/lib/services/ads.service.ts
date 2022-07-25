@@ -160,6 +160,32 @@ export class AdsService {
     }));
   };
 
+  approveAd = async (adId: string) => {
+    const ad = await this.adsModel.findById(adId);
+    if (!ad) throw new CastcleException('AD_NOT_FOUND');
+    if (ad.status === AdsStatus.Processing) {
+      ad.boostStatus = AdsBoostStatus.Running;
+      ad.status = AdsStatus.Approved;
+      return ad.save();
+    }
+    if (ad.status === AdsStatus.Declined) {
+      ad.status = AdsStatus.Approved;
+      return ad.save();
+    }
+
+    throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
+  };
+
+  declineAd = async (adId: string, statusReason: string) => {
+    const ad = await this.adsModel.findById(adId);
+    if (!ad) throw new CastcleException('AD_NOT_FOUND');
+    if (![AdsStatus.Approved, AdsStatus.Processing].includes(ad.status)) {
+      throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
+    }
+
+    return ad.set({ status: AdsStatus.Declined, statusReason }).save();
+  };
+
   selectContentAds = async (
     adsPrice: GetAdsPriceResponse,
     viewerAccountId: string,
