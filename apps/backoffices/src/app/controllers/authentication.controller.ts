@@ -78,8 +78,8 @@ export class AuthenticationController {
     return this.authService.deleteStaff(staffId);
   }
 
-  @BackofficeAuth()
-  @RequiredPermissions(Permission.Manage)
+  @UseInterceptors(HeaderBackofficeInterceptor)
+  @UseGuards(CredentialGuard)
   @Put('staff/change-password')
   @HttpCode(200)
   changePassword(
