@@ -29,7 +29,6 @@ import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
-import { FarmingsController } from './controllers/farmings.controller';
 import { NotificationsController } from './controllers/notifications.controller';
 import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
 import { PagesController } from './controllers/pages.controller';
@@ -53,7 +52,6 @@ import { WalletService } from './services/wallet.service';
     UtilsInterceptorsModule,
   ],
   controllers: [
-    FarmingsController,
     NotificationsController,
     NotificationsControllerV2,
     PagesController,

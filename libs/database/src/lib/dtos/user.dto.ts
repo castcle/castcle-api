@@ -30,6 +30,7 @@ import {
   IsEmail,
   IsEnum,
   IsMobilePhone,
+  IsMongoId,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -437,9 +438,15 @@ export class GetUserParam {
   isMe = () => this.userId === 'me';
 }
 
-export class RemoveFarmParam extends GetUserParam {
+export class RemoveFarmParam {
   @ApiProperty()
-  @IsString()
+  @IsNotEmpty()
+  @IsMongoId()
+  userId: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsMongoId()
   farmingId: string;
 }
 

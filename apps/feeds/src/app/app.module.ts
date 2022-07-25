@@ -35,6 +35,7 @@ import { CommentControllerV2 } from './controllers/comment.controller.v2';
 import { ContentController } from './controllers/content.controller';
 import { ContentControllerV2 } from './controllers/content.controller.v2';
 import { CountryController } from './controllers/country.controller';
+import { FarmingsController } from './controllers/farmings.controller';
 import { FeedsController } from './controllers/feeds.controller';
 import { FeedsControllerV2 } from './controllers/feeds.controller.v2';
 import { HashtagsController } from './controllers/hashtags.controller';
@@ -61,6 +62,7 @@ import { AppService, SuggestionService } from './services';
     ContentController,
     ContentControllerV2,
     CountryController,
+    FarmingsController,
     FeedsController,
     FeedsControllerV2,
     HashtagsController,

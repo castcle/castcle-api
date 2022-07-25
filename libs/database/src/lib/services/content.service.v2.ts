@@ -785,7 +785,6 @@ export class ContentServiceV2 {
       session.endSession();
       return contentFarming;
     } else {
-      //thorw error
       throw new CastcleException('CONTENT_FARMING_NOT_AVAILABLE_BALANCE');
     }
   };
@@ -829,66 +828,68 @@ export class ContentServiceV2 {
   };
 
   unfarmByFarmingId = async (farmingId: string, userId: string) => {
-    const contentFarming = await this.contentFarmingModel.findById(farmingId, {
-      updatedAt: 0,
-    });
+    const contentFarming = await this.contentFarmingModel.findOne(
+      {
+        _id: farmingId,
+        status: ContentFarmingStatus.Farming,
+      },
+      {
+        updatedAt: 0,
+      },
+    );
     try {
-      if (
-        contentFarming &&
-        contentFarming.status === ContentFarmingStatus.Farming
-      ) {
-        if (String(contentFarming.user) !== userId) {
-          throw new CastcleException('FORBIDDEN');
-        }
-        contentFarming.status = ContentFarmingStatus.Farmed;
-        contentFarming.endedAt = new Date();
-        const session = await this.contentFarmingModel.startSession();
-        await session.withTransaction(async () => {
-          await contentFarming.save();
-          await this.contentModel.updateOne(
-            { _id: contentFarming.content },
-            {
-              $push: {
-                farming: contentFarming,
-              },
+      if (!contentFarming)
+        throw new CastcleException('CONTENT_FARMING_NOT_FOUND');
+
+      if (String(contentFarming.user) !== userId)
+        throw new CastcleException('FORBIDDEN');
+
+      contentFarming.status = ContentFarmingStatus.Farmed;
+      contentFarming.endedAt = new Date();
+      const session = await this.contentFarmingModel.startSession();
+      await session.withTransaction(async () => {
+        await contentFarming.save();
+        await this.contentModel.updateOne(
+          { _id: contentFarming.content },
+          {
+            $push: {
+              farming: contentFarming,
             },
-          );
-          await this.tAccountService.transfer({
-            from: {
-              type: WalletType.FARM_LOCKED,
+          },
+        );
+        await this.tAccountService.transfer({
+          from: {
+            type: WalletType.FARM_LOCKED,
+            user: String(contentFarming.user),
+            value: contentFarming.farmAmount,
+          },
+          to: [
+            {
+              type: WalletType.PERSONAL,
               user: String(contentFarming.user),
               value: contentFarming.farmAmount,
             },
-            to: [
-              {
-                type: WalletType.PERSONAL,
-                user: String(contentFarming.user),
+          ],
+          data: {
+            type: TransactionType.UNFARMING,
+            filter: TransactionFilter.CONTENT_FARMING,
+          },
+          ledgers: [
+            {
+              debit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
                 value: contentFarming.farmAmount,
               },
-            ],
-            data: {
-              type: TransactionType.UNFARMING,
-              filter: TransactionFilter.CONTENT_FARMING,
-            },
-            ledgers: [
-              {
-                debit: {
-                  caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
-                  value: contentFarming.farmAmount,
-                },
-                credit: {
-                  caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
-                  value: contentFarming.farmAmount,
-                },
+              credit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                value: contentFarming.farmAmount,
               },
-            ],
-          });
+            },
+          ],
         });
-        session.endSession();
-        return contentFarming;
-      } else {
-        throw new CastcleException('CONTENT_FARMING_NOT_FOUND');
-      }
+      });
+      session.endSession();
+      return contentFarming;
     } catch (e) {
       throw new CastcleException('CONTENT_FARMING_NOT_FOUND');
     }
@@ -1803,55 +1804,97 @@ export class ContentServiceV2 {
   lookupFarming = async (contentId: string, userId: string) => {
     const contentFarming = await this.contentFarmingModel.findOne(
       {
+        user: userId,
         content: contentId,
       },
       {
         updatedAt: 0,
+        endedAt: 0,
       },
     );
 
-    if (!contentFarming)
-      throw new CastcleException('CONTENT_FARMING_NOT_FOUND');
+    const [balance, lockBalance] = await Promise.all([
+      this.tAccountService.getAccountBalance(userId, WalletType.PERSONAL),
+      this.tAccountService.getAccountBalance(userId, WalletType.FARM_LOCKED),
+    ]);
 
-    if (String(contentFarming.user) !== userId)
-      throw new CastcleException('FORBIDDEN');
-
-    if (contentFarming?.status !== ContentFarmingStatus.Farming) {
+    if (
+      contentFarming &&
+      contentFarming?.status !== ContentFarmingStatus.Farming
+    ) {
       contentFarming._id = null;
       contentFarming.createdAt = null;
+      if (contentFarming.status === ContentFarmingStatus.Farmed)
+        contentFarming.status = undefined;
     }
 
-    return this.pipeContentFarming(contentFarming, userId);
+    const content = await this.repository.findContent({
+      _id: contentId as any,
+    });
+
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
+
+    const engagements = await this.repository.findEngagements({
+      user: new Types.ObjectId(userId),
+      targetRef: {
+        $ref: 'content',
+        $id: contentId,
+      },
+    });
+
+    const totalContentFarming = await this.contentFarmingModel.countDocuments({
+      _id: { $lte: contentFarming?.id },
+      user: userId,
+      status: ContentFarmingStatus.Farming,
+    });
+
+    return new ContentFarmingResponse(
+      contentFarming,
+      balance,
+      lockBalance,
+      totalContentFarming || 1,
+      this.toCastPayload({ content, engagements }),
+      true,
+    );
   };
 
-  farmingActive = async (userId: string) => {
+  farmingActive = async (viewer: User) => {
     const contentFarmings = await this.contentFarmingModel.find(
       {
-        user: userId,
+        user: viewer.id,
         status: ContentFarmingStatus.Farming,
       },
       {},
       { sort: { createdAt: -1 } },
     );
+
     const [balance, lockBalance, totalContentFarming] = await Promise.all([
-      this.tAccountService.getAccountBalance(userId, WalletType.PERSONAL),
-      this.tAccountService.getAccountBalance(userId, WalletType.FARM_LOCKED),
+      this.tAccountService.getAccountBalance(viewer.id, WalletType.PERSONAL),
+      this.tAccountService.getAccountBalance(viewer.id, WalletType.FARM_LOCKED),
       this.contentFarmingModel.countDocuments({
-        user: userId,
+        user: viewer.id,
+        status: ContentFarmingStatus.Farming,
       }),
     ]);
 
+    const [{ contents, engagements }] =
+      await this.repository.aggregationContent({
+        _id: contentFarmings.map(({ content }) => content as unknown as string),
+        viewer,
+      });
+
     const farmingPayload = await Promise.all(
       contentFarmings.map(async (contentFarming, index) => {
-        const content = await this.repository.findContent({
-          _id: contentFarming.content as any,
-        });
+        const content = contents.find(
+          (content) => String(content._id) === String(contentFarming.content),
+        );
+
         return new ContentFarmingResponse(
           contentFarming,
           balance,
           lockBalance,
           totalContentFarming - index,
-          this.toCastPayload({ content }),
+          this.toCastPayload({ content, engagements }),
           true,
         );
       }),
@@ -1864,12 +1907,12 @@ export class ContentServiceV2 {
 
   farmingHistory = async (
     { maxResults, untilId }: PaginationQuery,
-    userId: string,
+    viewer: User,
   ) => {
     const contentFarmings = await this.contentFarmingModel.find(
       createCastcleFilter(
         {
-          user: userId,
+          user: viewer.id,
           status: ContentFarmingStatus.Farmed,
         },
         { untilId },
@@ -1882,21 +1925,30 @@ export class ContentServiceV2 {
     );
 
     const [balance, lockBalance] = await Promise.all([
-      this.tAccountService.getAccountBalance(userId, WalletType.PERSONAL),
-      this.tAccountService.getAccountBalance(userId, WalletType.FARM_LOCKED),
+      this.tAccountService.getAccountBalance(viewer.id, WalletType.PERSONAL),
+      this.tAccountService.getAccountBalance(viewer.id, WalletType.FARM_LOCKED),
     ]);
+
+    const [{ contents, engagements }] =
+      await this.repository.aggregationContent({
+        _id: contentFarmings.map(({ content }) => content as unknown as string),
+        maxResults,
+        untilId,
+        viewer,
+      });
 
     const farmingPayload = await Promise.all(
       contentFarmings.map(async (contentFarming) => {
-        const content = await this.repository.findContent({
-          _id: contentFarming.content as any,
-        });
+        const content = contents.find(
+          (content) => String(content._id) === String(contentFarming.content),
+        );
+
         return new ContentFarmingResponse(
           contentFarming,
           balance,
           lockBalance,
           undefined,
-          this.toCastPayload({ content }),
+          this.toCastPayload({ content, engagements }),
           true,
         );
       }),

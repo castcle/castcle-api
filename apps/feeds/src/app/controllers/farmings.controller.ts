@@ -37,7 +37,7 @@ export class FarmingsController {
   @CastcleAuth(CacheKeyName.Users)
   @Get('active')
   async farmingActive(@Auth() authorizer: Authorizer) {
-    return this.contentService.farmingActive(authorizer.user.id);
+    return this.contentService.farmingActive(authorizer.user);
   }
 
   @CastcleAuth(CacheKeyName.Users)
@@ -46,6 +46,6 @@ export class FarmingsController {
     @Auth() authorizer: Authorizer,
     @Query() query: PaginationQuery,
   ) {
-    return this.contentService.farmingHistory(query, authorizer.user.id);
+    return this.contentService.farmingHistory(query, authorizer.user);
   }
 }

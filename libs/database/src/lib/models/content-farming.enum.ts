@@ -25,4 +25,5 @@ export enum ContentFarmingStatus {
   Farming = 'farming',
   Farmed = 'farmed',
   Limit = 'limit',
+  Available = 'available',
 }
