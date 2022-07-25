@@ -44,7 +44,8 @@ import { MockUserDetail, MockUserService, mockSend } from '../mocks';
 import {
   KeywordType,
   TopUpDto,
-  TransactionFilter,
+  TransactionData,
+  TransactionFilterType,
   TransactionType,
   WalletType,
 } from '../models';
@@ -271,8 +272,10 @@ describe('TAccount Service', () => {
         ],
         data: {
           type: TransactionType.DEPOSIT,
-          filter: TransactionFilter.DEPOSIT_SEND,
-        },
+          filter: {
+            'deposit-send': true,
+          },
+        } as TransactionData,
         ledgers: [
           {
             debit: {
@@ -300,9 +303,11 @@ describe('TAccount Service', () => {
           } as MicroTransaction,
         ],
         data: {
-          type: TransactionType.SEND,
-          filter: TransactionFilter.DEPOSIT_SEND,
-        },
+          type: TransactionType.DEPOSIT,
+          filter: {
+            'deposit-send': true,
+          },
+        } as TransactionData,
         ledgers: [
           {
             debit: {
@@ -319,11 +324,11 @@ describe('TAccount Service', () => {
       }).save();
       const result = await service.getWalletHistory(
         fakeUserId,
-        TransactionFilter.DEPOSIT_SEND,
+        TransactionFilterType.DEPOSIT_SEND,
       );
       const expectArr = [
         expect.objectContaining({
-          type: TransactionType.SEND,
+          type: TransactionType.DEPOSIT,
           /*  value: {
             $numberDecimal: `${sendValue}`
           },*/

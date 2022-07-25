@@ -42,7 +42,7 @@ import {
   CACCOUNT_NO,
   CastcleNumber,
   TopUpDto,
-  TransactionFilter,
+  TransactionFilterType,
   TransferDto,
   WalletHistoryResponseDto,
   WalletType,
@@ -195,14 +195,17 @@ export class TAccountService {
     else return allCredit - allDebit;
   }
 
-  async getWalletHistory(userId: string, filter: TransactionFilter) {
+  async getWalletHistory(userId: string, filter: TransactionFilterType) {
+    const from: any = {};
+    from['from.user'] = userId;
+    from[`data.filter.${filter}`] = true;
+    const to: any = {};
+    to['to.user'] = userId;
+    to[`data.filter.${filter}`] = true;
     const txs = await this.transactionModel.find({
-      $or: [
-        { 'from.user': userId, 'data.filter': filter },
-        { 'to.user': userId, 'data.filter': filter },
-      ],
+      $or: [from, to],
     });
-
+    console.log('txs', txs);
     const result: WalletHistoryResponseDto = {
       payload: txs.map((tx) => ({
         id: tx.id,
