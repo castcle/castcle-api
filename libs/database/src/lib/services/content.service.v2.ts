@@ -886,12 +886,26 @@ export class ContentServiceV2 {
                 caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
                 value: contentFarming.farmAmount,
               },
-              credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
-                value: contentFarming.farmAmount,
+            ],
+            data: {
+              type: TransactionType.UNFARMING,
+              filter: {
+                'content-farming': true,
               },
-            },
-          ],
+            } as TransactionData,
+            ledgers: [
+              {
+                debit: {
+                  caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                  value: contentFarming.farmAmount,
+                },
+                credit: {
+                  caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                  value: contentFarming.farmAmount,
+                },
+              },
+            ],
+          });
         });
       });
       session.endSession();
