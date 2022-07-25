@@ -275,4 +275,7 @@ export class Environment {
 
   // Chain internal name
   static CHAIN_INTERNAL = process.env.CHAIN_INTERNAL;
+
+  // Content farming limit
+  static FARMING_LIMIT = process.env.FARMING_LIMIT || 0;
 }
