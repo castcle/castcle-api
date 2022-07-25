@@ -67,7 +67,7 @@ import {
   ReportingMessage,
   ReportingStatus,
   ReportingType,
-  TransactionFilter,
+  TransactionData,
   TransactionType,
   UserType,
   WalletType,
@@ -119,7 +119,7 @@ export class ContentServiceV2 {
     content: Content;
     metrics?: Metrics;
     engagements?: Engagement[];
-    reportedStatus?: string;
+    reportedStatus?: ReportingStatus;
     reportedSubject?: string;
   }) => {
     return {
@@ -707,8 +707,10 @@ export class ContentServiceV2 {
           ],
           data: {
             type: TransactionType.FARMING,
-            filter: TransactionFilter.CONTENT_FARMING,
-          },
+            filter: {
+              'content-farming': true,
+            },
+          } as TransactionData,
           ledgers: [
             {
               debit: {
@@ -766,8 +768,10 @@ export class ContentServiceV2 {
           ],
           data: {
             type: TransactionType.FARMING,
-            filter: TransactionFilter.CONTENT_FARMING,
-          },
+            filter: {
+              'content-farming': true,
+            },
+          } as TransactionData,
           ledgers: [
             {
               debit: {
@@ -872,8 +876,10 @@ export class ContentServiceV2 {
           ],
           data: {
             type: TransactionType.UNFARMING,
-            filter: TransactionFilter.CONTENT_FARMING,
-          },
+            filter: {
+              'content-farming': true,
+            },
+          } as TransactionData,
           ledgers: [
             {
               debit: {
@@ -929,8 +935,10 @@ export class ContentServiceV2 {
           ],
           data: {
             type: TransactionType.UNFARMING,
-            filter: TransactionFilter.CONTENT_FARMING,
-          },
+            filter: {
+              'content-farming': true,
+            },
+          } as TransactionData,
           ledgers: [
             {
               debit: {
@@ -985,8 +993,10 @@ export class ContentServiceV2 {
         ],
         data: {
           type: TransactionType.FARMED,
-          filter: TransactionFilter.CONTENT_FARMING,
-        },
+          filter: {
+            'content-farming': true,
+          },
+        } as TransactionData,
         ledgers: [
           {
             debit: {

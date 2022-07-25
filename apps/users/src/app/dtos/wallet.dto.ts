@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { TransactionFilter } from '@castcle-api/database';
+import { TransactionFilterType } from '@castcle-api/database';
 import { IsEnum, IsNotEmpty } from 'class-validator';
 
 export class WalletResponse {
@@ -37,11 +37,11 @@ export class WalletResponse {
 export class WalletHistoryQueryDto {
   @IsNotEmpty()
   @IsEnum([
-    TransactionFilter.AIRDROP_REFERAL,
-    TransactionFilter.CONTENT_FARMING,
-    TransactionFilter.DEPOSIT_SEND,
-    TransactionFilter.SOCIAL_REWARD,
-    TransactionFilter.WALLET_BALANCE,
+    TransactionFilterType.AIRDROP_REFERAL,
+    TransactionFilterType.CONTENT_FARMING,
+    TransactionFilterType.DEPOSIT_SEND,
+    TransactionFilterType.SOCIAL_REWARD,
+    TransactionFilterType.WALLET_BALANCE,
   ])
-  filter: TransactionFilter;
+  filter: TransactionFilterType;
 }

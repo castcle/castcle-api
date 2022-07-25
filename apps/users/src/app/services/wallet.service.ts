@@ -30,8 +30,8 @@ import {
   Repository,
   SendTransactionDto,
   TAccountService,
+  TransactionData,
   TransactionDto,
-  TransactionFilter,
   TransactionType,
   User,
   WalletType,
@@ -160,9 +160,12 @@ export class WalletService {
         },
       ],
       data: {
-        filter: TransactionFilter.WALLET_BALANCE,
+        filter: {
+          'wallet-balance': true,
+          'deposit-send': true,
+        },
         type: TransactionType.SEND,
-      },
+      } as TransactionData,
     });
   }
 }

@@ -24,7 +24,7 @@
 import { Model } from 'mongoose';
 import {
   CACCOUNT_NO,
-  TransactionFilter,
+  TransactionData,
   TransactionType,
   WalletType,
 } from '../models';
@@ -84,8 +84,10 @@ export const mockSend = (
     ],
     data: {
       type: TransactionType.SEND,
-      filter: TransactionFilter.DEPOSIT_SEND,
-    },
+      filter: {
+        'deposit-send': true,
+      },
+    } as TransactionData,
     ledgers: [
       {
         credit: {

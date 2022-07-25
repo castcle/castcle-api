@@ -46,7 +46,7 @@ import {
   QueueTopic,
 } from '../models';
 import {
-  TransactionFilter,
+  TransactionData,
   TransactionType,
   WalletType,
 } from '../models/wallet.enum';
@@ -337,8 +337,11 @@ export class CampaignService {
       data: {
         campaignId: claimCampaignsAirdropJob.campaignId,
         type: TransactionType.AIRDROP,
-        filter: TransactionFilter.AIRDROP_REFERAL,
-      },
+        filter: {
+          'airdrop-referral': true,
+          'wallet-balance': true,
+        },
+      } as TransactionData,
       ledgers,
     });
     await campaign.save();

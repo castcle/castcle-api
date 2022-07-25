@@ -36,7 +36,8 @@ import {
   TAccountService,
   TLedger,
   Transaction,
-  TransactionFilter,
+  TransactionData,
+  TransactionFilterType,
   TransactionType,
   UserService,
   UserServiceV2,
@@ -186,8 +187,11 @@ describe('WalletController', () => {
         ],
         data: {
           type: TransactionType.DEPOSIT,
-          filter: TransactionFilter.DEPOSIT_SEND,
-        },
+          filter: {
+            'deposit-send': true,
+            'wallet-balance': true,
+          },
+        } as TransactionData,
         ledgers: [
           {
             debit: {
@@ -215,8 +219,10 @@ describe('WalletController', () => {
         ],
         data: {
           type: TransactionType.SEND,
-          filter: TransactionFilter.DEPOSIT_SEND,
-        },
+          filter: {
+            'deposit-send': true,
+          },
+        } as TransactionData,
         ledgers: [
           {
             debit: {
@@ -237,7 +243,7 @@ describe('WalletController', () => {
           isMe: () => true,
         },
         {
-          filter: TransactionFilter.DEPOSIT_SEND,
+          filter: TransactionFilterType.DEPOSIT_SEND,
         },
       );
       const expectArr = [
