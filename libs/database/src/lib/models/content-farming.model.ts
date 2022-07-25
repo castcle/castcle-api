@@ -21,8 +21,10 @@
  * or have any questions.
  */
 
+import { Environment } from '@castcle-api/environments';
 import { CastPayload } from '../dtos';
 import { ContentFarming } from '../schemas';
+import { ContentFarmingStatus } from './content-farming.enum';
 
 export type ContentFarmingCDF = {
   contentId: string;
@@ -60,15 +62,20 @@ export class ContentFarmingResponse {
     contentPayload?: CastPayload,
     isCurrentBalance?: boolean,
   ) {
-    this.id = contentFarming.id;
+    this.id = contentFarming?.id ?? null;
     this.number = farmNo;
     this.content = contentPayload;
     this.balance['available'] = currentBalance;
     this.balance['total'] = currentBalance + lockedBalance;
-    this.status = contentFarming.status;
-    this.createdAt = contentFarming.createdAt;
-    this.updatedAt = contentFarming.updatedAt;
-    this.farmedAt = contentFarming.endedAt;
+    this.status = contentFarming?.status
+      ? contentFarming?.status
+      : farmNo < Environment.FARMING_LIMIT ||
+        contentFarming?.status !== ContentFarmingStatus.Farming
+      ? ContentFarmingStatus.Available
+      : ContentFarmingStatus.Limit;
+    this.createdAt = contentFarming?.createdAt ?? null;
+    this.updatedAt = contentFarming?.updatedAt;
+    this.farmedAt = contentFarming?.endedAt;
     if (isCurrentBalance) this.balance = currentBalance;
   }
 }

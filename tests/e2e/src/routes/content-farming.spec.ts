@@ -103,25 +103,6 @@ export const testContentFarming = async () => {
         .expect(403);
     });
 
-    it('should throw CONTENT_FARMING_NOT_FOUND when content farming not found', async () => {
-      const user = await registerUser();
-      const content = await createContent(user.profile.id);
-
-      await request()
-        .get(`/v2/users/${user.profile.id}/farming/cast/${content.id}`)
-        .auth(user.accessToken, { type: 'bearer' })
-        .set({
-          'Accept-Language': 'en',
-          Device: 'CastclePhone',
-          Platform: 'CastcleOS',
-        })
-        .send({})
-        .expect(({ body }) => {
-          expect(body.message).toEqual('Farming not found');
-        })
-        .expect(404);
-    });
-
     it('should return content farming is correct response', async () => {
       const user = await registerUser();
       const content = await createContent(user.profile.id);
@@ -153,40 +134,6 @@ export const testContentFarming = async () => {
           expect(body.authorId).not.toEqual(user.profile.id);
         })
         .expect(200);
-    });
-
-    it('should throw FORBIDDEN when wallet does not in the same user', async () => {
-      const user = await registerUser();
-      const requestedBy = await registerUser();
-      const content = await createContent(user.profile.id);
-
-      await request()
-        .post(`/v2/users/${user.profile.id}/farming/cast`)
-        .auth(user.accessToken, { type: 'bearer' })
-        .set({
-          'Accept-Language': 'en',
-          Device: 'CastclePhone',
-          Platform: 'CastcleOS',
-        })
-        .send({
-          targetContentId: content.id,
-        });
-
-      await request()
-        .get(`/v2/users/${requestedBy.profile.id}/farming/cast/${content.id}`)
-        .auth(requestedBy.accessToken, { type: 'bearer' })
-        .set({
-          'Accept-Language': 'en',
-          Device: 'CastclePhone',
-          Platform: 'CastcleOS',
-        })
-        .send({})
-        .expect(({ body }) => {
-          expect(body.message).toEqual(
-            'Can not access the data. Please try again.',
-          );
-        })
-        .expect(403);
     });
 
     it('should return content farming status equal "farming"', async () => {

@@ -979,13 +979,12 @@ export class UsersControllerV2 {
   @Delete(':userId/farming/:farmingId')
   async unfarm(
     @Auth() authorizer: Authorizer,
-    @Param() { isMe, userId, farmingId }: RemoveFarmParam,
+    @Param() { userId, farmingId }: RemoveFarmParam,
   ) {
-    const user = isMe
-      ? authorizer.user
-      : await this.userService.getUser(userId);
+    const user = await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
+
     return this.contentServiceV2.pipeContentFarming(
       await this.contentServiceV2.unfarmByFarmingId(farmingId, userId),
       userId,
