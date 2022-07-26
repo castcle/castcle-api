@@ -72,3 +72,7 @@ export interface AccountRequirements {
 export class AcceptDatePDPA {
   [key: string]: boolean;
 }
+
+export interface EmailDomainDisposable {
+  emailDomainDisposables: string[];
+}
