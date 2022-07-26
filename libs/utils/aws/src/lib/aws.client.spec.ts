@@ -23,9 +23,9 @@
 
 import { AWSClient } from './aws.client';
 
-describe('getCastcleIdMetadata', () => {
+describe('getCastcleMetadata', () => {
   beforeAll(() => {
-    jest.spyOn(AWSClient, 'getCastcleIdMetadata').mockResolvedValue({
+    jest.spyOn(AWSClient, 'getCastcleMetadata').mockResolvedValue({
       bannedWords: ['bitch', 'admin', 'web'],
       nouns: ['apple'],
       adjectives: ['green'],
@@ -34,7 +34,9 @@ describe('getCastcleIdMetadata', () => {
     });
   });
   it('should return metadata castcle id is exist.', async () => {
-    const metadataCastcleId = await AWSClient.getCastcleIdMetadata();
+    const metadataCastcleId = await AWSClient.getCastcleMetadata(
+      'test/test.json',
+    );
 
     expect(metadataCastcleId.bannedWords).toHaveLength(3);
     expect(metadataCastcleId.nouns).toHaveLength(1);

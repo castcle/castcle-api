@@ -21,10 +21,7 @@
  * or have any questions.
  */
 
-import {
-  Configs as config,
-  Environment as env,
-} from '@castcle-api/environments';
+import { Environment as env } from '@castcle-api/environments';
 import { HttpService } from '@nestjs/axios';
 import * as AWS from 'aws-sdk';
 import { DateTime } from 'luxon';
@@ -38,11 +35,11 @@ export class AWSClient {
     Buffer.from(env.CLOUDFRONT_PRIVATE_KEY, 'base64').toString('ascii'),
   );
 
-  static async getCastcleIdMetadata() {
+  static async getCastcleMetadata(pathName: string) {
     if (!env.CLOUDFRONT_PRIVATE_KEY) return;
 
     const signURL = await AWSClient.signer.getSignedUrl({
-      url: `${env.ASSETS_HOST}/${config.AssetsPath.SuggestWords}`,
+      url: `${env.ASSETS_HOST}/${pathName}`,
       expires: DateTime.now().plus({ milliseconds: EXPIRE_TIME }).toMillis(),
     });
 
