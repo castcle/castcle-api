@@ -85,14 +85,6 @@ describe('AuthenticationServiceV2', () => {
     service = moduleRef.get(AuthenticationServiceV2);
     repository = moduleRef.get(Repository);
 
-    jest.spyOn(AWSClient, 'getCastcleIdMetadata').mockResolvedValue({
-      bannedWords: ['bitch', 'admin', 'web'],
-      nouns: ['apple'],
-      adjectives: ['green'],
-      minLength: 4,
-      maxLength: 20,
-    });
-
     const { accessToken } = await service.guestLogin({
       device: 'iPhone01',
       deviceUUID: '83b696d7-320b-4402-a412-d9cee10fc6a3',
@@ -226,6 +218,15 @@ describe('AuthenticationServiceV2', () => {
   });
 
   describe('#suggestCastcleId', () => {
+    beforeAll(() => {
+      jest.spyOn(AWSClient, 'getCastcleMetadata').mockResolvedValue({
+        bannedWords: ['bitch', 'admin', 'web'],
+        nouns: ['apple'],
+        adjectives: ['green'],
+        minLength: 4,
+        maxLength: 20,
+      });
+    });
     it('should return suggest name', async () => {
       const suggestId = await service.suggestCastcleId('John555');
       expect(suggestId).toEqual('john555');

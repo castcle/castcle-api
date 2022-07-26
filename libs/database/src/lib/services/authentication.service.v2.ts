@@ -309,9 +309,14 @@ export class AuthenticationServiceV2 {
       ]);
 
     if (!account.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
+
+    if (castcleIdAlreadyExists) throw new CastcleException('USER_ID_IS_EXIST');
+
     if (emailAlreadyExists)
       throw new CastcleException('EMAIL_OR_PHONE_IS_EXIST');
-    if (castcleIdAlreadyExists) throw new CastcleException('USER_ID_IS_EXIST');
+
+    if (await this.repository.isEmailDisposable(dto.email))
+      throw new CastcleException('DUPLICATE_EMAIL');
 
     await this.repository.updateCredentials(
       { 'account._id': account._id },
