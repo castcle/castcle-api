@@ -22,18 +22,33 @@
  */
 
 import { AdsBoostStatus, AdsBoostType, AdsStatus } from '@castcle-api/database';
-import { IsEnum, IsOptional } from 'class-validator';
+import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
+import { IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
 
 export class GetAdsDto {
+  @TransformStringToArrayOfStrings()
   @IsOptional()
-  @IsEnum(AdsStatus)
-  adStatus: AdsStatus;
+  @IsEnum(AdsStatus, { each: true })
+  adStatus: AdsStatus[];
 
+  @TransformStringToArrayOfStrings()
   @IsOptional()
-  @IsEnum(AdsBoostStatus)
-  boostStatus: AdsBoostStatus;
+  @IsEnum(AdsBoostStatus, { each: true })
+  boostStatus: AdsBoostStatus[];
 
+  @TransformStringToArrayOfStrings()
   @IsOptional()
-  @IsEnum(AdsBoostType)
-  boostType: AdsBoostType;
+  @IsEnum(AdsBoostType, { each: true })
+  boostType: AdsBoostType[];
+}
+
+export class GetAdParam {
+  @IsMongoId()
+  adId: string;
+}
+
+export class ManageAdDto {
+  @IsOptional()
+  @IsString()
+  reason: string;
 }

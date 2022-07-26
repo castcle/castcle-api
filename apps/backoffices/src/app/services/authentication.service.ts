@@ -7,7 +7,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { DateTime } from 'luxon';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { customAlphabet } from 'nanoid';
-import { AccessTokenPayload, StaffDto } from '../models/authentication.dto';
+import {
+  AccessTokenPayload,
+  ChangePasswordDto,
+  StaffDto,
+} from '../models/authentication.dto';
 import { StaffStatus } from '../models/authentication.enum';
 import { StaffDocument } from '../schemas/staff.schema';
 
@@ -127,5 +131,18 @@ export class AuthenticationService {
       .exec();
 
     if (deletedCount === 0) throw new CastcleException('STAFF_NOT_FOUND');
+  }
+
+  async changePassword(staffId: string, changePassword: ChangePasswordDto) {
+    const findStaff = await this.findStaff({ _id: Types.ObjectId(staffId) });
+
+    if (!findStaff) throw new CastcleException('STAFF_NOT_FOUND');
+
+    if (!Password.verify(changePassword.oldPassword, findStaff.password))
+      throw new CastcleException('INVALID_PASSWORD');
+
+    findStaff.password = Password.hash(changePassword.newPassword);
+
+    await findStaff.save();
   }
 }

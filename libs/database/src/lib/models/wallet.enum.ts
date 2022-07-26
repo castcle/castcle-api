@@ -49,10 +49,17 @@ export enum TransactionType {
   FARMED = 'farmed',
 }
 
-export enum TransactionFilter {
+export enum TransactionFilterType {
   WALLET_BALANCE = 'wallet-balance',
   CONTENT_FARMING = 'content-farming',
   SOCIAL_REWARD = 'social-rewards',
   DEPOSIT_SEND = 'deposit-send',
   AIRDROP_REFERAL = 'airdrop-referral',
+}
+
+export class TransactionData {
+  campaignId?: string;
+  type: TransactionType;
+  filter: { [key in TransactionFilterType]?: boolean };
+  payload: any;
 }

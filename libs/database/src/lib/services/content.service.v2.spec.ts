@@ -1130,7 +1130,9 @@ describe('ContentServiceV2', () => {
       expect(contentFarmingEnded.createdAt).toBeNull();
       expect(contentFarmingEnded.number).toEqual(1);
       expect(contentFarmingEnded.content.id).toEqual(content.id);
-      expect(contentFarmingEnded.status).toEqual(ContentFarmingStatus.Farmed);
+      expect(contentFarmingEnded.status).toEqual(
+        ContentFarmingStatus.Available,
+      );
     });
   });
 
@@ -1150,12 +1152,10 @@ describe('ContentServiceV2', () => {
       await service.farm(content.id, mocksUsers[1].user.id);
     });
     it('should return response of content farming status "farming"', async () => {
-      const contentFarmings = await service.farmingActive(
-        mocksUsers[1].user.id,
-      );
+      const contentFarmings = await service.farmingActive(mocksUsers[1].user);
 
-      expect(contentFarmings.payload[0].number).toEqual(2);
-      expect(contentFarmings.payload[0].content.id).toEqual(content.id);
+      expect(contentFarmings.payload[0].number).toEqual(1);
+      expect(String(contentFarmings.payload[0].content.id)).toEqual(content.id);
       expect(contentFarmings.payload[0].status).toEqual(
         ContentFarmingStatus.Farming,
       );
@@ -1166,7 +1166,7 @@ describe('ContentServiceV2', () => {
     it('should return response of content farming status "farmed"', async () => {
       const contentFarmings = await service.farmingHistory(
         { maxResults: 25, hasRelationshipExpansion: false },
-        mocksUsers[1].user.id,
+        mocksUsers[1].user,
       );
 
       expect(contentFarmings.payload[0].farmedAt).not.toBeNull();

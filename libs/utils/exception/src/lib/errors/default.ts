@@ -270,6 +270,16 @@ export const DefaultErrors = {
     code: '3028',
     message: 'This email has been verified.',
   },
+  AD_NOT_FOUND: {
+    statusCode: '400',
+    code: '3028',
+    message: 'Advertisement not found',
+  },
+  ACTION_CANNOT_BE_COMPLETED: {
+    statusCode: '400',
+    code: '3029',
+    message: 'action cannot be completed',
+  },
   USER_OR_PAGE_NOT_FOUND: {
     statusCode: '404',
     code: '4001',

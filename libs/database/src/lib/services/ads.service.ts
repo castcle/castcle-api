@@ -93,14 +93,14 @@ export class AdsService {
   ) {}
 
   async find(dto: {
-    adStatus: AdsStatus;
-    boostStatus: AdsBoostStatus;
-    boostType: AdsBoostType;
+    adStatus: AdsStatus[];
+    boostStatus: AdsBoostStatus[];
+    boostType: AdsBoostType[];
   }) {
     const query: FilterQuery<Ad> = {};
-    if (dto.adStatus) query.status = dto.adStatus;
-    if (dto.boostStatus) query.boostStatus = dto.boostStatus;
-    if (dto.boostType) query['adsRef.$ref'] = dto.boostType;
+    if (dto.adStatus) query.status = { $in: dto.adStatus };
+    if (dto.boostStatus) query.boostStatus = { $in: dto.boostStatus };
+    if (dto.boostType) query['adsRef.$ref'] = { $in: dto.boostType };
 
     const campaigns = await this.adsModel
       .find(query)
@@ -122,7 +122,7 @@ export class AdsService {
     const userIds = [];
 
     ads.forEach((ad) => {
-      (this.isContentAd(ad) ? userIds : contentIds).push(ad.adsRef.oid);
+      (this.isContentAd(ad) ? contentIds : userIds).push(ad.adsRef.oid);
     });
 
     const [contents, users] = await Promise.all([
@@ -131,13 +131,14 @@ export class AdsService {
     ]);
 
     return ads.map<AdsResponse>((ad) => ({
+      id: ad.id,
       campaignName: ad.detail.name,
       campaignMessage: ad.detail.message,
       adStatus: ad.status,
       boostStatus: ad.boostStatus,
       boostType: this.isContentAd(ad)
         ? AdsBoostType.Content
-        : AdsBoostType.Page,
+        : AdsBoostType.User,
       campaignCode: ad.detail.code,
       dailyBudget: ad.detail.dailyBudget,
       duration: ad.detail.duration,
@@ -158,6 +159,32 @@ export class AdsService {
       createdAt: ad.createdAt,
       updatedAt: ad.updatedAt,
     }));
+  };
+
+  approveAd = async (adId: string) => {
+    const ad = await this.adsModel.findById(adId);
+    if (!ad) throw new CastcleException('AD_NOT_FOUND');
+    if (ad.status === AdsStatus.Processing) {
+      ad.boostStatus = AdsBoostStatus.Running;
+      ad.status = AdsStatus.Approved;
+      return ad.save();
+    }
+    if (ad.status === AdsStatus.Declined) {
+      ad.status = AdsStatus.Approved;
+      return ad.save();
+    }
+
+    throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
+  };
+
+  declineAd = async (adId: string, statusReason: string) => {
+    const ad = await this.adsModel.findById(adId);
+    if (!ad) throw new CastcleException('AD_NOT_FOUND');
+    if (![AdsStatus.Approved, AdsStatus.Processing].includes(ad.status)) {
+      throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
+    }
+
+    return ad.set({ status: AdsStatus.Declined, statusReason }).save();
   };
 
   selectContentAds = async (

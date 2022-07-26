@@ -81,6 +81,7 @@ export const Configs = {
   },
   AssetsPath: {
     SuggestWords: 'metadata/suggestion-words.json',
+    DomainEmailDisposables: 'metadata/email-domain-disposables.json',
   },
   DefaultLanguage: 'en',
 };

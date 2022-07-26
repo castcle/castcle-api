@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { Configs } from '@castcle-api/environments';
 import {
   AVATAR_SIZE_CONFIGS,
   AWSClient,
@@ -74,6 +75,7 @@ import {
   CastcleNumber,
   ContentType,
   Country,
+  EmailDomainDisposable,
   KeywordType,
   Language,
   MetadataType,
@@ -208,7 +210,7 @@ type ContentQuery = {
   message?: string;
   originalPost?: string;
   sinceId?: string;
-  type?: string[];
+  type?: ContentType[];
   sortBy?: {
     [key: string]: string;
   };
@@ -257,6 +259,7 @@ type ReportingQuery = {
 @Injectable()
 export class Repository {
   private castcleIdMetadata: CastcleIdMetadata;
+  private castcleEmailDomain: EmailDomainDisposable;
 
   constructor(
     /** @deprecated */
@@ -306,6 +309,56 @@ export class Repository {
           map(({ data }) => Buffer.from(data, 'binary').toString('base64')),
         ),
     );
+  }
+
+  private isValidCastcleId(castcleId: string) {
+    const hasBannedWord = this.castcleIdMetadata.bannedWords.some(
+      (bannedWord) => new RegExp(bannedWord, 'i').test(castcleId),
+    );
+
+    return (
+      !hasBannedWord &&
+      castcleId.length >= this.castcleIdMetadata.minLength &&
+      castcleId.length <= this.castcleIdMetadata.maxLength
+    );
+  }
+
+  private randomCastcleId() {
+    const randomLength = (length = 0) => {
+      return Math.floor(Math.random() * length);
+    };
+
+    return `${
+      this.castcleIdMetadata.adjectives[
+        randomLength(this.castcleIdMetadata.adjectives.length)
+      ]
+    }${
+      this.castcleIdMetadata.nouns[
+        randomLength(this.castcleIdMetadata.nouns.length)
+      ]
+    }`;
+  }
+
+  async suggestCastcleId(preferredCastcleId?: string) {
+    if (!this.castcleIdMetadata) {
+      const castcleIdMetadata = await AWSClient.getCastcleMetadata(
+        Configs.AssetsPath.SuggestWords,
+      );
+
+      this.castcleIdMetadata = castcleIdMetadata;
+    }
+
+    const castcleId =
+      !this.castcleIdMetadata || this.isValidCastcleId(preferredCastcleId)
+        ? CastcleName.toSlug(preferredCastcleId)
+        : this.randomCastcleId();
+
+    const [availableId] =
+      await this.userModel.aggregate<GetAvailableIdResponse>(
+        pipelineOfGetAvailableId(castcleId),
+      );
+
+    return `${castcleId}${availableId ? availableId?.number : ''}`;
   }
 
   private getAccountQuery(filter: AccountQuery) {
@@ -550,6 +603,19 @@ export class Repository {
     if (filter.by) query.by = filter.by;
 
     return query;
+  }
+
+  async isEmailDisposable(email: string) {
+    if (!this.castcleEmailDomain)
+      this.castcleEmailDomain = await AWSClient.getCastcleMetadata(
+        Configs.AssetsPath.DomainEmailDisposables,
+      );
+
+    return this.castcleEmailDomain
+      ? this.castcleEmailDomain.emailDomainDisposables.some((domain) =>
+          new RegExp(domain, 'i').test(email.replace(/^[\D]+@/i, '')),
+        )
+      : false;
   }
 
   deleteAccount(filter: AccountQuery) {
@@ -1538,54 +1604,6 @@ export class Repository {
     return this.walletShortcutModel.deleteOne(
       this.getWalletShortcutQuery(filter),
     );
-  }
-
-  private isValidCastcleId(castcleId: string) {
-    const hasBannedWord = this.castcleIdMetadata.bannedWords.some(
-      (bannedWord) => new RegExp(bannedWord, 'i').test(castcleId),
-    );
-
-    return (
-      !hasBannedWord &&
-      castcleId.length >= this.castcleIdMetadata.minLength &&
-      castcleId.length <= this.castcleIdMetadata.maxLength
-    );
-  }
-
-  private randomCastcleId() {
-    const randomLength = (length = 0) => {
-      return Math.floor(Math.random() * length);
-    };
-
-    return `${
-      this.castcleIdMetadata.adjectives[
-        randomLength(this.castcleIdMetadata.adjectives.length)
-      ]
-    }${
-      this.castcleIdMetadata.nouns[
-        randomLength(this.castcleIdMetadata.nouns.length)
-      ]
-    }`;
-  }
-
-  async suggestCastcleId(preferredCastcleId?: string) {
-    if (!this.castcleIdMetadata) {
-      const castcleIdMetadata = await AWSClient.getCastcleIdMetadata();
-
-      this.castcleIdMetadata = castcleIdMetadata;
-    }
-
-    const castcleId =
-      !this.castcleIdMetadata || this.isValidCastcleId(preferredCastcleId)
-        ? CastcleName.toSlug(preferredCastcleId)
-        : this.randomCastcleId();
-
-    const [availableId] =
-      await this.userModel.aggregate<GetAvailableIdResponse>(
-        pipelineOfGetAvailableId(castcleId),
-      );
-
-    return `${castcleId}${availableId ? availableId?.number : ''}`;
   }
 
   async findNetwork(chainId: string): Promise<Network> {

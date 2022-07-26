@@ -30,7 +30,7 @@ import {
   ImagePayload,
   ShortPayload,
 } from '../dtos';
-import { ReportingStatus } from '../models';
+import { ContentType, ReportingStatus } from '../models';
 import { CastcleBase } from './base.schema';
 import { ContentFarming } from './content-farming.schema';
 import { Engagement } from './engagement.schema';
@@ -40,8 +40,8 @@ export class ContentDocument extends CastcleBase {
   @Prop({ required: true, type: Object })
   author: Author;
 
-  @Prop({ required: true })
-  type: string;
+  @Prop({ required: true, type: String })
+  type: ContentType;
 
   @Prop({ type: Object })
   payload: ShortPayload | BlogPayload | ImagePayload;
