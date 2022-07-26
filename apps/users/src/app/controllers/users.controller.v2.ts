@@ -969,8 +969,13 @@ export class UsersControllerV2 {
       : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
+
     return this.contentServiceV2.pipeContentFarming(
-      await this.contentServiceV2.farm(targetContentId, userId),
+      await this.contentServiceV2.farm(
+        targetContentId,
+        userId,
+        authorizer.account.id,
+      ),
       userId,
     );
   }

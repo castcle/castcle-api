@@ -107,7 +107,7 @@ export class ContentServiceV2 {
     private reportingQueue: Queue<ReportingMessage>,
     @Inject(CACHE_MANAGER)
     private cacheManager: Cache,
-    private notificationServiceV2: NotificationServiceV2,
+    private notificationService: NotificationServiceV2,
     private tAccountService: TAccountService,
     private repository: Repository,
     private hashtagService: HashtagService,
@@ -391,7 +391,7 @@ export class ContentServiceV2 {
     });
 
     if (userOwner && String(user._id) !== String(content.author.id))
-      await this.notificationServiceV2.notifyToUser(
+      await this.notificationService.notifyToUser(
         {
           source:
             userOwner.type === UserType.PEOPLE
@@ -519,7 +519,7 @@ export class ContentServiceV2 {
     });
 
     if (userOwner && String(user._id) !== String(content.author.id))
-      await this.notificationServiceV2.notifyToUser(
+      await this.notificationService.notifyToUser(
         {
           source:
             userOwner.type === UserType.PEOPLE
@@ -648,7 +648,7 @@ export class ContentServiceV2 {
     });
 
     if (userOwner && String(user._id) !== String(content.author.id))
-      await this.notificationServiceV2.notifyToUser(
+      await this.notificationService.notifyToUser(
         {
           source:
             userOwner.type === UserType.PEOPLE
@@ -824,8 +824,37 @@ export class ContentServiceV2 {
       projection,
     );
 
-  farm = async (contentId: string, userId: string) => {
-    const contentFarming = await this.getContentFarming(contentId, userId);
+  farm = async (contentId: string, userId: string, accountId: string) => {
+    const [contentFarming, content, users, account] = await Promise.all([
+      this.getContentFarming(contentId, userId),
+      this.repository.findContent({ _id: contentId }),
+      this.repository.findUsers({ accountId }),
+      this.repository.findAccount({ _id: accountId }),
+    ]);
+
+    if (users.some(({ id }) => id === String(content.author.id)))
+      throw new CastcleException('CAN_NOT_FARMING_YOUR_CAST');
+
+    const userOwner = await this.repository.findUser({
+      _id: content.author.id,
+    });
+
+    await this.notificationService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: new Types.ObjectId(userId),
+        type: NotificationType.Farm,
+        contentRef: content._id,
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      account.preferences.languages[0],
+    );
+
     if (this.checkFarming(contentFarming)) {
       return this.updateContentFarming(contentFarming);
     } else return this.createContentFarming(contentId, userId);
@@ -901,6 +930,9 @@ export class ContentServiceV2 {
     }
   };
 
+  /**
+   * @deprecated The method should not be used.Please use unfarmByFarmingId()
+   */
   unfarm = async (contentId: string, userId: string) => {
     const contentFarming = await this.getContentFarming(contentId, userId);
     if (
@@ -1100,6 +1132,7 @@ export class ContentServiceV2 {
         this.tAccountService.getAccountBalance(userId, WalletType.PERSONAL),
         this.tAccountService.getAccountBalance(userId, WalletType.FARM_LOCKED),
         this.contentFarmingModel.countDocuments({
+          _id: { $lte: contentFarming.id },
           user: userId,
         }),
         this.repository.findContent({
@@ -1864,7 +1897,6 @@ export class ContentServiceV2 {
       lockBalance,
       totalContentFarming || 1,
       this.toCastPayload({ content, engagements }),
-      true,
     );
   };
 

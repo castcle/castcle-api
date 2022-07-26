@@ -104,7 +104,11 @@ export class ContentControllerV2 {
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
     return this.contentServiceV2.pipeContentFarming(
-      await this.contentServiceV2.farm(contentId, authorizer.user.id),
+      await this.contentServiceV2.farm(
+        contentId,
+        authorizer.user.id,
+        authorizer.account.id,
+      ),
       authorizer.user.id,
     );
   }

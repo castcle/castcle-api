@@ -375,6 +375,11 @@ export const DefaultErrors = {
     code: '5011',
     message: 'You already said that',
   },
+  CAN_NOT_FARMING_YOUR_CAST: {
+    statusCode: '400',
+    code: '5012',
+    message: "You can't farm your cast",
+  },
   NOTIFICATION_NOT_FOUND: {
     statusCode: '400',
     code: '6001',
