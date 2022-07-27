@@ -86,7 +86,8 @@ export class NotificationServiceV2 {
       (type === NotificationType.Like &&
         targetRef === NotificationRef.Content) ||
       type === NotificationType.Recast ||
-      type === NotificationType.Quote
+      type === NotificationType.Quote ||
+      type === NotificationType.Farm
     ) {
       return NotificationLandingPage.Cast;
     } else if (
@@ -250,8 +251,6 @@ export class NotificationServiceV2 {
 
       if (!userSort.length) return;
     }
-
-    if (!requestedBy) return;
 
     const displayNames = userSort.map((user) => user.displayName);
 

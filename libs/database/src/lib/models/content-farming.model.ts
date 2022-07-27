@@ -67,6 +67,11 @@ export class ContentFarmingResponse {
     this.content = contentPayload;
     this.balance['available'] = currentBalance;
     this.balance['total'] = currentBalance + lockedBalance;
+    this.balance['farming'] = (currentBalance + lockedBalance) * 0.05;
+    this.balance['farmed'] =
+      contentFarming?.status === ContentFarmingStatus.Farming
+        ? lockedBalance
+        : 0;
     this.status = contentFarming?.status
       ? contentFarming?.status
       : farmNo < Environment.FARMING_LIMIT ||
