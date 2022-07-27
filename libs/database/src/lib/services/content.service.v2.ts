@@ -794,17 +794,11 @@ export class ContentServiceV2 {
   };
 
   checkFarming = (contentFarming: ContentFarming) => {
-    if (
-      contentFarming &&
-      contentFarming.status === ContentFarmingStatus.Farmed &&
-      contentFarming.endedAt &&
-      contentFarming.endedAt.getTime() - contentFarming.startAt.getTime() >=
-        24 * 60 * 60 * 1000
-    )
+    if (contentFarming && contentFarming.status === ContentFarmingStatus.Farmed)
       return true;
     else if (
       contentFarming &&
-      contentFarming.status === ContentFarmingStatus.Farmed
+      contentFarming.status === ContentFarmingStatus.Farming
     )
       throw new CastcleException('CONTENT_FARMING_ALREADY_FARM');
     else if (!contentFarming) return false;
