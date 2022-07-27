@@ -1549,7 +1549,6 @@ export class ContentServiceV2 {
       maxResults,
     );
     const suggestContentIds = suggestContents.payload.map((c) => c.content);
-
     const [contents] = await this.repository.aggregationContent({
       viewer,
       maxResults: maxResults,
@@ -1561,7 +1560,9 @@ export class ContentServiceV2 {
       const isCalled =
         suggestContents.payload.findIndex(
           (p) =>
-            p.calledAt && p.content === (contents as GetCastDto).contents[i].id,
+            p.calledAt &&
+            String(p.content) ===
+              String((contents as GetCastDto).contents[i]._id),
         ) >= 0;
       if (isCalled)
         contents.calledContents.push((contents as GetCastDto).contents[i]);

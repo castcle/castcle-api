@@ -1217,7 +1217,7 @@ export class Repository {
     await this.feedItemV2Model.updateMany(
       {
         content: {
-          $in: contents.contents.map((c) => c._id),
+          $in: contents.calledContents.map((c) => c._id),
         },
       },
       {
