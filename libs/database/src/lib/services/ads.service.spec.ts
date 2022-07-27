@@ -161,7 +161,7 @@ describe('AdsService', () => {
       const adDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        castcleId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].displayId,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
@@ -229,7 +229,7 @@ describe('AdsService', () => {
       const adsInput = {
         campaignName: 'Ads',
         campaignMessage: 'This is ads',
-        castcleId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].displayId,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
@@ -254,7 +254,7 @@ describe('AdsService', () => {
       const adsInput: AdsRequestDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        castcleId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].displayId,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
@@ -289,7 +289,7 @@ describe('AdsService', () => {
       const adsInput: AdsRequestDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        castcleId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].displayId,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
@@ -309,7 +309,7 @@ describe('AdsService', () => {
       const adsInput: AdsRequestDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        castcleId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].displayId,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
