@@ -794,17 +794,11 @@ export class ContentServiceV2 {
   };
 
   checkFarming = (contentFarming: ContentFarming) => {
-    if (
-      contentFarming &&
-      contentFarming.status === ContentFarmingStatus.Farmed &&
-      contentFarming.endedAt &&
-      contentFarming.endedAt.getTime() - contentFarming.startAt.getTime() >=
-        24 * 60 * 60 * 1000
-    )
+    if (contentFarming && contentFarming.status === ContentFarmingStatus.Farmed)
       return true;
     else if (
       contentFarming &&
-      contentFarming.status === ContentFarmingStatus.Farmed
+      contentFarming.status === ContentFarmingStatus.Farming
     )
       throw new CastcleException('CONTENT_FARMING_ALREADY_FARM');
     else if (!contentFarming) return false;
@@ -1588,7 +1582,6 @@ export class ContentServiceV2 {
       maxResults,
     );
     const suggestContentIds = suggestContents.payload.map((c) => c.content);
-
     const [contents] = await this.repository.aggregationContent({
       viewer,
       maxResults: maxResults,
@@ -1600,7 +1593,9 @@ export class ContentServiceV2 {
       const isCalled =
         suggestContents.payload.findIndex(
           (p) =>
-            p.calledAt && p.content === (contents as GetCastDto).contents[i].id,
+            p.calledAt &&
+            String(p.content) ===
+              String((contents as GetCastDto).contents[i]._id),
         ) >= 0;
       if (isCalled)
         contents.calledContents.push((contents as GetCastDto).contents[i]);

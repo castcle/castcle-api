@@ -339,13 +339,6 @@ export class AdsService {
     //invalid balance
     if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
       return false;
-    if (adsRequest.castcleId && user.id !== adsRequest.castcleId) {
-      const page = await this.userModel.findById(adsRequest.castcleId);
-      return String(page.ownerAccount) === String(user.ownerAccount);
-    } else if (adsRequest.contentId) {
-      const content = await this.contentModel.findById(adsRequest.contentId);
-      return String(content.author.id) === String(user._id);
-    }
     return true;
   };
 
@@ -358,6 +351,30 @@ export class AdsService {
     runningCampaigns[0].statistics.dailySpent = 0;
   };
 
+  getAdsRef = async (user: User, adsRequest: AdsRequestDto) => {
+    if (adsRequest.castcleId) {
+      try {
+        const requestUser = await this.repository.findUser({
+          castcleId: adsRequest.castcleId,
+        });
+        //check permission
+        if (
+          requestUser.type === UserType.PAGE &&
+          String(user.ownerAccount) === String(requestUser.ownerAccount)
+        )
+          return new DBRef('user', new Types.ObjectId(requestUser.id));
+        else throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
+      } catch (e) {
+        throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
+      }
+    } else {
+      const content = await this.contentModel.findById(adsRequest.contentId);
+      if (String(content.author.id) === String(user._id))
+        return new DBRef('content', new Types.ObjectId(adsRequest.contentId));
+      else throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
+    }
+  };
+
   /**
    * Create a ads campaign
    * @param user
@@ -365,13 +382,30 @@ export class AdsService {
    * @returns {Ad}
    */
   createAds = async (user: User, adsRequest: AdsRequestDto) => {
-    const adsRef = adsRequest.castcleId
-      ? new DBRef('user', new Types.ObjectId(adsRequest.castcleId))
-      : new DBRef('content', new Types.ObjectId(adsRequest.contentId));
+    const adsRef = await this.getAdsRef(user, adsRequest);
 
     if (!(await this.validateAds(user, adsRequest)))
       throw new CastcleException('INVALID_TRANSACTIONS_DATA');
-
+    console.log(
+      JSON.stringify({
+        adsRef: adsRef,
+        owner: user.id,
+        objective: adsRequest.objective,
+        detail: {
+          name: adsRequest.campaignName,
+          message: adsRequest.campaignMessage,
+          code: user._id + Math.random(), //TODO !!! have to change according to biz logic for example ADSPAGE00001  = 1 ads that promote page or it have to linked with owner account from the code
+          dailyBudget: adsRequest.dailyBudget,
+          duration: adsRequest.duration,
+          paymentMethod: adsRequest.paymentMethod,
+          dailyBidType: adsRequest.dailyBidType,
+          dailyBidValue: adsRequest.dailyBidValue,
+        } as AdsDetail,
+        statistics: DefaultAdsStatistic,
+        status: AdsStatus.Processing,
+        boostStatus: AdsBoostStatus.Unknown,
+      }),
+    );
     return new this.adsModel({
       adsRef: adsRef,
       owner: user.id,
