@@ -105,11 +105,12 @@ export const testContentFarming = async () => {
 
     it('should return content farming is correct response', async () => {
       const user = await registerUser();
+      const requestedBy = await registerUser();
       const content = await createContent(user.profile.id);
 
       const { body: contentFarming } = await request()
-        .post(`/v2/users/${user.profile.id}/farming/cast`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .post(`/v2/users/${requestedBy.profile.id}/farming/cast`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -120,8 +121,8 @@ export const testContentFarming = async () => {
         });
 
       await request()
-        .get(`/v2/users/${user.profile.id}/farming/cast/${content.id}`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .get(`/v2/users/${requestedBy.profile.id}/farming/cast/${content.id}`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -138,11 +139,12 @@ export const testContentFarming = async () => {
 
     it('should return content farming status equal "farming"', async () => {
       const user = await registerUser();
+      const requestedBy = await registerUser();
       const content = await createContent(user.profile.id);
 
       const { body: contentFarming } = await request()
-        .post(`/v2/users/${user.profile.id}/farming/cast`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .post(`/v2/users/${requestedBy.profile.id}/farming/cast`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -153,8 +155,8 @@ export const testContentFarming = async () => {
         });
 
       await request()
-        .get(`/v2/users/${user.profile.id}/farming/cast/${content.id}`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .get(`/v2/users/${requestedBy.profile.id}/farming/cast/${content.id}`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -171,11 +173,12 @@ export const testContentFarming = async () => {
 
     it('should return content farming status not equal "farming" id and createdAt equal null', async () => {
       const user = await registerUser();
+      const requestedBy = await registerUser();
       const content = await createContent(user.profile.id);
 
       const { body: contentFarming } = await request()
-        .post(`/v2/users/${user.profile.id}/farming/cast`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .post(`/v2/users/${requestedBy.profile.id}/farming/cast`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -186,8 +189,10 @@ export const testContentFarming = async () => {
         });
 
       await request()
-        .delete(`/v2/users/${user.profile.id}/farming/${contentFarming.id}`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .delete(
+          `/v2/users/${requestedBy.profile.id}/farming/${contentFarming.id}`,
+        )
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -196,8 +201,8 @@ export const testContentFarming = async () => {
         .send({});
 
       await request()
-        .get(`/v2/users/${user.profile.id}/farming/cast/${content.id}`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .get(`/v2/users/${requestedBy.profile.id}/farming/cast/${content.id}`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -248,11 +253,12 @@ export const testContentFarming = async () => {
 
     it('should return content farming status equal "farming"', async () => {
       const user = await registerUser();
+      const requestedBy = await registerUser();
       const content = await createContent(user.profile.id);
 
       const { body: contentFarming } = await request()
-        .post(`/v2/users/${user.profile.id}/farming/cast`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .post(`/v2/users/${requestedBy.profile.id}/farming/cast`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -264,7 +270,7 @@ export const testContentFarming = async () => {
 
       await request()
         .get(`/v2/farmings/active`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -281,11 +287,12 @@ export const testContentFarming = async () => {
 
     it('should return empty content farming status not equal "farming"', async () => {
       const user = await registerUser();
+      const requestedBy = await registerUser();
       const content = await createContent(user.profile.id);
 
       const { body: contentFarming } = await request()
-        .post(`/v2/users/${user.profile.id}/farming/cast`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .post(`/v2/users/${requestedBy.profile.id}/farming/cast`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -296,8 +303,10 @@ export const testContentFarming = async () => {
         });
 
       await request()
-        .delete(`/v2/users/${user.profile.id}/farming/${contentFarming.id}`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .delete(
+          `/v2/users/${requestedBy.profile.id}/farming/${contentFarming.id}`,
+        )
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -307,7 +316,7 @@ export const testContentFarming = async () => {
 
       await request()
         .get(`/v2/farmings/active`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -357,11 +366,12 @@ export const testContentFarming = async () => {
 
     it('should return content farming status equal "farmed"', async () => {
       const user = await registerUser();
+      const requestedBy = await registerUser();
       const content = await createContent(user.profile.id);
 
       const { body: contentFarming } = await request()
-        .post(`/v2/users/${user.profile.id}/farming/cast`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .post(`/v2/users/${requestedBy.profile.id}/farming/cast`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -372,8 +382,10 @@ export const testContentFarming = async () => {
         });
 
       await request()
-        .delete(`/v2/users/${user.profile.id}/farming/${contentFarming.id}`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .delete(
+          `/v2/users/${requestedBy.profile.id}/farming/${contentFarming.id}`,
+        )
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -383,7 +395,7 @@ export const testContentFarming = async () => {
 
       await request()
         .get(`/v2/farmings/history`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -400,11 +412,12 @@ export const testContentFarming = async () => {
 
     it('should return empty content farming status not equal "farmed"', async () => {
       const user = await registerUser();
+      const requestedBy = await registerUser();
       const content = await createContent(user.profile.id);
 
       await request()
-        .post(`/v2/users/${user.profile.id}/farming/cast`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .post(`/v2/users/${requestedBy.profile.id}/farming/cast`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
@@ -416,7 +429,7 @@ export const testContentFarming = async () => {
 
       await request()
         .get(`/v2/farmings/history`)
-        .auth(user.accessToken, { type: 'bearer' })
+        .auth(requestedBy.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',
           Device: 'CastclePhone',
