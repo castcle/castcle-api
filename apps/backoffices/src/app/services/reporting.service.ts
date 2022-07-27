@@ -61,15 +61,15 @@ export class ReportingService {
   ) {}
 
   private checkingStatusActive(status: ReportingStatus) {
-    switch (status) {
-      case ReportingStatus.REVIEWING:
-        return ReportingStatus.DONE;
-
-      case ReportingStatus.APPEAL:
-        return ReportingStatus.CLOSED;
-
-      default:
-        return;
+    if (status === ReportingStatus.REVIEWING) {
+      return ReportingStatus.DONE;
+    } else if (
+      status === ReportingStatus.APPEAL ||
+      status === ReportingStatus.NOT_APPEAL
+    ) {
+      return ReportingStatus.CLOSED;
+    } else {
+      return;
     }
   }
 
