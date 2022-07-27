@@ -469,6 +469,7 @@ describe('ContentServiceV2', () => {
           await service.farm(
             finalTestContents[i].id,
             mockFarmingUsers[1].user.id,
+            mockFarmingUsers[1].account.id,
           );
           const currentBalance = await tAccountService.getAccountBalance(
             mockFarmingUsers[1].user.id,
@@ -481,6 +482,24 @@ describe('ContentServiceV2', () => {
           WalletType.PERSONAL,
         );
         expect(recentBalance).toEqual(0);
+      });
+
+      it('should throw error CAN_NOT_FARMING_YOUR_CAST message', async () => {
+        const content = await mockContents(
+          mocksUsers[0].user,
+          (service as any).contentModel,
+          { amount: 21, type: ContentType.Short },
+        );
+
+        await expect(
+          service.farm(
+            content[0].id,
+            mocksUsers[0].user.id,
+            mocksUsers[0].account.id,
+          ),
+        ).rejects.toThrowError(
+          new CastcleException('CAN_NOT_FARMING_YOUR_CAST'),
+        );
       });
     });
     describe('#expire', () => {
@@ -1098,7 +1117,11 @@ describe('ContentServiceV2', () => {
       );
       content = await repository.findContent({ _id: payload.id });
 
-      await service.farm(content.id, mocksUsers[1].user.id);
+      await service.farm(
+        content.id,
+        mocksUsers[1].user.id,
+        mocksUsers[1].account.id,
+      );
     });
     it('should return response of content farming status "farming"', async () => {
       const contentFarming = await service.lookupFarming(
@@ -1149,7 +1172,11 @@ describe('ContentServiceV2', () => {
       );
       content = await repository.findContent({ _id: payload.id });
 
-      await service.farm(content.id, mocksUsers[1].user.id);
+      await service.farm(
+        content.id,
+        mocksUsers[1].user.id,
+        mocksUsers[1].account.id,
+      );
     });
     it('should return response of content farming status "farming"', async () => {
       const contentFarmings = await service.farmingActive(mocksUsers[1].user);

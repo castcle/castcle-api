@@ -171,7 +171,7 @@ describe('AdsController', () => {
         duration: 2,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.TOKEN_WALLET,
-        castcleId: mocksUsers[0].pages[0].id,
+        castcleId: mocksUsers[0].pages[0].displayId,
       });
       expect(result).toMatchObject({
         campaignMessage: 'test u',

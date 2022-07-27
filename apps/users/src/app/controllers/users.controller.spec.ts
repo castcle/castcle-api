@@ -1555,7 +1555,7 @@ describe('AppController', () => {
       const adsInput: AdsRequestDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        castcleId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].displayId,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
@@ -1605,7 +1605,7 @@ describe('AppController', () => {
         const adsInput: AdsRequestDto = {
           campaignName: 'Ads2',
           campaignMessage: 'This is ads2',
-          castcleId: mocks[0].pages[0].id,
+          castcleId: mocks[0].pages[0].displayId,
           dailyBudget: 1,
           duration: 5,
           objective: AdsObjective.Engagement,
