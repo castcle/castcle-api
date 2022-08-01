@@ -795,7 +795,7 @@ export class ContentServiceV2 {
 
   checkFarming = (contentFarming: ContentFarming) => {
     if (contentFarming && contentFarming.status === ContentFarmingStatus.Farmed)
-      return true;
+      return false;
     else if (
       contentFarming &&
       contentFarming.status === ContentFarmingStatus.Farming

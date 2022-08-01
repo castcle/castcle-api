@@ -64,13 +64,13 @@ jobs:
       matrix:
         include:
           - topic: All Except Database and E2E
-            args: --all --exclude=database,e2e
+            args: npm run nx run-many -- --target=test --silent --maxWorkers=1 --all --exclude=database,e2e
             key: all
           - topic: Only Database
-            args: --projects=database
+            args: npm run nx test database -- --silent --maxWorkers=1
             key: database
           - topic: Only E2E
-            args: --projects=e2e
+            args: npm run nx test e2e -- --silent --maxWorkers=1
             key: e2e
     name: Test ${{ matrix.topic }}
     runs-on: ubuntu-latest
@@ -91,4 +91,4 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
       - name: Test Project
-        run: npm run nx run-many -- --target=test --silent --maxWorkers=1 ${{ matrix.args }}
+        run: ${{ matrix.args }}

@@ -448,11 +448,19 @@ export class UserService {
     { images, links, contact, ...updateUserDto }: UpdateModelUserDto,
   ) => {
     if (!user.profile) user.profile = {};
-    if (updateUserDto.castcleId) user.displayId = updateUserDto.castcleId;
-    if (updateUserDto.displayName) user.displayName = updateUserDto.displayName;
-    if (updateUserDto.displayName || updateUserDto.castcleId)
+    if (updateUserDto.castcleId && updateUserDto.castcleId !== user.displayId) {
       user.displayIdUpdatedAt = new Date();
-    if (updateUserDto.overview) user.profile.overview = updateUserDto.overview;
+      user.displayId = updateUserDto.castcleId;
+    }
+    if (updateUserDto.displayName) user.displayName = updateUserDto.displayName;
+
+    if (
+      updateUserDto.overview !== undefined &&
+      updateUserDto.overview !== null
+    ) {
+      user.profile.overview = updateUserDto.overview;
+    }
+
     if (updateUserDto.dob) user.profile.birthdate = new Date(updateUserDto.dob);
 
     if (images) {
