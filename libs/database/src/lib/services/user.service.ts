@@ -452,7 +452,14 @@ export class UserService {
     if (updateUserDto.displayName) user.displayName = updateUserDto.displayName;
     if (updateUserDto.displayName || updateUserDto.castcleId)
       user.displayIdUpdatedAt = new Date();
-    if (updateUserDto.overview) user.profile.overview = updateUserDto.overview;
+
+    if (
+      updateUserDto.overview !== undefined &&
+      updateUserDto.overview !== null
+    ) {
+      user.profile.overview = updateUserDto.overview;
+    }
+
     if (updateUserDto.dob) user.profile.birthdate = new Date(updateUserDto.dob);
 
     if (images) {
