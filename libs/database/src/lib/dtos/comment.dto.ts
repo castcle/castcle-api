@@ -59,6 +59,9 @@ export class CommentPayload {
   participate: CastcleParticipate;
 
   @ApiProperty()
+  authorId: string;
+
+  @ApiProperty()
   reply: {
     id: string;
     message: string;

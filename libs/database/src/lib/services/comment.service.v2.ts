@@ -303,7 +303,7 @@ export class CommentServiceV2 {
       message: comment.message,
       metrics: { likeCount: comment.engagements.like.count },
       participate: { liked: this.getLike(engagements, comment.id, viewer) },
-      author: comment.author._id,
+      authorId: comment.author._id,
       hasHistory: revisionCount > 1,
       reply: replies.map((reply) => reply._id),
       createdAt: comment.createdAt.toISOString(),
