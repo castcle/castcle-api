@@ -301,7 +301,7 @@ export class UserServiceV2 {
           { session },
         );
       } else {
-        await this.repository.removeRelationship(
+        await this.repository.deleteRelationship(
           { _id: blockerRelation._id },
           { session },
         );
@@ -318,7 +318,7 @@ export class UserServiceV2 {
           { session },
         );
       } else {
-        await this.repository.removeRelationship(
+        await this.repository.deleteRelationship(
           { _id: blockedRelation._id },
           { session },
         );

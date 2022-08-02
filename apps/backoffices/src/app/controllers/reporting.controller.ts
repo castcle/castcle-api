@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { ReportingIllegal } from '@castcle-api/database';
 import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
 import {
   Body,
@@ -66,7 +67,11 @@ export class ReportingController {
     @Req() { $payload }: FastifyRequest & { $payload: Staff },
     @Body() body: UpdateIllegal,
   ) {
-    return this.reportingService.updateNotIllegal(body, $payload);
+    return this.reportingService.updateIllegal(
+      body,
+      $payload,
+      ReportingIllegal.NOT_ILLEGAL,
+    );
   }
 
   @UseInterceptors(HeaderBackofficeInterceptor)
@@ -78,7 +83,11 @@ export class ReportingController {
     @Req() { $payload }: FastifyRequest & { $payload: Staff },
     @Body() body: UpdateIllegal,
   ) {
-    return this.reportingService.updateIllegal(body, $payload);
+    return this.reportingService.updateIllegal(
+      body,
+      $payload,
+      ReportingIllegal.ILLEGAL,
+    );
   }
 
   @UseInterceptors(HeaderBackofficeInterceptor)
