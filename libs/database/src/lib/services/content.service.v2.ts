@@ -1837,10 +1837,10 @@ export class ContentServiceV2 {
     );
   };
 
-  lookupFarming = async (contentId: string, userId: string) => {
+  lookupFarming = async (contentId: string, user: User) => {
     const contentFarming = await this.contentFarmingModel.findOne(
       {
-        user: userId,
+        user: user.id,
         content: contentId,
       },
       {
@@ -1850,8 +1850,8 @@ export class ContentServiceV2 {
     );
 
     const [balance, lockBalance] = await Promise.all([
-      this.tAccountService.getAccountBalance(userId, WalletType.PERSONAL),
-      this.tAccountService.getAccountBalance(userId, WalletType.FARM_LOCKED),
+      this.tAccountService.getAccountBalance(user.id, WalletType.PERSONAL),
+      this.tAccountService.getAccountBalance(user.id, WalletType.FARM_LOCKED),
     ]);
 
     if (
@@ -1870,8 +1870,14 @@ export class ContentServiceV2 {
 
     if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
+    const author = await this.repository.findUser({ _id: content.author.id });
+
+    if (!author) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+    if (String(author.ownerAccount) === String(user.ownerAccount))
+      throw new CastcleException('CAN_NOT_FARMING_YOUR_CAST');
+
     const engagements = await this.repository.findEngagements({
-      user: new Types.ObjectId(userId),
+      user: user._id,
       targetRef: {
         $ref: 'content',
         $id: contentId,
@@ -1880,7 +1886,7 @@ export class ContentServiceV2 {
 
     const totalContentFarming = await this.contentFarmingModel.countDocuments({
       _id: { $lte: contentFarming?.id },
-      user: userId,
+      user: user.id,
       status: ContentFarmingStatus.Farming,
     });
 

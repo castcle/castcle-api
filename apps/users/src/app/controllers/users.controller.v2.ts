@@ -1006,6 +1006,6 @@ export class UsersControllerV2 {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.contentServiceV2.lookupFarming(contentId, userId);
+    return this.contentServiceV2.lookupFarming(contentId, user);
   }
 }
