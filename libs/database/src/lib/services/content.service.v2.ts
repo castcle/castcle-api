@@ -1119,7 +1119,6 @@ export class ContentServiceV2 {
   pipeContentFarming = async (
     contentFarming: ContentFarming,
     userId: string,
-    isCurrentBalance?: boolean,
   ) => {
     const [balance, lockBalance, totalContentFarming, content] =
       await Promise.all([
@@ -1146,7 +1145,6 @@ export class ContentServiceV2 {
       lockBalance,
       totalContentFarming,
       contentPayload,
-      isCurrentBalance,
     );
   };
 
@@ -1891,7 +1889,7 @@ export class ContentServiceV2 {
       balance,
       lockBalance,
       totalContentFarming || 1,
-      this.toCastPayload({ content, engagements }),
+      content ? this.toCastPayload({ content, engagements }) : undefined,
     );
   };
 
@@ -1931,8 +1929,7 @@ export class ContentServiceV2 {
           balance,
           lockBalance,
           totalContentFarming - index,
-          this.toCastPayload({ content, engagements }),
-          true,
+          content ? this.toCastPayload({ content, engagements }) : undefined,
         );
       }),
     );
@@ -1985,8 +1982,7 @@ export class ContentServiceV2 {
           balance,
           lockBalance,
           undefined,
-          this.toCastPayload({ content, engagements }),
-          true,
+          content ? this.toCastPayload({ content, engagements }) : undefined,
         );
       }),
     );

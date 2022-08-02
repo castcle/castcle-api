@@ -35,20 +35,17 @@ export class ContentFarmingResponse {
   'id': string;
   'number': number;
   'content'?: CastPayload;
-  'balance':
-    | {
-        farmed: number;
-        available: number;
-        farming: number;
-        total: number;
-      }
-    | number =
-    {
-      farmed: 0,
-      available: 0,
-      farming: 0,
-      total: 0,
-    } || 0;
+  'balance': {
+    farmed: number;
+    available: number;
+    farming: number;
+    total: number;
+  } = {
+    farmed: 0,
+    available: 0,
+    farming: 0,
+    total: 0,
+  };
   'status': string;
   'createdAt'?: Date;
   'updatedAt'?: Date;
@@ -60,7 +57,6 @@ export class ContentFarmingResponse {
     lockedBalance: number,
     farmNo: number,
     contentPayload?: CastPayload,
-    isCurrentBalance?: boolean,
   ) {
     this.id = contentFarming?.id ?? null;
     this.number = farmNo;
@@ -81,6 +77,5 @@ export class ContentFarmingResponse {
     this.createdAt = contentFarming?.createdAt ?? null;
     this.updatedAt = contentFarming?.updatedAt;
     this.farmedAt = contentFarming?.endedAt;
-    if (isCurrentBalance) this.balance = currentBalance;
   }
 }
