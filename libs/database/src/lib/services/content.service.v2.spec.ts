@@ -1115,6 +1115,16 @@ describe('ContentServiceV2', () => {
         },
         mocksUsers[0].user,
       );
+
+      await service.createContent(
+        {
+          payload: { message: 'content farming' },
+          type: ContentType.Short,
+          castcleId: mocksUsers[1].user.displayId,
+        },
+        mocksUsers[1].user,
+      );
+
       content = await repository.findContent({ _id: payload.id });
 
       await service.farm(
@@ -1126,7 +1136,7 @@ describe('ContentServiceV2', () => {
     it('should return response of content farming status "farming"', async () => {
       const contentFarming = await service.lookupFarming(
         content.id,
-        mocksUsers[1].user.id,
+        mocksUsers[1].user,
       );
 
       expect(contentFarming.id).not.toBeNull();
@@ -1136,17 +1146,17 @@ describe('ContentServiceV2', () => {
       expect(contentFarming.status).toEqual(ContentFarmingStatus.Farming);
     });
 
-    it('should return response of content farming status "farmed"', async () => {
+    it('should return response of content farming status "available"', async () => {
       const contentFarming = await service.lookupFarming(
         content.id,
-        mocksUsers[1].user.id,
+        mocksUsers[1].user,
       );
 
       await service.unfarmByFarmingId(contentFarming.id, mocksUsers[1].user.id);
 
       const contentFarmingEnded = await service.lookupFarming(
         content.id,
-        mocksUsers[1].user.id,
+        mocksUsers[1].user,
       );
 
       expect(contentFarmingEnded.id).toBeNull();
@@ -1156,6 +1166,12 @@ describe('ContentServiceV2', () => {
       expect(contentFarmingEnded.status).toEqual(
         ContentFarmingStatus.Available,
       );
+    });
+
+    it('should throw response of content farming is owner', async () => {
+      await expect(
+        service.lookupFarming(content.id, mocksUsers[0].user),
+      ).rejects.toThrowError(new CastcleException('CAN_NOT_FARMING_YOUR_CAST'));
     });
   });
 
