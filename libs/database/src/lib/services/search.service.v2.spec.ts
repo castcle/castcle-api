@@ -92,6 +92,10 @@ describe('SearchServiceV2', () => {
           provide: getQueueToken(QueueName.REPORTING),
           useValue: { add: jest.fn() },
         },
+        {
+          provide: getQueueToken(QueueName.VERIFY_EMAIL),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 

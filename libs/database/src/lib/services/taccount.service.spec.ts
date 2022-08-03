@@ -29,6 +29,7 @@ import {
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
+import { getQueueToken } from '@nestjs/bull';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
@@ -43,6 +44,7 @@ import {
 import { MockUserDetail, MockUserService, mockSend } from '../mocks';
 import {
   KeywordType,
+  QueueName,
   TopUpDto,
   TransactionData,
   TransactionFilterType,
@@ -105,6 +107,10 @@ describe('TAccount Service', () => {
         { provide: Mailer, useValue: {} },
         { provide: TwilioClient, useValue: {} },
         { provide: TwitterClient, useValue: {} },
+        {
+          provide: getQueueToken(QueueName.VERIFY_EMAIL),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 

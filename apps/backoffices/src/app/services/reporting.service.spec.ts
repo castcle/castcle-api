@@ -128,6 +128,10 @@ describe('ReportingService', () => {
           useValue: { add: jest.fn() },
         },
         {
+          provide: getQueueToken(QueueName.VERIFY_EMAIL),
+          useValue: { add: jest.fn() },
+        },
+        {
           provide: Mailer,
           useValue: {
             sendPasswordToStaff: jest.fn(),
@@ -195,9 +199,9 @@ describe('ReportingService', () => {
     });
   });
 
-  // afterAll(async () => {
-  //   await Promise.all([moduleRef.close(), mongod.stop()]);
-  // });
+  afterAll(async () => {
+    await Promise.all([moduleRef.close(), mongod.stop()]);
+  });
 
   describe('getReporting', () => {
     it('should get reporting filter type content', async () => {
