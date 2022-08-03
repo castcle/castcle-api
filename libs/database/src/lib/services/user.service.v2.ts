@@ -23,7 +23,7 @@
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Mailer } from '@castcle-api/utils/clients';
-import { CastcleQRCode, LocalizationLang } from '@castcle-api/utils/commons';
+import { CastcleQRCode } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
@@ -189,7 +189,7 @@ export class UserServiceV2 {
    */
   async getMyPages(requestedBy: User) {
     const filter = {
-      accountId: requestedBy.ownerAccount._id,
+      accountId: requestedBy.ownerAccount,
       type: UserType.PAGE,
     };
     const pages = await this.repository.getPublicUsers({
@@ -201,9 +201,12 @@ export class UserServiceV2 {
     return pages;
   }
 
-  async followUser(user: User, targetCastcleId: string, account: Account) {
+  async followUser(user: User, targetCastcleId: string) {
     const followedUser = await this.repository.findUser({
       _id: targetCastcleId,
+    });
+    const followedAccount = await this.repository.findAccount({
+      _id: followedUser.ownerAccount,
     });
 
     if (!followedUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
@@ -222,7 +225,7 @@ export class UserServiceV2 {
         read: false,
       },
       followedUser,
-      account.preferences?.languages[0] || LocalizationLang.English,
+      followedAccount.preferences?.languages[0],
     );
   }
 
@@ -467,13 +470,24 @@ export class UserServiceV2 {
     ]);
 
     try {
+      const [user, referrer] = await Promise.all([
+        this.userModel.findOne({
+          ownerAccount: account._id,
+          type: UserType.PEOPLE,
+        }),
+        this.userModel.findOne({
+          ownerAccount: account.referralBy,
+          type: UserType.PEOPLE,
+        }),
+      ]);
+
       await this.campaignService.claimCampaignsAirdrop(
-        account._id,
+        user._id,
         CampaignType.VERIFY_MOBILE,
       );
 
       await this.campaignService.claimCampaignsAirdrop(
-        String(account.referralBy),
+        referrer._id,
         CampaignType.FRIEND_REFERRAL,
       );
     } catch (error: unknown) {

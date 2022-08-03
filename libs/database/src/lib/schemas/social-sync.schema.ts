@@ -25,7 +25,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
 import { SocialSyncDto } from '../dtos';
 import { SocialProvider } from '../models';
-import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })
@@ -34,7 +33,7 @@ class SocialSyncDocument extends CastcleBase {
   user: Types.ObjectId;
 
   @Prop({ ref: 'Account', type: SchemaTypes.ObjectId })
-  account: Account;
+  account: Types.ObjectId;
 
   @Prop({ required: true, type: String })
   provider: SocialProvider;

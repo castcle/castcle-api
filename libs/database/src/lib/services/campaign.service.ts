@@ -27,16 +27,16 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Queue as BullQueue, Job } from 'bull';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import {
   EligibleAccount,
   GetCampaignClaimsResponse,
   pipelineOfEstimateContentReach,
   pipelineOfGetCampaignClaims,
 } from '../aggregations';
-import { CampaignField } from '../dtos';
+import { CampaignField, EntityVisibility } from '../dtos';
 import {
-  CACCOUNT_NO,
+  C_ACCOUNT_NO,
   CampaignStatus,
   CampaignType,
   CastcleNumber,
@@ -44,14 +44,13 @@ import {
   QueueName,
   QueueStatus,
   QueueTopic,
-} from '../models';
-import {
   TransactionData,
   TransactionType,
+  UserType,
   WalletType,
-} from '../models/wallet.enum';
-import { Account, Campaign, FeedItem, Queue, TLedger } from '../schemas';
-import { TAccountService } from './taccount.service';
+} from '../models';
+import { Account, Campaign, FeedItem, Queue, TLedger, User } from '../schemas';
+import { TAccountService } from './t-account.service';
 
 @Injectable()
 export class CampaignService {
@@ -66,9 +65,11 @@ export class CampaignService {
     private feedModel: Model<FeedItem>,
     @InjectModel('Queue')
     private queueModel: Model<Queue<ClaimAirdropPayload>>,
+    @InjectModel('User')
+    private userModel: Model<User>,
     @InjectQueue(QueueName.CAMPAIGN)
     private campaignQueue: BullQueue<{ queueId: string }>,
-    private taccountService: TAccountService,
+    private tAccountService: TAccountService,
   ) {}
 
   /**
@@ -108,9 +109,17 @@ export class CampaignService {
         `getAirdropBalances:${campaign._id}`,
       );
 
+      const users = await this.userModel.find({
+        ownerAccount: { $in: eligibleAccounts.map(({ id }) => id) },
+        type: UserType.PEOPLE,
+        visibility: EntityVisibility.Publish,
+      });
+
       const to = eligibleAccounts.map(({ id, amount }) => {
+        const user = users.find((user) => String(user.ownerAccount) === id);
         return {
-          account: id,
+          account: Types.ObjectId(id),
+          user: user._id,
           type: WalletType.PERSONAL,
           value: CastcleNumber.from(amount).toNumber(),
         };
@@ -142,7 +151,10 @@ export class CampaignService {
     await this.claimContentReachAirdrops();
   }
 
-  async claimCampaignsAirdrop(accountId: string, campaignType: CampaignType) {
+  async claimCampaignsAirdrop(
+    userId: Types.ObjectId,
+    campaignType: CampaignType,
+  ) {
     const now = new Date();
     const campaign = await this.campaignModel.findOne({
       type: campaignType,
@@ -155,12 +167,12 @@ export class CampaignService {
       throw new CastcleException('REWARD_IS_NOT_ENOUGH');
     }
 
-    const claims = await this.queueModel.aggregate([
+    const claims = await this.queueModel.aggregate<{ count: number }>([
       { $unwind: { path: '$payload.to' } },
       {
         $match: {
           status: { $nin: [QueueStatus.CANCELLED, QueueStatus.FAILED] },
-          'payload.to.account': accountId,
+          'payload.to.user': userId,
           'payload.campaignId': campaign.id,
           'payload.topic': QueueTopic.CLAIM_AIRDROP,
         },
@@ -175,7 +187,7 @@ export class CampaignService {
       JSON.stringify({
         campaignId: campaign.id,
         campaignName: campaign.name,
-        accountId,
+        userId,
         hasReachedMaxClaims,
         reachedMaxClaims: `${claimsCount}/${campaign.maxClaims}`,
       }),
@@ -184,7 +196,8 @@ export class CampaignService {
 
     if (hasReachedMaxClaims) throw new CastcleException('REACHED_MAX_CLAIMS');
 
-    const account = await this.accountModel.findById(accountId);
+    const user = await this.userModel.findById(userId);
+    const account = await this.accountModel.findById(user.ownerAccount);
 
     if (campaignType === CampaignType.VERIFY_MOBILE) {
       const claimedMobileNumber = await this.queueModel.countDocuments({
@@ -198,7 +211,13 @@ export class CampaignService {
     const queue = await new this.queueModel({
       payload: new ClaimAirdropPayload(
         campaign.id,
-        [{ account: accountId, type: WalletType.PERSONAL }],
+        [
+          {
+            user: userId,
+            type: WalletType.PERSONAL,
+            value: campaign.rewardsPerClaim,
+          },
+        ],
         account?.mobile,
       ),
     }).save();
@@ -214,7 +233,7 @@ export class CampaignService {
       JSON.stringify({
         campaignId: campaign.id,
         campaignName: campaign.name,
-        accountId,
+        accountId: userId,
         hasReachedMaxClaims,
         reachedMaxClaims: `${claimsCount}/${campaign.maxClaims}`,
       }),
@@ -234,7 +253,7 @@ export class CampaignService {
       const payload = queue.payload;
       const campaign = await this.campaignModel.findById(payload.campaignId);
       const accounts = await this.accountModel
-        .find({ _id: payload.to.map(({ account }) => account) })
+        .find({ _id: payload.to.filter((t) => t.user).map((t) => t.user) })
         .select('+campaigns');
 
       const $accountsToSave = accounts.map(async (account) => {
@@ -301,7 +320,7 @@ export class CampaignService {
     claimCampaignsAirdropJob: ClaimAirdropPayload,
   ) {
     let sumAmount = 0;
-    const to = claimCampaignsAirdropJob.to.map(({ account, type, value }) => {
+    const to = claimCampaignsAirdropJob.to.map(({ user, type, value }) => {
       const remaining =
         campaign.rewardBalance >= value ? value : campaign.rewardBalance;
 
@@ -311,7 +330,7 @@ export class CampaignService {
         campaign.rewardBalance - amount,
       ).toNumber();
 
-      return { account, type, value: amount };
+      return { user, type, value: amount };
     });
     const from = { type: WalletType.CASTCLE_AIRDROP, value: sumAmount };
     //for campaign account
@@ -319,19 +338,19 @@ export class CampaignService {
       (item) =>
         ({
           debit: {
-            caccountNo: CACCOUNT_NO.VAULT.AIRDROP,
+            cAccountNo: C_ACCOUNT_NO.VAULT.AIRDROP,
             value: item.value,
           },
           credit: {
-            caccountNo:
+            cAccountNo:
               item.type === WalletType.ADS
-                ? CACCOUNT_NO.LIABILITY.USER_WALLET.ADS
-                : CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                ? C_ACCOUNT_NO.LIABILITY.USER_WALLET.ADS
+                : C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
             value: item.value,
           },
         } as TLedger),
     );
-    const transaction = await this.taccountService.transfer({
+    const transaction = await this.tAccountService.transfer({
       from,
       to,
       data: {

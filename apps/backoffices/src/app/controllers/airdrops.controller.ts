@@ -36,7 +36,7 @@ export class AirdropsController {
   @BackofficeAuth()
   @RequiredPermissions(Permission.Manage)
   @Post('claim')
-  claimAirdrop(@Body() { account, campaign }: ClaimAirdropDto) {
-    return this.airdropsService.claimAirdrop(account, campaign);
+  claimAirdrop(@Body() { user, campaign }: ClaimAirdropDto) {
+    return this.airdropsService.claimAirdrop(user, campaign);
   }
 }

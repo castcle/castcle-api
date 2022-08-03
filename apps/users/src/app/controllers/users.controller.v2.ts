@@ -724,11 +724,7 @@ export class UsersControllerV2 {
       : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    await this.userService.followUser(
-      user,
-      body.targetCastcleId,
-      user.ownerAccount,
-    );
+    await this.userService.followUser(user, body.targetCastcleId);
   }
 
   @Delete(':userId/following/:targetCastcleId')

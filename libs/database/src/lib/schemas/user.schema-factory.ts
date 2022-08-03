@@ -37,6 +37,7 @@ import {
   UserResponseDto,
 } from '../dtos';
 import { CastcleNumber, UserType } from '../models';
+import { Account } from './account.schema';
 import { Relationship } from './relationship.schema';
 import { SocialSync } from './social-sync.schema';
 import { Transaction } from './transaction.schema';
@@ -73,6 +74,7 @@ export const UserSchemaFactory = (
     casts,
   }: UserResponseOption = {}) {
     const self = await this.populate('ownerAccount').execPopulate();
+    const ownerAccount = self.ownerAccount as unknown as Account;
     const response = {
       id: self._id,
       castcleId: self.displayId,
@@ -99,7 +101,7 @@ export const UserSchemaFactory = (
       canUpdateCastcleId: self.canUpdateCastcleId(),
       contact: self.contact,
     } as UserResponseDto;
-    response.email = self.ownerAccount?.email ?? null;
+    response.email = ownerAccount?.email ?? null;
     response.blocking = blocking;
     response.blocked = blocked;
     response.passwordNotSet = passwordNotSet;
@@ -285,7 +287,8 @@ export const UserSchemaFactory = (
   UserSchema.methods.toOwnerResponse = async function (dto?: {
     expansionFields?: UserField[];
   }): Promise<OwnerResponse> {
-    const { ownerAccount } = await this.populate('ownerAccount').execPopulate();
+    const user = await this.populate('ownerAccount').execPopulate();
+    const ownerAccount = user.ownerAccount as unknown as Account;
     const response: OwnerResponse = {
       ...this.toPublicResponse(),
       canUpdateCastcleId: this.canUpdateCastcleId(),
@@ -300,7 +303,7 @@ export const UserSchemaFactory = (
     if (!dto?.expansionFields?.length) return response;
     if (dto?.expansionFields.includes(UserField.LinkSocial)) {
       response.linkSocial = {};
-      Object.entries(this.ownerAccount.authentications || {}).forEach(
+      Object.entries(ownerAccount.authentications || {}).forEach(
         ([provider, authentication]) => {
           response.linkSocial[provider] = { socialId: authentication.socialId };
         },
@@ -318,7 +321,7 @@ export const UserSchemaFactory = (
 
     if (dto?.expansionFields.includes(UserField.Wallet)) {
       const [balance] = await transactionModel.aggregate<GetBalanceResponse>(
-        pipelineOfGetBalance(ownerAccount._id),
+        pipelineOfGetBalance(this._id),
       );
       response.wallet = {
         balance: CastcleNumber.from(balance?.total?.toString()).toNumber(),

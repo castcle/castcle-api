@@ -294,7 +294,7 @@ export class AuthenticationService {
   };
 
   getUserFromAccount = (account: Account) => {
-    return this._userModel.findOne({ ownerAccount: account }).exec();
+    return this._userModel.findOne({ ownerAccount: account._id }).exec();
   };
 
   getUserFromAccountId = (credential: Credential) => {
@@ -392,7 +392,7 @@ export class AuthenticationService {
       (await this.getReferrerByRequestMetadata(requirements.ip));
 
     if (referrer) {
-      account.referralBy = referrer.ownerAccount._id;
+      account.referralBy = referrer.ownerAccount;
       await Promise.all([
         new this._accountReferral({
           referrerAccount: referrer.ownerAccount,
@@ -402,7 +402,7 @@ export class AuthenticationService {
         account.save(),
         this._accountModel.updateOne(
           {
-            _id: referrer.ownerAccount._id,
+            _id: referrer.ownerAccount,
           },
           {
             $inc: { referralCount: 1 },
@@ -693,7 +693,7 @@ export class AuthenticationService {
       (await this.getReferrerByRequestMetadata(requirements.ip));
 
     if (referrer) {
-      account.referralBy = referrer.ownerAccount._id;
+      account.referralBy = referrer.ownerAccount;
       await Promise.all([
         new this._accountReferral({
           referrerAccount: referrer.ownerAccount,
@@ -703,7 +703,7 @@ export class AuthenticationService {
         account.save(),
         this._accountModel.updateOne(
           {
-            _id: referrer.ownerAccount._id,
+            _id: referrer.ownerAccount,
           },
           {
             $inc: { referralCount: 1 },

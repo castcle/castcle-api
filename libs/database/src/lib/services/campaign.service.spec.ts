@@ -36,14 +36,14 @@ import {
 import { CampaignType, QueueName } from '../models';
 import { Repository } from '../repositories';
 import { Campaign } from '../schemas';
-import { TAccountService } from './taccount.service';
+import { TAccountService } from './t-account.service';
 
 describe('Campaign Service', () => {
   let moduleRef: TestingModule;
   let mongo: MongoMemoryServer;
   let campaignService: CampaignService;
   let campaignModel: Model<Campaign>;
-  const accountId = Types.ObjectId().toString();
+  const userId = Types.ObjectId();
 
   beforeAll(async () => {
     mongo = await MongoMemoryServer.create();
@@ -80,10 +80,7 @@ describe('Campaign Service', () => {
 
   it('should return NOT_FOUND when campaign does not exist or expired', async () => {
     await expect(
-      campaignService.claimCampaignsAirdrop(
-        accountId,
-        CampaignType.VERIFY_MOBILE,
-      ),
+      campaignService.claimCampaignsAirdrop(userId, CampaignType.VERIFY_MOBILE),
     ).rejects.toThrow(new CastcleException('CAMPAIGN_HAS_NOT_STARTED'));
   });
 
@@ -100,10 +97,7 @@ describe('Campaign Service', () => {
     }).save();
 
     await expect(
-      campaignService.claimCampaignsAirdrop(
-        accountId,
-        CampaignType.VERIFY_MOBILE,
-      ),
+      campaignService.claimCampaignsAirdrop(userId, CampaignType.VERIFY_MOBILE),
     ).rejects.toThrow(new CastcleException('REWARD_IS_NOT_ENOUGH'));
 
     await campaign.deleteOne();
@@ -126,7 +120,7 @@ describe('Campaign Service', () => {
       }).save();
 
       claimAirdropResponse = await campaignService.claimCampaignsAirdrop(
-        accountId,
+        userId,
         CampaignType.VERIFY_MOBILE,
       );
     });
@@ -142,7 +136,7 @@ describe('Campaign Service', () => {
     it('should return REACHED_MAX_CLAIMS when user reached the maximum limit of claims', async () => {
       await expect(
         campaignService.claimCampaignsAirdrop(
-          accountId,
+          userId,
           CampaignType.VERIFY_MOBILE,
         ),
       ).rejects.toThrow(new CastcleException('REACHED_MAX_CLAIMS'));
@@ -166,7 +160,7 @@ describe('Campaign Service', () => {
       }).save();
 
       claimAirdropResponse = await campaignService.claimCampaignsAirdrop(
-        accountId,
+        userId,
         CampaignType.FRIEND_REFERRAL,
       );
     });
@@ -182,7 +176,7 @@ describe('Campaign Service', () => {
     it('should return REACHED_MAX_CLAIMS when user reached the maximum limit of claims', async () => {
       await expect(
         campaignService.claimCampaignsAirdrop(
-          accountId,
+          userId,
           CampaignType.FRIEND_REFERRAL,
         ),
       ).rejects.toThrow(new CastcleException('REACHED_MAX_CLAIMS'));

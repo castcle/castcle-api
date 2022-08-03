@@ -22,28 +22,19 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Account } from './account.schema';
+import { SchemaTypes, Types } from 'mongoose';
 import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })
 export class AccountReferral extends CastcleBase {
-  @Prop({
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account',
-    index: true,
-  })
-  referrerAccount: Account;
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Account', index: true })
+  referrerAccount: Types.ObjectId;
 
   @Prop({ index: true })
   referrerDisplayId: string;
 
-  @Prop({
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account',
-    index: true,
-  })
-  referringAccount: Account;
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Account', index: true })
+  referringAccount: Types.ObjectId;
 }
 
 export const AccountReferralSchema =

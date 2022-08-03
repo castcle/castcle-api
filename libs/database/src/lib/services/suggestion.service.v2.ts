@@ -24,6 +24,7 @@
 import { CastcleCacheKey } from '@castcle-api/environments';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
+import { Types } from 'mongoose';
 import { Meta, PaginationQuery, UserField } from '../dtos';
 import { Repository } from '../repositories';
 import { Account, Credential, User } from '../schemas';
@@ -177,7 +178,7 @@ export class SuggestionServiceV2 {
       }
     } else {
       users = await this.querySuggestByDataScience(
-        user.ownerAccount._id,
+        user.ownerAccount,
         accessKey,
       );
       sliceUsers = users.slice(0, pageQuery.maxResults);
@@ -223,7 +224,7 @@ export class SuggestionServiceV2 {
   }
 
   private async querySuggestByDataScience(
-    accountId: string,
+    accountId: Types.ObjectId,
     accessKey: string,
   ) {
     const suggestUsers = await this.dataService.getFollowingSuggestions(

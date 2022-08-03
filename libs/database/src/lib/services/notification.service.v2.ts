@@ -24,7 +24,11 @@
 import { Configs, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { CastcleDate, CastcleLocalization } from '@castcle-api/utils/commons';
+import {
+  CastcleDate,
+  CastcleLocalization,
+  LocalizationLang,
+} from '@castcle-api/utils/commons';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
@@ -470,7 +474,7 @@ export class NotificationServiceV2 {
   notifyToUser = async (
     { sourceUserId, read, ...notificationData }: CreateNotification,
     requestedBy: User,
-    language: string,
+    language: string = LocalizationLang.English,
   ) => {
     this.#logger.log('Check user action notify.');
     if (String(sourceUserId) === String(requestedBy._id)) return;
@@ -542,7 +546,7 @@ export class NotificationServiceV2 {
     this.#logger.log('Get devices by account.');
 
     const account = await this.repository.findAccount({
-      _id: notificationData.account._id,
+      _id: notificationData.account,
     });
 
     if (!account?.devices) return;

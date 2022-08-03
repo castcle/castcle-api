@@ -564,11 +564,11 @@ describe('AdsService', () => {
             ledgers: [
               {
                 credit: {
-                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  cAccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
                   value: topupValue,
                 },
                 debit: {
-                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  cAccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
                   value: topupValue,
                 },
               },
@@ -645,11 +645,11 @@ describe('AdsService', () => {
             ledgers: [
               {
                 credit: {
-                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  cAccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
                   value: topupValue,
                 },
                 debit: {
-                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  cAccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
                   value: topupValue,
                 },
               },
@@ -726,11 +726,11 @@ describe('AdsService', () => {
             ledgers: [
               {
                 credit: {
-                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  cAccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
                   value: topupValue,
                 },
                 debit: {
-                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  cAccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
                   value: topupValue,
                 },
               },
@@ -804,11 +804,11 @@ describe('AdsService', () => {
           ledgers: [
             {
               credit: {
-                caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                cAccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
                 value: topupValue,
               },
               debit: {
-                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                cAccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
                 value: topupValue,
               },
             },

@@ -26,12 +26,15 @@ import { CastcleImage } from '@castcle-api/utils/aws';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ClientSession, FilterQuery, Model } from 'mongoose';
+import { ClientSession, FilterQuery, Model, Types } from 'mongoose';
 import {
   GetBalanceResponse,
   GetWalletRecentResponse,
+  WalletBalanceResponse,
   pipelineOfGetBalanceFromWalletType,
+  pipelineOfGetWalletHistory,
   pipelineOfGetWalletRecentFromType,
+  pipelineOfWalletBalance,
 } from '../aggregations';
 import {
   RecentWalletResponse,
@@ -39,18 +42,19 @@ import {
   WalletResponseOptions,
 } from '../dtos';
 import {
-  CACCOUNT_NO,
+  C_ACCOUNT_NO,
   CastcleNumber,
   TopUpDto,
-  TransactionFilterType,
+  TransactionFilter,
   TransferDto,
-  WalletHistoryResponseDto,
+  WalletHistoryResponse,
   WalletType,
 } from '../models';
 import { Repository } from '../repositories';
 import {
   CAccount,
   CAccountNature,
+  InternalTransaction,
   Transaction,
   User,
   WalletShortcut,
@@ -89,50 +93,64 @@ export class TAccountService {
     } as RecentWalletResponse;
   }
 
-  getFindQueryForChild(caccount: CAccount) {
+  getFindQueryForChild(cAccount: CAccount) {
     const orQuery = [
       {
-        'ledgers.debit.caccountNo': caccount.no,
+        'ledgers.debit.cAccountNo': cAccount.no,
       },
       {
-        'ledgers.credit.caccountNo': caccount.no,
+        'ledgers.credit.cAccountNo': cAccount.no,
       },
     ];
-    if (caccount.child)
-      caccount.child.forEach((childNo) => {
+    if (cAccount.child)
+      cAccount.child.forEach((childNo) => {
         orQuery.push({
-          'ledgers.debit.caccountNo': childNo,
+          'ledgers.debit.cAccountNo': childNo,
         });
         orQuery.push({
-          'ledgers.credit.caccountNo': childNo,
+          'ledgers.credit.cAccountNo': childNo,
         });
       });
     return orQuery;
   }
 
-  async _getLedgers(caccount: CAccount) {
-    const orQuery = this.getFindQueryForChild(caccount);
+  async _getLedgers(cAccount: CAccount) {
+    const orQuery = this.getFindQueryForChild(cAccount);
     const findFilter: FilterQuery<Transaction> = {
       $or: orQuery,
     };
     return this.transactionModel.find(findFilter);
   }
 
-  async getLedgers(caccountNo: string) {
-    const caccount = await this.cAccountModel.findOne({ no: caccountNo });
-    return this._getLedgers(caccount);
+  async getLedgers(cAccountNo: string) {
+    const cAccount = await this.cAccountModel.findOne({ no: cAccountNo });
+    return this._getLedgers(cAccount);
   }
 
-  /**
-   * Get user's balance
-   * @param {string} accountId
-   */
-  getAccountBalance = async (userId: string, walletType: WalletType) => {
+  getAvailableBalance = async (
+    userId: Types.ObjectId,
+    walletType: WalletType,
+  ) => {
     const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
       pipelineOfGetBalanceFromWalletType(userId, walletType),
     );
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
+
+  async getWalletBalance(userId: string) {
+    const [balance] =
+      await this.transactionModel.aggregate<WalletBalanceResponse>(
+        pipelineOfWalletBalance(new Types.ObjectId(userId)),
+      );
+
+    return {
+      ads: Number(balance?.ads) ?? 0,
+      farm: Number(balance?.farm) ?? 0,
+      personal: Number(balance?.personal) ?? 0,
+      others: Number(balance?.others) ?? 0,
+      total: Number(balance?.total) ?? 0,
+    };
+  }
 
   async validateTransfer({ from, to, ledgers }: TransferDto) {
     const sumOfTo = to.reduce((total, { value }) => total + value, 0);
@@ -148,9 +166,12 @@ export class TAccountService {
 
     if (total.credit !== total.debit) return false;
     if (total.debit !== from.value) return false;
-    if (!from.user) return true;
+    if (!(from as InternalTransaction).user) return true;
 
-    const balance = await this.getAccountBalance(from.user, from.type);
+    const balance = await this.getAvailableBalance(
+      (from as InternalTransaction).user,
+      from.type,
+    );
     return balance >= from.value;
   }
 
@@ -161,19 +182,19 @@ export class TAccountService {
     return new this.transactionModel(dto).save({ session: session });
   }
 
-  async getBalance(caccountNo: string) {
+  async getBalance(cAccountNo: string) {
     //get account First
-    const caccount = await this.cAccountModel.findOne({ no: caccountNo });
-    const txs = await this._getLedgers(caccount);
+    const cAccount = await this.cAccountModel.findOne({ no: cAccountNo });
+    const txs = await this._getLedgers(cAccount);
     const allDebit = txs.reduce((totalDebit, currentTx) => {
       return (
         totalDebit +
         currentTx.ledgers
           .filter(
             (t) =>
-              caccount.child.findIndex(
-                (childNo) => t.debit.caccountNo === childNo,
-              ) >= 0 || caccount.no === t.debit.caccountNo,
+              cAccount.child.findIndex(
+                (childNo) => t.debit.cAccountNo === childNo,
+              ) >= 0 || cAccount.no === t.debit.cAccountNo,
           )
           .reduce((sumDebit, now) => now.debit.value + sumDebit, 0)
       );
@@ -184,43 +205,27 @@ export class TAccountService {
         currentTx.ledgers
           .filter(
             (t) =>
-              caccount.child.findIndex(
-                (childNo) => t.credit.caccountNo === childNo,
-              ) >= 0 || caccount.no === t.credit.caccountNo,
+              cAccount.child.findIndex(
+                (childNo) => t.credit.cAccountNo === childNo,
+              ) >= 0 || cAccount.no === t.credit.cAccountNo,
           )
           .reduce((sumCredit, now) => now.debit.value + sumCredit, 0)
       );
     }, 0);
-    if (caccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
+    if (cAccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
     else return allCredit - allDebit;
   }
 
-  async getWalletHistory(userId: string, filter: TransactionFilterType) {
-    const from: any = {};
-    from['from.user'] = userId;
-    from[`data.filter.${filter}`] = true;
-    const to: any = {};
-    to['to.user'] = userId;
-    to[`data.filter.${filter}`] = true;
-    const txs = await this.transactionModel.find({
-      $or: [from, to],
-    });
-    console.log('txs', txs);
-    const result: WalletHistoryResponseDto = {
-      payload: txs.map((tx) => ({
-        id: tx.id,
-        status: 'success', //!!! TODO now all tx is success for now
-        type: tx.data.type,
-        value:
-          String(tx.from.user) === String(userId)
-            ? tx.from.value
-            : tx.to.find((t) => String(t.user) === String(userId)).value,
-        createdAt: tx.createdAt,
-        updatedAt: tx.updatedAt,
-      })),
-    };
-    return result;
+  async getWalletHistory(userId: string, filter: TransactionFilter) {
+    const types = [];
+    const histories =
+      await this.transactionModel.aggregate<WalletHistoryResponse>(
+        pipelineOfGetWalletHistory(Types.ObjectId(userId), types),
+      );
+
+    return { payload: histories };
   }
+
   /**
    * Use for dev only
    * @param topUpDto
@@ -244,11 +249,11 @@ export class TAccountService {
           ledgers: [
             {
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
+                cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
                 value: topUpDto.value,
               },
               debit: {
-                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                cAccountNo: C_ACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
                 value: topUpDto.value,
               },
             },
@@ -270,11 +275,11 @@ export class TAccountService {
           ledgers: [
             {
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
                 value: topUpDto.value,
               },
               debit: {
-                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                cAccountNo: C_ACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
                 value: topUpDto.value,
               },
             },

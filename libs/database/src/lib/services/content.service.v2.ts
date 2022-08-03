@@ -54,7 +54,7 @@ import {
   ShortPayload,
 } from '../dtos';
 import {
-  CACCOUNT_NO,
+  C_ACCOUNT_NO,
   ContentFarmingStatus,
   ContentMessage,
   ContentMessageEvent,
@@ -90,7 +90,7 @@ import { createCastcleFilter } from '../utils/common';
 import { DataService } from './data.service';
 import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
-import { TAccountService } from './taccount.service';
+import { TAccountService } from './t-account.service';
 import { UserServiceV2 } from './user.service.v2';
 
 @Injectable()
@@ -667,12 +667,15 @@ export class ContentServiceV2 {
     return { quoteContent, engagement };
   };
 
-  createContentFarming = async (contentId: string, userId: string) => {
-    const balance = await this.tAccountService.getAccountBalance(
+  createContentFarming = async (
+    contentId: Types.ObjectId,
+    userId: Types.ObjectId,
+  ) => {
+    const balance = await this.tAccountService.getAvailableBalance(
       userId,
       WalletType.PERSONAL,
     );
-    const lockBalance = await this.tAccountService.getAccountBalance(
+    const lockBalance = await this.tAccountService.getAvailableBalance(
       userId,
       WalletType.FARM_LOCKED,
     );
@@ -714,11 +717,11 @@ export class ContentServiceV2 {
           ledgers: [
             {
               debit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
                 value: farmAmount,
               },
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                cAccountNo: C_ACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
                 value: farmAmount,
               },
             },
@@ -739,12 +742,12 @@ export class ContentServiceV2 {
   updateContentFarming = async (contentFarming: ContentFarming) => {
     contentFarming.status = ContentFarmingStatus.Farming;
     contentFarming.startAt = new Date();
-    const balance = await this.tAccountService.getAccountBalance(
-      String(contentFarming.user),
+    const balance = await this.tAccountService.getAvailableBalance(
+      contentFarming.user,
       WalletType.PERSONAL,
     );
-    const lockBalance = await this.tAccountService.getAccountBalance(
-      String(contentFarming.user),
+    const lockBalance = await this.tAccountService.getAvailableBalance(
+      contentFarming.user,
       WalletType.FARM_LOCKED,
     );
     if (balance >= (lockBalance + balance) * 0.05) {
@@ -756,13 +759,13 @@ export class ContentServiceV2 {
         await this.tAccountService.transfer({
           from: {
             type: WalletType.PERSONAL,
-            user: String(contentFarming.user),
+            user: contentFarming.user,
             value: farmAmount,
           },
           to: [
             {
               type: WalletType.FARM_LOCKED,
-              user: String(contentFarming.user),
+              user: contentFarming.user,
               value: farmAmount,
             },
           ],
@@ -775,11 +778,11 @@ export class ContentServiceV2 {
           ledgers: [
             {
               debit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
                 value: farmAmount,
               },
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                cAccountNo: C_ACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
                 value: farmAmount,
               },
             },
@@ -851,7 +854,11 @@ export class ContentServiceV2 {
 
     if (this.checkFarming(contentFarming)) {
       return this.updateContentFarming(contentFarming);
-    } else return this.createContentFarming(contentId, userId);
+    } else
+      return this.createContentFarming(
+        Types.ObjectId(contentId),
+        Types.ObjectId(userId),
+      );
   };
 
   unfarmByFarmingId = async (farmingId: string, userId: string) => {
@@ -887,13 +894,13 @@ export class ContentServiceV2 {
         await this.tAccountService.transfer({
           from: {
             type: WalletType.FARM_LOCKED,
-            user: String(contentFarming.user),
+            user: contentFarming.user,
             value: contentFarming.farmAmount,
           },
           to: [
             {
               type: WalletType.PERSONAL,
-              user: String(contentFarming.user),
+              user: contentFarming.user,
               value: contentFarming.farmAmount,
             },
           ],
@@ -906,11 +913,11 @@ export class ContentServiceV2 {
           ledgers: [
             {
               debit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                cAccountNo: C_ACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
                 value: contentFarming.farmAmount,
               },
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
                 value: contentFarming.farmAmount,
               },
             },
@@ -949,13 +956,13 @@ export class ContentServiceV2 {
         await this.tAccountService.transfer({
           from: {
             type: WalletType.FARM_LOCKED,
-            user: String(contentFarming.user),
+            user: contentFarming.user,
             value: contentFarming.farmAmount,
           },
           to: [
             {
               type: WalletType.PERSONAL,
-              user: String(contentFarming.user),
+              user: contentFarming.user,
               value: contentFarming.farmAmount,
             },
           ],
@@ -968,11 +975,11 @@ export class ContentServiceV2 {
           ledgers: [
             {
               debit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                cAccountNo: C_ACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
                 value: contentFarming.farmAmount,
               },
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
                 value: contentFarming.farmAmount,
               },
             },
@@ -1007,13 +1014,13 @@ export class ContentServiceV2 {
       await this.tAccountService.transfer({
         from: {
           type: WalletType.FARM_LOCKED,
-          user: String(contentFarming.user),
+          user: contentFarming.user,
           value: contentFarming.farmAmount,
         },
         to: [
           {
             type: WalletType.PERSONAL,
-            user: String(contentFarming.user),
+            user: contentFarming.user,
             value: contentFarming.farmAmount,
           },
         ],
@@ -1026,11 +1033,11 @@ export class ContentServiceV2 {
         ledgers: [
           {
             debit: {
-              caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+              cAccountNo: C_ACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
               value: contentFarming.farmAmount,
             },
             credit: {
-              caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+              cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
               value: contentFarming.farmAmount,
             },
           },
@@ -1122,8 +1129,14 @@ export class ContentServiceV2 {
   ) => {
     const [balance, lockBalance, totalContentFarming, content] =
       await Promise.all([
-        this.tAccountService.getAccountBalance(userId, WalletType.PERSONAL),
-        this.tAccountService.getAccountBalance(userId, WalletType.FARM_LOCKED),
+        this.tAccountService.getAvailableBalance(
+          Types.ObjectId(userId),
+          WalletType.PERSONAL,
+        ),
+        this.tAccountService.getAvailableBalance(
+          Types.ObjectId(userId),
+          WalletType.FARM_LOCKED,
+        ),
         this.contentFarmingModel.countDocuments({
           _id: { $lte: contentFarming.id },
           user: userId,
@@ -1850,8 +1863,11 @@ export class ContentServiceV2 {
     );
 
     const [balance, lockBalance] = await Promise.all([
-      this.tAccountService.getAccountBalance(user.id, WalletType.PERSONAL),
-      this.tAccountService.getAccountBalance(user.id, WalletType.FARM_LOCKED),
+      this.tAccountService.getAvailableBalance(user._id, WalletType.PERSONAL),
+      this.tAccountService.getAvailableBalance(
+        user._id,
+        WalletType.FARM_LOCKED,
+      ),
     ]);
 
     if (
@@ -1910,8 +1926,11 @@ export class ContentServiceV2 {
     );
 
     const [balance, lockBalance, totalContentFarming] = await Promise.all([
-      this.tAccountService.getAccountBalance(viewer.id, WalletType.PERSONAL),
-      this.tAccountService.getAccountBalance(viewer.id, WalletType.FARM_LOCKED),
+      this.tAccountService.getAvailableBalance(viewer.id, WalletType.PERSONAL),
+      this.tAccountService.getAvailableBalance(
+        viewer.id,
+        WalletType.FARM_LOCKED,
+      ),
       this.contentFarmingModel.countDocuments({
         user: viewer.id,
         status: ContentFarmingStatus.Farming,
@@ -1965,8 +1984,11 @@ export class ContentServiceV2 {
     );
 
     const [balance, lockBalance] = await Promise.all([
-      this.tAccountService.getAccountBalance(viewer.id, WalletType.PERSONAL),
-      this.tAccountService.getAccountBalance(viewer.id, WalletType.FARM_LOCKED),
+      this.tAccountService.getAvailableBalance(viewer.id, WalletType.PERSONAL),
+      this.tAccountService.getAvailableBalance(
+        viewer.id,
+        WalletType.FARM_LOCKED,
+      ),
     ]);
 
     const [{ contents, engagements }] =

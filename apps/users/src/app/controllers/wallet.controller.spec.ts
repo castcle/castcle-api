@@ -27,7 +27,7 @@ import {
   CampaignService,
   ContentService,
   HashtagService,
-  MicroTransaction,
+  InternalTransaction,
   MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
@@ -164,7 +164,7 @@ describe('WalletController', () => {
   });
   describe('getUserHistory()', () => {
     it('should get user history', async () => {
-      const fakeCACCOUNT = '12345';
+      const fakeCAccount = '12345';
       const depositValue = 10;
       const sendValue = 5;
       const authorizer = new Authorizer(
@@ -178,12 +178,12 @@ describe('WalletController', () => {
           type: WalletType.CASTCLE_MINT_CONTRACT,
           value: depositValue,
           user: fakeUserId,
-        } as MicroTransaction,
+        } as InternalTransaction,
         to: [
           {
             type: WalletType.CASTCLE_AIRDROP,
             value: depositValue,
-          } as MicroTransaction,
+          } as InternalTransaction,
         ],
         data: {
           type: TransactionType.DEPOSIT,
@@ -195,11 +195,11 @@ describe('WalletController', () => {
         ledgers: [
           {
             debit: {
-              caccountNo: fakeCACCOUNT,
+              cAccountNo: fakeCAccount,
               value: depositValue,
             },
             credit: {
-              caccountNo: fakeCACCOUNT,
+              cAccountNo: fakeCAccount,
               value: depositValue,
             },
           } as TLedger,
@@ -209,13 +209,13 @@ describe('WalletController', () => {
         from: {
           type: WalletType.CASTCLE_MINT_CONTRACT,
           value: sendValue,
-        } as MicroTransaction,
+        } as InternalTransaction,
         to: [
           {
             type: WalletType.CASTCLE_AIRDROP,
             value: sendValue,
             user: fakeUserId,
-          } as MicroTransaction,
+          } as InternalTransaction,
         ],
         data: {
           type: TransactionType.SEND,
@@ -226,11 +226,11 @@ describe('WalletController', () => {
         ledgers: [
           {
             debit: {
-              caccountNo: fakeCACCOUNT,
+              cAccountNo: fakeCAccount,
               value: sendValue,
             },
             credit: {
-              caccountNo: fakeCACCOUNT,
+              cAccountNo: fakeCAccount,
               value: sendValue,
             },
           } as TLedger,

@@ -45,13 +45,17 @@ import {
   KeywordType,
   TopUpDto,
   TransactionData,
-  TransactionFilterType,
+  TransactionFilter,
   TransactionType,
   WalletType,
 } from '../models';
 import { Repository } from '../repositories';
-import { MicroTransaction, TLedger, Transaction } from '../schemas';
-import { CAccount } from '../schemas/caccount.schema';
+import {
+  CAccount,
+  InternalTransaction,
+  TLedger,
+  Transaction,
+} from '../schemas';
 describe('TAccount Service', () => {
   let moduleRef: TestingModule;
   let mongod: MongoMemoryReplSet;
@@ -61,21 +65,21 @@ describe('TAccount Service', () => {
   let cAccountModel: Model<CAccount>;
   const CHART_OF_ACCOUNT = {
     VAULT: {
-      caccount: { _id: Types.ObjectId(), no: '0000' } as CAccount,
+      cAccount: { _id: Types.ObjectId(), no: '0000' } as CAccount,
       AIRDROP: {
-        caccount: { _id: Types.ObjectId(), no: '0100' } as CAccount,
+        cAccount: { _id: Types.ObjectId(), no: '0100' } as CAccount,
       },
       TEAM: {
-        caccount: { _id: Types.ObjectId(), no: '0200' } as CAccount,
+        cAccount: { _id: Types.ObjectId(), no: '0200' } as CAccount,
       },
     },
-    MINTANDBURN: {
-      caccount: { _id: Types.ObjectId(), no: '7000' } as CAccount,
+    MINT_AND_BURN: {
+      cAccount: { _id: Types.ObjectId(), no: '7000' } as CAccount,
       DISTRIBUTED_AIRDROP: {
-        caccount: { _id: Types.ObjectId(), no: '7100' } as CAccount,
+        cAccount: { _id: Types.ObjectId(), no: '7100' } as CAccount,
       },
       DISTRIBUTED_TEAM: {
-        caccount: { _id: Types.ObjectId(), no: '7200' } as CAccount,
+        cAccount: { _id: Types.ObjectId(), no: '7200' } as CAccount,
       },
     },
   };
@@ -113,65 +117,65 @@ describe('TAccount Service', () => {
     transactionModel = moduleRef.get(getModelToken('Transaction'));
     cAccountModel = moduleRef.get(getModelToken('CAccount'));
 
-    // create caccount for mint
+    // create cAccount for mint
     const cAccounts = await cAccountModel.create([
       {
-        _id: CHART_OF_ACCOUNT.VAULT.caccount._id,
-        no: CHART_OF_ACCOUNT.VAULT.caccount.no,
+        _id: CHART_OF_ACCOUNT.VAULT.cAccount._id,
+        no: CHART_OF_ACCOUNT.VAULT.cAccount.no,
         name: 'VAULT',
         nature: 'debit',
         child: [
-          CHART_OF_ACCOUNT.VAULT.TEAM.caccount.no,
-          CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no,
+          CHART_OF_ACCOUNT.VAULT.TEAM.cAccount.no,
+          CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount.no,
         ],
       },
       {
-        _id: CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount._id,
-        no: CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no,
-        parent: CHART_OF_ACCOUNT.VAULT.caccount._id,
+        _id: CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount._id,
+        no: CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount.no,
+        parent: CHART_OF_ACCOUNT.VAULT.cAccount._id,
         name: 'VAULT_AIRDROP',
         nature: 'debit',
       },
       {
-        _id: CHART_OF_ACCOUNT.VAULT.TEAM.caccount._id,
-        no: CHART_OF_ACCOUNT.VAULT.TEAM.caccount.no,
-        parent: CHART_OF_ACCOUNT.VAULT.caccount._id,
+        _id: CHART_OF_ACCOUNT.VAULT.TEAM.cAccount._id,
+        no: CHART_OF_ACCOUNT.VAULT.TEAM.cAccount.no,
+        parent: CHART_OF_ACCOUNT.VAULT.cAccount._id,
         name: 'VAULT_TEAM',
         nature: 'debit',
       },
       {
-        _id: CHART_OF_ACCOUNT.MINTANDBURN.caccount._id,
-        no: CHART_OF_ACCOUNT.MINTANDBURN.caccount.no,
-        parent: CHART_OF_ACCOUNT.VAULT.caccount._id,
+        _id: CHART_OF_ACCOUNT.MINT_AND_BURN.cAccount._id,
+        no: CHART_OF_ACCOUNT.MINT_AND_BURN.cAccount.no,
+        parent: CHART_OF_ACCOUNT.VAULT.cAccount._id,
         name: 'MINT and burn',
         nature: 'credit',
         child: [
-          CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount.no,
-          CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_TEAM.caccount.no,
+          CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount.no,
+          CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_TEAM.cAccount.no,
         ],
       },
       {
-        _id: CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount._id,
-        no: CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount.no,
-        parent: CHART_OF_ACCOUNT.MINTANDBURN.caccount._id,
+        _id: CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount._id,
+        no: CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount.no,
+        parent: CHART_OF_ACCOUNT.MINT_AND_BURN.cAccount._id,
         name: 'Distribute airdrop',
         nature: 'credit',
       },
       {
-        _id: CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_TEAM.caccount._id,
-        no: CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_TEAM.caccount.no,
-        parent: CHART_OF_ACCOUNT.MINTANDBURN.caccount._id,
+        _id: CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_TEAM.cAccount._id,
+        no: CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_TEAM.cAccount.no,
+        parent: CHART_OF_ACCOUNT.MINT_AND_BURN.cAccount._id,
         name: 'Distribute team',
         nature: 'credit',
       },
     ]);
 
-    CHART_OF_ACCOUNT.VAULT.caccount = cAccounts[0];
-    CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount = cAccounts[1];
-    CHART_OF_ACCOUNT.VAULT.TEAM.caccount = cAccounts[2];
-    CHART_OF_ACCOUNT.MINTANDBURN.caccount = cAccounts[3];
-    CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount = cAccounts[4];
-    CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_TEAM.caccount = cAccounts[5];
+    CHART_OF_ACCOUNT.VAULT.cAccount = cAccounts[0];
+    CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount = cAccounts[1];
+    CHART_OF_ACCOUNT.VAULT.TEAM.cAccount = cAccounts[2];
+    CHART_OF_ACCOUNT.MINT_AND_BURN.cAccount = cAccounts[3];
+    CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount = cAccounts[4];
+    CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_TEAM.cAccount = cAccounts[5];
 
     transactions.push(
       ...(await transactionModel.create([
@@ -181,12 +185,13 @@ describe('TAccount Service', () => {
           ledgers: [
             {
               debit: {
-                caccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no,
+                cAccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount.no,
                 value: mintValue,
               },
               credit: {
-                caccountNo:
-                  CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount.no,
+                cAccountNo:
+                  CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount
+                    .no,
                 value: mintValue,
               },
             },
@@ -198,12 +203,13 @@ describe('TAccount Service', () => {
           ledgers: [
             {
               debit: {
-                caccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no,
+                cAccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount.no,
                 value: mintValue,
               },
               credit: {
-                caccountNo:
-                  CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount.no,
+                cAccountNo:
+                  CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount
+                    .no,
                 value: mintValue,
               },
             },
@@ -221,7 +227,7 @@ describe('TAccount Service', () => {
   describe('getLedgers()', () => {
     it('should get transactions that contain current ledgers', async () => {
       const txs = await service.getLedgers(
-        CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no,
+        CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount.no,
       );
       expect(txs.length).toEqual(transactions.length);
       expect(txs.map((tx) => tx.id)).toEqual(
@@ -230,8 +236,8 @@ describe('TAccount Service', () => {
       //expect(txs[0].id).toBe (transactions.map(t => t.id));
       //expect(txs[1].id).toBeInstanceOf(transactions.map(t => t.id));
     });
-    it('should get transactions that contain childs ledgers', async () => {
-      const txs = await service.getLedgers(CHART_OF_ACCOUNT.VAULT.caccount.no);
+    it('should get transactions that contain child ledgers', async () => {
+      const txs = await service.getLedgers(CHART_OF_ACCOUNT.VAULT.cAccount.no);
       expect(txs.length).toEqual(transactions.length);
       expect(txs.map((tx) => tx.id)).toEqual(
         expect.arrayContaining(transactions.map((t) => t.id)),
@@ -245,10 +251,10 @@ describe('TAccount Service', () => {
     it('should show correct child balance', async () => {
       expect(true).toEqual(true);
       expect(
-        await service.getBalance(CHART_OF_ACCOUNT.VAULT.caccount.no),
+        await service.getBalance(CHART_OF_ACCOUNT.VAULT.cAccount.no),
       ).toEqual(mintValue * 2);
       // expect(
-      //   await service.getBalance(CHART_OF_ACCOUNT.MINTANDBURN.caccount.no),
+      //   await service.getBalance(CHART_OF_ACCOUNT.MINT_AND_BURN.cAccount.no),
       // ).toEqual(mintValue * 2);
     });
   });
@@ -257,18 +263,18 @@ describe('TAccount Service', () => {
     it('should get wallet history', async () => {
       const depositValue = 10;
       const sendValue = 9;
-      const fakeUserId = String(new Types.ObjectId());
+      const fakeUserId = new Types.ObjectId();
       await new transactionModel({
         from: {
           type: WalletType.CASTCLE_MINT_CONTRACT,
           value: depositValue,
           user: fakeUserId,
-        } as MicroTransaction,
+        } as InternalTransaction,
         to: [
           {
             type: WalletType.CASTCLE_AIRDROP,
             value: depositValue,
-          } as MicroTransaction,
+          } as InternalTransaction,
         ],
         data: {
           type: TransactionType.DEPOSIT,
@@ -279,12 +285,12 @@ describe('TAccount Service', () => {
         ledgers: [
           {
             debit: {
-              caccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no,
+              cAccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount.no,
               value: depositValue,
             },
             credit: {
-              caccountNo:
-                CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount.no,
+              cAccountNo:
+                CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount.no,
               value: depositValue,
             },
           } as TLedger,
@@ -294,13 +300,13 @@ describe('TAccount Service', () => {
         from: {
           type: WalletType.CASTCLE_MINT_CONTRACT,
           value: sendValue,
-        } as MicroTransaction,
+        } as InternalTransaction,
         to: [
           {
             type: WalletType.CASTCLE_AIRDROP,
             value: sendValue,
             user: fakeUserId,
-          } as MicroTransaction,
+          } as InternalTransaction,
         ],
         data: {
           type: TransactionType.DEPOSIT,
@@ -311,20 +317,20 @@ describe('TAccount Service', () => {
         ledgers: [
           {
             debit: {
-              caccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no,
+              cAccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount.no,
               value: sendValue,
             },
             credit: {
-              caccountNo:
-                CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount.no,
+              cAccountNo:
+                CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount.no,
               value: sendValue,
             },
           } as TLedger,
         ],
       }).save();
       const result = await service.getWalletHistory(
-        fakeUserId,
-        TransactionFilterType.DEPOSIT_SEND,
+        String(fakeUserId),
+        TransactionFilter.DEPOSIT_SEND,
       );
       const expectArr = [
         expect.objectContaining({

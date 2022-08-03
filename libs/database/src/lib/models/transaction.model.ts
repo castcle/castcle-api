@@ -21,23 +21,15 @@
  * or have any questions.
  */
 
-import { WalletType } from './wallet.enum';
+import { TransactionStatus, WalletType } from './transaction.enum';
 
-export class Wallet {
-  balance: number;
-}
-
-export class WalletHistoryPayloadItem {
-  'id': string;
-  'type': string;
-  'value': number;
-  'status': 'success' | 'pending' | 'failed';
-  'createdAt': Date;
-  'updatedAt': Date;
-}
-
-export class WalletHistoryResponseDto {
-  payload: WalletHistoryPayloadItem[];
+export class WalletHistoryResponse {
+  id: string;
+  type: string;
+  value: number;
+  status: TransactionStatus;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export class TopUpDto {

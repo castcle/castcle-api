@@ -45,10 +45,9 @@ import {
   AdsBoostType,
   AdsCpm,
   AdsPaymentMethod,
-  AdsPlacementContent,
   AdsSocialReward,
   AdsStatus,
-  CACCOUNT_NO,
+  C_ACCOUNT_NO,
   DefaultAdsStatistic,
   FilterInterval,
   UserType,
@@ -58,16 +57,18 @@ import { Repository } from '../repositories/index';
 import {
   AdsCampaign as Ad,
   AdsPlacement,
+  AdsPlacementContent,
+  CastcleTransaction,
   Content,
   ContentFarming,
-  MicroTransaction,
+  InternalTransaction,
   TLedger,
   User,
 } from '../schemas';
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { createCastcleFilter } from '../utils/common';
 import { DataService } from './data.service';
-import { TAccountService } from './taccount.service';
+import { TAccountService } from './t-account.service';
 
 /**
  * TODO
@@ -265,23 +266,20 @@ export class AdsService {
   addAdsToFeeds = async (viewerAccountId: string, feeds: FeedItemResponse) => {
     const contentIds = feeds.payload
       .filter((item) => item.type === 'content')
-      .map(
-        (item) =>
-          ({
-            contentId: (item.payload as ContentPayloadItem).id,
-            authorId: (item.payload as ContentPayloadItem).authorId,
-          } as AdsPlacementContent),
-      );
-    const adsplacement = await this.getAdsPlacementFromAuction(
+      .map<AdsPlacementContent>((item) => ({
+        contentId: Types.ObjectId((item.payload as ContentPayloadItem).id),
+        authorId: Types.ObjectId((item.payload as ContentPayloadItem).authorId),
+      }));
+    const adsPlacement = await this.getAdsPlacementFromAuction(
       contentIds,
       viewerAccountId,
     );
-    const campaign = await this.adsModel.findById(adsplacement.campaign);
+    const campaign = await this.adsModel.findById(adsPlacement.campaign);
     let adsItem: FeedItemPayloadItem;
     if (campaign.adsRef.namespace === 'content') {
       const content = await this.contentModel.findById(campaign.adsRef.oid);
       adsItem = {
-        id: adsplacement.id,
+        id: adsPlacement.id,
         type: 'ads-content',
         payload: content.toContentPayloadItem(),
         feature: {
@@ -301,7 +299,7 @@ export class AdsService {
     } else {
       const page = await this.userModel.findById(campaign.adsRef.oid);
       adsItem = {
-        id: adsplacement.id,
+        id: adsPlacement.id,
         type: 'ads-page',
         payload: [page.toPageResponse()],
         feature: {
@@ -330,7 +328,7 @@ export class AdsService {
    * @returns
    */
   validateAds = async (user: User, adsRequest: AdsRequestDto) => {
-    const balance = await this.tAccountService.getAccountBalance(
+    const balance = await this.tAccountService.getAvailableBalance(
       user.id,
       adsRequest.paymentMethod === AdsPaymentMethod.ADS_CREDIT
         ? WalletType.ADS
@@ -525,11 +523,11 @@ export class AdsService {
           const estAdsCostCAST =
             adsPlacement.cost.UST / mockOracleService.getCastPrice();
           //transferFrom ads owner to locked account
-          //debit personal account or ads_credit account of adsowner
-          //credit ads ownner locked_for ads
+          //debit personal account or ads_credit account of adsOwner
+          //credit ads owner locked_for ads
           tx = await this.tAccountService.transfer({
             from: {
-              user: adsCampaign.owner as unknown as string,
+              user: adsCampaign.owner,
               type:
                 adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
                   ? WalletType.ADS
@@ -545,19 +543,19 @@ export class AdsService {
             ledgers: [
               {
                 debit: {
-                  caccountNo:
+                  cAccountNo:
                     adsCampaign.detail.paymentMethod ===
                     AdsPaymentMethod.ADS_CREDIT
-                      ? CACCOUNT_NO.LIABILITY.USER_WALLET.ADS
-                      : CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                      ? C_ACCOUNT_NO.LIABILITY.USER_WALLET.ADS
+                      : C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
                   value: estAdsCostCAST,
                 },
                 credit: {
-                  caccountNo:
+                  cAccountNo:
                     adsCampaign.detail.paymentMethod ===
                     AdsPaymentMethod.ADS_CREDIT
-                      ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
-                      : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                      ? C_ACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+                      : C_ACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
                   value: estAdsCostCAST,
                 },
               },
@@ -567,12 +565,13 @@ export class AdsService {
           adsCampaign.statistics.budgetSpent += adsPlacement.cost.UST;
           adsCampaign.statistics.dailySpent += adsPlacement.cost.UST;
           adsCampaign.statistics.lastSeenAt = new Date();
-          const adsOwnerBalance = await this.tAccountService.getAccountBalance(
-            String(adsCampaign.owner),
-            adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
-              ? WalletType.ADS
-              : WalletType.PERSONAL,
-          );
+          const adsOwnerBalance =
+            await this.tAccountService.getAvailableBalance(
+              adsCampaign.owner,
+              adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
+                ? WalletType.ADS
+                : WalletType.PERSONAL,
+            );
           //if balance < 1 CAST THen pause ads
           if (
             adsOwnerBalance - adsPlacement.cost.UST <=
@@ -640,7 +639,7 @@ export class AdsService {
 
   distributeAllSocialRewardByType = async (paymentType: AdsPaymentMethod) => {
     const castRate = await this.repository.getCastUSDDistributeRate();
-    const adsPlacements = await this.repository.getUndistributedAdsplacements(
+    const adsPlacements = await this.repository.getUndistributedAdsPlacements(
       paymentType,
     );
     for (let i = 0; i < adsPlacements.length; i++) {
@@ -680,7 +679,7 @@ export class AdsService {
         },
         to: [
           {
-            user: adsplacement.user as unknown as string,
+            user: adsplacement.user,
             type: WalletType.PERSONAL,
             value: reward.viewerShare,
           },
@@ -688,15 +687,15 @@ export class AdsService {
         ledgers: [
           {
             debit: {
-              caccountNo:
+              cAccountNo:
                 adsplacement.campaign.campaignPaymentType ===
                 AdsPaymentMethod.ADS_CREDIT
-                  ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
-                  : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  ? C_ACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+                  : C_ACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
               value: reward.viewerShare,
             },
             credit: {
-              caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+              cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
               value: reward.viewerShare,
             },
           },
@@ -713,26 +712,26 @@ export class AdsService {
   ) => {
     const creatorRewardPerContent =
       reward.creatorShare / adsplacement.contents.length;
-    const transferTo: MicroTransaction[] = [];
+    const transferTo: (CastcleTransaction | InternalTransaction)[] = [];
     const ledgers: TLedger[] = [];
     for (let i = 0; i < adsplacement.contents.length; i++) {
       const rewardPerContent = creatorRewardPerContent;
       transferTo.push({
-        user: adsplacement.contents[i].authorId,
+        user: new Types.ObjectId(adsplacement.contents[i].authorId),
         type: WalletType.PERSONAL,
         value: rewardPerContent,
       });
       ledgers.push({
         debit: {
-          caccountNo:
+          cAccountNo:
             adsplacement.campaign.campaignPaymentType ===
             AdsPaymentMethod.ADS_CREDIT
-              ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
-              : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+              ? C_ACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+              : C_ACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
           value: rewardPerContent,
         },
         credit: {
-          caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
           value: rewardPerContent,
         },
       });
@@ -767,10 +766,10 @@ export class AdsService {
 
     for (let j = 0; j < adsplacement.contents.length; j++) {
       const currentCfs = cfs.filter(
-        (c) => String(c.content) === adsplacement.contents[j].contentId,
+        (c) => String(c.content) === String(adsplacement.contents[j].contentId),
       );
       if (currentCfs.length > 0) {
-        const transferTo: MicroTransaction[] = [];
+        const transferTo: (CastcleTransaction | InternalTransaction)[] = [];
         const ledgers: TLedger[] = [];
         for (let i = 0; i < currentCfs.length; i++) {
           const rewardContent =
@@ -779,21 +778,21 @@ export class AdsService {
               (reward.farmingShare + reward.creatorShare)) *
             creatorRewardPerContent;
           transferTo.push({
-            user: String(currentCfs[i].user),
+            user: currentCfs[i].user,
             type: WalletType.PERSONAL,
             value: rewardContent,
           });
           ledgers.push({
             debit: {
-              caccountNo:
+              cAccountNo:
                 adsplacement.campaign.campaignPaymentType ===
                 AdsPaymentMethod.ADS_CREDIT
-                  ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
-                  : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  ? C_ACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+                  : C_ACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
               value: rewardContent,
             },
             credit: {
-              caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+              cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
               value: rewardContent,
             },
           });
@@ -837,15 +836,15 @@ export class AdsService {
             ledgers: [
               {
                 debit: {
-                  caccountNo:
+                  cAccountNo:
                     adsplacement.campaign.campaignPaymentType ===
                     AdsPaymentMethod.ADS_CREDIT
-                      ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
-                      : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                      ? C_ACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+                      : C_ACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
                   value: creatorRewardPerContent,
                 },
                 credit: {
-                  caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                  cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
                   value: creatorRewardPerContent,
                 },
               },

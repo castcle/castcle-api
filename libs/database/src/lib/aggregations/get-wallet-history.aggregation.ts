@@ -22,65 +22,60 @@
  */
 
 import { Types } from 'mongoose';
-import { WalletType } from '../models';
+import { TransactionType } from '../models';
 
-export class GetBalanceResponse {
-  total: Types.Decimal128;
-}
-
-export const pipelineOfGetBalance = (userId: Types.ObjectId) => [
-  { $unwind: { path: '$to' } },
-  {
-    $facet: {
-      inflows: [{ $match: { 'to.user': userId } }],
-      outflows: [{ $match: { 'from.user': userId } }],
-    },
-  },
-  {
-    $project: {
-      total: {
-        $subtract: [
-          { $sum: '$inflows.to.value' },
-          { $sum: '$outflows.to.value' },
-        ],
-      },
-    },
-  },
-];
-
-export const pipelineOfGetBalanceFromWalletType = (
+export const pipelineOfGetWalletHistory = (
   userId: Types.ObjectId,
-  walletType: WalletType,
+  types: TransactionType[],
 ) => [
-  { $unwind: { path: '$to' } },
   {
-    $facet: {
-      inflows: [
+    $match: {
+      $or: [
         {
-          $match: {
-            'to.user': userId,
-            'to.type': walletType,
-          },
+          'from.user': userId,
+        },
+        {
+          'to.user': userId,
         },
       ],
-      outflows: [
-        {
-          $match: {
-            'from.user': userId,
-            'from.type': walletType,
-          },
-        },
-      ],
+      type: { $in: types },
     },
   },
   {
     $project: {
-      total: {
-        $subtract: [
-          { $sum: '$inflows.to.value' },
-          { $sum: '$outflows.to.value' },
-        ],
+      _id: 0,
+      id: '$_id',
+      status: 'success',
+      type: '$data.type',
+      value: {
+        $toDouble: {
+          $cond: {
+            if: {
+              $eq: ['$from.user', userId],
+            },
+            then: '$from.value',
+            else: {
+              $reduce: {
+                input: '$to',
+                initialValue: 0,
+                in: {
+                  $cond: {
+                    if: {
+                      $eq: ['$$this.user', userId],
+                    },
+                    then: {
+                      $add: ['$$value', '$$this.value'],
+                    },
+                    else: '$$value',
+                  },
+                },
+              },
+            },
+          },
+        },
       },
+      createdAt: '$createdAt',
+      updatedAt: '$updatedAt',
     },
   },
 ];

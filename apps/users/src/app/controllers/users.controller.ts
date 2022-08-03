@@ -942,14 +942,14 @@ export class UsersController {
     if (isFirstTimeVerification) {
       try {
         await this.campaignService.claimCampaignsAirdrop(
-          account._id,
+          user._id,
           CampaignType.VERIFY_MOBILE,
         );
 
-        const referral = await this.userService.getReferrer(account._id);
+        const referrer = await this.userService.getReferrer(account._id);
 
         await this.campaignService.claimCampaignsAirdrop(
-          referral.ownerAccount as unknown as string,
+          referrer._id,
           CampaignType.FRIEND_REFERRAL,
         );
       } catch (error: unknown) {
@@ -1411,7 +1411,7 @@ export class UsersController {
   @Get('me/airdrops')
   @CastcleBasicAuth()
   async getMyAirdropBalances(
-    @Auth() { account }: Authorizer,
+    @Auth() { account, user }: Authorizer,
     @Query() { campaignFields, status }: GetAirdropBalancesQuery,
   ) {
     const [campaigns, totalBalance] = await Promise.all([
@@ -1420,7 +1420,7 @@ export class UsersController {
         status === GetAirdropBalancesStatus.ACTIVE ? new Date() : null,
         campaignFields,
       ),
-      this.userService.getBalance({ ownerAccount: account._id } as User),
+      this.userService.getBalance(user._id),
     ]);
 
     return ResponseDto.ok({ payload: { totalBalance, campaigns } });

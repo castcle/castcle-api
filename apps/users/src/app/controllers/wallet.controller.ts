@@ -84,13 +84,13 @@ export class WalletController {
   async getUserHistory(
     @Auth() authorizer: Authorizer,
     @Param() { isMe, userId }: GetUserParam,
-    @Query() query: WalletHistoryQueryDto,
+    @Query() { filter }: WalletHistoryQueryDto,
   ) {
     const user = isMe
       ? authorizer.user
       : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
-    return this.tAccountService.getWalletHistory(user.id, query.filter);
+    return this.tAccountService.getWalletHistory(user.id, filter);
   }
 
   @CastcleBasicAuth()
@@ -129,7 +129,7 @@ export class WalletController {
 
     await this.walletService.sendTransaction({
       ...dto,
-      requestedBy: user.id,
+      requestedBy: user,
     });
   }
 

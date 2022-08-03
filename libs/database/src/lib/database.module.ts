@@ -91,12 +91,11 @@ import { SearchServiceV2 } from './services/search.service.v2';
 import { SocialSyncService } from './services/social-sync.service';
 import { SocialSyncServiceV2 } from './services/social-sync.service.v2';
 import { SuggestionServiceV2 } from './services/suggestion.service.v2';
-import { TAccountService } from './services/taccount.service';
+import { TAccountService } from './services/t-account.service';
 import { UserService } from './services/user.service';
 import { UserServiceV2 } from './services/user.service.v2';
 import { UxEngagementService } from './services/uxengagement.service';
 import { WalletShortcutService } from './services/wallet-shortcut.service';
-
 import {
   createCastcleMeta,
   getRelationship,

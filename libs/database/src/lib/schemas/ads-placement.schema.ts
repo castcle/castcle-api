@@ -22,15 +22,26 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { AdsCost, AdsPlacementCampaign, AdsPlacementContent } from '../models';
+import { SchemaTypes, Types } from 'mongoose';
+import { AdsCost, AdsPlacementCampaign } from '../models';
 import { CastcleBase } from './base.schema';
 import { Credential } from './credential.schema';
-import { User } from './user.schema';
+
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class AdsPlacementContent {
+  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'Content' })
+  contentId: Types.ObjectId;
+
+  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'User' })
+  authorId: Types.ObjectId;
+}
+
+export const AdsPlacementContentSchema =
+  SchemaFactory.createForClass(AdsPlacementContent);
 
 @Schema({ timestamps: true })
 export class AdsPlacement extends CastcleBase {
-  @Prop({ required: true, type: Array })
+  @Prop({ required: true, type: [AdsPlacementContentSchema] })
   contents: AdsPlacementContent[];
 
   @Prop({ required: true, type: Object })
@@ -40,10 +51,10 @@ export class AdsPlacement extends CastcleBase {
   campaign: AdsPlacementCampaign;
 
   @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'User' })
-  user: User;
+  user: Types.ObjectId;
 
   @Prop({ type: Object })
-  engagements: { [key: string]: number };
+  engagements: Record<string, number>;
 
   @Prop()
   seenAt?: Date; //crucial use for calculate ads-fee / redistribute reward

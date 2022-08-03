@@ -210,9 +210,7 @@ export class NotificationService {
     this.#logger.log('Get credentials by account.');
 
     const firebaseToken = await this._accountDeviceModel
-      .find({
-        account: Types.ObjectId(notificationData.account._id),
-      })
+      .find({ account: notificationData.account })
       .exec();
 
     this.#logger.log('Generate notification message.');

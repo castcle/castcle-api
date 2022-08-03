@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { MicroTransaction } from '../schemas/transaction.schema';
+import { InternalTransaction } from '../schemas/transaction.schema';
 import { QueueTopic } from './queue.enum';
 
 export class ClaimAirdropPayload {
@@ -29,7 +29,7 @@ export class ClaimAirdropPayload {
 
   constructor(
     public campaignId: string,
-    public to: MicroTransaction[],
+    public to: InternalTransaction[],
     public mobile?: { countryCode: string; number: string },
   ) {}
 }

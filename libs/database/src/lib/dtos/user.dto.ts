@@ -47,7 +47,6 @@ import {
   UserImage,
   UserMobile,
   UserType,
-  Wallet,
 } from '../models';
 import { CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
@@ -161,6 +160,10 @@ export class ContactDto {
   email?: string;
 }
 
+class UserWallet {
+  balance: number;
+}
+
 export class UserResponseDto {
   @ApiProperty()
   id: string;
@@ -211,7 +214,7 @@ export class UserResponseDto {
   passwordNotSet: boolean;
 
   @ApiProperty()
-  wallet: Wallet;
+  wallet: UserWallet;
 
   @ApiProperty()
   mobile: UserMobile;
@@ -542,7 +545,7 @@ export class OwnerResponse extends PublicUserResponse {
   verified: OwnerVerification;
   canUpdateCastcleId: boolean;
   passwordNotSet: boolean;
-  wallet?: Wallet;
+  wallet?: UserWallet;
   mobile?: UserMobile;
   linkSocial?: LinkedSocials;
   syncSocial?: SyncSocials;

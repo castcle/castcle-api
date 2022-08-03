@@ -22,57 +22,95 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { WalletType } from '../models';
+import { SchemaTypes, Types } from 'mongoose';
+import { TransactionStatus, TransactionType, WalletType } from '../models';
 import { CastcleBase } from './base.schema';
 
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class MicroTransaction {
-  @Prop({ index: true, ref: 'Account', type: SchemaTypes.ObjectId })
-  account?: string;
+export class AirdropTransactionData {
+  campaign: Types.ObjectId;
+}
 
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+class TransactionData {
+  @Prop({ index: true, ref: 'Campaign', type: SchemaTypes.ObjectId })
+  campaign?: Types.ObjectId;
+}
+
+const TransactionDataSchema = SchemaFactory.createForClass(TransactionData);
+
+export class CastcleTransaction {
+  type: WalletType;
+  value: number;
+}
+
+export class InternalTransaction extends CastcleTransaction {
+  user: Types.ObjectId;
+}
+
+export class ExternalTransaction extends CastcleTransaction {
+  address: string;
+  network: string;
+  memo: string;
+  note: string;
+}
+
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+class MicroTransaction {
   @Prop({ index: true, ref: 'User', type: SchemaTypes.ObjectId })
-  user?: string;
+  user?: Types.ObjectId;
 
   @Prop({ type: String })
   type: WalletType;
 
   @Prop({ type: SchemaTypes.Decimal128 })
-  value?: number;
+  value: number;
 }
 
+const MicroTransactionSchema = SchemaFactory.createForClass(MicroTransaction);
+
 @Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class TItem {
+class TItem {
   @Prop({ index: true })
-  caccountNo: string;
+  cAccountNo: string;
 
   @Prop({ type: SchemaTypes.Decimal128 })
   value: number;
 }
 
+const TItemSchema = SchemaFactory.createForClass(TItem);
+
 @Schema({ id: false, _id: false, timestamps: false, versionKey: false })
 export class TLedger {
-  @Prop({ type: Object })
+  @Prop({ type: TItemSchema })
   debit: TItem;
 
-  @Prop({ type: Object })
+  @Prop({ type: TItemSchema })
   credit: TItem;
 }
 
-const MicroTransactionSchema = SchemaFactory.createForClass(MicroTransaction);
+const TLedgerSchema = SchemaFactory.createForClass(TLedger);
 
 @Schema({ timestamps: true })
 export class Transaction extends CastcleBase {
   @Prop({ type: MicroTransactionSchema, index: true })
-  from?: MicroTransaction;
+  from: CastcleTransaction | InternalTransaction;
 
   @Prop({ type: [MicroTransactionSchema], index: true })
-  to?: MicroTransaction[];
+  to: (CastcleTransaction | InternalTransaction)[];
 
-  @Prop({ type: Object })
-  data?: any;
+  @Prop({ type: String })
+  type: TransactionType;
 
-  @Prop({ type: Array })
+  @Prop({ type: String })
+  status: TransactionStatus;
+
+  @Prop()
+  failureMessage?: string;
+
+  @Prop({ type: TransactionDataSchema })
+  data?: AirdropTransactionData;
+
+  @Prop({ type: [TLedgerSchema] })
   ledgers?: TLedger[];
 }
 

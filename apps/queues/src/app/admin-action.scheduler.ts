@@ -31,11 +31,11 @@ import { Model } from 'mongoose';
 export class AdminScheduler {
   constructor(
     @InjectModel('Queue') private queue: Model<Queue>,
-    private taccountService: TAccountService,
+    private tAccountService: TAccountService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
-  async executeUnprocessQueue() {
+  async executeUnprocessedQueue() {
     const actionQueues = await this.queue.find({
       'payload.action': 'topup-token',
       status: QueueStatus.WAITING,
@@ -44,7 +44,7 @@ export class AdminScheduler {
     for (let i = 0; i < actionQueues.length; i++) {
       const actionQ = actionQueues[i];
       try {
-        await this.taccountService.topUp(actionQ.payload.data);
+        await this.tAccountService.topUp(actionQ.payload.data);
         actionQ.status = QueueStatus.DONE;
       } catch (e) {
         actionQ.status = QueueStatus.FAILED;

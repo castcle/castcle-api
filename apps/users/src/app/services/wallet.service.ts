@@ -23,7 +23,7 @@
 
 import {
   AuthenticationServiceV2,
-  CACCOUNT_NO,
+  C_ACCOUNT_NO,
   EntityVisibility,
   NetworkType,
   OtpObjective,
@@ -39,6 +39,7 @@ import {
 import { TwilioChannel } from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { WalletResponse } from '../dtos';
 
 @Injectable()
@@ -50,21 +51,16 @@ export class WalletService {
   ) {}
 
   async getWalletBalance(user: User): Promise<WalletResponse> {
-    const [adsCreditBalance, farmingBalance, personalBalance] =
-      await Promise.all([
-        this.tAccountService.getAccountBalance(user.id, WalletType.ADS),
-        this.tAccountService.getAccountBalance(user.id, WalletType.FARM_LOCKED),
-        this.tAccountService.getAccountBalance(user.id, WalletType.PERSONAL),
-      ]);
+    const balance = await this.tAccountService.getWalletBalance(user.id);
 
     return {
       id: user.id,
       displayName: user.displayName,
       castcleId: user.displayId,
-      availableBalance: personalBalance,
-      adsCredit: adsCreditBalance,
-      farmBalance: farmingBalance,
-      totalBalance: personalBalance + adsCreditBalance + farmingBalance,
+      availableBalance: balance.personal,
+      adsCredit: balance.ads,
+      farmBalance: balance.farm,
+      totalBalance: balance.total,
     };
   }
 
@@ -76,7 +72,10 @@ export class WalletService {
   }: TransactionDto & { requestedBy: string }) {
     const [network, balance] = await Promise.all([
       this.repository.findNetwork(chainId),
-      this.tAccountService.getAccountBalance(requestedBy, WalletType.PERSONAL),
+      this.tAccountService.getAvailableBalance(
+        Types.ObjectId(requestedBy),
+        WalletType.PERSONAL,
+      ),
     ]);
 
     if (!network) {
@@ -107,10 +106,10 @@ export class WalletService {
     transaction,
     verification,
     requestedBy,
-  }: SendTransactionDto & { requestedBy: string }) {
+  }: SendTransactionDto & { requestedBy: User }) {
     const { isInternalNetwork } = await this.reviewTransaction({
       ...transaction,
-      requestedBy,
+      requestedBy: requestedBy.id,
     });
 
     await this.authService.verifyOtp({
@@ -130,15 +129,17 @@ export class WalletService {
       otp: verification.mobile.otp,
     });
 
+    if (!isInternalNetwork) throw new CastcleException('INTERNAL_SERVER_ERROR');
+
     await this.tAccountService.transfer({
       from: {
-        user: requestedBy,
+        user: requestedBy._id,
         type: WalletType.PERSONAL,
         value: transaction.amount,
       },
       to: [
         {
-          user: transaction.address,
+          user: requestedBy._id,
           type: isInternalNetwork
             ? WalletType.PERSONAL
             : WalletType.EXTERNAL_WITHDRAW,
@@ -148,13 +149,13 @@ export class WalletService {
       ledgers: [
         {
           credit: {
-            caccountNo: isInternalNetwork
-              ? CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL
-              : CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+            cAccountNo: isInternalNetwork
+              ? C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL
+              : C_ACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
             value: transaction.amount,
           },
           debit: {
-            caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+            cAccountNo: C_ACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
             value: transaction.amount,
           },
         },

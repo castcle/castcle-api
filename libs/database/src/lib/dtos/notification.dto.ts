@@ -26,7 +26,6 @@ import { TransformStringToEnum } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Types } from 'mongoose';
-import { Account } from '../schemas';
 import { CastcleBase } from '../schemas/base.schema';
 import { CastcleMeta } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
@@ -151,7 +150,7 @@ export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
 
 export interface CreateNotification {
   source: NotificationSource;
-  account: Account;
+  account: Types.ObjectId;
   type: NotificationType;
   sourceUserId?: Types.ObjectId;
   contentRef?: Types.ObjectId;

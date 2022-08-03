@@ -27,13 +27,13 @@ import { Injectable } from '@nestjs/common';
 import { isMongoId } from 'class-validator';
 import { ShortcutInternalDto, ShortcutSort } from '../dtos';
 import { Repository } from '../repositories';
-import { TAccountService } from './taccount.service';
+import { TAccountService } from './t-account.service';
 
 @Injectable()
 export class WalletShortcutService {
   constructor(
     private repository: Repository,
-    private taccountService: TAccountService,
+    private tAccountService: TAccountService,
   ) {}
 
   async createWalletShortcut(body: ShortcutInternalDto, accountId: string) {
@@ -57,7 +57,7 @@ export class WalletShortcutService {
       account: accountId,
     });
 
-    return this.taccountService.toRecentWalletResponse(user, newShortcut);
+    return this.tAccountService.toRecentWalletResponse(user, newShortcut);
   }
 
   async getWalletShortcut(accountId: string) {
@@ -83,11 +83,11 @@ export class WalletShortcutService {
 
     const shortcutResponses = walletShortcuts.map((shortcut) => {
       const user = users.find((user) => String(user._id) === shortcut.address);
-      return this.taccountService.toRecentWalletResponse(user, shortcut);
+      return this.tAccountService.toRecentWalletResponse(user, shortcut);
     });
 
     const accountResponses = usersOwner.map((user) => {
-      return this.taccountService.toRecentWalletResponse(user, undefined, {
+      return this.tAccountService.toRecentWalletResponse(user, undefined, {
         id: null,
         order: undefined,
       });

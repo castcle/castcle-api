@@ -160,35 +160,31 @@ export class UserService {
       })
       .exec();
 
-  getPagesFromAccountId = (accountId: string) =>
+  getPagesFromAccountId = (accountId: Types.ObjectId) =>
     this._userModel
       .find({
-        ownerAccount: accountId as any,
+        ownerAccount: accountId,
         type: UserType.PAGE,
         visibility: EntityVisibility.Publish,
       })
       .exec();
 
-  /**
-   * Get user's balance
-   * @param {User} user
-   */
-  getBalance = async (user: User) => {
+  getBalance = async (userId: Types.ObjectId) => {
     const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
-      pipelineOfGetBalance(String(user.ownerAccount)),
+      pipelineOfGetBalance(userId),
     );
 
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
 
   getUserFromAccountId = async (
-    accountId: string,
+    accountId: Types.ObjectId,
     userFields?: UserField[],
   ) => {
     const account = await this._accountModel.findById(accountId).exec();
     const user = await this._userModel
       .findOne({
-        ownerAccount: accountId as any,
+        ownerAccount: accountId,
         type: UserType.PEOPLE,
         visibility: EntityVisibility.Publish,
       })
@@ -197,7 +193,7 @@ export class UserService {
     if (!account || !user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
     const balance = userFields?.includes(UserField.Wallet)
-      ? await this.getBalance(user)
+      ? await this.getBalance(user._id)
       : undefined;
 
     const authenSocial = userFields?.includes(UserField.LinkSocial)
@@ -775,7 +771,7 @@ export class UserService {
       const deactivateResults = await Promise.all([
         this.removeAllAccountAuthenIdsFromAccount(account),
         this.removeAllAccountActivationsFromAccount(account),
-        this.removeAllAccountReferralFromAccount(account),
+        this.removeAllAccountReferralFromAccount(account._id),
         this.removeAllCommentsFromUsers(users),
         this.removeAllContentsFromUsers(users),
         this.removeAllEngagementsFromUsers(users),
@@ -818,9 +814,11 @@ export class UserService {
     ]);
   };
 
-  removeAllAccountReferralFromAccount = (account: Account) => {
+  removeAllAccountReferralFromAccount = (accountId: Types.ObjectId) => {
     return this._accountReferral.updateMany(
-      { $or: [{ referrerAccount: account }, { referringAccount: account }] },
+      {
+        $or: [{ referrerAccount: accountId }, { referringAccount: accountId }],
+      },
       { visibility: EntityVisibility.Deleted },
     );
   };
@@ -1177,7 +1175,7 @@ Message: ${message}`,
       : [];
   };
 
-  getReferrer = async (accountId: Account) => {
+  getReferrer = async (accountId: Types.ObjectId) => {
     const accountRef = await this._accountReferral
       .findOne({
         referringAccount: accountId,
@@ -1198,7 +1196,7 @@ Message: ${message}`,
   };
 
   getReferee = async (
-    accountId: Account,
+    accountId: Types.ObjectId,
     maxResults: number,
     sinceId?: string,
     untilId?: string,
@@ -1222,12 +1220,8 @@ Message: ${message}`,
     const result: User[] = [];
     this.logger.log('Get user.');
     await Promise.all(
-      accountReferee?.map(async (x) =>
-        result.push(
-          await (
-            await this.getUserFromAccountId(x.referringAccount._id)
-          ).user,
-        ),
+      accountReferee?.map(async (r) =>
+        result.push((await this.getUserFromAccountId(r.referringAccount)).user),
       ),
     );
     this.logger.log('Success get referee.');

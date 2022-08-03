@@ -23,12 +23,11 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { DBRef } from 'mongodb';
-import { SchemaTypes } from 'mongoose';
+import { SchemaTypes, Types } from 'mongoose';
 import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
 import { AdsDetail } from './ads-detail.schema';
 import { AdsStatistic, AdsStatisticSchema } from './ads-statistic.schema';
 import { CastcleBase } from './base.schema';
-import { User } from './user.schema';
 
 @Schema({ timestamps: true })
 export class AdsCampaign extends CastcleBase {
@@ -41,8 +40,11 @@ export class AdsCampaign extends CastcleBase {
   @Prop({ required: true, type: String, index: true })
   status: AdsStatus;
 
+  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'Account' })
+  ownerAccount: Types.ObjectId;
+
   @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'User' })
-  owner: User;
+  owner: Types.ObjectId;
 
   @Prop({ required: true })
   adsRef: DBRef;

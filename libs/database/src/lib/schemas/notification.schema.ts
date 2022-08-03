@@ -29,7 +29,6 @@ import {
   NotificationSource,
   NotificationType,
 } from '../dtos/notification.dto';
-import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { User } from './user.schema';
 @Schema({ timestamps: true })
@@ -75,7 +74,7 @@ class NotificationDocument extends CastcleBase {
     ref: 'Account',
     index: true,
   })
-  account: Account;
+  account: Types.ObjectId;
 
   @Prop({
     type: SchemaTypes.ObjectId,

@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Campaign, CampaignService } from '@castcle-api/database';
+import { Campaign, CampaignService, User } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -31,13 +31,19 @@ import { Model } from 'mongoose';
 export class AirdropsService {
   constructor(
     @InjectModel('Campaign') private campaignModel: Model<Campaign>,
+    @InjectModel('User') private userModel: Model<User>,
     private campaignService: CampaignService,
   ) {}
 
-  async claimAirdrop(accountId: string, campaignId: string) {
-    const campaign = await this.campaignModel.findOne({ _id: campaignId });
-    if (!campaign) throw new CastcleException('CAMPAIGN_NOT_FOUND');
+  async claimAirdrop(userId: string, campaignId: string) {
+    const [campaign, user] = await Promise.all([
+      this.campaignModel.findById(campaignId),
+      this.userModel.findById(userId),
+    ]);
 
-    return this.campaignService.claimCampaignsAirdrop(accountId, campaign.type);
+    if (!campaign) throw new CastcleException('CAMPAIGN_NOT_FOUND');
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
+    return this.campaignService.claimCampaignsAirdrop(user._id, campaign.type);
   }
 }

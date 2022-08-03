@@ -22,7 +22,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
+import { SchemaTypes, Types } from 'mongoose';
 import {
   Author,
   OwnerResponse,
@@ -40,7 +40,6 @@ import {
   UserType,
 } from '../models';
 import { AccountAuthenId } from './account-authen-id.schema';
-import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { SocialSync } from './social-sync.schema';
 
@@ -52,7 +51,7 @@ class UserDocument extends CastcleBase {
     ref: 'Account',
     index: true,
   })
-  ownerAccount: Account;
+  ownerAccount: Types.ObjectId;
 
   /** This is the same as castcleId */
   @Prop({ required: true })

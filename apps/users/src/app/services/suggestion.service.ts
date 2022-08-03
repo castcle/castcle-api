@@ -33,6 +33,7 @@ import {
 } from '@castcle-api/database';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
+import { Types } from 'mongoose';
 
 type SeenState = {
   seenCount: number;
@@ -54,7 +55,9 @@ export class SuggestionService {
    * @param accountId
    * @returns
    */
-  suggest = async (accountId: string): Promise<SuggestToFollowResponseDto> => {
+  suggest = async (
+    accountId: Types.ObjectId,
+  ): Promise<SuggestToFollowResponseDto> => {
     const result = await this.dataService.getFollowingSuggestions(accountId);
     const userIds = result.map((item) => item.userId);
     const users = await Promise.all(
