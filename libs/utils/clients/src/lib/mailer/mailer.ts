@@ -100,7 +100,7 @@ export class Mailer {
         from: 'castcle-noreply" <no-reply@castcle.com>',
         subject: `Password for login backoffice of Castcle.`,
         to: email,
-        text: `Your password to login backoffice is ${password}.\n Please login on ${Environment.BACKOFFICE_APP_PATH}`,
+        text: `Your password to login backoffice is ${password}.`,
       });
 
       this.logger.log(`Password has been submitted ${info.messageId}`);
