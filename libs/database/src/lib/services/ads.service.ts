@@ -358,10 +358,7 @@ export class AdsService {
           castcleId: adsRequest.castcleId,
         });
         //check permission
-        if (
-          requestUser.type === UserType.PAGE &&
-          String(user.ownerAccount) === String(requestUser.ownerAccount)
-        )
+        if (String(user.ownerAccount) === String(requestUser.ownerAccount))
           return new DBRef('user', new Types.ObjectId(requestUser.id));
         else throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
       } catch (e) {
