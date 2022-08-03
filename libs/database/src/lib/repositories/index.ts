@@ -165,6 +165,7 @@ type RelationshipQuery = {
   userId?: User | User[] | Types.ObjectId;
   followedUser?: User | User[] | Types.ObjectId;
   blocking?: boolean;
+  following?: boolean;
   sinceId?: string;
   untilId?: string;
 };
@@ -392,6 +393,7 @@ export class Repository {
       if (filter.untilId) query.followedUser.$lt = filter.untilId as any;
     }
     if (filter.blocking) query.blocking = filter.blocking;
+    if (filter.following) query.following = filter.following;
     if (filter.followedUser) query.followedUser = filter.followedUser as any;
     if (isArray(filter.followedUser))
       query.followedUser = { $in: filter.followedUser as any };

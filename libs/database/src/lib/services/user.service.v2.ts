@@ -237,33 +237,60 @@ export class UserServiceV2 {
 
     const session = await this.relationshipModel.startSession();
     await session.withTransaction(async () => {
-      await this.repository.updateRelationship(
-        { user: user._id, followedUser: blockUser._id },
-        {
-          $setOnInsert: {
-            user: user._id,
-            followedUser: blockUser._id,
-            visibility: EntityVisibility.Publish,
-            blocked: false,
+      const [followed, follower] = await Promise.all([
+        this.repository.findRelationships({
+          userId: user._id,
+          followedUser: blockUser._id,
+          following: true,
+        }),
+        this.repository.findRelationships({
+          userId: blockUser._id,
+          followedUser: user._id,
+          following: true,
+        }),
+      ]);
+
+      if (followed.length) {
+        user.followedCount--;
+        blockUser.followerCount--;
+      }
+
+      if (follower.length) {
+        user.followerCount--;
+        blockUser.followedCount--;
+      }
+
+      await Promise.all([
+        user.save({ session }),
+        blockUser.save({ session }),
+        this.repository.updateRelationship(
+          { user: user._id, followedUser: blockUser._id },
+          {
+            $setOnInsert: {
+              user: user._id,
+              followedUser: blockUser._id,
+              visibility: EntityVisibility.Publish,
+              blocked: false,
+            },
+            $set: { blocking: true, following: false },
           },
-          $set: { blocking: true, following: false },
-        },
-        { upsert: true, session },
-      );
-      await this.repository.updateRelationship(
-        { followedUser: user._id, user: blockUser._id },
-        {
-          $setOnInsert: {
-            followedUser: user._id,
-            user: blockUser._id,
-            visibility: EntityVisibility.Publish,
-            following: false,
-            blocking: false,
+          { upsert: true, session },
+        ),
+        this.repository.updateRelationship(
+          { followedUser: user._id, user: blockUser._id },
+          {
+            $setOnInsert: {
+              followedUser: user._id,
+              user: blockUser._id,
+              visibility: EntityVisibility.Publish,
+              following: false,
+              blocking: false,
+            },
+            $set: { blocked: true },
           },
-          $set: { blocked: true },
-        },
-        { upsert: true, session },
-      );
+          { upsert: true, session },
+        ),
+      ]);
     });
     session.endSession();
   }
