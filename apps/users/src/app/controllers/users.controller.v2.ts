@@ -200,7 +200,7 @@ export class UsersControllerV2 {
       if (!user.canUpdateCastcleId())
         throw new CastcleException('CHANGE_CASTCLE_ID_FAILED');
 
-      const userExisting = await this.userService.getUser(body.castcleId);
+      const userExisting = await this.userService.getUserOnly(body.castcleId);
 
       if (userExisting && String(userExisting?.id) !== String(user?.id))
         throw new CastcleException('USER_ID_IS_EXIST');
@@ -1006,6 +1006,6 @@ export class UsersControllerV2 {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.contentServiceV2.lookupFarming(contentId, userId);
+    return this.contentServiceV2.lookupFarming(contentId, user);
   }
 }

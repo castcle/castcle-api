@@ -103,6 +103,14 @@ export class UserServiceV2 {
     return user;
   };
 
+  getUserOnly = async (userId: string) => {
+    const user = await this.repository.findUser({
+      _id: userId,
+      visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+    });
+    return user;
+  };
+
   getPublicUser = async (
     requestedBy: User,
     userId: string,

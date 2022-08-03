@@ -38,12 +38,16 @@ import { AdsController } from './controllers/ads.controller';
 import { AirdropsController } from './controllers/airdrops.controller';
 import { AuthenticationController } from './controllers/authentication.controller';
 import { CampaignController } from './controllers/campaign.controller';
+import { MetaDataController } from './controllers/metadata.controller';
 import { ReportingController } from './controllers/reporting.controller';
+import { UsersController } from './controllers/users.controller';
 import { BackOfficeMongooseForFeatures } from './schemas';
 import { AirdropsService } from './services/airdrops.service';
 import { AuthenticationService } from './services/authentication.service';
 import { CampaignBackofficeService } from './services/campaign.service';
+import { MetadataBackofficeService } from './services/metadata.service';
 import { ReportingService } from './services/reporting.service';
+import { UserBackofficeService } from './services/users.service';
 
 @Module({
   imports: [
@@ -62,7 +66,9 @@ import { ReportingService } from './services/reporting.service';
     AirdropsController,
     AuthenticationController,
     CampaignController,
+    MetaDataController,
     ReportingController,
+    UsersController,
   ],
   providers: [
     AdsService,
@@ -70,9 +76,11 @@ import { ReportingService } from './services/reporting.service';
     AuthenticationService,
     CampaignBackofficeService,
     CampaignService,
-    ReportingService,
-    NotificationServiceV2,
     Mailer,
+    MetadataBackofficeService,
+    NotificationServiceV2,
+    ReportingService,
+    UserBackofficeService,
   ],
 })
 export class AppModule {}
