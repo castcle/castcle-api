@@ -613,11 +613,9 @@ export class Repository {
         Configs.AssetsPath.DomainEmailDisposables,
       );
 
-    return this.castcleEmailDomain
-      ? this.castcleEmailDomain.emailDomainDisposables.some((domain) =>
-          new RegExp(domain, 'i').test(email.replace(/^[\D]+@/i, '')),
-        )
-      : false;
+    return this.castcleEmailDomain?.emailDomainDisposables?.some((domain) =>
+      email.includes(domain),
+    );
   }
 
   deleteAccount(filter: AccountQuery) {

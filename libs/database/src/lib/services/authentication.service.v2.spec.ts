@@ -30,6 +30,7 @@ import {
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
+import { getQueueToken } from '@nestjs/bull';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
@@ -44,6 +45,7 @@ import {
   MongooseForFeatures,
 } from '../database.module';
 import { AcceptPlatform, OwnerResponse } from '../dtos';
+import { QueueName } from '../models';
 import { Repository } from '../repositories';
 import { Account } from '../schemas';
 
@@ -73,12 +75,16 @@ describe('AuthenticationServiceV2', () => {
       providers: [
         AuthenticationServiceV2,
         AnalyticService,
+        Repository,
         { provide: FacebookClient, useValue: FacebookClientMock },
         { provide: GoogleClient, useValue: GoogleClientMock },
         { provide: TwilioClient, useValue: TwilioClientMock },
         { provide: TwitterClient, useValue: TwitterClientMock },
         { provide: Mailer, useValue: { sendRegistrationEmail: jest.fn() } },
-        Repository,
+        {
+          provide: getQueueToken(QueueName.VERIFY_EMAIL),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 

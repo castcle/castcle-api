@@ -31,6 +31,7 @@ import { ContentConsumer } from './consumers/content.consumer';
 import { NotificationConsumer } from './consumers/notification.consumer';
 import { ReportingConsumer } from './consumers/reporting.consumer';
 import { UserConsumer } from './consumers/user.consumer';
+import { VerifyEmailConsumer } from './consumers/verify-email.consumer';
 
 @Module({
   imports: [
@@ -47,11 +48,12 @@ import { UserConsumer } from './consumers/user.consumer';
     }),
   ],
   providers: [
-    Mailer,
     ContentConsumer,
+    Mailer,
     NotificationConsumer,
     ReportingConsumer,
     UserConsumer,
+    VerifyEmailConsumer,
   ],
 })
 export class BackgroundModule {}

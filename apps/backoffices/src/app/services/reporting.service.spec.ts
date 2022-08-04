@@ -133,6 +133,10 @@ describe('ReportingService', () => {
           useValue: { add: jest.fn() },
         },
         {
+          provide: getQueueToken(QueueName.VERIFY_EMAIL),
+          useValue: { add: jest.fn() },
+        },
+        {
           provide: Mailer,
           useValue: {
             sendPasswordToStaff: jest.fn(),
