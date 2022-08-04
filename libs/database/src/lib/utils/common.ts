@@ -139,6 +139,6 @@ export const getSocialPrefix = (socialId: string, provider: string) => {
 
 export const CastcleId = () => {
   return Matches(CastcleRegExp.CASTCLE_ID_PATTERN, {
-    message: 'Castcle Id invalid',
+    message: 'The Castcle Id contains characters that are not allowed.',
   });
 };
