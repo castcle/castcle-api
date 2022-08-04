@@ -61,23 +61,6 @@ export class AdsController {
   ) {}
   private logger = new CastLogger(AdsController.name);
 
-  @CastcleBasicAuth()
-  @Get()
-  async listAds(@Auth() authorizer: Authorizer, @Query() adsQuery: AdsQuery) {
-    authorizer.requireActivation();
-    const ads = await this.adsService.getListAds(authorizer.user, adsQuery);
-    return this.adsService.convertAdsToAdResponses(ads);
-  }
-  @CastcleBasicAuth()
-  @Get(':id')
-  async lookupAds(@Auth() authorizer: Authorizer, @Param('id') adsId: string) {
-    authorizer.requireActivation();
-    const ad = await this.adsService.lookupAds(authorizer.user, adsId);
-    if (!ad) return;
-    const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
-    return adResponse;
-  }
-
   @CastcleClearCacheAuth(CacheKeyName.Feeds)
   @Delete(':id')
   async deleteAds(@Auth() { user }: Authorizer, @Param('id') adsId: string) {
@@ -192,5 +175,23 @@ export class AdsController {
     const ad = await this.adsService.createAds(authorizer.user, adsRequestDto);
     const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
     return adResponse;
+  }
+
+  @CastcleBasicAuth()
+  @Get(':id')
+  async lookupAds(@Auth() authorizer: Authorizer, @Param('id') adsId: string) {
+    authorizer.requireActivation();
+    const ad = await this.adsService.lookupAds(authorizer.user, adsId);
+    if (!ad) return;
+    const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
+    return adResponse;
+  }
+
+  @CastcleBasicAuth()
+  @Get()
+  async listAds(@Auth() authorizer: Authorizer, @Query() adsQuery: AdsQuery) {
+    authorizer.requireActivation();
+    const ads = await this.adsService.getListAds(authorizer.user, adsQuery);
+    return this.adsService.convertAdsToAdResponses(ads);
   }
 }
