@@ -34,6 +34,7 @@ export class AdsController {
   constructor(private adsService: AdsService) {}
 
   @BackofficeAuth()
+  @RequiredPermissions(Permission.Read)
   @Get()
   async getAds(@Query() dto: GetAdsDto) {
     const ads = await this.adsService.find(dto);
