@@ -11,4 +11,5 @@ export enum StaffRole {
 export enum Permission {
   Manage = 'manage',
   Read = 'read',
+  Update = 'update',
 }

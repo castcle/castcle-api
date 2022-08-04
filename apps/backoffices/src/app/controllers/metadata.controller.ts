@@ -42,7 +42,7 @@ export class MetaDataController {
   }
 
   @BackofficeAuth()
-  @RequiredPermissions(Permission.Manage)
+  @RequiredPermissions(Permission.Read)
   @Get('report-subjects')
   async getReportSubjects() {
     const reportSubjects = await this.metadataService.getReportSubjects();
