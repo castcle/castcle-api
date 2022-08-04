@@ -20,6 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleRegExp } from '@castcle-api/utils/commons';
+import { Matches } from 'class-validator';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import {
@@ -133,4 +135,10 @@ export const getSocialPrefix = (socialId: string, provider: string) => {
       return socialId;
     }
   }
+};
+
+export const CastcleId = () => {
+  return Matches(CastcleRegExp.CASTCLE_ID_PATTERN, {
+    message: 'Castcle Id invalid',
+  });
 };

@@ -41,4 +41,6 @@ export class CastcleRegExp {
       ? new RegExp(strPattern, 'i')
       : new RegExp(strPattern);
   };
+
+  static CASTCLE_ID_PATTERN = /^\w+$/;
 }
