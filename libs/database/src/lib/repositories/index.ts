@@ -165,6 +165,7 @@ type RelationshipQuery = {
   userId?: User | User[] | Types.ObjectId;
   followedUser?: User | User[] | Types.ObjectId;
   blocking?: boolean;
+  following?: boolean;
   sinceId?: string;
   untilId?: string;
 };
@@ -392,6 +393,7 @@ export class Repository {
       if (filter.untilId) query.followedUser.$lt = filter.untilId as any;
     }
     if (filter.blocking) query.blocking = filter.blocking;
+    if (filter.following) query.following = filter.following;
     if (filter.followedUser) query.followedUser = filter.followedUser as any;
     if (isArray(filter.followedUser))
       query.followedUser = { $in: filter.followedUser as any };
@@ -611,11 +613,9 @@ export class Repository {
         Configs.AssetsPath.DomainEmailDisposables,
       );
 
-    return this.castcleEmailDomain
-      ? this.castcleEmailDomain.emailDomainDisposables.some((domain) =>
-          new RegExp(domain, 'i').test(email.replace(/^[\D]+@/i, '')),
-        )
-      : false;
+    return this.castcleEmailDomain?.emailDomainDisposables?.some((domain) =>
+      email.includes(domain),
+    );
   }
 
   deleteAccount(filter: AccountQuery) {
@@ -835,6 +835,14 @@ export class Repository {
     return this.userModel.updateOne(filter as any, user, option);
   }
 
+  updateUsers(
+    filter: UserQuery,
+    user: UpdateQuery<User>,
+    option?: QueryOptions,
+  ) {
+    return this.userModel.updateMany(filter as any, user, option);
+  }
+
   findEngagement(filter: EngagementQuery, queryOptions?: QueryOptions) {
     return this.engagementModel
       .findOne(this.getEngagementQuery(filter), {}, queryOptions)
@@ -912,11 +920,18 @@ export class Repository {
     return this.relationshipModel.updateOne(filter, updateQuery, queryOptions);
   }
 
-  removeRelationship(
+  deleteRelationship(
     filter: FilterQuery<Relationship>,
     queryOptions?: QueryOptions,
   ) {
     return this.relationshipModel.deleteOne(filter, queryOptions);
+  }
+
+  deleteRelationships(
+    filter: FilterQuery<Relationship>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.relationshipModel.deleteMany(filter, queryOptions);
   }
 
   findContent(filter: ContentQuery, queryOptions?: QueryOptions) {
@@ -1378,6 +1393,12 @@ export class Repository {
   async deleteCastcleAccount(account: Account) {
     const users = await this.userModel.find({ ownerAccount: account._id });
     const userIds = users.map((user) => user._id);
+
+    const follower = await this.relationshipModel.find({
+      $or: [{ followedUser: { $in: userIds } }, { user: { $in: userIds } }],
+      following: true,
+    });
+
     const $v1Delete = [
       this.activationModel.deleteMany({ account: account._id }),
       this.authenIdModel.deleteMany({ account: account._id }),
@@ -1423,6 +1444,30 @@ export class Repository {
         { _id: { $in: userIds } },
         { visibility: EntityVisibility.Deleted },
       ),
+      userIds.map(async (id) => {
+        await this.userModel.updateMany(
+          {
+            _id: {
+              $in: follower
+                .filter(({ user }) => String(user) === String(id))
+                .map(({ followedUser }) => followedUser),
+            },
+          },
+          { $inc: { followerCount: -1 } },
+        );
+        await this.userModel.updateMany(
+          {
+            _id: {
+              $in: follower
+                .filter(
+                  ({ followedUser }) => String(followedUser) === String(id),
+                )
+                .map(({ user }) => user),
+            },
+          },
+          { $inc: { followedCount: -1 } },
+        );
+      }),
     ];
 
     await Promise.all([...$v1Delete, ...$hardDelete, ...$softDelete]);
@@ -1454,6 +1499,96 @@ export class Repository {
         this.deleteRevisions({ author: pageId }, { session }),
         this.deleteSocialSyncs({ user: pageId }, { session }),
         this.deleteNotifications({ user: pageId }, { session }),
+      ]);
+      await session.commitTransaction();
+      session.endSession();
+    });
+  }
+
+  async deleteContent(contentId: string) {
+    const session = await this.contentModel.startSession();
+    await session.withTransaction(async () => {
+      await Promise.all([
+        this.deleteContents({
+          _id: contentId,
+        }),
+        this.deleteContents({
+          originalPost: contentId as any,
+        }),
+        this.deleteEngagements({
+          targetRef: {
+            $ref: 'content',
+            $id: contentId,
+          },
+        }),
+        this.deleteComments(
+          {
+            targetRef: {
+              $ref: 'content',
+              $id: contentId,
+            },
+          },
+          { session },
+        ),
+        this.deleteFeedItems({ content: contentId as any }, { session }),
+        this.deleteRevisions({ 'payload._id': contentId }, { session }),
+        this.deleteNotifications({ contentRef: contentId }, { session }),
+      ]);
+      await session.commitTransaction();
+      session.endSession();
+    });
+  }
+
+  async deleteUser(userId: string) {
+    const session = await this.userModel.startSession();
+    await session.withTransaction(async () => {
+      const following = await this.relationshipModel.find({
+        user: userId as any,
+        following: true,
+      });
+
+      const follower = await this.relationshipModel.find({
+        followedUser: userId as any,
+        following: true,
+      });
+
+      await Promise.all([
+        this.updateUser(
+          {
+            _id: userId,
+            visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+          },
+          { $set: { visibility: EntityVisibility.Deleted } },
+          { session },
+        ),
+        this.updateUsers(
+          {
+            _id: following.map(({ _id }) => _id),
+            visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+          },
+          { $inc: { followedCount: -1 } },
+          { session },
+        ),
+        this.updateUsers(
+          {
+            _id: follower.map(({ _id }) => _id),
+            visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+          },
+          { $inc: { followerCount: -1 } },
+          { session },
+        ),
+        this.deleteRelationships({
+          $or: [{ followedUser: userId as any }, { user: userId as any }],
+        }),
+        this.deleteContents({
+          'author._id': userId,
+        }),
+        this.deleteEngagements({ user: userId as any }),
+        this.deleteComments({ 'author._id': userId }, { session }),
+        this.deleteFeedItems({ author: userId }, { session }),
+        this.deleteRevisions({ author: userId }, { session }),
+        this.deleteSocialSyncs({ user: userId }, { session }),
+        this.deleteNotifications({ user: userId as any }, { session }),
       ]);
       await session.commitTransaction();
       session.endSession();

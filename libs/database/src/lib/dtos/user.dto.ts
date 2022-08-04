@@ -49,6 +49,7 @@ import {
   UserType,
   Wallet,
 } from '../models';
+import { CastcleId } from '../utils/common';
 import { CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 import { Meta } from './response.dto';
@@ -453,6 +454,7 @@ export class RemoveFarmParam {
 export class UpdateUserDtoV2 {
   @IsOptional()
   @IsString()
+  @CastcleId()
   castcleId?: string;
 
   @IsOptional()

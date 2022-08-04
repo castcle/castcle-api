@@ -28,6 +28,7 @@ export enum QueueName {
   USER = 'user',
   SOCIAL_REWARD = 'social-reward',
   REPORTING = 'reporting',
+  VERIFY_EMAIL = 'verify-email',
 }
 
 export enum QueueStatus {
