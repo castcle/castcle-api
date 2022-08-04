@@ -336,41 +336,39 @@ export class ReportingService {
           email: staff.email,
           action: action,
           status: status,
+          message: body.messageByAdmin,
           subject: body.subjectByAdmin,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
         reporting.markModified('actionBy');
         await reporting.save();
-
-        this.notificationService.notifyToUser(
-          {
-            source:
-              userOwner.type === UserType.PEOPLE
-                ? NotificationSource.Profile
-                : NotificationSource.Page,
-            sourceUserId: undefined,
-            type:
-              action === ReportingIllegal.ILLEGAL
-                ? targetReporting.visibility === EntityVisibility.Illegal
-                  ? NotificationType.IllegalDone
-                  : NotificationType.IllegalClosed
-                : NotificationType.NotIllegal,
-            profileRef:
-              body.type === ReportingType.USER
-                ? targetReporting._id
-                : undefined,
-            contentRef:
-              body.type === ReportingType.CONTENT
-                ? targetReporting._id
-                : undefined,
-            account: userOwner.ownerAccount,
-            read: false,
-          },
-          userOwner,
-          accountOwner?.preferences?.languages[0] ?? Configs.DefaultLanguage,
-        );
       }),
+      this.notificationService.notifyToUser(
+        {
+          source:
+            userOwner.type === UserType.PEOPLE
+              ? NotificationSource.Profile
+              : NotificationSource.Page,
+          sourceUserId: undefined,
+          type:
+            action === ReportingIllegal.ILLEGAL
+              ? targetReporting.visibility === EntityVisibility.Illegal
+                ? NotificationType.IllegalDone
+                : NotificationType.IllegalClosed
+              : NotificationType.NotIllegal,
+          profileRef:
+            body.type === ReportingType.USER ? targetReporting._id : undefined,
+          contentRef:
+            body.type === ReportingType.CONTENT
+              ? targetReporting._id
+              : undefined,
+          account: userOwner.ownerAccount,
+          read: false,
+        },
+        userOwner,
+        accountOwner?.preferences?.languages[0] ?? Configs.DefaultLanguage,
+      ),
     ]);
   }
 
@@ -403,6 +401,14 @@ export class ReportingService {
 
     if (!(users.length && contents.length)) return;
 
+    const checkUnique = (inputList: any[]) =>
+      [...new Set(inputList.map((item) => JSON.stringify(item)))].map((item) =>
+        JSON.parse(item),
+      );
+
+    const uniqueUsers = checkUnique(users);
+    const uniqueContents = checkUnique(contents);
+
     await Promise.all([
       this.repository.updateReportings(
         {
@@ -428,7 +434,7 @@ export class ReportingService {
           },
         },
       ),
-      users.map(async (user) => {
+      uniqueUsers.map(async (user) => {
         user.visibility = EntityVisibility.Deleted;
         await user.save();
 
@@ -454,7 +460,7 @@ export class ReportingService {
           accountOwner?.preferences?.languages[0] ?? Configs.DefaultLanguage,
         );
       }),
-      contents.map(async (content) => {
+      uniqueContents.map(async (content) => {
         content.visibility = EntityVisibility.Deleted;
         await content.save();
 

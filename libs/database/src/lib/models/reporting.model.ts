@@ -36,6 +36,7 @@ export class ReportingActionBy {
   action: ReportingIllegal;
   status: ReportingStatus;
   subject?: string;
+  message?: string;
   createdAt: Date;
   updatedAt: Date;
 }
