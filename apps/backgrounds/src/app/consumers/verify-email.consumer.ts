@@ -20,33 +20,46 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { NotificationMessage, QueueName } from '@castcle-api/database';
+
+import {
+  AccountActivationType,
+  QueueName,
+  Repository,
+  VerifyEmailMessage,
+} from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
+import { Mailer } from '@castcle-api/utils/clients';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bull';
-import { FirebaseAdmin, InjectFirebaseAdmin } from 'nestjs-firebase';
 
 @Injectable()
-@Processor(QueueName.NOTIFICATION)
-export class NotificationConsumer {
-  private logger = new CastLogger(NotificationConsumer.name);
+@Processor(QueueName.VERIFY_EMAIL)
+export class VerifyEmailConsumer {
+  private logger = new CastLogger(VerifyEmailConsumer.name);
 
-  constructor(@InjectFirebaseAdmin() private firebase: FirebaseAdmin) {}
+  constructor(private mailerService: Mailer, private repository: Repository) {}
 
   @Process()
-  async readOperationJob(job: Job<NotificationMessage>) {
-    this.logger.log(JSON.stringify(job));
-    await this.firebase.messaging
-      .sendMulticast({
-        data: job.data.payload,
-        notification: job.data.notification,
-        android: job.data.android,
-        tokens: job.data.firebaseTokens,
-        apns: {
-          payload: { aps: job.data.aps },
-        },
-      })
-      .catch((error) => this.logger.error(error));
+  async readOperationJob(job: Job<VerifyEmailMessage>) {
+    this.logger.log(`consumer verify account : ${job.data.accountId}`);
+    this.logger.log(JSON.stringify(job.data));
+
+    const account = await this.repository.findAccount({
+      _id: job.data.accountId,
+    });
+
+    const activation = account.createActivation(AccountActivationType.EMAIL);
+
+    account.markModified('activations');
+    await account.save();
+
+    await this.mailerService
+      .sendRegistrationEmail(
+        job.data.hostUrl,
+        job.data.toEmail,
+        activation.verifyToken,
+      )
+      .catch((error) => this.logger.error(JSON.stringify(error)));
   }
 }

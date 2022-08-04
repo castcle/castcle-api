@@ -44,9 +44,11 @@ export class PermissionGuard implements CanActivate {
     );
 
     if (staff.role === StaffRole.ADMINISTRATOR) {
-      can(Permission.Manage, 'all');
+      can([Permission.Update, Permission.Read, Permission.Manage], 'all');
+    } else if (staff.role === StaffRole.EDITOR) {
+      can([Permission.Update, Permission.Read], 'all');
     } else {
-      can(Permission.Read, Staff);
+      can([Permission.Read], 'all');
     }
 
     return build({

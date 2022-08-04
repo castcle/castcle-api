@@ -24,7 +24,6 @@
 import {
   AnalyticService,
   AuthenticationServiceV2,
-  BackofficeDatabaseModule,
   CampaignService,
   ContentServiceV2,
   ContentType,
@@ -35,8 +34,11 @@ import {
   MetadataType,
   MockUserDetail,
   MockUserService,
+  MongooseAsyncFeatures,
+  MongooseForFeatures,
   NotificationServiceV2,
   QueueName,
+  ReportingIllegal,
   ReportingStatus,
   ReportingSubject,
   ReportingType,
@@ -55,9 +57,9 @@ import { Token } from '@castcle-api/utils/commons';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { getModelToken } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model } from 'mongoose';
 import { StaffRole } from '../models/authentication.enum';
 import { BackOfficeMongooseForFeatures } from '../schemas';
@@ -80,20 +82,23 @@ describe('ReportingService', () => {
   let generateUser: MockUserService;
   let mocksUsers: MockUserDetail[];
   let moduleRef: TestingModule;
-  let mongod: MongoMemoryServer;
+  let mongod: MongoMemoryReplSet;
   let service: ReportingService;
   let staffData: StaffMockData;
   let userService: UserServiceV2;
   let repository: Repository;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create();
     global.mongoUri = mongod.getUri();
+
     moduleRef = await Test.createTestingModule({
       imports: [
-        BackofficeDatabaseModule,
+        MongooseModule.forRoot(mongod.getUri(), { retryWrites: false }),
         BackOfficeMongooseForFeatures,
         CacheModule.register(),
+        MongooseAsyncFeatures(),
+        MongooseForFeatures(),
         HttpModule,
       ],
       providers: [
@@ -125,6 +130,10 @@ describe('ReportingService', () => {
         },
         {
           provide: getQueueToken(QueueName.REPORTING),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.VERIFY_EMAIL),
           useValue: { add: jest.fn() },
         },
         {
@@ -173,15 +182,15 @@ describe('ReportingService', () => {
 
     staffData = { ...staffPayload, accessToken };
 
-    mocksUsers = await generateUser.generateMockUsers(5);
+    mocksUsers = await generateUser.generateMockUsers(7);
 
     const response = await contentService.createContent(
       {
         payload: { message: 'content v2' },
         type: ContentType.Short,
-        castcleId: mocksUsers[0].user.displayId,
+        castcleId: mocksUsers[5].user.displayId,
       },
-      mocksUsers[0].user,
+      mocksUsers[5].user,
     );
 
     await contentService.reportContent(mocksUsers[1].user, {
@@ -195,9 +204,9 @@ describe('ReportingService', () => {
     });
   });
 
-  // afterAll(async () => {
-  //   await Promise.all([moduleRef.close(), mongod.stop()]);
-  // });
+  afterAll(async () => {
+    await Promise.all([moduleRef.close(), mongod.stop()]);
+  });
 
   describe('getReporting', () => {
     it('should get reporting filter type content', async () => {
@@ -205,7 +214,7 @@ describe('ReportingService', () => {
 
       expect(reportings.payload).toBeDefined();
 
-      expect(reportings.payload[0].user.id).toEqual(mocksUsers[0].user.id);
+      expect(reportings.payload[0].user.id).toEqual(mocksUsers[5].user.id);
       expect(reportings.payload[0].reportBy[0].user.id).toEqual(
         mocksUsers[1].user.id,
       );
@@ -224,9 +233,17 @@ describe('ReportingService', () => {
   });
 
   describe('updateNotIllegal', () => {
-    it('should update reporting not illegal', async () => {
+    beforeAll(async () => {
+      await mocksUsers[4].user.follow(mocksUsers[5].user);
+      await mocksUsers[5].user.follow(mocksUsers[4].user);
+      await userService.reportUser(mocksUsers[4].user, {
+        targetCastcleId: mocksUsers[5].user.id,
+        subject: 'spam',
+      });
+    });
+    it('should update reporting content not illegal', async () => {
       const reporting = await repository.findReporting({
-        user: mocksUsers[0].user._id,
+        user: mocksUsers[5].user._id,
         type: ReportingType.CONTENT,
       });
 
@@ -237,7 +254,14 @@ describe('ReportingService', () => {
           subjectByAdmin: 'testsubjectByAdmin',
         },
         staffData as Staff,
+        ReportingIllegal.ILLEGAL,
       );
+
+      const user = await repository.findUser({
+        _id: mocksUsers[5].user._id,
+      });
+
+      expect(user.casts).toEqual(0);
 
       const content = await repository.findContent({
         _id: reporting.payload._id,
@@ -246,14 +270,21 @@ describe('ReportingService', () => {
 
       expect(content.visibility).toEqual(EntityVisibility.Illegal);
 
-      await service.updateNotIllegal(
+      await service.updateIllegal(
         {
           id: reporting.payload._id,
           type: ReportingType.CONTENT,
           subjectByAdmin: 'testsubjectByAdmin',
         },
         staffData as Staff,
+        ReportingIllegal.NOT_ILLEGAL,
       );
+
+      const userEnded = await repository.findUser({
+        _id: mocksUsers[5].user._id,
+      });
+
+      expect(userEnded.casts).toEqual(1);
 
       const reportingAfter = await repository.findReporting({
         _id: reporting.id,
@@ -271,12 +302,10 @@ describe('ReportingService', () => {
       expect(reportingAfter.actionBy[0].email).toEqual(staffData.email);
       expect(reportingAfter.actionBy[0].subject).toEqual('testsubjectByAdmin');
     });
-  });
 
-  describe('updateIllegal', () => {
-    it('should update reporting illegal', async () => {
+    it('should update reporting user illegal', async () => {
       const reporting = await repository.findReporting({
-        user: mocksUsers[2].user._id,
+        user: mocksUsers[5].user._id,
         type: ReportingType.USER,
       });
 
@@ -287,7 +316,15 @@ describe('ReportingService', () => {
           subjectByAdmin: 'testsubjectByAdmin',
         },
         staffData as Staff,
+        ReportingIllegal.ILLEGAL,
       );
+
+      const userFollower = await repository.findUser({
+        _id: mocksUsers[4].user.id,
+      });
+
+      expect(userFollower.followerCount).toEqual(0);
+      expect(userFollower.followedCount).toEqual(0);
 
       const user = await repository.findUser({
         _id: reporting.payload._id,
@@ -303,7 +340,102 @@ describe('ReportingService', () => {
           subjectByAdmin: 'testsubjectByAdmin2',
         },
         staffData as Staff,
+        ReportingIllegal.NOT_ILLEGAL,
       );
+
+      const userFollowerAgain = await repository.findUser({
+        _id: mocksUsers[4].user.id,
+      });
+
+      expect(userFollowerAgain.followerCount).toEqual(1);
+      expect(userFollowerAgain.followedCount).toEqual(1);
+
+      const reportingAfter = await repository.findReporting({
+        _id: reporting.id,
+      });
+
+      const userAfter = await repository.findUser({
+        _id: reporting.payload._id,
+      });
+
+      expect(userAfter.visibility).toEqual(EntityVisibility.Publish);
+      expect(reportingAfter.status).toEqual(ReportingStatus.CLOSED);
+      expect(reportingAfter.actionBy[0].firstName).toEqual(staffData.firstName);
+      expect(reportingAfter.actionBy[0].lastName).toEqual(staffData.lastName);
+      expect(reportingAfter.actionBy[0].email).toEqual(staffData.email);
+      expect(reportingAfter.actionBy[0].subject).toEqual('testsubjectByAdmin');
+    });
+  });
+
+  describe('updateIllegal', () => {
+    beforeAll(async () => {
+      await mocksUsers[2].user.follow(mocksUsers[1].user);
+      await mocksUsers[1].user.follow(mocksUsers[2].user);
+    });
+
+    it('should update reporting user illegal', async () => {
+      const reporting = await repository.findReporting({
+        user: mocksUsers[2].user._id,
+        type: ReportingType.USER,
+      });
+
+      await service.updateIllegal(
+        {
+          id: reporting.payload._id,
+          type: ReportingType.USER,
+          subjectByAdmin: 'testsubjectByAdmin',
+        },
+        staffData as Staff,
+        ReportingIllegal.ILLEGAL,
+      );
+
+      const userFollower = await repository.findUser({
+        _id: mocksUsers[1].user.id,
+      });
+
+      expect(
+        await repository.findRelationships({
+          userId: mocksUsers[2].user.id,
+        }),
+      ).toHaveLength(1);
+
+      expect(
+        await repository.findRelationships({
+          followedUser: mocksUsers[2].user.id,
+        }),
+      ).toHaveLength(1);
+
+      expect(userFollower.followerCount).toEqual(0);
+      expect(userFollower.followedCount).toEqual(0);
+
+      const user = await repository.findUser({
+        _id: reporting.payload._id,
+        visibility: EntityVisibility.Illegal,
+      });
+
+      await userService.updateAppealUser(user, ReportingStatus.APPEAL);
+
+      await service.updateIllegal(
+        {
+          id: reporting.payload._id,
+          type: ReportingType.USER,
+          subjectByAdmin: 'testsubjectByAdmin2',
+        },
+        staffData as Staff,
+        ReportingIllegal.ILLEGAL,
+      );
+
+      expect(
+        await repository.findRelationships({
+          userId: mocksUsers[2].user.id,
+        }),
+      ).toHaveLength(0);
+
+      expect(
+        await repository.findRelationships({
+          followedUser: mocksUsers[2].user.id,
+        }),
+      ).toHaveLength(0);
 
       const reportingAfter = await repository.findReporting({
         _id: reporting.id,

@@ -176,6 +176,10 @@ describe('UsersControllerV2', () => {
           provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
+        {
+          provide: getQueueToken(QueueName.VERIFY_EMAIL),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
     service = moduleRef.get(UserServiceV2);

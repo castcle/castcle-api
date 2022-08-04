@@ -35,7 +35,9 @@ import {
 } from '@castcle-api/utils/clients';
 import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
+import { Queue } from 'bull';
 import { DateTime } from 'luxon';
 import { Types } from 'mongoose';
 import {
@@ -61,7 +63,9 @@ import {
   AuthenticationProvider,
   OtpObjective,
   OtpTemplateMessage,
+  QueueName,
   UserType,
+  VerifyEmailMessage,
 } from '../models';
 import { Repository } from '../repositories';
 import { Account, Credential, User } from '../schemas';
@@ -79,6 +83,8 @@ export class AuthenticationServiceV2 {
     private twitterClient: TwitterClient,
     private mailer: Mailer,
     private repository: Repository,
+    @InjectQueue(QueueName.VERIFY_EMAIL)
+    private verifyQueue: Queue<VerifyEmailMessage>,
   ) {}
 
   private generateTokenPayload(credential: Credential, user?: User) {
@@ -310,10 +316,10 @@ export class AuthenticationServiceV2 {
 
     if (!account.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
 
-    if (castcleIdAlreadyExists) throw new CastcleException('USER_ID_IS_EXIST');
-
     if (emailAlreadyExists)
       throw new CastcleException('EMAIL_OR_PHONE_IS_EXIST');
+
+    if (castcleIdAlreadyExists) throw new CastcleException('USER_ID_IS_EXIST');
 
     if (await this.repository.isEmailDisposable(dto.email))
       throw new CastcleException('DUPLICATE_EMAIL');
@@ -330,7 +336,7 @@ export class AuthenticationServiceV2 {
       account.set(`pdpa.${Environment.PDPA_ACCEPT_DATES[0]}`, true);
 
     account.password = Password.hash(dto.password);
-    const activation = account.createActivation(AccountActivationType.EMAIL);
+
     await this.updateReferral(account, dto.referral, dto.ip);
     await account.save();
 
@@ -342,10 +348,16 @@ export class AuthenticationServiceV2 {
       email: dto.email,
     });
     await this.analyticService.trackRegistration(dto.ip, account._id);
-    await this.mailer.sendRegistrationEmail(
-      dto.hostUrl,
-      account.email,
-      activation.verifyToken,
+
+    await this.verifyQueue.add(
+      {
+        hostUrl: dto.hostUrl,
+        toEmail: account.email,
+        accountId: account.id,
+      },
+      {
+        removeOnComplete: true,
+      },
     );
 
     return this.login(credential, account);
