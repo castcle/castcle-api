@@ -21,7 +21,8 @@
  * or have any questions.
  */
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { RemoveLeadingZero } from '@castcle-api/utils/commons';
+import { CastcleRegExp, RemoveLeadingZero } from '@castcle-api/utils/commons';
+import { RequireAtLeastOne } from '@castcle-api/utils/decorators';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform, Type } from 'class-transformer';
 import {
@@ -35,6 +36,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Matches,
   ValidateNested,
 } from 'class-validator';
 import {
@@ -49,6 +51,7 @@ import {
   UserType,
   Wallet,
 } from '../models';
+import { CastcleId } from '../utils/common';
 import { CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 import { Meta } from './response.dto';
@@ -453,6 +456,7 @@ export class RemoveFarmParam {
 export class UpdateUserDtoV2 {
   @IsOptional()
   @IsString()
+  @CastcleId()
   castcleId?: string;
 
   @IsOptional()

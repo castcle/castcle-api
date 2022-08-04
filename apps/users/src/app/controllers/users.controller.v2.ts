@@ -66,6 +66,7 @@ import {
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { CastcleRegExp } from '@castcle-api/utils/commons';
 import {
   Auth,
   Authorizer,
