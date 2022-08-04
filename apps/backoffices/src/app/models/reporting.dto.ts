@@ -89,4 +89,8 @@ export class UpdateIllegal {
   @IsOptional()
   @IsString()
   subjectByAdmin?: string;
+
+  @IsOptional()
+  @IsString()
+  messageByAdmin?: string;
 }
