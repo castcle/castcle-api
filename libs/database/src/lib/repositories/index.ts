@@ -1378,6 +1378,12 @@ export class Repository {
   async deleteCastcleAccount(account: Account) {
     const users = await this.userModel.find({ ownerAccount: account._id });
     const userIds = users.map((user) => user._id);
+
+    const follower = await this.relationshipModel.find({
+      $or: [{ followedUser: { $in: userIds } }, { user: { $in: userIds } }],
+      following: true,
+    });
+
     const $v1Delete = [
       this.activationModel.deleteMany({ account: account._id }),
       this.authenIdModel.deleteMany({ account: account._id }),
@@ -1423,6 +1429,30 @@ export class Repository {
         { _id: { $in: userIds } },
         { visibility: EntityVisibility.Deleted },
       ),
+      userIds.map(async (id) => {
+        await this.userModel.updateMany(
+          {
+            _id: {
+              $in: follower
+                .filter(({ user }) => String(user) === String(id))
+                .map(({ followedUser }) => followedUser),
+            },
+          },
+          { $inc: { followerCount: -1 } },
+        );
+        await this.userModel.updateMany(
+          {
+            _id: {
+              $in: follower
+                .filter(
+                  ({ followedUser }) => String(followedUser) === String(id),
+                )
+                .map(({ user }) => user),
+            },
+          },
+          { $inc: { followedCount: -1 } },
+        );
+      }),
     ];
 
     await Promise.all([...$v1Delete, ...$hardDelete, ...$softDelete]);
