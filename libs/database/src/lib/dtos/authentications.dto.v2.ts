@@ -33,7 +33,7 @@ import {
   Matches,
 } from 'class-validator';
 import { AuthenticationProvider, OtpObjective } from '../models';
-import { CastcleId } from '../utils/common';
+import { CastcleId } from '../utils/validates';
 import { AcceptPlatform } from './common.dto';
 
 export class LoginWithEmailDto {

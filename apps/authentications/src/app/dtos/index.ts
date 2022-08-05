@@ -23,6 +23,7 @@
 import {
   AcceptPlatform,
   AuthenticationProvider,
+  CastcleId,
   OtpObjective,
   PageResponseDto,
   UserResponseDto,
@@ -40,7 +41,6 @@ import {
   Matches,
   ValidateNested,
 } from 'class-validator';
-import { CastcleId } from 'libs/database/src/lib/utils/common';
 
 export class GuestLoginDto {
   @IsString()
