@@ -391,10 +391,10 @@ describe('UserServiceV2', () => {
 
     it('should return new castcleId is duplicate', async () => {
       const respPage = await userServiceV2.createPage(userDemo, {
-        castcleId: 'testNewPage',
+        castcleId: '@testNewPage',
         displayName: 'testNewPage',
       });
-      expect(respPage.castcleId).toEqual('testnewpage1');
+      expect(respPage.castcleId).toEqual('@testnewpage1');
     });
 
     it('should return page of user when created', async () => {

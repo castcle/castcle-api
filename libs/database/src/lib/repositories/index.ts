@@ -750,8 +750,13 @@ export class Repository {
       user.displayId || user.displayName,
     );
 
-    user.displayId = suggestId;
+    user.displayId = this.getDisplayIdWithPrefix(suggestId);
     return new this.userModel(user).save();
+  }
+
+  private getDisplayIdWithPrefix(displayId: string) {
+    if (displayId.startsWith('@')) return displayId;
+    return `@${displayId}`;
   }
 
   private getUserQuery(filter: UserQuery) {
