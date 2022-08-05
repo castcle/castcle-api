@@ -23,6 +23,7 @@
 import {
   AcceptPlatform,
   AuthenticationProvider,
+  CastcleId,
   OtpObjective,
   PageResponseDto,
   UserResponseDto,
@@ -40,6 +41,7 @@ import {
   Matches,
   ValidateNested,
 } from 'class-validator';
+
 export class GuestLoginDto {
   @IsString()
   @IsNotEmpty()
@@ -103,6 +105,7 @@ export class CheckIdExistDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
+  @CastcleId()
   castcleId: string;
 }
 

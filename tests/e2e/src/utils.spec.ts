@@ -56,7 +56,7 @@ export const registerUser = async (name = Date.now().toString()) => {
       Platform: 'CastcleOS',
     })
     .send({
-      castcleId: `${name}.castcle`,
+      castcleId: `@${name}_castcle`,
       displayName: name,
       email: `${name}@castcle.com`,
       password: 'n+4H&uME63gKv[=',

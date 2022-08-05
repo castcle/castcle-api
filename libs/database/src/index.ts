@@ -26,3 +26,4 @@ export * from './lib/dtos';
 export * from './lib/mocks';
 export * from './lib/models';
 export * from './lib/schemas';
+export * from './lib/utils/validates';
