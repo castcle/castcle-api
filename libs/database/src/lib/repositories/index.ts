@@ -359,7 +359,7 @@ export class Repository {
         pipelineOfGetAvailableId(castcleId),
       );
 
-    return `${castcleId}${availableId ? availableId?.number : ''}`;
+    return `@${castcleId}${availableId ? availableId?.number : ''}`;
   }
 
   private getAccountQuery(filter: AccountQuery) {

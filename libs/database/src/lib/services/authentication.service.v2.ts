@@ -388,7 +388,9 @@ export class AuthenticationServiceV2 {
 
     await this.repository.createUser({
       ownerAccount: account._id,
-      displayId: dto.displayName || `${dto.provider}${dto.socialId}`,
+      displayId: dto.displayName
+        ? `@${dto.displayName}`
+        : `@${dto.provider}${dto.socialId}`,
       displayName: dto.displayName || `${dto.provider}${dto.socialId}`,
       type: UserType.PEOPLE,
       email: dto.email,

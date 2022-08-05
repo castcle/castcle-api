@@ -40,6 +40,8 @@ import {
   Matches,
   ValidateNested,
 } from 'class-validator';
+import { CastcleId } from 'libs/database/src/lib/utils/common';
+
 export class GuestLoginDto {
   @IsString()
   @IsNotEmpty()
@@ -103,6 +105,7 @@ export class CheckIdExistDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
+  @CastcleId()
   castcleId: string;
 }
 

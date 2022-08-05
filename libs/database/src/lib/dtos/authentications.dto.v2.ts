@@ -33,6 +33,7 @@ import {
   Matches,
 } from 'class-validator';
 import { AuthenticationProvider, OtpObjective } from '../models';
+import { CastcleId } from '../utils/common';
 import { AcceptPlatform } from './common.dto';
 
 export class LoginWithEmailDto {
@@ -58,6 +59,7 @@ export class RegisterWithEmailDto {
 
   @IsString()
   @IsNotEmpty()
+  @CastcleId()
   castcleId: string;
 
   @IsOptional()
