@@ -23,10 +23,10 @@
 
 export class CastcleName {
   static toSlug(keyword: string) {
-    return keyword?.toLowerCase().replace(/\W/g, '_');
+    return keyword?.toLowerCase().replace(/[^\w\@]/g, '_');
   }
 
   static fromTagToSlug(keyword: string) {
-    return keyword?.toLowerCase().replace(/\W/g, '');
+    return keyword?.toLowerCase().replace(/[^\w]/g, '');
   }
 }
