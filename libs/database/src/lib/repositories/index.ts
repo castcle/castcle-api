@@ -952,7 +952,7 @@ export class Repository {
   }
 
   aggregationContent({ maxResults, sortBy, ...filter }: ContentQuery) {
-    return this.contentModel.aggregate(
+    return this.contentModel.aggregate<GetCastDto>(
       pipelineGetContents({
         maxResults,
         sortBy,
@@ -1510,29 +1510,38 @@ export class Repository {
     await session.withTransaction(async () => {
       await Promise.all([
         this.deleteContents({
-          _id: contentId,
+          _id: new Types.ObjectId(contentId),
         }),
         this.deleteContents({
-          originalPost: contentId as any,
+          originalPost: new Types.ObjectId(contentId) as any,
         }),
         this.deleteEngagements({
           targetRef: {
             $ref: 'content',
-            $id: contentId,
+            $id: new Types.ObjectId(contentId),
           },
         }),
         this.deleteComments(
           {
             targetRef: {
               $ref: 'content',
-              $id: contentId,
+              $id: new Types.ObjectId(contentId),
             },
           },
           { session },
         ),
-        this.deleteFeedItems({ content: contentId as any }, { session }),
-        this.deleteRevisions({ 'payload._id': contentId }, { session }),
-        this.deleteNotifications({ contentRef: contentId }, { session }),
+        this.deleteFeedItems(
+          { content: new Types.ObjectId(contentId) as any },
+          { session },
+        ),
+        this.deleteRevisions(
+          { 'payload._id': new Types.ObjectId(contentId) },
+          { session },
+        ),
+        this.deleteNotifications(
+          { contentRef: new Types.ObjectId(contentId) },
+          { session },
+        ),
       ]);
       await session.commitTransaction();
       session.endSession();
