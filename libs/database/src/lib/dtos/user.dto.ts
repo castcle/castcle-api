@@ -279,6 +279,7 @@ export class PageDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
+  @CastcleId()
   castcleId: string;
 
   @IsString()
