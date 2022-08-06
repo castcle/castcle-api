@@ -26,8 +26,7 @@ import { TwilioChannel } from '@castcle-api/utils/clients';
 import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import {
   CreateAccountDeviceDto,
   CreateAccountDto,
@@ -42,6 +41,7 @@ import {
   UserAccessTokenPayload,
 } from '../dtos/token.dto';
 import {
+  AccountActivationType,
   AccountRequirements,
   AuthenticationProvider,
   EventName,
@@ -166,7 +166,7 @@ export class AuthenticationService {
     });
     const credential = new this._credentialModel({
       account: {
-        _id: mongoose.Types.ObjectId(accountDocument._id),
+        _id: new Types.ObjectId(accountDocument._id),
         isGuest: true,
         preferences: {
           languages: accountRequirements.languagesPreferences,
@@ -185,7 +185,7 @@ export class AuthenticationService {
     //TODO !!! : how to reduct this
     if (!newAccount.credentials) newAccount.credentials = [];
     newAccount.credentials.push({
-      _id: mongoose.Types.ObjectId(credentialDocument._id),
+      _id: new Types.ObjectId(credentialDocument._id),
       deviceUUID: credentialDocument.deviceUUID,
     });
     await newAccount.save();
@@ -222,7 +222,7 @@ export class AuthenticationService {
     if (credentialAccount) {
       if (!credentialAccount.credentials) credentialAccount.credentials = [];
       /*credentialAccount.credentials.push({
-        _id: mongoose.Types.ObjectId(credential._id),
+        _id: new Types.ObjectId(credential._id),
         deviceUUID: credential.deviceUUID
       });
       await credentialAccount.save();*/
@@ -232,7 +232,7 @@ export class AuthenticationService {
           {
             $push: {
               credentials: {
-                _id: mongoose.Types.ObjectId(credential._id),
+                _id: new Types.ObjectId(credential._id),
                 deviceUUID: credential.deviceUUID,
               },
             },
@@ -382,7 +382,10 @@ export class AuthenticationService {
       type: UserType.PEOPLE,
     }).save();
 
-    const updateAccount = await this.createAccountActivation(account, 'email');
+    const updateAccount = await this.createAccountActivation(
+      account,
+      AccountActivationType.EMAIL,
+    );
     const referrerFromBody = await this.userService.getByIdOrCastcleId(
       requirements.referral,
     );
@@ -422,7 +425,7 @@ export class AuthenticationService {
     return updateAccount;
   }
 
-  createAccountActivation(account: Account, type: 'email' | 'phone') {
+  createAccountActivation(account: Account, type: AccountActivationType) {
     const emailTokenResult = this._generateEmailVerifyToken({
       id: account._id,
     });
@@ -544,11 +547,8 @@ export class AuthenticationService {
     requestId: string,
     objective?: OtpObjective,
   ) {
-    const filter = () => {
-      if (objective) return { requestId: requestId, action: objective };
-      else return { requestId: requestId };
-    };
-
+    const filter: FilterQuery<Otp> = { requestId };
+    if (objective) filter.action = objective;
     return this._otpModel.find(filter).exec();
   }
 

@@ -21,41 +21,19 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { WalletType } from '../models';
-import { CastcleBase } from './base.schema';
+import { TransactionStatus, WalletType } from './transaction.enum';
 
-export enum CAccountNature {
-  DEBIT = 'debit',
-  CREDIT = 'credit',
+export class WalletHistoryResponse {
+  id: string;
+  type: string;
+  value: number;
+  status: TransactionStatus;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-@Schema()
-export class CAccount extends CastcleBase {
-  @Prop()
-  name: string;
-
-  @Prop({ type: String })
-  nature: CAccountNature;
-
-  @Prop({ unique: true, index: true })
-  no: string;
-
-  @Prop({ type: SchemaTypes.ObjectId })
-  parent?: CAccount;
-
-  @Prop({ type: Array })
-  child?: string[];
-
-  @Prop({ type: String })
-  walletType?: WalletType;
-
-  @Prop()
-  walletAddress?: string;
-
-  @Prop({ type: SchemaTypes.Decimal128 })
-  balance: number;
+export class TopUpDto {
+  type: WalletType;
+  userId?: string;
+  value: number;
 }
-
-export const CAccountSchema = SchemaFactory.createForClass(CAccount);

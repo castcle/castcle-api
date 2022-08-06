@@ -21,22 +21,30 @@
  * or have any questions.
  */
 
+import { ClaimAirdropCommand } from '@castcle-api/cqrs';
 import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
-import { Body, Post } from '@nestjs/common';
+import { Body, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
+import { Types } from 'mongoose';
 import { BackofficeAuth } from '../decorators';
 import { RequiredPermissions } from '../guards/permisson.guard';
 import { ClaimAirdropDto } from '../models/airdrop.dto';
 import { Permission } from '../models/authentication.enum';
-import { AirdropsService } from '../services/airdrops.service';
 
 @CastcleControllerV2({ path: 'backoffices/airdrop' })
 export class AirdropsController {
-  constructor(private airdropsService: AirdropsService) {}
+  constructor(private commandBus: CommandBus) {}
 
   @BackofficeAuth()
   @RequiredPermissions(Permission.Manage)
   @Post('claim')
-  claimAirdrop(@Body() { account, campaign }: ClaimAirdropDto) {
-    return this.airdropsService.claimAirdrop(account, campaign);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async claimAirdrop(@Body() { campaign, user }: ClaimAirdropDto) {
+    const command = new ClaimAirdropCommand(
+      new Types.ObjectId(campaign),
+      new Types.ObjectId(user),
+    );
+
+    await this.commandBus.execute(command);
   }
 }

@@ -1,8 +1,9 @@
 import {
-  BackofficeDatabaseModule,
+  DatabaseModule,
   MockUserDetail,
   MockUserService,
 } from '@castcle-api/database';
+import { CastcleBackofficeMongooseModule } from '@castcle-api/environments';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { BackOfficeMongooseForFeatures } from '../schemas';
@@ -19,7 +20,11 @@ describe('UserBackofficeService', () => {
     mongod = await MongoMemoryReplSet.create();
     global.mongoUri = mongod.getUri();
     moduleRef = await Test.createTestingModule({
-      imports: [BackofficeDatabaseModule, BackOfficeMongooseForFeatures],
+      imports: [
+        CastcleBackofficeMongooseModule,
+        DatabaseModule,
+        BackOfficeMongooseForFeatures,
+      ],
       providers: [UserBackofficeService, MockUserService],
     }).compile();
 

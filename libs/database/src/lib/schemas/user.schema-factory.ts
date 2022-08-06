@@ -37,6 +37,7 @@ import {
   UserResponseDto,
 } from '../dtos';
 import { CastcleNumber, UserType } from '../models';
+import { Account } from './account.schema';
 import { Relationship } from './relationship.schema';
 import { SocialSync } from './social-sync.schema';
 import { Transaction } from './transaction.schema';
@@ -72,7 +73,7 @@ export const UserSchemaFactory = (
     syncSocial,
     casts,
   }: UserResponseOption = {}) {
-    const self = await this.populate('ownerAccount').execPopulate();
+    const self = await this.populate('ownerAccount');
     const response = {
       id: self._id,
       castcleId: self.displayId,
@@ -285,7 +286,8 @@ export const UserSchemaFactory = (
   UserSchema.methods.toOwnerResponse = async function (dto?: {
     expansionFields?: UserField[];
   }): Promise<OwnerResponse> {
-    const { ownerAccount } = await this.populate('ownerAccount').execPopulate();
+    const user = await this.populate('ownerAccount');
+    const ownerAccount = user.ownerAccount as Account;
     const response: OwnerResponse = {
       ...this.toPublicResponse(),
       canUpdateCastcleId: this.canUpdateCastcleId(),
@@ -300,7 +302,7 @@ export const UserSchemaFactory = (
     if (!dto?.expansionFields?.length) return response;
     if (dto?.expansionFields.includes(UserField.LinkSocial)) {
       response.linkSocial = {};
-      Object.entries(this.ownerAccount.authentications || {}).forEach(
+      Object.entries(ownerAccount.authentications || {}).forEach(
         ([provider, authentication]) => {
           response.linkSocial[provider] = { socialId: authentication.socialId };
         },
@@ -356,7 +358,7 @@ export const UserSchemaFactory = (
           },
         )
         .exec();
-      if (result.upserted) {
+      if (result.upsertedCount) {
         this.followedCount++;
         followedUser.followerCount++;
         await Promise.all([this.save(), followedUser.save()]);

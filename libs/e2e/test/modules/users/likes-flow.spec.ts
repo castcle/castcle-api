@@ -129,7 +129,7 @@ export const testLikesFlow = () => {
     );
 
     const content = await contentModel
-      .findOne({ _id: mongoose.Types.ObjectId(contentId) })
+      .findOne({ _id: new Types.ObjectId(contentId) })
       .exec();
     expect(content.engagements.like.count).toEqual(0);
   });
@@ -141,7 +141,7 @@ export const testLikesFlow = () => {
     );
 
     const comment = await commentModel
-      .findOne({ _id: mongoose.Types.ObjectId(commentId) })
+      .findOne({ _id: new Types.ObjectId(commentId) })
       .exec();
     expect(comment.engagements.like.count).toEqual(0);
     expect(comment.type).toEqual('comment');
@@ -154,7 +154,7 @@ export const testLikesFlow = () => {
     );
 
     const replyComment = await commentModel
-      .findOne({ _id: mongoose.Types.ObjectId(replyCommentId) })
+      .findOne({ _id: new Types.ObjectId(replyCommentId) })
       .exec();
     expect(replyComment.engagements.like.count).toEqual(0);
     expect(replyComment.type).toEqual('reply');

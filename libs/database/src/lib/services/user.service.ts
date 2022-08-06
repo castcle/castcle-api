@@ -34,7 +34,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
 import { isMongoId } from 'class-validator';
-import * as mongoose from 'mongoose';
 import { FilterQuery, Model, Types, UpdateWriteOpResult } from 'mongoose';
 import { createTransport } from 'nodemailer';
 import {
@@ -175,7 +174,7 @@ export class UserService {
    */
   getBalance = async (user: User) => {
     const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
-      pipelineOfGetBalance(String(user.ownerAccount)),
+      pipelineOfGetBalance(user._id),
     );
 
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
@@ -720,7 +719,7 @@ export class UserService {
     const followingUsersId = userRelation.flatMap((u) =>
       u.user_relation.flatMap((r) => {
         return {
-          userId: mongoose.Types.ObjectId(r._id),
+          userId: new Types.ObjectId(r._id),
           id: u._id,
         };
       }),
@@ -810,10 +809,6 @@ export class UserService {
       this.activationModel.updateMany(
         { account: account._id },
         { visibility: EntityVisibility.Deleted },
-      ),
-      this._accountModel.updateMany(
-        { account: account._id },
-        { 'activations.$.visibility': EntityVisibility.Deleted },
       ),
     ]);
   };
@@ -970,7 +965,7 @@ export class UserService {
       );
 
     const followingUsersId = userRelation.flatMap((u) =>
-      u.user_relation.flatMap((r) => mongoose.Types.ObjectId(r._id)),
+      u.user_relation.flatMap((r) => new Types.ObjectId(r._id)),
     );
 
     const query = {

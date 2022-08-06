@@ -48,7 +48,7 @@ describe('Twitter Service', () => {
   let twitterService: Union<TwitterService, PrivateTwitterService>;
 
   const author = {
-    id: Types.ObjectId(),
+    id: new Types.ObjectId(),
     type: 'page',
     castcleId: 'castcleId',
     displayName: 'Castcle',

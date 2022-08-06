@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { Types } from 'mongoose';
 import { MicroTransaction } from '../schemas/transaction.schema';
 import { QueueTopic } from './queue.enum';
 
@@ -28,8 +29,8 @@ export class ClaimAirdropPayload {
   topic = QueueTopic.CLAIM_AIRDROP;
 
   constructor(
-    public campaignId: string,
-    public to: MicroTransaction[],
+    public campaignId: Types.ObjectId,
+    public to: Partial<MicroTransaction>[],
     public mobile?: { countryCode: string; number: string },
   ) {}
 }

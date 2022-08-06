@@ -44,7 +44,7 @@ export class AdsCampaign extends CastcleBase {
   @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'User' })
   owner: User;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: Object })
   adsRef: DBRef;
 
   @Prop()

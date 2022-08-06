@@ -267,8 +267,8 @@ export class ContentService {
   getRecastContent = (originalPostId: string, authorId: string) => {
     return this._contentModel
       .findOne({
-        'author.id': Types.ObjectId(authorId),
-        'originalPost._id': Types.ObjectId(originalPostId),
+        'author.id': new Types.ObjectId(authorId),
+        'originalPost._id': new Types.ObjectId(originalPostId),
         isRecast: true,
       })
       .exec();
@@ -373,7 +373,8 @@ export class ContentService {
     options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS,
   ) => {
     let findFilter: FilterQuery<Content> = {
-      'author.id': typeof userId === 'string' ? Types.ObjectId(userId) : userId,
+      'author.id':
+        typeof userId === 'string' ? new Types.ObjectId(userId) : userId,
       visibility: EntityVisibility.Publish,
     };
     if (options.type) findFilter.type = options.type;
@@ -1070,7 +1071,7 @@ Message: ${message}`,
     untilId?: string,
   ) => {
     let filter: FilterQuery<Content> = {
-      'originalPost._id': Types.ObjectId(originalPostId),
+      'originalPost._id': new Types.ObjectId(originalPostId),
     };
     const totalDocument = await this._contentModel
       .countDocuments(filter)
@@ -1079,14 +1080,14 @@ Message: ${message}`,
       filter = {
         ...filter,
         'author.id': {
-          $gt: Types.ObjectId(sinceId),
+          $gt: new Types.ObjectId(sinceId),
         },
       };
     } else if (untilId) {
       filter = {
         ...filter,
         'author.id': {
-          $lt: Types.ObjectId(untilId),
+          $lt: new Types.ObjectId(untilId),
         },
       };
     }
@@ -1185,7 +1186,7 @@ Message: ${message}`,
       type: 'like',
       targetRef: {
         $ref: 'content',
-        $id: Types.ObjectId(contentId),
+        $id: new Types.ObjectId(contentId),
       },
     };
     const totalDocument = await this._engagementModel

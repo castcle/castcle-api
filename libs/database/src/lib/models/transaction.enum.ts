@@ -21,45 +21,44 @@
  * or have any questions.
  */
 
-export enum WalletType {
-  ADS = 'ads',
-  LOCKING = 'locking',
-  PERSONAL = 'personal',
-  CASTCLE_MINT_CONTRACT = 'castcle.mintcontract',
-  CASTCLE_TREASURY = 'castcle.treasury',
-  CASTCLE_SOCIAL = 'castcle.social',
-  CASTCLE_AIRDROP = 'castcle.airdrop',
-  CASTCLE_REFERAL = 'castcle.referal',
-  EXTERNAL_DEPOSIT = 'external.deposit',
-  EXTERNAL_WITHDRAW = 'external.withdraw',
-  EXTERNAL_MINT = 'external.mint',
-  FARM_LOCKED = 'farm.locked',
+export enum TransactionFilter {
+  AIRDROP_REFERRAL = 'airdrop-referral',
+  CONTENT_FARMING = 'content-farming',
+  DEPOSIT_SEND = 'deposit-send',
+  SOCIAL_REWARDS = 'social-rewards',
+  WALLET_BALANCE = 'wallet-balance',
+}
+
+export enum TransactionStatus {
+  FAILED = 'failed',
+  PENDING = 'pending',
+  VERIFIED = 'verified',
 }
 
 export enum TransactionType {
-  DEPOSIT = 'deposit',
-  SEND = 'send',
-  RECEIVE = 'receive',
-  WITHDRAW = 'withdraw',
-  SOCIAL = 'social',
-  REFERRAL = 'referral',
   AIRDROP = 'airdrop',
-  FARMING = 'farming',
-  UNFARMING = 'unfarming',
+  DEPOSIT = 'deposit',
   FARMED = 'farmed',
+  FARMING = 'farming',
+  RECEIVE = 'receive',
+  REFERRAL = 'referral',
+  SEND = 'send',
+  SOCIAL = 'social',
+  UNFARMING = 'unfarming',
+  WITHDRAW = 'withdraw',
 }
 
-export enum TransactionFilterType {
-  WALLET_BALANCE = 'wallet-balance',
-  CONTENT_FARMING = 'content-farming',
-  SOCIAL_REWARD = 'social-rewards',
-  DEPOSIT_SEND = 'deposit-send',
-  AIRDROP_REFERAL = 'airdrop-referral',
-}
-
-export class TransactionData {
-  campaignId?: string;
-  type: TransactionType;
-  filter: { [key in TransactionFilterType]?: boolean };
-  payload: any;
+export enum WalletType {
+  ADS = 'ads',
+  CASTCLE_AIRDROP = 'castcle.airdrop',
+  CASTCLE_MINT_CONTRACT = 'castcle.mint.contract',
+  CASTCLE_REFERRAL = 'castcle.referral',
+  CASTCLE_SOCIAL = 'castcle.social',
+  CASTCLE_TREASURY = 'castcle.treasury',
+  EXTERNAL_DEPOSIT = 'external.deposit',
+  EXTERNAL_MINT = 'external.mint',
+  EXTERNAL_WITHDRAW = 'external.withdraw',
+  FARM_LOCKED = 'farm.locked',
+  LOCKING = 'locking',
+  PERSONAL = 'personal',
 }

@@ -48,10 +48,8 @@ import {
 import { lastValueFrom, map } from 'rxjs';
 import {
   GetAvailableIdResponse,
-  GetBalanceResponse,
   pipelineGetContents,
   pipelineOfGetAvailableId,
-  pipelineOfGetBalance,
 } from '../aggregations';
 import {
   AccessTokenPayload,
@@ -70,9 +68,8 @@ import {
 import {
   AdsBoostStatus,
   AdsPaymentMethod,
-  CACCOUNT_NO,
+  CAccountNo,
   CastcleIdMetadata,
-  CastcleNumber,
   ContentType,
   Country,
   EmailDomainDisposable,
@@ -94,7 +91,6 @@ import {
   AdsCampaign,
   AdsPlacement,
   AccountAuthenId as AuthenId,
-  CAccount,
   CAccountNature,
   Comment,
   Content,
@@ -117,6 +113,7 @@ import {
   Transaction,
   User,
   UxEngagement,
+  cAccount,
 } from '../schemas';
 import { FeedItemV2 } from '../schemas/feed-item-v2.schema';
 import { WalletShortcut } from '../schemas/wallet-shortcut.schema';
@@ -138,7 +135,7 @@ type AccountQuery = {
 type UserQuery = {
   /** Mongo ID or castcle ID */
   _id?: string | Types.ObjectId[] | string[];
-  accountId?: string | Types.ObjectId[];
+  accountId?: string | Types.ObjectId | Types.ObjectId[];
   castcleId?: string;
   excludeRelationship?: string[] | User[];
   keyword?: {
@@ -212,9 +209,7 @@ type ContentQuery = {
   originalPost?: string;
   sinceId?: string;
   type?: ContentType[];
-  sortBy?: {
-    [key: string]: string;
-  };
+  sortBy?: Record<string, 1 | -1>;
   untilId?: string;
   viewer?: User;
   visibility?: EntityVisibility | EntityVisibility[];
@@ -274,7 +269,7 @@ export class Repository {
     @InjectModel('Account') private accountModel: Model<Account>,
     @InjectModel('AdsCampaign') private adsCampaignModel: Model<AdsCampaign>,
     @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
-    @InjectModel('CAccount') private caccountModel: Model<CAccount>,
+    @InjectModel('cAccount') private caccountModel: Model<cAccount>,
     @InjectModel('Comment') private commentModel: Model<Comment>,
     @InjectModel('Content') private contentModel: Model<Content>,
     @InjectModel('Credential') private credentialModel: CredentialModel,
@@ -411,17 +406,17 @@ export class Repository {
     if (isArray(filter._id))
       query._id = {
         $in: (filter._id as any).map((id) =>
-          isString(id) ? Types.ObjectId(id) : id,
+          isString(id) ? new Types.ObjectId(id) : id,
         ),
       };
     else if (filter._id)
       query._id = isString(filter._id)
-        ? Types.ObjectId(filter._id as any)
+        ? new Types.ObjectId(filter._id as any)
         : filter._id;
 
     if (filter.message) query['payload.message'] = filter.message;
     if (filter.originalPost)
-      query['originalPost._id'] = Types.ObjectId(filter.originalPost);
+      query['originalPost._id'] = new Types.ObjectId(filter.originalPost);
     if (filter.author) query['author.id'] = filter.author;
     if (filter.isRecast) query.isRecast = filter.isRecast;
     if (filter.isQuote) query.isQuote = filter.isQuote;
@@ -509,7 +504,7 @@ export class Repository {
     if (filter.targetRef)
       query.targetRef = {
         $ref: filter.targetRef.$ref,
-        $id: Types.ObjectId(filter.targetRef.$id),
+        $id: new Types.ObjectId(filter.targetRef.$id),
       };
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -563,7 +558,7 @@ export class Repository {
   private getSocialSyncQuery(filter: SocialSyncQuery) {
     const query: FilterQuery<SocialSync> = {};
 
-    if (filter._id) query._id = Types.ObjectId(filter._id);
+    if (filter._id) query._id = new Types.ObjectId(filter._id);
     if (filter.user) query.user = filter.user as any;
 
     return query;
@@ -764,30 +759,26 @@ export class Repository {
       visibility: EntityVisibility.Publish,
     };
 
-    if (isArray(filter.accountId))
-      query.ownerAccount = { $in: filter.accountId as any };
+    if (Array.isArray(filter.accountId)) {
+      query.ownerAccount = { $in: filter.accountId };
+    } else if (filter.accountId) {
+      query.ownerAccount = new Types.ObjectId(filter.accountId);
+    }
 
-    if (filter.accountId) query.ownerAccount = filter.accountId as any;
     if (filter.type) query.type = filter.type;
-    let andId = [];
 
-    if (isMongoId(String(filter._id))) {
-      andId = [{ _id: filter._id }];
-    } else if (isArray(filter._id)) {
-      andId = [{ _id: { $in: filter._id } }];
+    if (filter._id || filter.excludeRelationship) query.$and = [];
+    if (Array.isArray(filter._id)) {
+      query.$and.push({ _id: { $in: filter._id } });
+    } else if (isMongoId(String(filter._id))) {
+      query.$and.push({ _id: filter._id });
     } else if (filter._id) {
-      andId = [
-        {
-          displayId: CastcleRegExp.fromString(filter._id as string),
-        },
-      ];
+      query.$and.push({ displayId: CastcleRegExp.fromString(filter._id) });
     }
 
     if (filter.excludeRelationship) {
-      andId = [...andId, { _id: { $nin: filter.excludeRelationship } }];
+      query.$and.push({ _id: { $nin: filter.excludeRelationship } });
     }
-
-    if (andId.length) query.$and = andId;
 
     if (filter.keyword?.input) {
       query.$or = [
@@ -1245,7 +1236,7 @@ export class Repository {
       },
     );
     return this.feedItemV2Model
-      .insertMany(
+      .create(
         contents.newContents.map((c) => ({
           viewer: viewerAccountId,
           content: c._id,
@@ -1290,64 +1281,53 @@ export class Repository {
     );
   }
 
-  /**
-   * Get account's balance
-   */
-  getBalance = async (dto: { accountId: string }) => {
-    const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
-      pipelineOfGetBalance(dto.accountId),
-    );
-
-    return CastcleNumber.from(balance?.total?.toString()).toNumber();
-  };
-
-  getFindQueryForChild = (caccount: CAccount) => {
+  getFindQueryForChild = (cAccount: cAccount) => {
     const orQuery = [
       {
-        'ledgers.debit.caccountNo': caccount.no,
+        'ledgers.debit.cAccountNo': cAccount.no,
       },
       {
-        'ledgers.credit.caccountNo': caccount.no,
+        'ledgers.credit.cAccountNo': cAccount.no,
       },
     ];
-    if (caccount.child)
-      caccount.child.forEach((childNo) => {
+    if (cAccount.child)
+      cAccount.child.forEach((childNo) => {
         orQuery.push({
-          'ledgers.debit.caccountNo': childNo,
+          'ledgers.debit.cAccountNo': childNo,
         });
         orQuery.push({
-          'ledgers.credit.caccountNo': childNo,
+          'ledgers.credit.cAccountNo': childNo,
         });
       });
     return orQuery;
   };
 
-  findTransactionsOfCAccount = (caccount: CAccount) => {
-    const orQuery = this.getFindQueryForChild(caccount);
+  findTransactionsOfCAccount = (cAccount: cAccount) => {
+    const orQuery = this.getFindQueryForChild(cAccount);
     const findFilter: FilterQuery<Transaction> = {
       $or: orQuery,
     };
     return this.transactionModel.find(findFilter);
   };
 
-  findCAccountByCaccountNO = (caccountNo: string) =>
-    this.caccountModel.findOne({ no: caccountNo });
+  findCAccountByCaccountNO = (cAccountNo: string) =>
+    this.caccountModel.findOne({ no: cAccountNo });
 
-  getTAccountBalance = async (caccountNo: string) => {
+  getTAccountBalance = async (cAccountNo: string) => {
     //get account First
-    const caccount = await this.caccountModel.findOne({ no: caccountNo });
-    const txs = await this.findTransactionsOfCAccount(caccount);
+    const cAccount = await this.caccountModel.findOne({ no: cAccountNo });
+    const txs = await this.findTransactionsOfCAccount(cAccount);
     const allDebit = txs.reduce((totalDebit, currentTx) => {
       return (
         totalDebit +
         currentTx.ledgers
           .filter(
             (t) =>
-              caccount.child.findIndex(
-                (childNo) => t.debit.caccountNo === childNo,
-              ) >= 0 || caccount.no === t.debit.caccountNo,
+              cAccount.child.findIndex(
+                (childNo) => t.debit.cAccountNo === childNo,
+              ) >= 0 || cAccount.no === t.debit.cAccountNo,
           )
-          .reduce((sumDebit, now) => now.debit.value + sumDebit, 0)
+          .reduce((sumDebit, now) => Number(now.debit.value) + sumDebit, 0)
       );
     }, 0);
     const allCredit = txs.reduce((totalCredit, currentTx) => {
@@ -1356,14 +1336,14 @@ export class Repository {
         currentTx.ledgers
           .filter(
             (t) =>
-              caccount.child.findIndex(
-                (childNo) => t.credit.caccountNo === childNo,
-              ) >= 0 || caccount.no === t.credit.caccountNo,
+              cAccount.child.findIndex(
+                (childNo) => t.credit.cAccountNo === childNo,
+              ) >= 0 || cAccount.no === t.credit.cAccountNo,
           )
-          .reduce((sumCredit, now) => now.debit.value + sumCredit, 0)
+          .reduce((sumCredit, now) => Number(now.debit.value) + sumCredit, 0)
       );
     }, 0);
-    if (caccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
+    if (cAccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
     else return allCredit - allDebit;
   };
 
@@ -1382,7 +1362,7 @@ export class Repository {
 
   getCastUSDDistributeRate = async () => {
     const collectedCast = await this.getTAccountBalance(
-      CACCOUNT_NO.SOCIAL_REWARD.NO,
+      CAccountNo.SOCIAL_REWARD.NO,
     );
     const adsPlacements = await this.getUndistributedAdsplacements();
     const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);

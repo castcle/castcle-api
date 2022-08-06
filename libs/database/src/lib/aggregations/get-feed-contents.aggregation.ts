@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { FilterQuery, Types } from 'mongoose';
+import { FilterQuery, PipelineStage, Types } from 'mongoose';
 import { Author, CastcleMetric } from '../dtos';
 import { EngagementType } from '../models';
 import { Content, DefaultContent, FeedItem, GuestFeedItem } from '../schemas';
@@ -63,7 +63,7 @@ export const pipelineOfGetGuestFeedContents = ({
   filtersDefault,
   filtersGuest,
   maxResults,
-}: GetGuestFeedContentsParams) => {
+}: GetGuestFeedContentsParams): PipelineStage[] => {
   return [
     {
       $sort: {
@@ -141,7 +141,7 @@ export const pipelineOfGetGuestFeedContents = ({
               as: 'content',
             },
           },
-          { $replaceWith: { $arrayElemAt: ['$content', 0] } },
+          { $replaceWith: { $arrayElemAt: ['$content', 0] } as any },
         ],
         engagements: [
           {
@@ -262,7 +262,7 @@ export const pipelineOfGetGuestFeedContents = ({
             },
           },
           { $unwind: '$authors' },
-          { $replaceWith: '$authors' },
+          { $replaceWith: '$authors' as any },
           {
             $project: {
               id: '$_id',
@@ -278,7 +278,9 @@ export const pipelineOfGetGuestFeedContents = ({
     },
   ];
 };
-export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
+export const pipelineOfGetFeedContents = (
+  params: GetFeedContentsParams,
+): PipelineStage[] => {
   return [
     {
       $match: {

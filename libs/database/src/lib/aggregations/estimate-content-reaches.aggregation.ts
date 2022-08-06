@@ -25,10 +25,10 @@ import { Types } from 'mongoose';
 import { Campaign } from '../schemas';
 
 export class EligibleAccount {
-  id: string;
+  id: Types.ObjectId;
   totalViews: number;
   views: number;
-  amount: number;
+  amount: Types.Decimal128;
 }
 
 export const pipelineOfEstimateContentReach = (
@@ -49,7 +49,9 @@ export const pipelineOfEstimateContentReach = (
       viewers: [
         {
           $match: {
-            viewer: accountId ? Types.ObjectId(accountId) : { $exists: true },
+            viewer: accountId
+              ? new Types.ObjectId(accountId)
+              : { $exists: true },
           },
         },
         { $group: { _id: '$viewer', n: { $count: {} } } },

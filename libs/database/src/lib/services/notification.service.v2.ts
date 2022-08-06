@@ -530,7 +530,7 @@ export class NotificationServiceV2 {
         },
       );
 
-      if (!updateNotify.nModified && !updateNotify.upserted) return;
+      if (!updateNotify.modifiedCount && !updateNotify.upsertedCount) return;
     }
 
     this.#logger.log('Insert data into notification is done.');

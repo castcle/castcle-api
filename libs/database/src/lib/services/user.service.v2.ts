@@ -20,8 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { Mailer } from '@castcle-api/utils/clients';
 import { CastcleQRCode, LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
@@ -60,7 +60,6 @@ import {
 } from '../dtos';
 import {
   AccountActivationType,
-  CampaignType,
   MetadataType,
   QueueName,
   ReportingAction,
@@ -72,13 +71,10 @@ import {
 import { Repository } from '../repositories';
 import { Account, Relationship, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
-import { CampaignService } from './campaign.service';
 import { NotificationServiceV2 } from './notification.service.v2';
 
 @Injectable()
 export class UserServiceV2 {
-  private logger = new CastLogger(UserServiceV2.name);
-
   constructor(
     @InjectModel('Relationship')
     private relationshipModel: Model<Relationship>,
@@ -87,11 +83,9 @@ export class UserServiceV2 {
     @InjectQueue(QueueName.REPORTING)
     private reportingQueue: Queue<ReportingMessage>,
     private analyticService: AnalyticService,
-    private campaignService: CampaignService,
     private mailerService: Mailer,
     private notificationService: NotificationServiceV2,
     private repository: Repository,
-    private mailer: Mailer,
   ) {}
 
   getUser = async (userId: string) => {
@@ -101,6 +95,10 @@ export class UserServiceV2 {
     });
     if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
     return user;
+  };
+
+  getUserByAccount = (accountId: Types.ObjectId) => {
+    return this.repository.findUser({ accountId });
   };
 
   getUserOnly = async (userId: string) => {
@@ -492,20 +490,6 @@ export class UserServiceV2 {
         mobileNumber,
       ),
     ]);
-
-    try {
-      await this.campaignService.claimCampaignsAirdrop(
-        account._id,
-        CampaignType.VERIFY_MOBILE,
-      );
-
-      await this.campaignService.claimCampaignsAirdrop(
-        String(account.referralBy),
-        CampaignType.FRIEND_REFERRAL,
-      );
-    } catch (error: unknown) {
-      this.logger.error(error, `updateMobile:claimAirdrop:error`);
-    }
   }
 
   async updateEmail(

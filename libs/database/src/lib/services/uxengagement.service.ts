@@ -24,8 +24,7 @@
 import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { UxEngagementBody, UxEngagementDto } from '../dtos/ux.engagement.dto';
 import { Account, DsContentReach, UxEngagement } from '../schemas';
 
@@ -51,7 +50,7 @@ export class UxEngagementService {
   async track(info: UxEngagementBody) {
     const uxDto = {
       ...info,
-      account: mongoose.Types.ObjectId(info.accountId),
+      account: new Types.ObjectId(info.accountId),
       timestamp: new Date(Number(info.timestamp)),
     } as UxEngagementDto;
     const createResult = await new this._uxEngagementModel(uxDto).save();

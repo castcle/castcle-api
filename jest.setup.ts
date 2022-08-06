@@ -24,6 +24,7 @@ jest.mock('libs/environments/src/lib/factories', () => ({
 
 jest.mock('libs/logger/src/lib/logger', () => ({
   CastLogger: jest.fn(() => ({
+    debug: jest.fn(),
     error: jest.fn(),
     log: jest.fn(),
     time: jest.fn(),

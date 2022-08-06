@@ -142,7 +142,7 @@ export class AuthenticationServiceV2 {
         {
           $push: {
             credentials: {
-              _id: Types.ObjectId(credential._id),
+              _id: new Types.ObjectId(credential._id),
               deviceUUID: credential.deviceUUID,
             },
           },
@@ -518,7 +518,7 @@ export class AuthenticationServiceV2 {
       );
 
       (account.credentials ??= []).push({
-        _id: Types.ObjectId(credential._id),
+        _id: new Types.ObjectId(credential._id),
         deviceUUID: credential.deviceUUID,
       });
 

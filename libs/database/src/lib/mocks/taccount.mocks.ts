@@ -22,12 +22,7 @@
  */
 
 import { Model } from 'mongoose';
-import {
-  CACCOUNT_NO,
-  TransactionData,
-  TransactionType,
-  WalletType,
-} from '../models';
+import { CAccountNo, TransactionType, WalletType } from '../models';
 import { Transaction, User } from '../schemas';
 
 export const mockDeposit = (
@@ -51,11 +46,11 @@ export const mockDeposit = (
     ledgers: [
       {
         credit: {
-          caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
           value: value,
         },
         debit: {
-          caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+          cAccountNo: CAccountNo.ASSET.CASTCLE_DEPOSIT,
           value: value,
         },
       },
@@ -82,20 +77,15 @@ export const mockSend = (
         value: value,
       },
     ],
-    data: {
-      type: TransactionType.SEND,
-      filter: {
-        'deposit-send': true,
-      },
-    } as TransactionData,
+    type: TransactionType.SEND,
     ledgers: [
       {
         credit: {
-          caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
           value: value,
         },
         debit: {
-          caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
           value: value,
         },
       },
