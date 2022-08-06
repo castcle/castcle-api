@@ -23,14 +23,13 @@
 
 import {
   AuthenticationServiceV2,
-  CACCOUNT_NO,
+  CAccountNo,
   EntityVisibility,
   NetworkType,
   OtpObjective,
   Repository,
   SendTransactionDto,
   TAccountService,
-  TransactionData,
   TransactionDto,
   TransactionType,
   User,
@@ -39,6 +38,7 @@ import {
 import { TwilioChannel } from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { WalletResponse } from '../dtos';
 
 @Injectable()
@@ -130,42 +130,46 @@ export class WalletService {
       otp: verification.mobile.otp,
     });
 
+    const value = Types.Decimal128.fromString(String(transaction.amount));
     await this.tAccountService.transfer({
       from: {
-        user: requestedBy,
+        user: new Types.ObjectId(requestedBy),
         type: WalletType.PERSONAL,
-        value: transaction.amount,
+        value,
       },
       to: [
-        {
-          user: transaction.address,
-          type: isInternalNetwork
-            ? WalletType.PERSONAL
-            : WalletType.EXTERNAL_WITHDRAW,
-          value: transaction.amount,
-        },
+        isInternalNetwork
+          ? {
+              user: new Types.ObjectId(transaction.address),
+              type: WalletType.PERSONAL,
+              value,
+            }
+          : {
+              type: WalletType.EXTERNAL_WITHDRAW,
+              value,
+            },
       ],
       ledgers: [
         {
           credit: {
-            caccountNo: isInternalNetwork
-              ? CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL
-              : CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+            cAccountNo: isInternalNetwork
+              ? CAccountNo.LIABILITY.USER_WALLET.PERSONAL
+              : CAccountNo.ASSET.CASTCLE_DEPOSIT,
             value: transaction.amount,
           },
           debit: {
-            caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+            cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
             value: transaction.amount,
           },
         },
       ],
+      type: TransactionType.SEND,
       data: {
-        filter: {
-          'wallet-balance': true,
-          'deposit-send': true,
-        },
-        type: TransactionType.SEND,
-      } as TransactionData,
+        address: transaction.address,
+        chainId: transaction.chainId,
+        memo: transaction.memo,
+        note: transaction.note,
+      },
     });
   }
 }

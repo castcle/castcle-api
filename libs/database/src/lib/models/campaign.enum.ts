@@ -23,7 +23,7 @@
 
 export enum CampaignStatus {
   CALCULATING = 'calculating',
-  COMPLETE = 'complete',
+  COMPLETED = 'completed',
 }
 
 export enum CampaignType {

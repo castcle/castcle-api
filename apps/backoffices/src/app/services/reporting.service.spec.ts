@@ -28,14 +28,13 @@ import {
   ContentServiceV2,
   ContentType,
   DataService,
+  DatabaseModule,
   EntityVisibility,
   HashtagService,
   Metadata,
   MetadataType,
   MockUserDetail,
   MockUserService,
-  MongooseAsyncFeatures,
-  MongooseForFeatures,
   NotificationServiceV2,
   QueueName,
   ReportingIllegal,
@@ -46,6 +45,7 @@ import {
   TAccountService,
   UserServiceV2,
 } from '@castcle-api/database';
+import { CastcleBackofficeMongooseModule } from '@castcle-api/environments';
 import {
   FacebookClient,
   GoogleClient,
@@ -57,7 +57,7 @@ import { Token } from '@castcle-api/utils/commons';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
+import { getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model } from 'mongoose';
@@ -94,11 +94,10 @@ describe('ReportingService', () => {
 
     moduleRef = await Test.createTestingModule({
       imports: [
-        MongooseModule.forRoot(mongod.getUri(), { retryWrites: false }),
+        CastcleBackofficeMongooseModule,
+        DatabaseModule,
         BackOfficeMongooseForFeatures,
         CacheModule.register(),
-        MongooseAsyncFeatures(),
-        MongooseForFeatures(),
         HttpModule,
       ],
       providers: [

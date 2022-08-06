@@ -79,6 +79,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
@@ -127,6 +128,7 @@ describe('UsersControllerV2', () => {
       controllers: [UsersControllerV2],
       providers: [
         { provide: DataService, useValue: {} },
+        { provide: CommandBus, useValue: {} },
         AdsService,
         AnalyticService,
         AuthenticationService,
@@ -190,6 +192,15 @@ describe('UsersControllerV2', () => {
     socialSyncService = moduleRef.get(SocialSyncServiceV2);
     contentService = moduleRef.get(ContentService);
     appController = moduleRef.get(UsersControllerV2);
+  });
+
+  afterAll(async () => {
+    await moduleRef.close();
+    await mongod.stop();
+  });
+
+  it('should be defined', () => {
+    expect(appController).toBeDefined();
   });
 
   describe('#Comment()', () => {

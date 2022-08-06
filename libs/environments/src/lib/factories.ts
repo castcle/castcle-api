@@ -45,8 +45,6 @@ export const getCacheModuleOptions = (): CacheModuleOptions => ({
 
 export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
   uri: Environment.DB_URI,
-  useCreateIndex: true,
-  useFindAndModify: false,
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -54,8 +52,6 @@ export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
 export const getMongooseBackofficeModuleOptions =
   (): MongooseModuleOptions => ({
     uri: Environment.BACKOFFICE_DB_URI,
-    useCreateIndex: true,
-    useFindAndModify: false,
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
@@ -63,8 +59,6 @@ export const getMongooseBackofficeModuleOptions =
 export const getMongooseBackofficeAppModuleOptions =
   (): MongooseModuleOptions => ({
     uri: Environment.BACKOFFICE_APP_DB_URI,
-    useCreateIndex: true,
-    useFindAndModify: false,
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });

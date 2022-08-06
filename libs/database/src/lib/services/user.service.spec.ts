@@ -1096,29 +1096,24 @@ describe('User Service', () => {
   });
 
   describe('Transaction Service', () => {
-    const accountId = Types.ObjectId();
-    const user = { ownerAccount: accountId } as unknown as User;
+    const user = { _id: new Types.ObjectId() } as unknown as User;
+    let transaction: Transaction;
+
+    beforeAll(async () => {
+      transaction = await new transactionModel({
+        to: [{ user: user._id, type: WalletType.PERSONAL, value: 10 }],
+      }).save();
+    });
 
     it('should create new transaction from transfer()', async () => {
-      const transaction = await new transactionModel({
-        to: [{ account: accountId, type: WalletType.PERSONAL, value: 10 }],
-      }).save();
-
       expect(Number(transaction.to[0].value.toString())).toEqual(10);
       expect(transaction.createdAt).toBeDefined();
     });
 
     it('should return user balance', async () => {
-      const transaction = await transactionModel.findOne({
-        'to.account': accountId,
-      });
-
-      expect(Number(transaction.to[0].value.toString())).toEqual(10);
-
       await expect(service.getBalance(user)).resolves.toEqual(10);
-
       await new transactionModel({
-        from: { account: user.ownerAccount, type: WalletType.PERSONAL },
+        from: { user: user._id, type: WalletType.PERSONAL },
         to: [{ value: 5 }],
       }).save();
 

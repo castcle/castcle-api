@@ -1,7 +1,7 @@
 import { EntityVisibility, User, UserType } from '@castcle-api/database';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { Model, PipelineStage } from 'mongoose';
 import { UserQuery } from '../models/users.dto';
 
 @Injectable()
@@ -49,7 +49,8 @@ export class UserBackofficeService {
 
   private async pipelineOfCountUsers({ matchCondition }: SearchCondition) {
     const [{ totalUsers }] = await this.userModel.aggregate([
-      [{ ...matchCondition }, { $count: 'totalUsers' }],
+      { ...matchCondition },
+      { $count: 'totalUsers' },
     ]);
 
     return totalUsers;
@@ -57,7 +58,7 @@ export class UserBackofficeService {
 }
 
 type SearchCondition = {
-  matchCondition: FilterQuery<any>;
+  matchCondition: PipelineStage;
   page: number;
   maxResults: number;
 };

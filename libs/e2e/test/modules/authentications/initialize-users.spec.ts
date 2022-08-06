@@ -94,7 +94,7 @@ export const initializeUsers = async () => {
     });
 
   const user = await userModel.findOne({
-    _id: mongoose.Types.ObjectId(userGamma.id),
+    _id: new Types.ObjectId(userGamma.id),
   });
   userGamma.accountId = user.ownerAccount as unknown as string;
   const activateAccount = await accountActivationModel.findOne({

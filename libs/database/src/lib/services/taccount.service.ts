@@ -39,28 +39,27 @@ import {
   WalletResponseOptions,
 } from '../dtos';
 import {
-  CACCOUNT_NO,
+  CAccountNo,
   CastcleNumber,
   TopUpDto,
-  TransactionFilterType,
-  TransferDto,
-  WalletHistoryResponseDto,
+  TransactionFilter,
+  WalletHistoryResponse,
   WalletType,
 } from '../models';
 import { Repository } from '../repositories';
 import {
-  CAccount,
   CAccountNature,
   Transaction,
   User,
   WalletShortcut,
+  cAccount,
 } from '../schemas';
 
 @Injectable()
 export class TAccountService {
   constructor(
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
-    @InjectModel('CAccount') private cAccountModel: Model<CAccount>,
+    @InjectModel('cAccount') private cAccountModel: Model<cAccount>,
     private repository: Repository,
   ) {}
 
@@ -89,38 +88,38 @@ export class TAccountService {
     } as RecentWalletResponse;
   }
 
-  getFindQueryForChild(caccount: CAccount) {
+  getFindQueryForChild(cAccount: cAccount) {
     const orQuery = [
       {
-        'ledgers.debit.caccountNo': caccount.no,
+        'ledgers.debit.cAccountNo': cAccount.no,
       },
       {
-        'ledgers.credit.caccountNo': caccount.no,
+        'ledgers.credit.cAccountNo': cAccount.no,
       },
     ];
-    if (caccount.child)
-      caccount.child.forEach((childNo) => {
+    if (cAccount.child)
+      cAccount.child.forEach((childNo) => {
         orQuery.push({
-          'ledgers.debit.caccountNo': childNo,
+          'ledgers.debit.cAccountNo': childNo,
         });
         orQuery.push({
-          'ledgers.credit.caccountNo': childNo,
+          'ledgers.credit.cAccountNo': childNo,
         });
       });
     return orQuery;
   }
 
-  async _getLedgers(caccount: CAccount) {
-    const orQuery = this.getFindQueryForChild(caccount);
+  async _getLedgers(cAccount: cAccount) {
+    const orQuery = this.getFindQueryForChild(cAccount);
     const findFilter: FilterQuery<Transaction> = {
       $or: orQuery,
     };
     return this.transactionModel.find(findFilter);
   }
 
-  async getLedgers(caccountNo: string) {
-    const caccount = await this.cAccountModel.findOne({ no: caccountNo });
-    return this._getLedgers(caccount);
+  async getLedgers(cAccountNo: string) {
+    const cAccount = await this.cAccountModel.findOne({ no: cAccountNo });
+    return this._getLedgers(cAccount);
   }
 
   /**
@@ -134,48 +133,48 @@ export class TAccountService {
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
 
-  async validateTransfer({ from, to, ledgers }: TransferDto) {
-    const sumOfTo = to.reduce((total, { value }) => total + value, 0);
-    if (from.value !== sumOfTo) return false;
+  async validateTransfer({ from, to, ledgers }: Partial<Transaction>) {
+    const sumOfTo = to.reduce((total, { value }) => total + Number(value), 0);
+    if (Number(from.value) !== sumOfTo) return false;
 
     const total = ledgers.reduce(
       (total, { credit, debit }) => ({
-        credit: total.credit + credit.value,
-        debit: total.debit + debit.value,
+        credit: total.credit + Number(credit.value),
+        debit: total.debit + Number(debit.value),
       }),
       { credit: 0, debit: 0 },
     );
 
     if (total.credit !== total.debit) return false;
-    if (total.debit !== from.value) return false;
+    if (total.debit !== Number(from.value)) return false;
     if (!from.user) return true;
 
-    const balance = await this.getAccountBalance(from.user, from.type);
-    return balance >= from.value;
+    const balance = await this.getAccountBalance(String(from.user), from.type);
+    return balance >= Number(from.value);
   }
 
-  async transfer(dto: TransferDto, session?: ClientSession) {
+  async transfer(dto: Partial<Transaction>, session?: ClientSession) {
     const isValidDto = await this.validateTransfer(dto);
     if (!isValidDto) throw new CastcleException('INVALID_TRANSACTIONS_DATA');
 
     return new this.transactionModel(dto).save({ session: session });
   }
 
-  async getBalance(caccountNo: string) {
+  async getBalance(cAccountNo: string) {
     //get account First
-    const caccount = await this.cAccountModel.findOne({ no: caccountNo });
-    const txs = await this._getLedgers(caccount);
+    const cAccount = await this.cAccountModel.findOne({ no: cAccountNo });
+    const txs = await this._getLedgers(cAccount);
     const allDebit = txs.reduce((totalDebit, currentTx) => {
       return (
         totalDebit +
         currentTx.ledgers
           .filter(
             (t) =>
-              caccount.child.findIndex(
-                (childNo) => t.debit.caccountNo === childNo,
-              ) >= 0 || caccount.no === t.debit.caccountNo,
+              cAccount.child.findIndex(
+                (childNo) => t.debit.cAccountNo === childNo,
+              ) >= 0 || cAccount.no === t.debit.cAccountNo,
           )
-          .reduce((sumDebit, now) => now.debit.value + sumDebit, 0)
+          .reduce((sumDebit, now) => Number(now.debit.value) + sumDebit, 0)
       );
     }, 0);
     const allCredit = txs.reduce((totalCredit, currentTx) => {
@@ -184,18 +183,18 @@ export class TAccountService {
         currentTx.ledgers
           .filter(
             (t) =>
-              caccount.child.findIndex(
-                (childNo) => t.credit.caccountNo === childNo,
-              ) >= 0 || caccount.no === t.credit.caccountNo,
+              cAccount.child.findIndex(
+                (childNo) => t.credit.cAccountNo === childNo,
+              ) >= 0 || cAccount.no === t.credit.cAccountNo,
           )
-          .reduce((sumCredit, now) => now.debit.value + sumCredit, 0)
+          .reduce((sumCredit, now) => Number(now.debit.value) + sumCredit, 0)
       );
     }, 0);
-    if (caccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
+    if (cAccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
     else return allCredit - allDebit;
   }
 
-  async getWalletHistory(userId: string, filter: TransactionFilterType) {
+  async getWalletHistory(userId: string, filter: TransactionFilter) {
     const from: any = {};
     from['from.user'] = userId;
     from[`data.filter.${filter}`] = true;
@@ -206,20 +205,20 @@ export class TAccountService {
       $or: [from, to],
     });
     console.log('txs', txs);
-    const result: WalletHistoryResponseDto = {
-      payload: txs.map((tx) => ({
+    return {
+      payload: txs.map<WalletHistoryResponse>((tx) => ({
         id: tx.id,
-        status: 'success', //!!! TODO now all tx is success for now
-        type: tx.data.type,
-        value:
+        status: tx.status,
+        type: tx.type,
+        value: Number(
           String(tx.from.user) === String(userId)
             ? tx.from.value
             : tx.to.find((t) => String(t.user) === String(userId)).value,
+        ),
         createdAt: tx.createdAt,
         updatedAt: tx.updatedAt,
       })),
     };
-    return result;
   }
   /**
    * Use for dev only
@@ -244,11 +243,11 @@ export class TAccountService {
           ledgers: [
             {
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
+                cAccountNo: CAccountNo.LIABILITY.USER_WALLET.ADS,
                 value: topUpDto.value,
               },
               debit: {
-                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                cAccountNo: CAccountNo.ASSET.CASTCLE_DEPOSIT,
                 value: topUpDto.value,
               },
             },
@@ -270,11 +269,11 @@ export class TAccountService {
           ledgers: [
             {
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
                 value: topUpDto.value,
               },
               debit: {
-                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                cAccountNo: CAccountNo.ASSET.CASTCLE_DEPOSIT,
                 value: topUpDto.value,
               },
             },
@@ -290,9 +289,9 @@ export class TAccountService {
     keyword?: { [key: string]: string },
   ): Promise<RecentWalletsResponse> {
     const transactions = !keyword
-      ? await this.transactionModel.aggregate<GetWalletRecentResponse>([
+      ? await this.transactionModel.aggregate<GetWalletRecentResponse>(
           pipelineOfGetWalletRecentFromType(userId),
-        ])
+        )
       : undefined;
 
     const userIds = transactions?.map(({ user }) => user);

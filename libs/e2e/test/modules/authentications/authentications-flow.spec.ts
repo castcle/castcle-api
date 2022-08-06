@@ -36,7 +36,7 @@ export const testAuthenticationsFlow = () => {
 
     it('should verify email and login successful', async () => {
       const user = await userModel.findOne({
-        _id: mongoose.Types.ObjectId(userRegister.id),
+        _id: new Types.ObjectId(userRegister.id),
       });
       userRegister.accountId = user.ownerAccount as unknown as string;
       const activateAccount = await accountActivationModel.findOne({

@@ -22,17 +22,21 @@
  */
 
 import {
-  CastcleBackofficeMongooseModule,
   CastcleBullModule,
   CastcleCacheModule,
   CastcleMongooseModule,
-  Environment,
 } from '@castcle-api/environments';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
+import { CqrsModule } from '@nestjs/cqrs';
+import {
+  AsyncModelFactory,
+  ModelDefinition,
+  MongooseModule,
+  getModelToken,
+} from '@nestjs/mongoose';
 import { QueueName } from './models';
 import { Repository } from './repositories';
 import {
@@ -96,95 +100,92 @@ import { UserService } from './services/user.service';
 import { UserServiceV2 } from './services/user.service.v2';
 import { UxEngagementService } from './services/uxengagement.service';
 import { WalletShortcutService } from './services/wallet-shortcut.service';
-
 import {
   createCastcleMeta,
   getRelationship,
   getSocialPrefix,
 } from './utils/common';
 
-export const MongooseForFeatures = (connectionName?: string) =>
-  MongooseModule.forFeature(
-    [
-      { name: 'AccountActivation', schema: AccountActivationSchema },
-      { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
-      { name: 'AccountDevice', schema: AccountDeviceSchema },
-      { name: 'AccountReferral', schema: AccountReferralSchema },
-      { name: 'AdsCampaign', schema: AdsCampaignSchema },
-      { name: 'AdsPlacement', schema: AdsPlacementSchema },
-      { name: 'Analytic', schema: AnalyticSchema },
-      { name: 'CAccount', schema: CAccountSchema },
-      { name: 'Campaign', schema: CampaignSchema },
-      { name: 'ContentFarming', schema: ContentFarmingSchema },
-      { name: 'DefaultContent', schema: DefaultContentSchema },
-      { name: 'DsContentReach', schema: DsContentReachSchema },
-      { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
-      { name: 'Hashtag', schema: HashtagSchema },
-      { name: 'Metadata', schema: MetadataSchema },
-      { name: 'Network', schema: NetworkSchema },
-      { name: 'Notification', schema: NotificationSchema },
-      { name: 'Otp', schema: OtpSchema },
-      { name: 'Queue', schema: QueueSchema },
-      { name: 'Reporting', schema: ReportingSchema },
-      { name: 'UxEngagement', schema: UxEngagementSchema },
-      { name: 'WalletShortcut', schema: WalletShortcutSchema },
-    ],
-    connectionName,
-  );
+const modelDefinitions: ModelDefinition[] = [
+  { name: 'AccountActivation', schema: AccountActivationSchema },
+  { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
+  { name: 'AccountDevice', schema: AccountDeviceSchema },
+  { name: 'AccountReferral', schema: AccountReferralSchema },
+  { name: 'AdsCampaign', schema: AdsCampaignSchema },
+  { name: 'AdsPlacement', schema: AdsPlacementSchema },
+  { name: 'Analytic', schema: AnalyticSchema },
+  { name: 'cAccount', schema: CAccountSchema },
+  { name: 'Campaign', schema: CampaignSchema },
+  { name: 'ContentFarming', schema: ContentFarmingSchema },
+  { name: 'DefaultContent', schema: DefaultContentSchema },
+  { name: 'DsContentReach', schema: DsContentReachSchema },
+  { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
+  { name: 'Hashtag', schema: HashtagSchema },
+  { name: 'Metadata', schema: MetadataSchema },
+  { name: 'Network', schema: NetworkSchema },
+  { name: 'Notification', schema: NotificationSchema },
+  { name: 'Otp', schema: OtpSchema },
+  { name: 'Queue', schema: QueueSchema },
+  { name: 'Reporting', schema: ReportingSchema },
+  { name: 'UxEngagement', schema: UxEngagementSchema },
+  { name: 'WalletShortcut', schema: WalletShortcutSchema },
+];
 
-export const MongooseAsyncFeatures = (connectionName?: string) =>
-  MongooseModule.forFeatureAsync(
-    [
-      { name: 'Credential', useFactory: () => CredentialSchema },
-      { name: 'FeedItem', useFactory: () => FeedItemSchema },
-      { name: 'FeedItemV2', useFactory: () => FeedItemV2Schema },
-      { name: 'Relationship', useFactory: () => RelationshipSchema },
-      { name: 'Revision', useFactory: () => RevisionSchema },
-      { name: 'SocialSync', useFactory: () => SocialSyncSchema },
-      { name: 'Transaction', useFactory: () => TransactionSchema },
-      {
-        name: 'Comment',
-        useFactory: CommentSchemaFactory,
-        inject: [getModelToken('Revision')],
-      },
-      {
-        name: 'Content',
-        useFactory: ContentSchemaFactory,
-        inject: [
-          getModelToken('Revision'),
-          getModelToken('FeedItemV2'),
-          getModelToken('User'),
-          getModelToken('Relationship'),
-        ],
-      },
-      {
-        name: 'Account',
-        useFactory: AccountSchemaFactory,
-        inject: [getModelToken('Credential'), getModelToken('User')],
-      },
-      {
-        name: 'User',
-        useFactory: UserSchemaFactory,
-        inject: [
-          getModelToken('Relationship'),
-          getModelToken('SocialSync'),
-          getModelToken('Transaction'),
-        ],
-      },
-      {
-        name: 'Engagement',
-        useFactory: EngagementSchemaFactory,
-        inject: [
-          getModelToken('Content'),
-          getModelToken('Comment'),
-          getModelToken('FeedItemV2'),
-        ],
-      },
+const asyncModelDefinitions: AsyncModelFactory[] = [
+  { name: 'Credential', useFactory: () => CredentialSchema },
+  { name: 'FeedItem', useFactory: () => FeedItemSchema },
+  { name: 'FeedItemV2', useFactory: () => FeedItemV2Schema },
+  { name: 'Relationship', useFactory: () => RelationshipSchema },
+  { name: 'Revision', useFactory: () => RevisionSchema },
+  { name: 'SocialSync', useFactory: () => SocialSyncSchema },
+  { name: 'Transaction', useFactory: () => TransactionSchema },
+  {
+    name: 'Comment',
+    useFactory: CommentSchemaFactory,
+    inject: [getModelToken('Revision')],
+  },
+  {
+    name: 'Content',
+    useFactory: ContentSchemaFactory,
+    inject: [
+      getModelToken('Revision'),
+      getModelToken('FeedItemV2'),
+      getModelToken('User'),
+      getModelToken('Relationship'),
     ],
-    connectionName,
-  );
+  },
+  {
+    name: 'Account',
+    useFactory: AccountSchemaFactory,
+    inject: [getModelToken('Credential'), getModelToken('User')],
+  },
+  {
+    name: 'User',
+    useFactory: UserSchemaFactory,
+    inject: [
+      getModelToken('Relationship'),
+      getModelToken('SocialSync'),
+      getModelToken('Transaction'),
+    ],
+  },
+  {
+    name: 'Engagement',
+    useFactory: EngagementSchemaFactory,
+    inject: [
+      getModelToken('Content'),
+      getModelToken('Comment'),
+      getModelToken('FeedItemV2'),
+    ],
+  },
+];
 
-const providers = [
+export const MongooseForFeatures = () =>
+  MongooseModule.forFeature(modelDefinitions);
+
+export const MongooseAsyncFeatures = () =>
+  MongooseModule.forFeatureAsync(asyncModelDefinitions);
+
+export const providers = [
   AdsService,
   AnalyticService,
   AuthenticationService,
@@ -247,6 +248,7 @@ const exportProviders = [
     CastcleBullModule,
     CastcleCacheModule,
     CastcleMongooseModule,
+    CqrsModule,
     BullModule.registerQueue(
       { name: QueueName.CAMPAIGN },
       { name: QueueName.CONTENT },
@@ -261,36 +263,9 @@ const exportProviders = [
     UtilsClientsModule,
   ],
   providers,
-  exports: exportProviders,
+  exports: [...exportProviders, CqrsModule, MongooseModule],
 })
 export class DatabaseModule {}
-
-@Module({
-  imports: [
-    CastcleBullModule,
-    CastcleCacheModule,
-    CastcleBackofficeMongooseModule,
-    BullModule.registerQueue(
-      { name: QueueName.CAMPAIGN },
-      { name: QueueName.CONTENT },
-      { name: QueueName.NOTIFICATION },
-      { name: QueueName.REPORTING },
-      { name: QueueName.USER },
-      { name: QueueName.VERIFY_EMAIL },
-    ),
-    HttpModule,
-    MongooseForFeatures(Environment.DB_DATABASE_NAME),
-    MongooseAsyncFeatures(Environment.DB_DATABASE_NAME),
-    UtilsClientsModule,
-  ],
-  providers,
-  exports: [
-    ...exportProviders,
-    MongooseForFeatures(Environment.DB_DATABASE_NAME),
-    MongooseAsyncFeatures(Environment.DB_DATABASE_NAME),
-  ],
-})
-export class BackofficeDatabaseModule {}
 
 export {
   AdsService,

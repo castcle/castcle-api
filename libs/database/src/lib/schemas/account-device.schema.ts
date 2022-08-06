@@ -18,8 +18,8 @@ export class AccountDeviceV1 extends CastcleBase {
   @Prop({ required: true, index: true })
   uuid: string;
 
-  @Prop({ type: AcceptPlatform, required: true, index: true })
-  platform: string;
+  @Prop({ type: String, required: true, index: true })
+  platform: AcceptPlatform;
 }
 
 export const AccountDeviceSchema =

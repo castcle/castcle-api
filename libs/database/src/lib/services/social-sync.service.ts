@@ -143,7 +143,10 @@ export class SocialSyncService {
    * */
   getSocialSyncByPageId = (id: string) => {
     return this.socialSyncModel
-      .find({ user: Types.ObjectId(id), visibility: EntityVisibility.Publish })
+      .find({
+        user: new Types.ObjectId(id),
+        visibility: EntityVisibility.Publish,
+      })
       .exec();
   };
 

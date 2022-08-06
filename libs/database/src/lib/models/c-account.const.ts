@@ -21,12 +21,42 @@
  * or have any questions.
  */
 
-import { MicroTransaction, TLedger } from '../schemas';
-import { TransactionData } from './wallet.enum';
-
-export class TransferDto {
-  from: MicroTransaction;
-  to: MicroTransaction[];
-  data?: TransactionData;
-  ledgers: TLedger[];
-}
+export const CAccountNo = {
+  VAULT: {
+    NO: '0000',
+    AIRDROP: '0500',
+  },
+  ASSET: {
+    NO: '1000',
+    CASTCLE_WALLET: '1100',
+    CASTCLE_DEPOSIT: '1200',
+  },
+  LIABILITY: {
+    NO: '2000',
+    USER_WALLET: {
+      NO: '2100',
+      PERSONAL: '2110',
+      ADS: '2120',
+    },
+    LOCKED_TOKEN: {
+      NO: '2200',
+      PERSONAL: {
+        NO: '2210',
+        ADS: '2211',
+        FARM: '2212',
+      },
+      ADS_CREDIT: {
+        NO: '2220',
+      },
+    },
+  },
+  SOCIAL_REWARD: {
+    NO: '9000',
+    PERSONAL: {
+      NO: '9100',
+    },
+    ADS_CREDIT: {
+      NO: '9200',
+    },
+  },
+};

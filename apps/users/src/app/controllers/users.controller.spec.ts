@@ -66,6 +66,7 @@ import {
   UserField,
   UserResponseDto,
   UserService,
+  UserServiceV2,
   UserType,
   WalletShortcutService,
   WalletType,
@@ -79,6 +80,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
@@ -102,9 +104,14 @@ describe('AppController', () => {
   let socialSyncService: SocialSyncService;
   let notifyService: NotificationService;
   let adsService: AdsService;
-  let transactionModel: Model<Transaction>;
+  let accountModel: Model<Account>;
   let adsModel: Model<AdsCampaign>;
   let contentModel: Model<Content>;
+  let credentialModel: Model<Credential>;
+  let engagementModel: Model<Engagement>;
+  let notificationModel: Model<Notification>;
+  let transactionModel: Model<Transaction>;
+  let userModel: Model<User>;
 
   beforeAll(async () => {
     const DownloaderProvider = {
@@ -129,6 +136,8 @@ describe('AppController', () => {
       controllers: [UsersController],
       providers: [
         { provide: DataService, useValue: {} },
+        { provide: UserServiceV2, useValue: {} },
+        { provide: CommandBus, useValue: {} },
         UserService,
         AuthenticationService,
         ContentService,
@@ -172,9 +181,14 @@ describe('AppController', () => {
     socialSyncService = app.get<SocialSyncService>(SocialSyncService);
     notifyService = app.get<NotificationService>(NotificationService);
     adsService = app.get<AdsService>(AdsService);
-    transactionModel = app.get(getModelToken('Transaction'));
+    accountModel = app.get(getModelToken('Account'));
     adsModel = app.get(getModelToken('AdsCampaign'));
     contentModel = app.get(getModelToken('Content'));
+    credentialModel = app.get(getModelToken('Credential'));
+    engagementModel = app.get(getModelToken('Engagement'));
+    notificationModel = app.get(getModelToken('Notification'));
+    transactionModel = app.get(getModelToken('Transaction'));
+    userModel = app.get(getModelToken('User'));
 
     const result = await authService.createAccount({
       device: 'iPhone',
@@ -614,7 +628,7 @@ describe('AppController', () => {
     });
 
     afterAll(async () => {
-      await service._userModel.deleteMany({});
+      await userModel.deleteMany({});
     });
 
     it('should create sync social successful', async () => {
@@ -870,7 +884,7 @@ describe('AppController', () => {
     });
 
     afterAll(async () => {
-      await service._userModel.deleteMany({});
+      await userModel.deleteMany({});
     });
 
     it('should get referrer from Account Referrer schema', async () => {
@@ -967,7 +981,7 @@ describe('AppController', () => {
     });
 
     afterAll(async () => {
-      await service._userModel.deleteMany({});
+      await userModel.deleteMany({});
     });
 
     it('should recast content successful', async () => {
@@ -1036,7 +1050,7 @@ describe('AppController', () => {
     });
 
     afterAll(async () => {
-      await service._userModel.deleteMany({});
+      await userModel.deleteMany({});
     });
 
     it('should recast content successful', async () => {
@@ -1106,8 +1120,8 @@ describe('AppController', () => {
       expect(pageResponse.castcleId).toEqual(pageDto.castcleId);
     });
     afterAll(() => {
-      authService._credentialModel.deleteMany({});
-      authService._userModel.deleteMany({});
+      credentialModel.deleteMany({});
+      userModel.deleteMany({});
     });
   });
 
@@ -1177,11 +1191,11 @@ describe('AppController', () => {
       expect(result.engagements.like.count).toBe(0);
     });
     afterAll(() => {
-      authService._userModel.deleteMany({});
-      authService._accountModel.deleteMany({});
-      authService._credentialModel.deleteMany({});
-      contentService._contentModel.deleteMany({});
-      (notifyService as any)._notificationModel.deleteMany({});
+      userModel.deleteMany({});
+      accountModel.deleteMany({});
+      credentialModel.deleteMany({});
+      contentModel.deleteMany({});
+      notificationModel.deleteMany({});
     });
   });
 
@@ -1201,7 +1215,7 @@ describe('AppController', () => {
         type: ContentType.Short,
         castcleId: mockUsers[0].user.displayId,
       });
-      await new contentService._engagementModel({
+      await new engagementModel({
         type: 'like',
         user: mockUsers[1].user._id,
         account: mockUsers[1].user.ownerAccount,
@@ -1238,9 +1252,9 @@ describe('AppController', () => {
     });
 
     afterAll(() => {
-      service._userModel.deleteMany({});
-      contentService._contentModel.deleteMany({});
-      contentService._engagementModel.deleteMany({});
+      userModel.deleteMany({});
+      contentModel.deleteMany({});
+      engagementModel.deleteMany({});
     });
   });
 
@@ -1695,7 +1709,7 @@ describe('AppController', () => {
     let mocksPage: User;
     let mockSocialSync: SocialSync;
     beforeAll(async () => {
-      mocksPage = await new (socialSyncService as any).userModel({
+      mocksPage = await new userModel({
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
@@ -1732,7 +1746,7 @@ describe('AppController', () => {
     let mocksPage: User;
     let mockSocialSync: SocialSync;
     beforeAll(async () => {
-      mocksPage = await new (socialSyncService as any).userModel({
+      mocksPage = await new userModel({
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
@@ -1769,7 +1783,7 @@ describe('AppController', () => {
     let mocksPage: User;
     let mockSocialSync: SocialSync;
     beforeAll(async () => {
-      mocksPage = await new (socialSyncService as any).userModel({
+      mocksPage = await new userModel({
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
@@ -1807,14 +1821,14 @@ describe('AppController', () => {
     let user: User;
     let mockSocialSync: SocialSync;
     beforeAll(async () => {
-      mocksPage = await new (socialSyncService as any).userModel({
+      mocksPage = await new userModel({
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
         type: UserType.PAGE,
       }).save();
 
-      user = await new (socialSyncService as any).userModel({
+      user = await new userModel({
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
@@ -1862,14 +1876,14 @@ describe('AppController', () => {
     let user: User;
     let mockSocialSync: SocialSync;
     beforeAll(async () => {
-      mocksPage = await new (socialSyncService as any).userModel({
+      mocksPage = await new userModel({
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
         type: UserType.PAGE,
       }).save();
 
-      user = await new (socialSyncService as any).userModel({
+      user = await new userModel({
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',

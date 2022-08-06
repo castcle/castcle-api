@@ -64,7 +64,7 @@ jobs:
       matrix:
         include:
           - topic: All Except Database and E2E
-            args: npm run nx run-many -- --target=test --silent --maxWorkers=1 --all --exclude=database,e2e
+            args: npm run nx run-many -- --target=test --silent --parallel=1 --maxWorkers=1 --all --exclude=database,e2e
             key: all
           - topic: Only Database
             args: npm run nx test database -- --silent --maxWorkers=1

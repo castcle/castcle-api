@@ -21,23 +21,18 @@
  * or have any questions.
  */
 
-import { Campaign, CampaignService } from '@castcle-api/database';
-import { CastcleException } from '@castcle-api/utils/exception';
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { DatabaseModule } from '@castcle-api/database';
+import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
+import { ClaimAirdropCommand } from './lib/claim-airdrop/claim-airdrop.command';
+import { ClaimAirdropHandler } from './lib/claim-airdrop/claim-airdrop.handler';
 
-@Injectable()
-export class AirdropsService {
-  constructor(
-    @InjectModel('Campaign') private campaignModel: Model<Campaign>,
-    private campaignService: CampaignService,
-  ) {}
+@Module({
+  imports: [CqrsModule, DatabaseModule],
+  controllers: [],
+  providers: [ClaimAirdropHandler],
+  exports: [CqrsModule],
+})
+class CastcleCqrs {}
 
-  async claimAirdrop(accountId: string, campaignId: string) {
-    const campaign = await this.campaignModel.findOne({ _id: campaignId });
-    if (!campaign) throw new CastcleException('CAMPAIGN_NOT_FOUND');
-
-    return this.campaignService.claimCampaignsAirdrop(accountId, campaign.type);
-  }
-}
+export { CastcleCqrs, ClaimAirdropCommand };

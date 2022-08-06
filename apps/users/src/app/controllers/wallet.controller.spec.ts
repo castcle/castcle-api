@@ -36,8 +36,7 @@ import {
   TAccountService,
   TLedger,
   Transaction,
-  TransactionData,
-  TransactionFilterType,
+  TransactionFilter,
   TransactionType,
   UserService,
   UserServiceV2,
@@ -61,7 +60,7 @@ import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { WalletResponse } from '../dtos';
 import { WalletService } from '../services/wallet.service';
 import { WalletController } from './wallet.controller';
@@ -168,9 +167,9 @@ describe('WalletController', () => {
   });
   describe('getUserHistory()', () => {
     it('should get user history', async () => {
-      const fakeCACCOUNT = '12345';
-      const depositValue = 10;
-      const sendValue = 5;
+      const fakeCAccount = '12345';
+      const depositValue = Types.Decimal128.fromString('10');
+      const sendValue = Types.Decimal128.fromString('5');
       const authorizer = new Authorizer(
         mocksUsers[1].account,
         mocksUsers[1].user,
@@ -189,21 +188,15 @@ describe('WalletController', () => {
             value: depositValue,
           } as MicroTransaction,
         ],
-        data: {
-          type: TransactionType.DEPOSIT,
-          filter: {
-            'deposit-send': true,
-            'wallet-balance': true,
-          },
-        } as TransactionData,
+        type: TransactionType.DEPOSIT,
         ledgers: [
           {
             debit: {
-              caccountNo: fakeCACCOUNT,
+              cAccountNo: fakeCAccount,
               value: depositValue,
             },
             credit: {
-              caccountNo: fakeCACCOUNT,
+              cAccountNo: fakeCAccount,
               value: depositValue,
             },
           } as TLedger,
@@ -221,20 +214,15 @@ describe('WalletController', () => {
             user: fakeUserId,
           } as MicroTransaction,
         ],
-        data: {
-          type: TransactionType.SEND,
-          filter: {
-            'deposit-send': true,
-          },
-        } as TransactionData,
+        type: TransactionType.SEND,
         ledgers: [
           {
             debit: {
-              caccountNo: fakeCACCOUNT,
+              cAccountNo: fakeCAccount,
               value: sendValue,
             },
             credit: {
-              caccountNo: fakeCACCOUNT,
+              cAccountNo: fakeCAccount,
               value: sendValue,
             },
           } as TLedger,
@@ -247,7 +235,7 @@ describe('WalletController', () => {
           isMe: () => true,
         },
         {
-          filter: TransactionFilterType.DEPOSIT_SEND,
+          filter: TransactionFilter.DEPOSIT_SEND,
         },
       );
       const expectArr = [

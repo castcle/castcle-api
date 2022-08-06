@@ -1,4 +1,4 @@
-import { BackofficeDatabaseModule } from '@castcle-api/database';
+import { CastcleBackofficeMongooseModule } from '@castcle-api/environments';
 import { Mailer } from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -17,7 +17,7 @@ describe('Authentication', () => {
     mongod = await MongoMemoryReplSet.create();
     global.mongoUri = mongod.getUri();
     moduleRef = await Test.createTestingModule({
-      imports: [BackofficeDatabaseModule, BackOfficeMongooseForFeatures],
+      imports: [CastcleBackofficeMongooseModule, BackOfficeMongooseForFeatures],
       providers: [AuthenticationService, Mailer],
     }).compile();
 

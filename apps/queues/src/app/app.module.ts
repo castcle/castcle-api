@@ -21,30 +21,25 @@
  * or have any questions.
  */
 
+import { CastcleCqrs } from '@castcle-api/cqrs';
 import {
   CampaignService,
   DatabaseModule,
-  MongooseAsyncFeatures,
-  MongooseForFeatures,
   QueueName,
 } from '@castcle-api/database';
-import {
-  CastcleBullModule,
-  CastcleMongooseModule,
-} from '@castcle-api/environments';
+import { CastcleBullModule } from '@castcle-api/environments';
 import { CastcleTracingModule } from '@castcle-api/tracing';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminScheduler } from './admin-action.scheduler';
-import { CampaignConsumer } from './campaign.consumer';
 import { CampaignScheduler } from './campaign.scheduler';
 import { ContentFarmingScheduler } from './content-farming.sheduler';
 
 @Module({
   imports: [
     CastcleBullModule,
-    CastcleMongooseModule,
+    CastcleCqrs,
     CastcleTracingModule.forRoot({ serviceName: 'queues' }),
     DatabaseModule,
     BullModule.registerQueue(
@@ -52,14 +47,11 @@ import { ContentFarmingScheduler } from './content-farming.sheduler';
       { name: QueueName.CAMPAIGN },
       { name: QueueName.NOTIFICATION },
     ),
-    MongooseAsyncFeatures(),
-    MongooseForFeatures(),
     ScheduleModule.forRoot(),
   ],
   controllers: [],
   providers: [
     AdminScheduler,
-    CampaignConsumer,
     CampaignScheduler,
     CampaignService,
     ContentFarmingScheduler,

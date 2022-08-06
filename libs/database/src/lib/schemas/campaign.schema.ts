@@ -22,6 +22,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes, Types } from 'mongoose';
 import { CampaignStatus, CampaignType } from '../models/campaign.enum';
 import { CastcleBase } from './base.schema';
 
@@ -45,14 +46,14 @@ export class Campaign extends CastcleBase {
   @Prop()
   maxClaims?: number;
 
-  @Prop()
-  rewardsPerClaim?: number;
+  @Prop({ type: SchemaTypes.Decimal128 })
+  rewardsPerClaim?: Types.Decimal128;
 
-  @Prop()
-  rewardBalance: number;
+  @Prop({ type: SchemaTypes.Decimal128 })
+  rewardBalance: Types.Decimal128;
 
-  @Prop()
-  totalRewards: number;
+  @Prop({ type: SchemaTypes.Decimal128 })
+  totalRewards: Types.Decimal128;
 }
 
 export const CampaignSchema = SchemaFactory.createForClass(Campaign);
