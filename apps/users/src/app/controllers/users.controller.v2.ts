@@ -722,6 +722,7 @@ export class UsersControllerV2 {
     const user = isMe
       ? authorizer.user
       : await this.userService.getUser(userId);
+
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     await this.userService.followUser(

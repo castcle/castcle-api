@@ -83,5 +83,4 @@ export const Configs = {
     SuggestWords: 'metadata/suggestion-words.json',
     DomainEmailDisposables: 'metadata/email-domain-disposables.json',
   },
-  DefaultLanguage: 'en',
 };
