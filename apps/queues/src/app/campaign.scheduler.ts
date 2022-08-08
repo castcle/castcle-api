@@ -21,16 +21,32 @@
  * or have any questions.
  */
 
+import { ClaimAirdropCommand } from '@castcle-api/cqrs';
 import { CampaignService } from '@castcle-api/database';
+import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class CampaignScheduler {
-  constructor(private campaignService: CampaignService) {}
+  logger = new CastLogger(CampaignScheduler.name);
 
-  @Cron(CronExpression.EVERY_30_MINUTES)
+  constructor(
+    private campaignService: CampaignService,
+    private commandBus: CommandBus,
+  ) {}
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async claimContentReachRewards() {
-    await this.campaignService.claimContentReachAirdrops();
+    const campaigns = await this.campaignService.getContentReachCampaigns();
+
+    for (const campaign of campaigns) {
+      try {
+        await this.commandBus.execute(new ClaimAirdropCommand(campaign));
+      } catch (e) {
+        this.logger.error(e);
+      }
+    }
   }
 }

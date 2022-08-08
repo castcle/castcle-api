@@ -35,7 +35,12 @@ import {
   UserService,
 } from '../database.module';
 import { EntityVisibility } from '../dtos';
-import { AuthenticationProvider, OtpObjective, QueueName } from '../models';
+import {
+  AccountActivationType,
+  AuthenticationProvider,
+  OtpObjective,
+  QueueName,
+} from '../models';
 import {
   Account,
   AccountActivationV1,
@@ -388,7 +393,7 @@ describe('Authentication Service', () => {
       it('should create account activation with verification token', async () => {
         const accountActivation = await service.createAccountActivation(
           createAccountResult.accountDocument,
-          'email',
+          AccountActivationType.EMAIL,
         );
         expect(accountActivation).toBeDefined();
         expect(accountActivation.verifyToken).toBeDefined();

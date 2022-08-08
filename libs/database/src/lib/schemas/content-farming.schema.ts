@@ -22,7 +22,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { SchemaTypes, Types } from 'mongoose';
 import { ContentFarmingStatus } from '../models';
 import { CastcleBase } from './base.schema';
 
@@ -46,8 +46,8 @@ export class ContentFarming extends CastcleBase {
   @Prop({ type: Object })
   endedAt?: Date;
 
-  @Prop({ required: true })
-  farmAmount: number;
+  @Prop({ required: true, type: SchemaTypes.Decimal128 })
+  farmAmount: Types.Decimal128;
 
   @Prop()
   weight?: number;

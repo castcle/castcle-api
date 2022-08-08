@@ -19,7 +19,7 @@ export const registerMockUser = async (user: User) => {
     });
 
   const userData = await userModel.findOne({
-    _id: Types.ObjectId(user.id),
+    _id: new Types.ObjectId(user.id),
   });
   user.accountId = userData.ownerAccount as unknown as string;
   const activateAccount = await accountActivationModel.findOne({

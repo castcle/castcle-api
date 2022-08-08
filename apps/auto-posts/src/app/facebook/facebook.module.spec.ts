@@ -55,8 +55,8 @@ describe('FacebookController', () => {
     valid: 'valid-social-id',
   };
   const user = {
-    _id: Types.ObjectId(),
-    ownerAccount: Types.ObjectId(),
+    _id: new Types.ObjectId(),
+    ownerAccount: new Types.ObjectId(),
     displayName: 'Tester',
     displayId: 'tester',
     type: UserType.PEOPLE,
@@ -96,7 +96,7 @@ describe('FacebookController', () => {
         autoPost: true,
         socialId: socialId.invalidAuthorId,
         provider: SocialProvider.Facebook,
-        user: Types.ObjectId(),
+        user: new Types.ObjectId(),
       },
       {
         active: true,

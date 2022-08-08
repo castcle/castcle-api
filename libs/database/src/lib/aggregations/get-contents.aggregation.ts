@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { PipelineStage } from 'mongoose';
 import { DEFAULT_CONTENT_QUERY_OPTIONS, EntityVisibility } from '../dtos';
 import { EngagementType } from '../models';
 import { User } from '../schemas';
@@ -33,11 +34,12 @@ type GetContentsQuery = {
   filter?: GetContentFilter;
   maxResults?: number;
   viewer?: User;
-  sortBy?: {
-    [key: string]: string;
-  };
+  sortBy?: Record<string, 1 | -1>;
 };
-export const pipelineGetContents = (query: GetContentsQuery) => {
+
+export const pipelineGetContents = (
+  query: GetContentsQuery,
+): PipelineStage[] => {
   return [
     {
       $sort: query.sortBy || {
@@ -132,7 +134,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
             },
           },
           { $unwind: '$authors' },
-          { $replaceWith: '$authors' },
+          { $replaceWith: '$authors' as any },
           {
             $project: {
               id: '$_id',

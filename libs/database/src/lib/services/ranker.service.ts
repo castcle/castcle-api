@@ -361,7 +361,7 @@ export class RankerService {
       __v: 3,
     }));
 
-    const feeds = await this._feedItemModel.insertMany(feedDtos);
+    const feeds = await this._feedItemModel.create(feedDtos);
 
     feeds.forEach((feed) => {
       feed.content = contents.find(

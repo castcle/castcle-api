@@ -1,9 +1,13 @@
 import {
-  BackofficeDatabaseModule,
+  DatabaseModule,
   Metadata,
   MetadataType,
   ReportingSubject,
 } from '@castcle-api/database';
+import {
+  CastcleBackofficeMongooseModule,
+  Environment,
+} from '@castcle-api/environments';
 import { getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
@@ -11,7 +15,7 @@ import { Model } from 'mongoose';
 import { BackOfficeMongooseForFeatures } from '../schemas';
 import { MetadataBackofficeService } from './metadata.service';
 
-describe('MedatadaBackofficeService', () => {
+describe('MetadataBackofficeService', () => {
   let service: MetadataBackofficeService;
   let mongod: MongoMemoryReplSet;
   let moduleRef: TestingModule;
@@ -20,7 +24,11 @@ describe('MedatadaBackofficeService', () => {
     mongod = await MongoMemoryReplSet.create();
     global.mongoUri = mongod.getUri();
     moduleRef = await Test.createTestingModule({
-      imports: [BackofficeDatabaseModule, BackOfficeMongooseForFeatures],
+      imports: [
+        CastcleBackofficeMongooseModule,
+        DatabaseModule,
+        BackOfficeMongooseForFeatures,
+      ],
       providers: [MetadataBackofficeService],
     }).compile();
 
@@ -30,7 +38,7 @@ describe('MedatadaBackofficeService', () => {
       getModelToken('Metadata'),
     );
     const staffRoleModel = moduleRef.get<Model<Metadata<ReportingSubject>>>(
-      getModelToken('StaffRoles'),
+      getModelToken('StaffRoles', Environment.BACKOFFICE_DB_DATABASE_NAME),
     );
 
     await new staffRoleModel({

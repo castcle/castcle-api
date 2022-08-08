@@ -27,7 +27,6 @@ import { CastcleName } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
 import { AnyKeys, FilterQuery, Model, Types } from 'mongoose';
 import {
   CommentIncludes,
@@ -393,7 +392,7 @@ export class CommentServiceV2 {
 
     const commentPlyload = comments.map((comment) => {
       const revisionCount = revisions.filter(
-        ({ objectRef }) => String(objectRef.$id) === String(comment._id),
+        ({ objectRef }) => String(objectRef.oid) === String(comment._id),
       ).length;
 
       const commentReplies = replies.filter(({ targetRef }) => {
@@ -463,7 +462,7 @@ export class CommentServiceV2 {
     paginationQuery: PaginationQuery,
   ) => {
     let query: FilterQuery<Comment> = {
-      targetRef: { $id: mongoose.Types.ObjectId(refId), $ref: refType },
+      targetRef: { $id: new Types.ObjectId(refId), $ref: refType },
       visibility: EntityVisibility.Publish,
     };
 
@@ -513,7 +512,7 @@ export class CommentServiceV2 {
    */
   getCommentById = async (viewer: User, commentId: string) => {
     const query: FilterQuery<Comment> = {
-      _id: mongoose.Types.ObjectId(commentId),
+      _id: new Types.ObjectId(commentId),
       visibility: EntityVisibility.Publish,
     };
     this.logger.log(`Query: ${JSON.stringify(query)}`);
@@ -632,7 +631,7 @@ export class CommentServiceV2 {
       user: user._id,
       targetRef: {
         $ref: 'comment',
-        $id: Types.ObjectId(commentId),
+        $id: new Types.ObjectId(commentId),
       },
       type: EngagementType.Like,
     });
@@ -648,10 +647,10 @@ export class CommentServiceV2 {
     };
 
     if (comment.type === CommentType.Comment) {
-      filter.commentRef = Types.ObjectId(commentId);
+      filter.commentRef = new Types.ObjectId(commentId);
       filter.replyRef = { $exists: false };
     } else {
-      filter.replyRef = Types.ObjectId(commentId);
+      filter.replyRef = new Types.ObjectId(commentId);
     }
 
     await this.repository.updateNotification(filter, {

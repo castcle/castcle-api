@@ -1,7 +1,7 @@
 import { TwilioClient } from '@castcle-api/utils/clients';
 import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { ValidationPipe } from '@nestjs/common';
-import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
+import { getConnectionToken } from '@nestjs/mongoose';
 import {
   FastifyAdapter,
   NestFastifyApplication,
@@ -13,7 +13,7 @@ import { AppModule as FeedsModule } from 'apps/feeds/src/app/app.module';
 import { AppModule as UsersModule } from 'apps/users/src/app/app.module';
 import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.mock';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { Query } from 'mongoose';
+import { Model } from 'mongoose';
 import { testContentFarming } from './routes/content-farming.spec';
 import { testReviewTransaction } from './routes/review-transaction.spec';
 import { testSendTransaction } from './routes/send-transaction.spec';
@@ -22,7 +22,7 @@ import { request } from './utils.spec';
 describe('Castcle E2E Tests', () => {
   let app: NestFastifyApplication;
   let mongoServer: MongoMemoryReplSet;
-  let cleanUpMongoServer: Query<any, any>[];
+  let cleanUpMongoServer: () => any[];
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryReplSet.create();
@@ -40,20 +40,32 @@ describe('Castcle E2E Tests', () => {
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     global.__APP__ = app;
-    cleanUpMongoServer = Object.keys(
-      app.get(getConnectionToken()).base.modelSchemas,
-    ).map((name) => app.get(getModelToken(name)).deleteMany({}));
+
+    const modelConnection = app.get(getConnectionToken()).models;
+    const models = Object.values<Model<any>>(modelConnection);
+    cleanUpMongoServer = () => models.map((model) => model.deleteMany());
   });
 
   beforeEach(async () => {
-    await Promise.all(cleanUpMongoServer);
+    await Promise.all(cleanUpMongoServer());
   });
 
   afterAll(async () => {
     await Promise.all([app.close(), mongoServer.stop()]);
   });
 
-  it('should be defined and status OK', () => {
+  it.only('should be defined and status OK', () => {
+    expect(app.getHttpServer()).toBeDefined();
+
+    return Promise.all([
+      request().get('/analytics/healthy').expect('').expect(200),
+      request().get('/authentications/healthy').expect('').expect(200),
+      request().get('/feeds/healthy').expect('').expect(200),
+      request().get('/users/healthy').expect('').expect(200),
+    ]);
+  });
+
+  it.only('should be defined and status OK 2', () => {
     expect(app.getHttpServer()).toBeDefined();
 
     return Promise.all([

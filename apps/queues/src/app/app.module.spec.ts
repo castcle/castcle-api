@@ -24,13 +24,11 @@
 import { Test } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { AppModule } from './app.module';
-import { CampaignConsumer } from './campaign.consumer';
 import { CampaignScheduler } from './campaign.scheduler';
 
 jest.mock('libs/environments/src/lib/factories');
 describe('App Module', () => {
   let mongo: MongoMemoryReplSet;
-  let campaignConsumer: CampaignConsumer;
   let campaignScheduler: CampaignScheduler;
 
   beforeAll(async () => {
@@ -41,7 +39,6 @@ describe('App Module', () => {
       imports: [AppModule],
     }).compile();
 
-    campaignConsumer = module.get(CampaignConsumer);
     campaignScheduler = module.get(CampaignScheduler);
   });
 
@@ -50,7 +47,6 @@ describe('App Module', () => {
   });
 
   it('should be defined', () => {
-    expect(campaignConsumer).toBeDefined();
     expect(campaignScheduler).toBeDefined();
   });
 });

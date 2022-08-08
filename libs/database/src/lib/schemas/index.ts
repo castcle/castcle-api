@@ -34,7 +34,7 @@ export * from './ads-statistic.schema';
 export * from './analytic.schema';
 export * from './archive-hashtag.schema';
 export * from './base.schema';
-export * from './caccount.schema';
+export * from './c-account.schema';
 export * from './campaign.schema';
 export * from './circle.schema';
 export * from './comment.schema-factory';

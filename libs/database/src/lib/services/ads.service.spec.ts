@@ -45,7 +45,7 @@ import {
   AdsPaymentMethod,
   AdsSocialReward,
   AdsStatus,
-  CACCOUNT_NO,
+  CAccountNo,
   ContentType,
   QueueName,
   WalletType,
@@ -54,9 +54,9 @@ import { Repository } from '../repositories';
 import {
   AdsCampaign,
   AdsPlacement,
-  CAccount,
   Content,
   Transaction,
+  cAccount,
 } from '../schemas';
 import { AdsService } from './ads.service';
 import { AuthenticationService } from './authentication.service';
@@ -71,7 +71,7 @@ describe('AdsService', () => {
   let contentService: ContentService;
   let mocks: MockUserDetail[];
   let adsCampaignModel: Model<AdsCampaign>;
-  let cAccountModel: Model<CAccount>;
+  let cAccountModel: Model<cAccount>;
   let transactionModel: Model<Transaction>;
   let promoteContent: Content;
   let dataService: DataService;
@@ -123,7 +123,7 @@ describe('AdsService', () => {
     dataService = moduleRef.get<DataService>(DataService);
     tAccountService = moduleRef.get(TAccountService);
     transactionModel = moduleRef.get(getModelToken('Transaction'));
-    cAccountModel = moduleRef.get(getModelToken('CAccount'));
+    cAccountModel = moduleRef.get(getModelToken('cAccount'));
     adsCampaignModel = moduleRef.get(getModelToken('AdsCampaign'));
 
     mocks = await generateMockUsers(2, 1, {
@@ -483,24 +483,24 @@ describe('AdsService', () => {
   describe('Distrute Reward cases', () => {
     beforeAll(async () => {
       const socialReward = await new cAccountModel({
-        no: CACCOUNT_NO.SOCIAL_REWARD.NO,
+        no: CAccountNo.SOCIAL_REWARD.NO,
         name: 'SOCIAL_REWARD',
         nature: 'credit',
         child: [
-          CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO,
-          CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          CAccountNo.SOCIAL_REWARD.ADS_CREDIT.NO,
+          CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
         ],
       }).save();
       await cAccountModel.insertMany([
         {
-          no: CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO,
+          no: CAccountNo.SOCIAL_REWARD.ADS_CREDIT.NO,
           name: 'SOCIAL_REWARD.ADS_CREDIT',
           nature: 'credit',
           parent: socialReward._id,
           child: [],
         },
         {
-          no: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          no: CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           name: 'SOCIAL_REWARD.PERSONAL',
           nature: 'credit',
           parent: socialReward._id,
@@ -508,24 +508,24 @@ describe('AdsService', () => {
         },
       ]);
       const liability = await new cAccountModel({
-        no: CACCOUNT_NO.LIABILITY.NO,
+        no: CAccountNo.LIABILITY.NO,
         name: 'LIABILITY',
         nature: 'credit',
         child: [
-          CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
-          CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          CAccountNo.LIABILITY.USER_WALLET.ADS,
+          CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
         ],
       }).save();
       cAccountModel.insertMany([
         {
-          no: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
+          no: CAccountNo.LIABILITY.USER_WALLET.ADS,
           name: 'LIABILITY.ADS_CREDIT',
           nature: 'credit',
           parent: liability._id,
           child: [],
         },
         {
-          no: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          no: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
           name: 'LIABILITY.PERSONAL',
           nature: 'credit',
           parent: liability._id,
@@ -537,18 +537,18 @@ describe('AdsService', () => {
       describe('distributeContentFarmingReward()', () => {
         it('should distribute reward to content creator if no content farming', async () => {
           const authors = [
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
           ];
           const newContents = authors.map((author) => ({
             authorId: author,
-            contentId: Types.ObjectId(),
+            contentId: new Types.ObjectId(),
           }));
-          const campaign = Types.ObjectId();
-          const viewer = Types.ObjectId();
+          const campaign = new Types.ObjectId();
+          const viewer = new Types.ObjectId();
           const topupValue = 100;
           new transactionModel({
             from: {
@@ -564,18 +564,18 @@ describe('AdsService', () => {
             ledgers: [
               {
                 credit: {
-                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  cAccountNo: CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
                   value: topupValue,
                 },
                 debit: {
-                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  cAccountNo: CAccountNo.ASSET.CASTCLE_DEPOSIT,
                   value: topupValue,
                 },
               },
             ],
           }).save();
           const balance = await tAccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
           const session = await transactionModel.startSession();
@@ -602,7 +602,7 @@ describe('AdsService', () => {
             session,
           );
           const newBalance = await tAccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(newBalance).not.toEqual(topupValue);
           for (let i = 0; i < authors.length; i++) {
@@ -617,18 +617,18 @@ describe('AdsService', () => {
       describe('distributeContentCreatorReward()', () => {
         it('should distrubute author reward', async () => {
           const authors = [
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
           ];
           const newContents = authors.map((author) => ({
             authorId: author,
-            contentId: Types.ObjectId(),
+            contentId: new Types.ObjectId(),
           }));
-          const campaign = Types.ObjectId();
-          const viewer = Types.ObjectId();
+          const campaign = new Types.ObjectId();
+          const viewer = new Types.ObjectId();
           const topupValue = 100;
           await transactionModel.deleteMany({});
           new transactionModel({
@@ -645,18 +645,18 @@ describe('AdsService', () => {
             ledgers: [
               {
                 credit: {
-                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  cAccountNo: CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
                   value: topupValue,
                 },
                 debit: {
-                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  cAccountNo: CAccountNo.ASSET.CASTCLE_DEPOSIT,
                   value: topupValue,
                 },
               },
             ],
           }).save();
           const balance = await tAccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
           const session = await transactionModel.startSession();
@@ -683,7 +683,7 @@ describe('AdsService', () => {
             session,
           );
           const newBalance = await tAccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(newBalance).not.toEqual(topupValue);
           for (let i = 0; i < authors.length; i++) {
@@ -698,18 +698,18 @@ describe('AdsService', () => {
       describe('distributeViewerReward()', () => {
         it('should distribute to viewer', async () => {
           const authors = [
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
           ];
           const newContents = authors.map((author) => ({
             authorId: author,
-            contentId: Types.ObjectId(),
+            contentId: new Types.ObjectId(),
           }));
-          const campaign = Types.ObjectId();
-          const viewer = Types.ObjectId();
+          const campaign = new Types.ObjectId();
+          const viewer = new Types.ObjectId();
           const topupValue = 100;
           await transactionModel.deleteMany({});
           new transactionModel({
@@ -726,18 +726,18 @@ describe('AdsService', () => {
             ledgers: [
               {
                 credit: {
-                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  cAccountNo: CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
                   value: topupValue,
                 },
                 debit: {
-                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  cAccountNo: CAccountNo.ASSET.CASTCLE_DEPOSIT,
                   value: topupValue,
                 },
               },
             ],
           }).save();
           const balance = await tAccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
           const session = await transactionModel.startSession();
@@ -769,25 +769,25 @@ describe('AdsService', () => {
           );
           expect(viewerBalance).toEqual(reward.viewerShare);
           const newBalance = await tAccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(newBalance).not.toEqual(topupValue);
         });
       });
       it('should distribute all rewards to all counter parties', async () => {
         const authors = [
-          Types.ObjectId(),
-          Types.ObjectId(),
-          Types.ObjectId(),
-          Types.ObjectId(),
-          Types.ObjectId(),
+          new Types.ObjectId(),
+          new Types.ObjectId(),
+          new Types.ObjectId(),
+          new Types.ObjectId(),
+          new Types.ObjectId(),
         ];
         const newContents = authors.map((author) => ({
           authorId: author,
-          contentId: Types.ObjectId(),
+          contentId: new Types.ObjectId(),
         }));
-        const campaign = Types.ObjectId();
-        const viewer = Types.ObjectId();
+        const campaign = new Types.ObjectId();
+        const viewer = new Types.ObjectId();
         const topupValue = 100;
         await transactionModel.deleteMany({});
         new transactionModel({
@@ -804,18 +804,18 @@ describe('AdsService', () => {
           ledgers: [
             {
               credit: {
-                caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                cAccountNo: CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
                 value: topupValue,
               },
               debit: {
-                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                cAccountNo: CAccountNo.ASSET.CASTCLE_DEPOSIT,
                 value: topupValue,
               },
             },
           ],
         }).save();
         const balance = await tAccountService.getBalance(
-          CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
         );
         expect(balance).toEqual(topupValue);
         const session = await transactionModel.startSession();
@@ -842,7 +842,7 @@ describe('AdsService', () => {
           session,
         );
         const newBalance = await tAccountService.getBalance(
-          CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
         );
         expect(newBalance).not.toEqual(topupValue);
         const viewerBalance = await tAccountService.getAccountBalance(

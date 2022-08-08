@@ -279,7 +279,7 @@ describe('NotificationService', () => {
         { hasRelationshipExpansion: false },
       );
 
-      expect(resultUpdate.n).toEqual(3);
+      expect(resultUpdate.modifiedCount).toEqual(3);
       expect(profileNoti.filter((x) => x.read).length).toEqual(
         profileNoti.length,
       );
@@ -307,7 +307,7 @@ describe('NotificationService', () => {
         source: NotificationSource.Profile,
         sourceUserId: user._id,
         type: NotificationType.Comment,
-        contentRef: Types.ObjectId('6138afa4f616a467b5c4eb72'),
+        contentRef: new Types.ObjectId('6138afa4f616a467b5c4eb72'),
         read: false,
         account: result.accountDocument.id,
       };

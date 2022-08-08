@@ -85,9 +85,9 @@ export class Otp extends OtpDocument {
   regenerate: () => this;
 }
 
-export const OtpSchema = SchemaFactory.createForClass<OtpDocument, Otp>(
+export const OtpSchema = SchemaFactory.createForClass(
   OtpDocument,
-);
+) as unknown as mongoose.Schema<OtpDocument, OtpModel>;
 
 export interface OtpModel extends mongoose.Model<Otp> {
   /**
@@ -116,7 +116,7 @@ OtpSchema.statics.generate = async function (
   receiver: string,
   sid?: string,
 ) {
-  let refCodeExists: boolean;
+  let refCodeExists: Otp;
   const otp = new this({
     account: accountId,
     action: objective,

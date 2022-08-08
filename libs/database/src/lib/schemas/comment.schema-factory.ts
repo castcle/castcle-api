@@ -42,7 +42,7 @@ export const CommentSchemaFactory = (revisionModel: Model<Revision>) => {
 
   CommentSchema.post('save', async function (doc, next) {
     await new revisionModel({
-      objectRef: { $ref: 'comment', $id: Types.ObjectId(doc._id) },
+      objectRef: { $ref: 'comment', $id: new Types.ObjectId(doc._id) },
       payload: doc,
     }).save();
 

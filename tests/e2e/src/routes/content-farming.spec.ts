@@ -45,7 +45,7 @@ export const testContentFarming = async () => {
       const user = await registerUser();
 
       await request()
-        .get(`/v2/users/:userId/farming/cast/${Types.ObjectId()}`)
+        .get(`/v2/users/:userId/farming/cast/${new Types.ObjectId()}`)
         .auth(user.accessToken, { type: 'bearer' })
         .set({
           'Accept-Language': 'en',

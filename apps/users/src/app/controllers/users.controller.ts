@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { ClaimAirdropCommand } from '@castcle-api/cqrs';
 import {
   AdsBoostStatus,
   AdsQuery,
@@ -64,6 +65,7 @@ import {
   UserField,
   UserResponseDto,
   UserService,
+  UserServiceV2,
   UserType,
   createCastcleMeta,
   getRelationship,
@@ -108,6 +110,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
   DeleteUserDtoV1,
@@ -136,11 +139,13 @@ export class UsersController {
     private socialSyncService: SocialSyncService,
     private suggestionService: SuggestionService,
     private userService: UserService,
+    private userServiceV2: UserServiceV2,
     private notifyService: NotificationService,
     private download: Downloader,
     private facebookClient: FacebookClient,
     private rankerService: RankerService,
     private socialSyncServiceV2: SocialSyncServiceV2,
+    private commandBus: CommandBus,
   ) {}
 
   /**
@@ -941,17 +946,20 @@ export class UsersController {
 
     if (isFirstTimeVerification) {
       try {
-        await this.campaignService.claimCampaignsAirdrop(
-          account._id,
-          CampaignType.VERIFY_MOBILE,
-        );
+        const [referralCampaign, mobileCampaign, referrer] = await Promise.all([
+          this.campaignService.getCampaign(CampaignType.FRIEND_REFERRAL),
+          this.campaignService.getCampaign(CampaignType.VERIFY_MOBILE),
+          this.userServiceV2.getUserByAccount(account.referralBy),
+        ]);
 
-        const referral = await this.userService.getReferrer(account._id);
-
-        await this.campaignService.claimCampaignsAirdrop(
-          referral.ownerAccount as unknown as string,
-          CampaignType.FRIEND_REFERRAL,
-        );
+        await Promise.all([
+          this.commandBus.execute(
+            new ClaimAirdropCommand(mobileCampaign, user._id),
+          ),
+          this.commandBus.execute(
+            new ClaimAirdropCommand(referralCampaign, referrer._id),
+          ),
+        ]);
       } catch (error: unknown) {
         this.logger.error(error, `updateMobile:claimAirdrop:error`);
       }

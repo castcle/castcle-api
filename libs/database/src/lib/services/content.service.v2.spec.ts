@@ -393,7 +393,9 @@ describe('ContentServiceV2', () => {
           mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
-        expect(afterBalance).toEqual(unfarmResult.farmAmount + currentBalance);
+        expect(afterBalance).toEqual(
+          Number(unfarmResult.farmAmount) + currentBalance,
+        );
         const recentContentFarming = await service.getContentFarming(
           testContents[0].id,
           mockFarmingUsers[1].user.id,
@@ -425,7 +427,7 @@ describe('ContentServiceV2', () => {
         );
         expect(currentBalance).not.toEqual(recentBalance);
         expect(recentBalance).toEqual(
-          currentBalance - updateFarmingResult.farmAmount,
+          currentBalance - Number(updateFarmingResult.farmAmount),
         );
       });
     });
@@ -443,7 +445,7 @@ describe('ContentServiceV2', () => {
             testContents[i].id,
             mockFarmingUsers[1].user.id,
           );
-          start += unfarmResult.farmAmount;
+          start += Number(unfarmResult.farmAmount);
           const recentBalance = await tAccountService.getAccountBalance(
             mockFarmingUsers[1].user.id,
             WalletType.PERSONAL,
@@ -901,10 +903,10 @@ describe('ContentServiceV2', () => {
         const mockFeedItems = response.contents.map(
           (c) =>
             ({
-              id: Types.ObjectId(),
+              id: new Types.ObjectId(),
               content: c._id,
               viewer: mocksUsers[0].account._id,
-              author: Types.ObjectId(c.author.id),
+              author: new Types.ObjectId(c.author.id),
             } as FeedItem),
         );
         const feedResponse = await service.toFeedResponse(
@@ -937,10 +939,10 @@ describe('ContentServiceV2', () => {
         const mockFeedItems = response.contents.map(
           (c) =>
             ({
-              id: Types.ObjectId(),
+              id: new Types.ObjectId(),
               content: c._id,
               viewer: mocksUsers[0].account._id,
-              author: Types.ObjectId(c.author.id),
+              author: new Types.ObjectId(c.author.id),
             } as FeedItem),
         );
 
@@ -966,7 +968,7 @@ describe('ContentServiceV2', () => {
             mocksUsers[0].account.id,
             feedResponse.payload[0].id,
           );
-          expect(offView.ok).toEqual(1);
+          expect(offView.matchedCount).toEqual(1);
         });
       });
     });

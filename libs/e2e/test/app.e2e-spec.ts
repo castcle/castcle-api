@@ -1,5 +1,5 @@
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { connect, disconnect } from 'mongoose';
+import { disconnect } from 'mongoose';
 import {
   initializeUsers,
   testAuthenticationsFlow,
@@ -43,10 +43,6 @@ describe('Castcle E2E Tests', () => {
     mongoMemoryReplSet = await MongoMemoryReplSet.create();
     global.mongoUri = mongoMemoryReplSet.getUri();
 
-    await connect(mongoMemoryReplSet.getUri('test'), {
-      useFindAndModify: false,
-      useNewUrlParser: true,
-    });
     await setupAuthenticationsModule();
     await setupBackofficesModule();
     await initializeUsers();

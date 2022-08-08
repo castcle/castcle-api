@@ -21,18 +21,20 @@
  * or have any questions.
  */
 
-import { Types } from 'mongoose';
+import { PipelineStage, Types } from 'mongoose';
 import { TransactionType } from '../models';
 
 export class GetWalletRecentResponse {
   user: Types.ObjectId;
 }
-export const pipelineOfGetWalletRecentFromType = (userId: string) => [
+export const pipelineOfGetWalletRecentFromType = (
+  userId: string,
+): PipelineStage[] => [
   { $unwind: { path: '$to' } },
   {
     $match: {
       'from.user': new Types.ObjectId(userId),
-      'data.type': TransactionType.SEND,
+      type: TransactionType.SEND,
     },
   },
   {
