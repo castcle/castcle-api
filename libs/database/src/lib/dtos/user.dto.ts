@@ -49,7 +49,7 @@ import {
   UserType,
   Wallet,
 } from '../models';
-import { CastcleId } from '../utils/common';
+import { CastcleId } from '../utils/validates';
 import { CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 import { Meta } from './response.dto';
@@ -279,6 +279,7 @@ export class PageDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
+  @CastcleId()
   castcleId: string;
 
   @IsString()
