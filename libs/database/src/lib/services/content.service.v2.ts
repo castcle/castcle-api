@@ -1715,10 +1715,20 @@ export class ContentServiceV2 {
     if (!reportingSubject)
       throw new CastcleException('REPORTING_SUBJECT_NOT_FOUND');
 
+    const user = await this.repository.findUser({
+      _id: targetContent.author.id,
+    });
+
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
     await Promise.all([
       this.repository.updateEngagement(
         engagementFilter,
-        { ...engagementFilter, visibility: EntityVisibility.Publish },
+        {
+          ...engagementFilter,
+          visibility: EntityVisibility.Publish,
+          account: user.ownerAccount,
+        },
         { upsert: true },
       ),
       this.repository.createReporting({

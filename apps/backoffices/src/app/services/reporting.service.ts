@@ -35,11 +35,12 @@ import {
   ResponseDto,
   UserType,
 } from '@castcle-api/database';
-import { Configs } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { DateTime } from 'luxon';
+import { Types } from 'mongoose';
 import { pipelineOfGetReporting } from '../aggregations';
 import { StaffRole } from '../models/authentication.enum';
 import {
@@ -172,10 +173,11 @@ export class ReportingService {
                 visibility: content?.visibility,
               }
             : undefined,
-          reportBy: reporting.reportBy.map((id) => {
+          reportBy: reporting.reportBy.map((reportByUserId) => {
             const payloadReportBy = reportedBy.find(
-              ({ type, user }) =>
-                type === reporting.type && String(user) === String(id),
+              ({ user, payload }) =>
+                String(payload._id) === String(reporting.id) &&
+                String(user) === String(reportByUserId),
             );
 
             const reportUser = users?.find(
@@ -235,7 +237,7 @@ export class ReportingService {
     action: ReportingIllegal,
   ) {
     const query = {
-      payloadId: body.id as any,
+      payloadId: new Types.ObjectId(body.id),
       type: body.type as ReportingType,
       status: [
         ReportingStatus.REVIEWING,
@@ -250,16 +252,17 @@ export class ReportingService {
       query.status = [ReportingStatus.APPEAL, ReportingStatus.REVIEWING];
 
     const reportings = await this.repository.findReportings(query);
+
     if (!reportings.length) throw new CastcleException('REPORTING_NOT_FOUND');
 
     const targetReporting =
       body.type === ReportingType.USER
         ? await this.repository.findUser({
-            _id: body.id,
+            _id: new Types.ObjectId(body.id) as any,
             visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
           })
         : await this.repository.findContent({
-            _id: body.id,
+            _id: new Types.ObjectId(body.id) as any,
             visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
           });
 
@@ -302,9 +305,13 @@ export class ReportingService {
       if (targetReporting.visibility === EntityVisibility.Illegal) {
         if (body.type === ReportingType.CONTENT) {
           --userOwner.casts;
-          this.updateIllegalChildCast(body.id, EntityVisibility.Illegal, -1);
+          this.updateIllegalChildCast(
+            targetReporting.id,
+            EntityVisibility.Illegal,
+            -1,
+          );
         } else {
-          await this.reduceFollows(body.id, -1);
+          await this.reduceFollows(targetReporting.id, -1);
         }
       } else {
         await this.repository.deleteContent(targetReporting.id);
@@ -317,9 +324,13 @@ export class ReportingService {
       delete targetReporting.reportedSubject;
       if (body.type === ReportingType.CONTENT) {
         ++userOwner.casts;
-        this.updateIllegalChildCast(body.id, EntityVisibility.Publish, 1);
+        this.updateIllegalChildCast(
+          targetReporting.id,
+          EntityVisibility.Publish,
+          1,
+        );
       } else {
-        await this.reduceFollows(body.id, 1);
+        await this.reduceFollows(targetReporting.id, 1);
       }
     }
 
@@ -367,7 +378,7 @@ export class ReportingService {
           read: false,
         },
         userOwner,
-        accountOwner?.preferences?.languages[0] ?? Configs.DefaultLanguage,
+        accountOwner?.preferences?.languages[0] || LocalizationLang.English,
       ),
     ]);
   }
@@ -457,7 +468,7 @@ export class ReportingService {
             read: false,
           },
           user,
-          accountOwner?.preferences?.languages[0] ?? Configs.DefaultLanguage,
+          accountOwner?.preferences?.languages[0] || LocalizationLang.English,
         );
       }),
       uniqueContents.map(async (content) => {
@@ -487,7 +498,7 @@ export class ReportingService {
             read: false,
           },
           userOwner,
-          accountOwner?.preferences?.languages[0] ?? Configs.DefaultLanguage,
+          accountOwner?.preferences?.languages[0] || LocalizationLang.English,
         );
       }),
     ]);
