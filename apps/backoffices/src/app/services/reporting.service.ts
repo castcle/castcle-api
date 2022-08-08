@@ -89,30 +89,6 @@ export class ReportingService {
     ]);
   }
 
-  private async updateIllegalChildCast(
-    contentId: string,
-    visibility: EntityVisibility,
-    increase?: number,
-  ) {
-    await this.repository.updateContents(
-      {
-        originalPost: contentId,
-        visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
-      },
-      { $set: { visibility } },
-    );
-
-    const contents = await this.repository.findContents({
-      originalPost: contentId,
-    });
-    await this.repository.updateUsers(
-      {
-        _id: contents.map(({ author }) => author.id),
-      },
-      { $inc: { casts: increase ?? -1 } },
-    );
-  }
-
   private checkingStatusActive(status: ReportingStatus) {
     if (status === ReportingStatus.REVIEWING) {
       return ReportingStatus.DONE;
@@ -305,8 +281,8 @@ export class ReportingService {
       if (targetReporting.visibility === EntityVisibility.Illegal) {
         if (body.type === ReportingType.CONTENT) {
           --userOwner.casts;
-          this.updateIllegalChildCast(
-            targetReporting.id,
+          await this.repository.updateCastByReCastORQuote(
+            body.id,
             EntityVisibility.Illegal,
             -1,
           );
@@ -323,9 +299,9 @@ export class ReportingService {
       delete targetReporting.reportedStatus;
       delete targetReporting.reportedSubject;
       if (body.type === ReportingType.CONTENT) {
-        ++userOwner.casts;
-        this.updateIllegalChildCast(
-          targetReporting.id,
+        userOwner.casts++;
+        await this.repository.updateCastByReCastORQuote(
+          body.id,
           EntityVisibility.Publish,
           1,
         );

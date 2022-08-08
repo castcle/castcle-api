@@ -25,6 +25,7 @@ import { CacheStore, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleImage } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
+import { LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
@@ -56,6 +57,7 @@ import {
 import {
   CAccountNo,
   ContentFarmingStatus,
+  ContentFlowItem,
   ContentMessage,
   ContentMessageEvent,
   ContentType,
@@ -64,6 +66,7 @@ import {
   QueueName,
   ReferencedTypeCast,
   ReportingAction,
+  ReportingIllegal,
   ReportingMessage,
   ReportingStatus,
   ReportingType,
@@ -1985,4 +1988,108 @@ export class ContentServiceV2 {
       payload: farmingPayload,
     });
   };
+
+  async contentFlowIllegal(contentId: string, dsIllegal: ContentFlowItem) {
+    const content = await this.repository.findContent({ _id: contentId });
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
+
+    if (!dsIllegal.illegalClass) return;
+
+    content.visibility = EntityVisibility.Illegal;
+
+    await this.reportContent(
+      {
+        _id: null,
+        displayName: 'ds',
+      } as User,
+      {
+        targetContentId: content.id,
+        subject: dsIllegal.illegalSubject,
+      },
+    );
+
+    const reportings = await this.repository.findReportings({
+      payloadId: content._id,
+      type: ReportingType.CONTENT,
+      status: [
+        ReportingStatus.REVIEWING,
+        ReportingStatus.ILLEGAL,
+        ReportingStatus.APPEAL,
+        ReportingStatus.NOT_APPEAL,
+        ReportingStatus.DONE,
+      ],
+    });
+
+    if (!reportings.length) throw new CastcleException('REPORTING_NOT_FOUND');
+
+    const user = await this.repository.findUser({
+      _id: content.author.id,
+      visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+    });
+
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
+    const account = await this.repository.findAccount({
+      _id: user.ownerAccount,
+    });
+
+    if (!account) throw new CastcleException('REQUEST_URL_NOT_FOUND');
+
+    user.casts--;
+
+    content.reportedStatus = ReportingStatus.ILLEGAL;
+    content.reportedSubject = dsIllegal.illegalSubject;
+
+    await this.repository.updateCastByReCastORQuote(
+      content._id,
+      EntityVisibility.Illegal,
+      -1,
+    );
+
+    await this.notificationService.notifyToUser(
+      {
+        source:
+          user.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: undefined,
+        type: NotificationType.IllegalDone,
+        contentRef: content._id,
+        account: account._id,
+        read: false,
+      },
+      user,
+      account?.preferences?.languages[0] ?? LocalizationLang.English,
+    );
+
+    await Promise.all([
+      content.save(),
+      user.save(),
+      this.repository.updateReportings(
+        {
+          payloadId: content._id,
+          type: ReportingType.CONTENT,
+          status: [ReportingStatus.REVIEWING],
+        },
+        {
+          $set: {
+            status: ReportingStatus.DONE,
+          },
+          $addToSet: {
+            actionBy: {
+              firstName: 'ds',
+              lastName: 'guardian',
+              email: null,
+              action: ReportingIllegal.ILLEGAL,
+              status: ReportingStatus.DONE,
+              message: dsIllegal.illegalMessage,
+              subject: dsIllegal.illegalSubject,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          },
+        },
+      ),
+    ]);
+  }
 }
