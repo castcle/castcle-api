@@ -208,6 +208,8 @@ export class UserServiceV2 {
 
     if (!followedUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
+    if (followedUser.id === user.id) throw new CastcleException('FORBIDDEN');
+
     await user.follow(followedUser);
     await this.notificationService.notifyToUser(
       {
@@ -234,6 +236,8 @@ export class UserServiceV2 {
       .exec();
 
     if (!blockUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
+    if (blockUser.id === user.id) throw new CastcleException('FORBIDDEN');
 
     const session = await this.relationshipModel.startSession();
     await session.withTransaction(async () => {
