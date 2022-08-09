@@ -22,6 +22,7 @@
  */
 
 import {
+  DEFAULT_QUERY_OPTIONS,
   GetKeywordQuery,
   GetTopTrendQuery,
   SearchServiceV2,
@@ -34,6 +35,7 @@ import {
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
 import { Get, Query } from '@nestjs/common';
+import { KeywordHashtagPipe } from '../pipes/keyword.hashtag.pipe';
 
 @CastcleControllerV2({ path: 'searches' })
 export class SearchesControllerV2 {
@@ -73,5 +75,19 @@ export class SearchesControllerV2 {
     @Query() query: GetTopTrendQuery,
   ) {
     return this.searchServiceV2.getTopTrends(query, authorizer.user);
+  }
+
+  @Get('hashtags')
+  @CastcleAuth(CacheKeyName.Hashtags)
+  async hashtagSearch(@Query('keyword', KeywordHashtagPipe) keyword: string) {
+    const result = await this.searchServiceV2.searchHashtag(keyword, {
+      page: DEFAULT_QUERY_OPTIONS.page,
+      limit: 10,
+    });
+    return {
+      payload: result.map((hashtag, index) =>
+        hashtag.toSearchTopTrendhPayload(index),
+      ),
+    };
   }
 }
