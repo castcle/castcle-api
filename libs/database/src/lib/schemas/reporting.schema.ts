@@ -39,7 +39,6 @@ export class Reporting extends CastcleBase {
   user: Types.ObjectId;
 
   @Prop({
-    required: true,
     type: SchemaTypes.ObjectId,
     ref: 'User',
     index: true,

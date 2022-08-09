@@ -24,7 +24,7 @@
 import { Configs, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { CastcleDate, CastcleLocalization } from '@castcle-api/utils/commons';
+import { CastcleLocalization } from '@castcle-api/utils/commons';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
@@ -41,7 +41,7 @@ import {
   PushNotificationPayload,
   SoundDeviceDefault,
 } from '../dtos';
-import { NotificationMessage, QueueName, UserType } from '../models';
+import { NotificationMessageV2, QueueName, UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Notification, User } from '../schemas';
 
@@ -51,11 +51,11 @@ export class NotificationServiceV2 {
 
   constructor(
     @InjectQueue(QueueName.NOTIFICATION)
-    private notificationQueue: Queue<NotificationMessage>,
+    private notificationQueue: Queue<NotificationMessageV2>,
     private repository: Repository,
   ) {}
 
-  private checkNotify = (notificationData: CreateNotification) => {
+  checkNotify = (notificationData: CreateNotification) => {
     switch (notificationData.type) {
       case NotificationType.Like:
         return Environment.NOTIFY_LIKE == '1';
@@ -195,7 +195,7 @@ export class NotificationServiceV2 {
     }
   };
 
-  private generateMessage = async (
+  generateMessage = async (
     notify: Notification,
     requestedBy: User,
     language: string,
@@ -269,7 +269,7 @@ export class NotificationServiceV2 {
     };
   };
 
-  private prepareNotification = (
+  prepareNotification = (
     notify: Notification,
     account: Account,
     message: string,
@@ -278,9 +278,7 @@ export class NotificationServiceV2 {
     haveUsers?: number,
   ) => {
     return {
-      notification: {
-        body: message,
-      },
+      notification: { body: message },
       android: {
         priority: AndroidMessagePriority.HIGH,
         notification: {
@@ -319,11 +317,11 @@ export class NotificationServiceV2 {
     return {
       message,
       landingPage,
-      id: notify._id,
+      id: String(notify._id),
       source: notify.source,
       type: notify.type,
-      user: notify.user?._id,
-      actionId: haveUsers === 1 ? user?._id : undefined,
+      user: String(notify.user?._id),
+      actionId: haveUsers === 1 ? String(user?._id) : undefined,
       actionCastcleId: haveUsers === 1 ? user?.displayId : undefined,
       commentId: String(notify.commentRef),
       contentId: String(notify.contentRef),
@@ -468,118 +466,14 @@ export class NotificationServiceV2 {
   };
 
   notifyToUser = async (
-    { sourceUserId, read, ...notificationData }: CreateNotification,
+    createNotification: CreateNotification,
     requestedBy: User,
     language: string,
   ) => {
-    this.#logger.log('Check user action notify.');
-    if (String(sourceUserId) === String(requestedBy._id)) return;
-
-    this.#logger.log('Check configuration notify to user.');
-    if (!this.checkNotify(notificationData)) return;
-
-    const filters = {
-      ...notificationData,
-      ...{
-        contentRef: notificationData.contentRef ?? { $exists: false },
-        commentRef: notificationData.commentRef ?? { $exists: false },
-        replyRef: notificationData.replyRef ?? { $exists: false },
-        profileRef: notificationData.profileRef ?? { $exists: false },
-      },
-    };
-
-    this.#logger.log(`Check interval time follow user.`);
-
-    if (notificationData.type === NotificationType.Follow) {
-      const haveNotify = await this.repository.findNotification(filters, {
-        sort: { createdAt: -1 },
-      });
-
-      const intervalFollow = CastcleDate.checkIntervalNotify(
-        haveNotify?.createdAt,
-        Number(Environment.NOTIFY_FOLLOW_INTERVAL),
-      );
-      if (!intervalFollow) return;
-    }
-
-    if (
-      [
-        NotificationType.Tag,
-        NotificationType.Follow,
-        NotificationType.IllegalDone,
-        NotificationType.IllegalClosed,
-        NotificationType.NotIllegal,
-      ].some((type) => type === notificationData.type)
-    ) {
-      await this.repository.createNotification({
-        ...notificationData,
-        ...{ user: requestedBy._id },
-        read,
-        sourceUserId,
-      });
-    } else {
-      const updateNotify = await this.repository.updateNotification(
-        filters,
-        {
-          $set: { read, user: requestedBy._id },
-          $setOnInsert: notificationData,
-          $addToSet: { sourceUserId },
-        },
-        {
-          upsert: true,
-        },
-      );
-
-      if (!updateNotify.modifiedCount && !updateNotify.upsertedCount) return;
-    }
-
-    this.#logger.log('Insert data into notification is done.');
-
-    const notify = await this.repository.findNotification(filters, {
-      sort: { createdAt: -1 },
-    });
-
-    this.#logger.log('Get devices by account.');
-
-    const account = await this.repository.findAccount({
-      _id: notificationData.account._id,
-    });
-
-    if (!account?.devices) return;
-
-    this.#logger.log('Generate notification message.');
-
-    const { message, user, haveUser } = await this.generateMessage(
-      notify,
+    await this.notificationQueue.add({
+      createNotification,
       requestedBy,
       language,
-    );
-    this.#logger.log('Generate notification message is done.');
-
-    if (!message) return;
-
-    this.#logger.log('Send notification message.', JSON.stringify(message));
-
-    const badgeCounts = await this.repository.findNotificationCount({
-      user: requestedBy._id,
-      account: requestedBy.ownerAccount,
-      read: false,
     });
-
-    await this.notificationQueue.add(
-      this.prepareNotification(
-        notify,
-        account,
-        message,
-        badgeCounts,
-        user,
-        haveUser,
-      ),
-      {
-        removeOnComplete: true,
-      },
-    );
-
-    return notify;
   };
 }

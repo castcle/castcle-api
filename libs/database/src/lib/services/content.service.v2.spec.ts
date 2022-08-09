@@ -66,6 +66,7 @@ import {
   KeywordType,
   MetadataType,
   QueueName,
+  ReportingIllegal,
   ReportingStatus,
   ReportingSubject,
   SuggestContentItem,
@@ -1228,6 +1229,58 @@ describe('ContentServiceV2', () => {
       expect(contentFarmings.payload[0].status).toEqual(
         ContentFarmingStatus.Farmed,
       );
+    });
+  });
+
+  describe('contentFlowIllegal', () => {
+    let content: Content;
+    beforeAll(async () => {
+      const { payload } = await service.createContent(
+        {
+          payload: { message: 'content illegal' },
+          type: ContentType.Short,
+          castcleId: mocksUsers[0].user.displayId,
+        },
+        mocksUsers[0].user,
+      );
+      content = await repository.findContent({ _id: payload.id });
+    });
+
+    it('should update publish content', async () => {
+      await service.contentFlowIllegal(content.id, {
+        illegalClass: false,
+      });
+
+      const contentCurrent = await repository.findContent({ _id: content.id });
+      const reporting = await repository.findReporting({
+        payloadId: content.id,
+      });
+
+      expect(reporting).toBeNull();
+      expect(contentCurrent.visibility).toEqual(EntityVisibility.Publish);
+    });
+
+    it('should create reporting and update content illegal', async () => {
+      await service.contentFlowIllegal(content.id, {
+        illegalClass: true,
+        illegalMessage: 'test',
+        illegalSubject: 'spam',
+      });
+
+      const contentCurrent = await repository.findContent({
+        _id: content._id,
+        visibility: EntityVisibility.Illegal,
+      });
+
+      const reporting = await repository.findReporting({
+        payloadId: content._id,
+      });
+
+      expect(reporting).not.toBeNull();
+      expect(reporting.status).toEqual(ReportingStatus.DONE);
+      expect(contentCurrent.visibility).toEqual(EntityVisibility.Illegal);
+      expect(contentCurrent.reportedStatus).toEqual(ReportingIllegal.ILLEGAL);
+      expect(contentCurrent.reportedSubject).toEqual('spam');
     });
   });
 

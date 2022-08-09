@@ -22,8 +22,10 @@
  */
 import {
   AndroidMessagePriority,
+  CreateNotification,
   PushNotificationPayload,
 } from '../dtos/notification.dto';
+import { User } from '../schemas';
 
 type Aps = {
   alert: string;
@@ -52,4 +54,10 @@ export interface NotificationMessage {
   android: AndroidConfigs;
   payload: PushNotificationPayload;
   firebaseTokens: string[];
+}
+
+export interface NotificationMessageV2 {
+  createNotification: CreateNotification;
+  requestedBy: User;
+  language: string;
 }

@@ -30,5 +30,6 @@ export * from './get-contents.aggregation';
 export * from './get-feed-contents.aggregation';
 export * from './get-users-relation.aggregation';
 export * from './get-reporting.aggregation';
+export * from './get-wallet-history.aggregation';
 export * from './get-wallet-recent.aggregation';
 export * from './notification.aggregation';

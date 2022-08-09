@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import {
+  AnalyticService,
   AuthenticationService,
   CommentServiceV2,
   Content,
@@ -34,8 +35,10 @@ import {
   QueueName,
   User,
   UserService,
+  UserServiceV2,
   generateMockUsers,
 } from '@castcle-api/database';
+import { Mailer } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -61,24 +64,24 @@ describe('CommentControllerV2', () => {
     app = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
-        CacheModule.register({
-          store: 'memory',
-          ttl: 1000,
-        }),
+        CacheModule.register(),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
         HttpModule,
       ],
       controllers: [CommentControllerV2],
       providers: [
-        UserService,
+        AnalyticService,
         AuthenticationService,
-        ContentService,
         CommentServiceV2,
+        ContentService,
+        HashtagService,
+        Mailer,
         NotificationService,
         NotificationServiceV2,
-        HashtagService,
         Repository,
+        UserService,
+        UserServiceV2,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -89,6 +92,10 @@ describe('CommentControllerV2', () => {
         },
         {
           provide: getQueueToken(QueueName.NOTIFICATION),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.REPORTING),
           useValue: { add: jest.fn() },
         },
       ],

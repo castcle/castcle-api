@@ -46,6 +46,7 @@ import {
   NotificationService,
   NotificationServiceV2,
   UserService,
+  UserServiceV2,
 } from '../database.module';
 import { NotificationSource, NotificationType } from '../dtos';
 import { MockUserService } from '../mocks';
@@ -86,6 +87,7 @@ describe('CommentServiceV2', () => {
         NotificationServiceV2,
         Repository,
         UserService,
+        UserServiceV2,
         { provide: AnalyticService, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: FacebookClient, useValue: {} },
@@ -107,6 +109,10 @@ describe('CommentServiceV2', () => {
         },
         {
           provide: getQueueToken(QueueName.VERIFY_EMAIL),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.REPORTING),
           useValue: { add: jest.fn() },
         },
       ],
@@ -246,7 +252,7 @@ describe('CommentServiceV2', () => {
         mocksUsers[1].user,
         mocksUsers[1].account,
       );
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await service.engagementModel.findOne({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'comment',
@@ -269,7 +275,7 @@ describe('CommentServiceV2', () => {
         mocksUsers[1].user,
         mocksUsers[1].account,
       );
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await service.engagementModel.findOne({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'comment',
@@ -284,7 +290,7 @@ describe('CommentServiceV2', () => {
       );
     });
     afterAll(async () => {
-      await service._engagementModel.deleteMany({});
+      await service.engagementModel.deleteMany({});
       await contentService._contentModel.deleteMany({});
       await contentService._commentModel.deleteMany({});
     });
@@ -363,7 +369,7 @@ describe('CommentServiceV2', () => {
         mocksUsers[1].user,
       );
 
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await service.engagementModel.findOne({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'comment',
@@ -403,7 +409,7 @@ describe('CommentServiceV2', () => {
         mocksUsers[2].user,
       );
 
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await service.engagementModel.findOne({
         user: mocksUsers[2].user._id,
         targetRef: {
           $ref: 'comment',
@@ -442,7 +448,7 @@ describe('CommentServiceV2', () => {
         reply._id,
         mocksUsers[1].user,
       );
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await service.engagementModel.findOne({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'comment',
@@ -484,7 +490,7 @@ describe('CommentServiceV2', () => {
         reply._id,
         mocksUsers[2].user,
       );
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await service.engagementModel.findOne({
         user: mocksUsers[2].user._id,
         targetRef: {
           $ref: 'comment',
