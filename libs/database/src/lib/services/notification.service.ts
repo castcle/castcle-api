@@ -76,12 +76,12 @@ export class NotificationService {
     if (source) filter.source = source;
     if (sinceId)
       filter._id = {
-        $gt: Types.ObjectId(sinceId),
+        $gt: new Types.ObjectId(sinceId),
       };
 
     if (untilId)
       filter._id = {
-        $lt: Types.ObjectId(untilId),
+        $lt: new Types.ObjectId(untilId),
       };
 
     return this._notificationModel
@@ -184,7 +184,7 @@ export class NotificationService {
         },
       );
 
-      if (!updateNotify.nModified && !updateNotify.upserted) return;
+      if (!updateNotify.modifiedCount && !updateNotify.upsertedCount) return;
     }
     this.#logger.log('Insert data into notification is done.');
 
@@ -211,7 +211,7 @@ export class NotificationService {
 
     const firebaseToken = await this._accountDeviceModel
       .find({
-        account: Types.ObjectId(notificationData.account._id),
+        account: new Types.ObjectId(notificationData.account._id),
       })
       .exec();
 

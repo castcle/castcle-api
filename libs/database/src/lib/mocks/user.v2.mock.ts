@@ -84,7 +84,7 @@ export class MockUserService {
     } as CreateCredentialDto);
 
     (account.credentials ??= []).push({
-      _id: Types.ObjectId(credential._id),
+      _id: new Types.ObjectId(credential._id),
       deviceUUID: credential.deviceUUID,
     });
 

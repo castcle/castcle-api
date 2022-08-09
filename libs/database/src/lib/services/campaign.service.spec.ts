@@ -21,29 +21,24 @@
  * or have any questions.
  */
 
-import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Model, Types } from 'mongoose';
 import {
   CampaignService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '../database.module';
-import { CampaignType, QueueName } from '../models';
+import { QueueName } from '../models';
 import { Repository } from '../repositories';
-import { Campaign } from '../schemas';
 import { TAccountService } from './taccount.service';
 
 describe('Campaign Service', () => {
   let moduleRef: TestingModule;
   let mongo: MongoMemoryServer;
   let campaignService: CampaignService;
-  let campaignModel: Model<Campaign>;
-  const accountId = Types.ObjectId().toString();
 
   beforeAll(async () => {
     mongo = await MongoMemoryServer.create();
@@ -66,7 +61,6 @@ describe('Campaign Service', () => {
     }).compile();
 
     campaignService = moduleRef.get(CampaignService);
-    campaignModel = moduleRef.get(getModelToken('Campaign'));
   });
 
   afterAll(async () => {
@@ -76,116 +70,5 @@ describe('Campaign Service', () => {
 
   it('should be defined', () => {
     expect(campaignService).toBeDefined();
-  });
-
-  it('should return NOT_FOUND when campaign does not exist or expired', async () => {
-    await expect(
-      campaignService.claimCampaignsAirdrop(
-        accountId,
-        CampaignType.VERIFY_MOBILE,
-      ),
-    ).rejects.toThrow(new CastcleException('CAMPAIGN_HAS_NOT_STARTED'));
-  });
-
-  it('should return REWARD_IS_NOT_ENOUGH when reward is not enough to claim', async () => {
-    const campaign = await new campaignModel({
-      name: 'Early Caster Airdrop',
-      type: CampaignType.VERIFY_MOBILE,
-      startDate: new Date('2022-01-17T00:00Z'),
-      endDate: new Date('3000-01-20T23:59Z'),
-      maxClaims: 1,
-      rewardsPerClaim: 10,
-      rewardBalance: 0,
-      totalRewards: 100_000,
-    }).save();
-
-    await expect(
-      campaignService.claimCampaignsAirdrop(
-        accountId,
-        CampaignType.VERIFY_MOBILE,
-      ),
-    ).rejects.toThrow(new CastcleException('REWARD_IS_NOT_ENOUGH'));
-
-    await campaign.deleteOne();
-  });
-
-  describe('Verify Mobile Campaign', () => {
-    let campaign: Campaign;
-    let claimAirdropResponse: void;
-
-    beforeAll(async () => {
-      campaign = await new campaignModel({
-        name: 'Early Caster Airdrop',
-        type: CampaignType.VERIFY_MOBILE,
-        startDate: new Date('2022-01-17T00:00Z'),
-        endDate: new Date('3000-01-20T23:59Z'),
-        maxClaims: 1,
-        rewardsPerClaim: 10,
-        rewardBalance: 100_000,
-        totalRewards: 100_000,
-      }).save();
-
-      claimAirdropResponse = await campaignService.claimCampaignsAirdrop(
-        accountId,
-        CampaignType.VERIFY_MOBILE,
-      );
-    });
-
-    afterAll(async () => {
-      await campaign.deleteOne();
-    });
-
-    it('should return NO_CONTENT when airdrop claim has been submitted successfully', async () => {
-      expect(claimAirdropResponse).toBeUndefined();
-    });
-
-    it('should return REACHED_MAX_CLAIMS when user reached the maximum limit of claims', async () => {
-      await expect(
-        campaignService.claimCampaignsAirdrop(
-          accountId,
-          CampaignType.VERIFY_MOBILE,
-        ),
-      ).rejects.toThrow(new CastcleException('REACHED_MAX_CLAIMS'));
-    });
-  });
-
-  describe('Friend Referral Campaign', () => {
-    let campaign: Campaign;
-    let claimAirdropResponse: void;
-
-    beforeAll(async () => {
-      campaign = await new campaignModel({
-        name: 'Early Caster Airdrop',
-        type: CampaignType.FRIEND_REFERRAL,
-        startDate: new Date('2022-01-17T00:00Z'),
-        endDate: new Date('3000-01-20T23:59Z'),
-        maxClaims: 1,
-        rewardsPerClaim: 10,
-        rewardBalance: 100_000,
-        totalRewards: 100_000,
-      }).save();
-
-      claimAirdropResponse = await campaignService.claimCampaignsAirdrop(
-        accountId,
-        CampaignType.FRIEND_REFERRAL,
-      );
-    });
-
-    afterAll(async () => {
-      await campaign.deleteOne();
-    });
-
-    it('should return NO_CONTENT when airdrop claim has been submitted successfully', async () => {
-      expect(claimAirdropResponse).toBeUndefined();
-    });
-
-    it('should return REACHED_MAX_CLAIMS when user reached the maximum limit of claims', async () => {
-      await expect(
-        campaignService.claimCampaignsAirdrop(
-          accountId,
-          CampaignType.FRIEND_REFERRAL,
-        ),
-      ).rejects.toThrow(new CastcleException('REACHED_MAX_CLAIMS'));
-    });
   });
 });

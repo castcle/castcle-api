@@ -28,12 +28,12 @@ export class GetBalanceResponse {
   total: Types.Decimal128;
 }
 
-export const pipelineOfGetBalance = (accountId: string) => [
+export const pipelineOfGetBalance = (userId: Types.ObjectId) => [
   { $unwind: { path: '$to' } },
   {
     $facet: {
-      inflows: [{ $match: { 'to.account': Types.ObjectId(accountId) } }],
-      outflows: [{ $match: { 'from.account': Types.ObjectId(accountId) } }],
+      inflows: [{ $match: { 'to.user': userId } }],
+      outflows: [{ $match: { 'from.user': userId } }],
     },
   },
   {
@@ -58,7 +58,7 @@ export const pipelineOfGetBalanceFromWalletType = (
       inflows: [
         {
           $match: {
-            'to.user': Types.ObjectId(userId),
+            'to.user': new Types.ObjectId(userId),
             'to.type': walletType,
           },
         },
@@ -66,7 +66,7 @@ export const pipelineOfGetBalanceFromWalletType = (
       outflows: [
         {
           $match: {
-            'from.user': Types.ObjectId(userId),
+            'from.user': new Types.ObjectId(userId),
             'from.type': walletType,
           },
         },

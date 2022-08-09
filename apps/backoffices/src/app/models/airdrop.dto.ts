@@ -25,7 +25,7 @@ import { IsMongoId } from 'class-validator';
 
 export class ClaimAirdropDto {
   @IsMongoId()
-  account: string;
+  user: string;
 
   @IsMongoId()
   campaign: string;

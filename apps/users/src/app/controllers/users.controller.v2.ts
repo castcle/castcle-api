@@ -20,7 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { ClaimAirdropCommand } from '@castcle-api/cqrs';
 import {
+  CampaignService,
+  CampaignType,
   Comment,
   CommentParam,
   CommentServiceV2,
@@ -88,6 +91,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import { DeleteUserDto, TargetCastcleDto } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
 
@@ -98,6 +102,8 @@ export class UsersControllerV2 {
   constructor(
     /** @deprecated */ private contentService: ContentService,
     /** @deprecated */ private userServiceV1: UserService,
+    private campaignService: CampaignService,
+    private commandBus: CommandBus,
     private commentService: CommentServiceV2,
     private contentServiceV2: ContentServiceV2,
     private notificationServiceV2: NotificationServiceV2,
@@ -122,15 +128,30 @@ export class UsersControllerV2 {
   @Put('me/mobile')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateMobile(
-    @Auth() authorizer: Authorizer,
+    @Auth() { account, user }: Authorizer,
     @Body() updateMobileDto: UpdateMobileDto,
     @RequestMeta() { ip }: RequestMetadata,
   ) {
-    return this.userService.updateMobile(
-      authorizer.account,
-      updateMobileDto,
-      ip,
-    );
+    await this.userService.updateMobile(account, updateMobileDto, ip);
+
+    try {
+      const [referralCampaign, mobileCampaign, referrer] = await Promise.all([
+        this.campaignService.getCampaign(CampaignType.FRIEND_REFERRAL),
+        this.campaignService.getCampaign(CampaignType.VERIFY_MOBILE),
+        this.userService.getUserByAccount(account.referralBy),
+      ]);
+
+      await Promise.all([
+        this.commandBus.execute(
+          new ClaimAirdropCommand(mobileCampaign, user._id),
+        ),
+        this.commandBus.execute(
+          new ClaimAirdropCommand(referralCampaign, referrer._id),
+        ),
+      ]);
+    } catch (error: unknown) {
+      this.logger.error(error, `updateMobile:claimAirdrop:error`);
+    }
   }
 
   @CastcleBasicAuth()
@@ -228,40 +249,10 @@ export class UsersControllerV2 {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    const content = await this.contentService.getContentById(
-      commentDto.contentId,
-    );
-
-    const comment = await this.contentService.createCommentForContent(
+    const payload = await this.commentService.comment(
       user,
-      content,
-      { message: commentDto.message },
-    );
-
-    const userOwner = await this.userService.getUser(content.author.id);
-
-    await this.notificationServiceV2.notifyToUser(
-      {
-        source:
-          userOwner.type === UserType.PEOPLE
-            ? NotificationSource.Profile
-            : NotificationSource.Page,
-        sourceUserId: user._id,
-        type: NotificationType.Comment,
-        contentRef: content._id,
-        commentRef: comment._id,
-        account: userOwner.ownerAccount,
-        read: false,
-      },
-      userOwner,
+      commentDto,
       authorizer.account.preferences.languages[0],
-    );
-
-    const payload = await this.commentService.convertCommentToCommentResponse(
-      user,
-      comment,
-      [],
-      { hasRelationshipExpansion: false },
     );
 
     return payload;

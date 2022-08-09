@@ -25,6 +25,7 @@ import { CacheStore, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleImage } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
+import { LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
@@ -54,8 +55,9 @@ import {
   ShortPayload,
 } from '../dtos';
 import {
-  CACCOUNT_NO,
+  CAccountNo,
   ContentFarmingStatus,
+  ContentFlowItem,
   ContentMessage,
   ContentMessageEvent,
   ContentType,
@@ -64,10 +66,10 @@ import {
   QueueName,
   ReferencedTypeCast,
   ReportingAction,
+  ReportingIllegal,
   ReportingMessage,
   ReportingStatus,
   ReportingType,
-  TransactionData,
   TransactionType,
   UserType,
   WalletType,
@@ -414,7 +416,7 @@ export class ContentServiceV2 {
       user: user._id,
       targetRef: {
         $ref: 'content',
-        $id: Types.ObjectId(contentId),
+        $id: new Types.ObjectId(contentId),
       },
       type: EngagementType.Like,
     });
@@ -423,7 +425,7 @@ export class ContentServiceV2 {
     await this.repository.updateNotification(
       {
         type: NotificationType.Like,
-        contentRef: Types.ObjectId(contentId),
+        contentRef: new Types.ObjectId(contentId),
         commentRef: { $exists: false },
         replyRef: { $exists: false },
       },
@@ -433,7 +435,7 @@ export class ContentServiceV2 {
     );
     const notification = await this.repository.findNotification({
       type: NotificationType.Like,
-      contentRef: Types.ObjectId(contentId),
+      contentRef: new Types.ObjectId(contentId),
       commentRef: { $exists: false },
       replyRef: { $exists: false },
     });
@@ -563,7 +565,7 @@ export class ContentServiceV2 {
     await this.repository.updateNotification(
       {
         type: NotificationType.Recast,
-        contentRef: Types.ObjectId(contentId),
+        contentRef: new Types.ObjectId(contentId),
         commentRef: { $exists: false },
         replyRef: { $exists: false },
       },
@@ -573,7 +575,7 @@ export class ContentServiceV2 {
     );
     const notification = await this.repository.findNotification({
       type: NotificationType.Recast,
-      contentRef: Types.ObjectId(contentId),
+      contentRef: new Types.ObjectId(contentId),
       commentRef: { $exists: false },
       replyRef: { $exists: false },
     });
@@ -678,8 +680,9 @@ export class ContentServiceV2 {
     );
 
     if (balance >= (lockBalance + balance) * 0.05) {
-      //can farm
-      const farmAmount = (lockBalance + balance) * 0.05;
+      const farmAmount = new Types.Decimal128(
+        ((lockBalance + balance) * 0.05).toString(),
+      );
       const session = await this.contentFarmingModel.startSession();
       const contentFarming = await new this.contentFarmingModel({
         content: contentId,
@@ -695,30 +698,25 @@ export class ContentServiceV2 {
         await this.tAccountService.transfer({
           from: {
             type: WalletType.PERSONAL,
-            user: userId,
+            user: new Types.ObjectId(userId),
             value: farmAmount,
           },
           to: [
             {
               type: WalletType.FARM_LOCKED,
-              user: userId,
+              user: new Types.ObjectId(userId),
               value: farmAmount,
             },
           ],
-          data: {
-            type: TransactionType.FARMING,
-            filter: {
-              'content-farming': true,
-            },
-          } as TransactionData,
+          type: TransactionType.FARMING,
           ledgers: [
             {
               debit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
                 value: farmAmount,
               },
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                cAccountNo: CAccountNo.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
                 value: farmAmount,
               },
             },
@@ -748,7 +746,9 @@ export class ContentServiceV2 {
       WalletType.FARM_LOCKED,
     );
     if (balance >= (lockBalance + balance) * 0.05) {
-      const farmAmount = (lockBalance + balance) * 0.05;
+      const farmAmount = new Types.Decimal128(
+        ((lockBalance + balance) * 0.05).toString(),
+      );
       const session = await this.contentFarmingModel.startSession();
       contentFarming.farmAmount = farmAmount;
       await session.withTransaction(async () => {
@@ -756,30 +756,25 @@ export class ContentServiceV2 {
         await this.tAccountService.transfer({
           from: {
             type: WalletType.PERSONAL,
-            user: String(contentFarming.user),
+            user: contentFarming.user,
             value: farmAmount,
           },
           to: [
             {
               type: WalletType.FARM_LOCKED,
-              user: String(contentFarming.user),
+              user: contentFarming.user,
               value: farmAmount,
             },
           ],
-          data: {
-            type: TransactionType.FARMING,
-            filter: {
-              'content-farming': true,
-            },
-          } as TransactionData,
+          type: TransactionType.FARMING,
           ledgers: [
             {
               debit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
                 value: farmAmount,
               },
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                cAccountNo: CAccountNo.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
                 value: farmAmount,
               },
             },
@@ -887,30 +882,25 @@ export class ContentServiceV2 {
         await this.tAccountService.transfer({
           from: {
             type: WalletType.FARM_LOCKED,
-            user: String(contentFarming.user),
+            user: contentFarming.user,
             value: contentFarming.farmAmount,
           },
           to: [
             {
               type: WalletType.PERSONAL,
-              user: String(contentFarming.user),
+              user: contentFarming.user,
               value: contentFarming.farmAmount,
             },
           ],
-          data: {
-            type: TransactionType.UNFARMING,
-            filter: {
-              'content-farming': true,
-            },
-          } as TransactionData,
+          type: TransactionType.UNFARMING,
           ledgers: [
             {
               debit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                cAccountNo: CAccountNo.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
                 value: contentFarming.farmAmount,
               },
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
                 value: contentFarming.farmAmount,
               },
             },
@@ -949,30 +939,25 @@ export class ContentServiceV2 {
         await this.tAccountService.transfer({
           from: {
             type: WalletType.FARM_LOCKED,
-            user: String(contentFarming.user),
+            user: contentFarming.user,
             value: contentFarming.farmAmount,
           },
           to: [
             {
               type: WalletType.PERSONAL,
-              user: String(contentFarming.user),
+              user: contentFarming.user,
               value: contentFarming.farmAmount,
             },
           ],
-          data: {
-            type: TransactionType.UNFARMING,
-            filter: {
-              'content-farming': true,
-            },
-          } as TransactionData,
+          type: TransactionType.UNFARMING,
           ledgers: [
             {
               debit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                cAccountNo: CAccountNo.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
                 value: contentFarming.farmAmount,
               },
               credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
                 value: contentFarming.farmAmount,
               },
             },
@@ -1007,30 +992,25 @@ export class ContentServiceV2 {
       await this.tAccountService.transfer({
         from: {
           type: WalletType.FARM_LOCKED,
-          user: String(contentFarming.user),
+          user: contentFarming.user,
           value: contentFarming.farmAmount,
         },
         to: [
           {
             type: WalletType.PERSONAL,
-            user: String(contentFarming.user),
+            user: contentFarming.user,
             value: contentFarming.farmAmount,
           },
         ],
-        data: {
-          type: TransactionType.FARMED,
-          filter: {
-            'content-farming': true,
-          },
-        } as TransactionData,
+        type: TransactionType.FARMED,
         ledgers: [
           {
             debit: {
-              caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+              cAccountNo: CAccountNo.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
               value: contentFarming.farmAmount,
             },
             credit: {
-              caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+              cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
               value: contentFarming.farmAmount,
             },
           },
@@ -1075,7 +1055,8 @@ export class ContentServiceV2 {
         item.cdfStat.adjustedFarmPeriod =
           (now.getTime() - item.startAt.getTime()) / 86400000;
         item.cdfStat.expoWeight = cdf(item.cdfStat.adjustedFarmPeriod, Math.E);
-        item.cdfStat.tokenWeight = item.cdfStat.expoWeight * item.farmAmount;
+        item.cdfStat.tokenWeight =
+          item.cdfStat.expoWeight * Number(item.farmAmount);
         return item;
       },
     );
@@ -1139,11 +1120,32 @@ export class ContentServiceV2 {
       ? this.toCastPayload({ content })
       : undefined;
 
+    const user = await this.repository.findUser({
+      _id: content.author.id,
+    });
+
+    const relationships = await this.repository.findRelationships({
+      userId: userId as any,
+      followedUser: [user._id],
+    });
+
+    const relationship = relationships?.find(
+      (relationship) =>
+        String(relationship.followedUser) === String(content?.author?.id),
+    );
+
+    const responseUser = await user?.toPublicResponse({
+      blocked: relationship?.blocking ?? false,
+      blocking: relationship?.blocking ?? false,
+      followed: relationship?.following ?? false,
+    });
+
     return new ContentFarmingResponse(
       contentFarming,
       balance,
       lockBalance,
       totalContentFarming,
+      responseUser,
       contentPayload,
     );
   };
@@ -1161,7 +1163,7 @@ export class ContentServiceV2 {
     const filter = {
       targetRef: {
         $ref: 'content',
-        $id: Types.ObjectId(contentId),
+        $id: new Types.ObjectId(contentId),
       },
       type,
     };
@@ -1883,6 +1885,7 @@ export class ContentServiceV2 {
     const author = await this.repository.findUser({ _id: content.author.id });
 
     if (!author) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
     if (String(author.ownerAccount) === String(user.ownerAccount))
       throw new CastcleException('CAN_NOT_FARMING_YOUR_CAST');
 
@@ -1892,6 +1895,22 @@ export class ContentServiceV2 {
         $ref: 'content',
         $id: contentId,
       },
+    });
+
+    const relationships = await this.repository.findRelationships({
+      userId: user._id,
+      followedUser: [author._id],
+    });
+
+    const relationship = relationships?.find(
+      (relationship) =>
+        String(relationship.followedUser) === String(content?.author?.id),
+    );
+
+    const responseUser = await author?.toPublicResponse({
+      blocked: relationship?.blocking ?? false,
+      blocking: relationship?.blocking ?? false,
+      followed: relationship?.following ?? false,
     });
 
     const totalContentFarming = await this.contentFarmingModel.countDocuments({
@@ -1905,6 +1924,7 @@ export class ContentServiceV2 {
       balance,
       lockBalance,
       totalContentFarming || 1,
+      responseUser,
       content ? this.toCastPayload({ content, engagements }) : undefined,
     );
   };
@@ -1934,17 +1954,42 @@ export class ContentServiceV2 {
         viewer,
       });
 
+    const users = await this.repository.findUsers({
+      _id: contents.map(({ author }) => author.id),
+    });
+
+    const relationships = await this.repository.findRelationships({
+      userId: viewer._id,
+      followedUser: contents.map(({ author }) => author.id),
+    });
+
     const farmingPayload = await Promise.all(
       contentFarmings.map(async (contentFarming, index) => {
         const content = contents.find(
           (content) => String(content._id) === String(contentFarming.content),
         );
 
+        const userFarming = users.find(
+          ({ _id }) => String(_id) === String(content?.author?.id),
+        );
+
+        const relationship = relationships?.find(
+          (relationship) =>
+            String(relationship.followedUser) === String(content?.author?.id),
+        );
+
+        const responseUser = await userFarming?.toPublicResponse({
+          blocked: relationship?.blocking ?? false,
+          blocking: relationship?.blocking ?? false,
+          followed: relationship?.following ?? false,
+        });
+
         return new ContentFarmingResponse(
           contentFarming,
           balance,
           lockBalance,
           totalContentFarming - index,
+          responseUser,
           content ? this.toCastPayload({ content, engagements }) : undefined,
         );
       }),
@@ -1987,17 +2032,42 @@ export class ContentServiceV2 {
         viewer,
       });
 
+    const users = await this.repository.findUsers({
+      _id: contents.map(({ author }) => author.id),
+    });
+
+    const relationships = await this.repository.findRelationships({
+      userId: viewer._id,
+      followedUser: contents.map(({ author }) => author.id),
+    });
+
     const farmingPayload = await Promise.all(
       contentFarmings.map(async (contentFarming) => {
         const content = contents.find(
           (content) => String(content._id) === String(contentFarming.content),
         );
 
+        const userFarming = users.find(
+          ({ _id }) => String(_id) === String(content?.author?.id),
+        );
+
+        const relationship = relationships?.find(
+          (relationship) =>
+            String(relationship.followedUser) === String(content?.author?.id),
+        );
+
+        const responseUser = await userFarming?.toPublicResponse({
+          blocked: relationship?.blocking ?? false,
+          blocking: relationship?.blocking ?? false,
+          followed: relationship?.following ?? false,
+        });
+
         return new ContentFarmingResponse(
           contentFarming,
           balance,
           lockBalance,
           undefined,
+          responseUser,
           content ? this.toCastPayload({ content, engagements }) : undefined,
         );
       }),
@@ -2007,4 +2077,108 @@ export class ContentServiceV2 {
       payload: farmingPayload,
     });
   };
+
+  async contentFlowIllegal(contentId: string, dsIllegal: ContentFlowItem) {
+    const content = await this.repository.findContent({ _id: contentId });
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
+
+    if (!dsIllegal.illegalClass) return;
+
+    content.visibility = EntityVisibility.Illegal;
+
+    await this.reportContent(
+      {
+        _id: null,
+        displayName: 'ds',
+      } as User,
+      {
+        targetContentId: content.id,
+        subject: dsIllegal.illegalSubject,
+      },
+    );
+
+    const reportings = await this.repository.findReportings({
+      payloadId: content._id,
+      type: ReportingType.CONTENT,
+      status: [
+        ReportingStatus.REVIEWING,
+        ReportingStatus.ILLEGAL,
+        ReportingStatus.APPEAL,
+        ReportingStatus.NOT_APPEAL,
+        ReportingStatus.DONE,
+      ],
+    });
+
+    if (!reportings.length) throw new CastcleException('REPORTING_NOT_FOUND');
+
+    const user = await this.repository.findUser({
+      _id: content.author.id,
+      visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+    });
+
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
+    const account = await this.repository.findAccount({
+      _id: user.ownerAccount,
+    });
+
+    if (!account) throw new CastcleException('REQUEST_URL_NOT_FOUND');
+
+    user.casts--;
+
+    content.reportedStatus = ReportingStatus.ILLEGAL;
+    content.reportedSubject = dsIllegal.illegalSubject;
+
+    await this.repository.updateCastByReCastORQuote(
+      content._id,
+      EntityVisibility.Illegal,
+      -1,
+    );
+
+    await this.notificationService.notifyToUser(
+      {
+        source:
+          user.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: undefined,
+        type: NotificationType.IllegalDone,
+        contentRef: content._id,
+        account: account._id,
+        read: false,
+      },
+      user,
+      account?.preferences?.languages[0] ?? LocalizationLang.English,
+    );
+
+    await Promise.all([
+      content.save(),
+      user.save(),
+      this.repository.updateReportings(
+        {
+          payloadId: content._id,
+          type: ReportingType.CONTENT,
+          status: [ReportingStatus.REVIEWING],
+        },
+        {
+          $set: {
+            status: ReportingStatus.DONE,
+          },
+          $addToSet: {
+            actionBy: {
+              firstName: 'ds',
+              lastName: 'guardian',
+              email: null,
+              action: ReportingIllegal.ILLEGAL,
+              status: ReportingStatus.DONE,
+              message: dsIllegal.illegalMessage,
+              subject: dsIllegal.illegalSubject,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          },
+        },
+      ),
+    ]);
+  }
 }

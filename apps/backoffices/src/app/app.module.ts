@@ -21,14 +21,12 @@
  * or have any questions.
  */
 
+import { CastcleCqrs } from '@castcle-api/cqrs';
+import { DatabaseModule, QueueName } from '@castcle-api/database';
 import {
-  AdsService,
-  BackofficeDatabaseModule,
-  CampaignService,
-  NotificationServiceV2,
-  QueueName,
-} from '@castcle-api/database';
-import { CastcleBullModule } from '@castcle-api/environments';
+  CastcleBackofficeMongooseModule,
+  CastcleBullModule,
+} from '@castcle-api/environments';
 import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Mailer } from '@castcle-api/utils/clients';
@@ -42,7 +40,6 @@ import { MetaDataController } from './controllers/metadata.controller';
 import { ReportingController } from './controllers/reporting.controller';
 import { UsersController } from './controllers/users.controller';
 import { BackOfficeMongooseForFeatures } from './schemas';
-import { AirdropsService } from './services/airdrops.service';
 import { AuthenticationService } from './services/authentication.service';
 import { CampaignBackofficeService } from './services/campaign.service';
 import { MetadataBackofficeService } from './services/metadata.service';
@@ -51,15 +48,17 @@ import { UserBackofficeService } from './services/users.service';
 
 @Module({
   imports: [
-    BackofficeDatabaseModule,
     BackOfficeMongooseForFeatures,
     BullModule.registerQueue(
       { name: QueueName.CAMPAIGN },
       { name: QueueName.NOTIFICATION },
     ),
+    CastcleBackofficeMongooseModule,
     CastcleBullModule,
+    CastcleCqrs,
     CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
     CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
+    DatabaseModule,
   ],
   controllers: [
     AdsController,
@@ -71,14 +70,10 @@ import { UserBackofficeService } from './services/users.service';
     UsersController,
   ],
   providers: [
-    AdsService,
-    AirdropsService,
     AuthenticationService,
     CampaignBackofficeService,
-    CampaignService,
     Mailer,
     MetadataBackofficeService,
-    NotificationServiceV2,
     ReportingService,
     UserBackofficeService,
   ],

@@ -26,6 +26,7 @@ import {
   MetadataType,
   ReportingSubject,
 } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -34,7 +35,8 @@ import { StaffRole } from '../schemas/staff-role.schema';
 @Injectable()
 export class MetadataBackofficeService {
   constructor(
-    @InjectModel('StaffRoles') private staffRoleModel: Model<StaffRole>,
+    @InjectModel('StaffRoles', Environment.BACKOFFICE_DB_DATABASE_NAME)
+    private staffRoleModel: Model<StaffRole>,
     @InjectModel('Metadata')
     private metadataModel: Model<Metadata<ReportingSubject>>,
   ) {}

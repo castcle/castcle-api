@@ -90,7 +90,7 @@ export class WalletController {
       ? authorizer.user
       : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
-    return this.tAccountService.getWalletHistory(user.id, query.filter);
+    return this.tAccountService.getWalletHistory(user._id, query.filter);
   }
 
   @CastcleBasicAuth()

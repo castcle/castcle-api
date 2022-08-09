@@ -21,37 +21,41 @@
  * or have any questions.
  */
 
-import { CampaignService, QueueName, QueueTopic } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
-import { InjectQueue, Process, Processor } from '@nestjs/bull';
-import { Queue as BullQueue, Job } from 'bull';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes } from 'mongoose';
+import { WalletType } from '../models';
+import { CastcleBase } from './base.schema';
 
-@Processor(QueueName.CAMPAIGN)
-export class CampaignConsumer {
-  private logger = new CastLogger(CampaignConsumer.name);
-
-  constructor(
-    @InjectQueue(QueueName.CAMPAIGN)
-    private campaignQueue: BullQueue<{ queueId: string }>,
-    private campaignService: CampaignService,
-  ) {
-    this.addQueues();
-  }
-
-  async addQueues() {
-    await this.campaignQueue.empty();
-
-    const queues = await this.campaignService.getRemainingQueues(
-      QueueTopic.CLAIM_AIRDROP,
-    );
-
-    await this.campaignQueue.addBulk(queues);
-
-    this.logger.log(JSON.stringify(queues), 'addQueues');
-  }
-
-  @Process()
-  async processClaimAirdropJob(job: Job<{ queueId: string }>) {
-    await this.campaignService.processClaimAirdrop(job);
-  }
+export enum CAccountNature {
+  DEBIT = 'debit',
+  CREDIT = 'credit',
 }
+
+@Schema()
+export class cAccount extends CastcleBase {
+  @Prop()
+  name: string;
+
+  @Prop({ type: String })
+  nature: CAccountNature;
+
+  @Prop({ unique: true, index: true })
+  no: string;
+
+  @Prop({ type: SchemaTypes.ObjectId })
+  parent?: cAccount;
+
+  @Prop({ type: Array })
+  child?: string[];
+
+  @Prop({ type: String })
+  walletType?: WalletType;
+
+  @Prop()
+  walletAddress?: string;
+
+  @Prop({ type: SchemaTypes.Decimal128 })
+  balance: number;
+}
+
+export const CAccountSchema = SchemaFactory.createForClass(cAccount);

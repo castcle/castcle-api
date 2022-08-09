@@ -66,6 +66,7 @@ import {
   KeywordType,
   MetadataType,
   QueueName,
+  ReportingIllegal,
   ReportingStatus,
   ReportingSubject,
   SuggestContentItem,
@@ -393,7 +394,9 @@ describe('ContentServiceV2', () => {
           mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
-        expect(afterBalance).toEqual(unfarmResult.farmAmount + currentBalance);
+        expect(afterBalance).toEqual(
+          Number(unfarmResult.farmAmount) + currentBalance,
+        );
         const recentContentFarming = await service.getContentFarming(
           testContents[0].id,
           mockFarmingUsers[1].user.id,
@@ -425,7 +428,7 @@ describe('ContentServiceV2', () => {
         );
         expect(currentBalance).not.toEqual(recentBalance);
         expect(recentBalance).toEqual(
-          currentBalance - updateFarmingResult.farmAmount,
+          currentBalance - Number(updateFarmingResult.farmAmount),
         );
       });
     });
@@ -443,7 +446,7 @@ describe('ContentServiceV2', () => {
             testContents[i].id,
             mockFarmingUsers[1].user.id,
           );
-          start += unfarmResult.farmAmount;
+          start += Number(unfarmResult.farmAmount);
           const recentBalance = await tAccountService.getAccountBalance(
             mockFarmingUsers[1].user.id,
             WalletType.PERSONAL,
@@ -901,10 +904,10 @@ describe('ContentServiceV2', () => {
         const mockFeedItems = response.contents.map(
           (c) =>
             ({
-              id: Types.ObjectId(),
+              id: new Types.ObjectId(),
               content: c._id,
               viewer: mocksUsers[0].account._id,
-              author: Types.ObjectId(c.author.id),
+              author: new Types.ObjectId(c.author.id),
             } as FeedItem),
         );
         const feedResponse = await service.toFeedResponse(
@@ -937,10 +940,10 @@ describe('ContentServiceV2', () => {
         const mockFeedItems = response.contents.map(
           (c) =>
             ({
-              id: Types.ObjectId(),
+              id: new Types.ObjectId(),
               content: c._id,
               viewer: mocksUsers[0].account._id,
-              author: Types.ObjectId(c.author.id),
+              author: new Types.ObjectId(c.author.id),
             } as FeedItem),
         );
 
@@ -966,7 +969,7 @@ describe('ContentServiceV2', () => {
             mocksUsers[0].account.id,
             feedResponse.payload[0].id,
           );
-          expect(offView.ok).toEqual(1);
+          expect(offView.matchedCount).toEqual(1);
         });
       });
     });
@@ -1226,6 +1229,58 @@ describe('ContentServiceV2', () => {
       expect(contentFarmings.payload[0].status).toEqual(
         ContentFarmingStatus.Farmed,
       );
+    });
+  });
+
+  describe('contentFlowIllegal', () => {
+    let content: Content;
+    beforeAll(async () => {
+      const { payload } = await service.createContent(
+        {
+          payload: { message: 'content illegal' },
+          type: ContentType.Short,
+          castcleId: mocksUsers[0].user.displayId,
+        },
+        mocksUsers[0].user,
+      );
+      content = await repository.findContent({ _id: payload.id });
+    });
+
+    it('should update publish content', async () => {
+      await service.contentFlowIllegal(content.id, {
+        illegalClass: false,
+      });
+
+      const contentCurrent = await repository.findContent({ _id: content.id });
+      const reporting = await repository.findReporting({
+        payloadId: content.id,
+      });
+
+      expect(reporting).toBeNull();
+      expect(contentCurrent.visibility).toEqual(EntityVisibility.Publish);
+    });
+
+    it('should create reporting and update content illegal', async () => {
+      await service.contentFlowIllegal(content.id, {
+        illegalClass: true,
+        illegalMessage: 'test',
+        illegalSubject: 'spam',
+      });
+
+      const contentCurrent = await repository.findContent({
+        _id: content._id,
+        visibility: EntityVisibility.Illegal,
+      });
+
+      const reporting = await repository.findReporting({
+        payloadId: content._id,
+      });
+
+      expect(reporting).not.toBeNull();
+      expect(reporting.status).toEqual(ReportingStatus.DONE);
+      expect(contentCurrent.visibility).toEqual(EntityVisibility.Illegal);
+      expect(contentCurrent.reportedStatus).toEqual(ReportingIllegal.ILLEGAL);
+      expect(contentCurrent.reportedSubject).toEqual('spam');
     });
   });
 

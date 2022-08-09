@@ -22,57 +22,114 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { WalletType } from '../models';
+import { SchemaTypes, Types } from 'mongoose';
+import { TransactionStatus, TransactionType, WalletType } from '../models';
 import { CastcleBase } from './base.schema';
+
+export class AirdropTransactionData {
+  campaign: Types.ObjectId;
+  mobileCountryCode?: string;
+  mobileNumber?: string;
+}
+
+export class ExternalTransactionData {
+  address: string;
+  chainId: string;
+  memo: string;
+  note: string;
+}
+
+export type TransactionData = AirdropTransactionData | ExternalTransactionData;
+
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+class TransactionDataEntity
+  implements
+    Required<AirdropTransactionData>,
+    Required<ExternalTransactionData>
+{
+  @Prop({ index: true, ref: 'Campaign', type: SchemaTypes.ObjectId })
+  campaign: Types.ObjectId;
+
+  @Prop()
+  mobileCountryCode: string;
+
+  @Prop()
+  mobileNumber: string;
+
+  @Prop()
+  address: string;
+
+  @Prop()
+  chainId: string;
+
+  @Prop()
+  memo: string;
+
+  @Prop()
+  note: string;
+}
+
+const TransactionDataSchema = SchemaFactory.createForClass(
+  TransactionDataEntity,
+);
 
 @Schema({ id: false, _id: false, timestamps: false, versionKey: false })
 export class MicroTransaction {
-  @Prop({ index: true, ref: 'Account', type: SchemaTypes.ObjectId })
-  account?: string;
-
   @Prop({ index: true, ref: 'User', type: SchemaTypes.ObjectId })
-  user?: string;
+  user?: Types.ObjectId;
 
   @Prop({ type: String })
   type: WalletType;
 
   @Prop({ type: SchemaTypes.Decimal128 })
-  value?: number;
-}
-
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class TItem {
-  @Prop({ index: true })
-  caccountNo: string;
-
-  @Prop({ type: SchemaTypes.Decimal128 })
-  value: number;
-}
-
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class TLedger {
-  @Prop({ type: Object })
-  debit: TItem;
-
-  @Prop({ type: Object })
-  credit: TItem;
+  value: Types.Decimal128;
 }
 
 const MicroTransactionSchema = SchemaFactory.createForClass(MicroTransaction);
 
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+class TItem {
+  @Prop({ index: true })
+  cAccountNo: string;
+
+  @Prop({ type: SchemaTypes.Decimal128 })
+  value: Types.Decimal128 | number;
+}
+
+const TItemSchema = SchemaFactory.createForClass(TItem);
+
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class TLedger {
+  @Prop({ type: TItemSchema })
+  debit: TItem;
+
+  @Prop({ type: TItemSchema })
+  credit: TItem;
+}
+
+const TLedgerSchema = SchemaFactory.createForClass(TLedger);
+
 @Schema({ timestamps: true })
 export class Transaction extends CastcleBase {
   @Prop({ type: MicroTransactionSchema, index: true })
-  from?: MicroTransaction;
+  from: MicroTransaction;
 
   @Prop({ type: [MicroTransactionSchema], index: true })
-  to?: MicroTransaction[];
+  to: MicroTransaction[];
 
-  @Prop({ type: Object })
-  data?: any;
+  @Prop({ type: String })
+  type: TransactionType;
 
-  @Prop({ type: Array })
+  @Prop({ type: String, default: TransactionStatus.PENDING })
+  status: TransactionStatus;
+
+  @Prop()
+  failureMessage?: string;
+
+  @Prop({ type: TransactionDataSchema })
+  data?: TransactionData;
+
+  @Prop({ type: [TLedgerSchema] })
   ledgers?: TLedger[];
 }
 

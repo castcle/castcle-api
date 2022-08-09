@@ -22,6 +22,7 @@
  */
 import {
   Account,
+  AccountActivationType,
   AuthenticationService,
   Credential,
   DEFAULT_QUERY_OPTIONS,
@@ -191,7 +192,10 @@ export class AppService {
 
       if (body.email) {
         const accountActivation =
-          await this.authService.createAccountActivation(account, 'email');
+          await this.authService.createAccountActivation(
+            account,
+            AccountActivationType.EMAIL,
+          );
 
         if (accountActivation && accountActivation.isVerifyTokenValid()) {
           this.logger.log(`activate user account, email : ${body.email}`);

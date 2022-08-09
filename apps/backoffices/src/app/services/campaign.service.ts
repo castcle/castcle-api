@@ -36,7 +36,7 @@ export class CampaignBackofficeService {
       },
     );
 
-    if (updateCampaign.nModified === 0)
+    if (updateCampaign.modifiedCount === 0)
       throw new CastcleException('CAMPAIGN_NOT_FOUND');
   }
 }

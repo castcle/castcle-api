@@ -280,7 +280,7 @@ export const ContentSchemaFactory = (
 
   ContentSchema.post('save', async function (doc, next) {
     await new revisionModel({
-      objectRef: { $ref: 'content', $id: Types.ObjectId(doc._id) },
+      objectRef: { $ref: 'content', $id: new Types.ObjectId(doc._id) },
       payload: doc,
     }).save();
 

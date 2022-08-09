@@ -155,8 +155,8 @@ export class RankerService {
       } as FeedItemResponse;
     //hot fix guest has id
     const newDefaultFeeds = feedResponses.defaultFeeds.map((t) => {
-      delete t.id;
-      delete t._id;
+      t.id = 'default';
+      t._id = 'default';
       return t;
     });
     const mergeFeeds = [...newDefaultFeeds, ...feedResponses.guestFeeds];
@@ -361,7 +361,7 @@ export class RankerService {
       __v: 3,
     }));
 
-    const feeds = await this._feedItemModel.insertMany(feedDtos);
+    const feeds = await this._feedItemModel.create(feedDtos);
 
     feeds.forEach((feed) => {
       feed.content = contents.find(

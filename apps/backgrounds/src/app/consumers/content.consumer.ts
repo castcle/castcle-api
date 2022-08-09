@@ -24,7 +24,7 @@
 import {
   ContentMessage,
   ContentMessageEvent,
-  ContentService,
+  ContentServiceV2,
   DataService,
   QueueName,
 } from '@castcle-api/database';
@@ -37,7 +37,7 @@ export class ContentConsumer {
   #logger = new CastLogger(ContentConsumer.name);
 
   constructor(
-    private contentService: ContentService,
+    private contentService: ContentServiceV2,
     private dataService: DataService,
   ) {}
 
@@ -55,7 +55,7 @@ export class ContentConsumer {
   }
 
   #detectContent = async (contentId: string) => {
-    const isIllegal = await this.dataService.detectContent(contentId);
-    await this.contentService.publishContent(contentId, isIllegal);
+    const dsIllegal = await this.dataService.detectContent(contentId);
+    await this.contentService.contentFlowIllegal(contentId, dsIllegal);
   };
 }

@@ -20,8 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
+
+import { Document, Types } from 'mongoose';
 import {
   CastcleMeta,
   CastcleQueryOptions,
@@ -71,23 +71,23 @@ export const createCastcleFilter = (filter: any, queryOption: QueryOption) => {
   if (queryOption.reversePagination) {
     if (queryOption.sinceId) {
       filter._id = {
-        $lt: mongoose.Types.ObjectId(queryOption.sinceId),
+        $lt: new Types.ObjectId(queryOption.sinceId),
       };
     }
     if (queryOption.untilId) {
       filter._id = {
-        $gt: mongoose.Types.ObjectId(queryOption.untilId),
+        $gt: new Types.ObjectId(queryOption.untilId),
       };
     }
   } else {
     if (queryOption.sinceId) {
       filter._id = {
-        $gt: mongoose.Types.ObjectId(queryOption.sinceId),
+        $gt: new Types.ObjectId(queryOption.sinceId),
       };
     }
     if (queryOption.untilId) {
       filter._id = {
-        $lt: mongoose.Types.ObjectId(queryOption.untilId),
+        $lt: new Types.ObjectId(queryOption.untilId),
       };
     }
   }

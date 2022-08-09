@@ -41,7 +41,7 @@ describe('Youtube Webhook Service', () => {
   >;
 
   const author = {
-    id: Types.ObjectId(),
+    id: new Types.ObjectId(),
     type: 'page',
     castcleId: 'castcleId',
     displayName: 'Castcle',

@@ -22,6 +22,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { DBRef } from 'mongodb';
 import { CastcleBase } from './base.schema';
 import { Comment } from './comment.schema';
 import { Content } from './content.schema';
@@ -29,7 +30,7 @@ import { Content } from './content.schema';
 @Schema({ timestamps: true })
 export class Revision extends CastcleBase {
   @Prop({ required: true, type: Object })
-  objectRef: any;
+  objectRef: DBRef;
 
   @Prop({ required: true, type: Object })
   payload: Content | Comment;
