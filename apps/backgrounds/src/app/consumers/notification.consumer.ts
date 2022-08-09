@@ -20,11 +20,20 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { NotificationMessage, QueueName } from '@castcle-api/database';
+import {
+  NotificationMessageV2,
+  NotificationServiceV2,
+  NotificationType,
+  QueueName,
+  Repository,
+} from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { CastcleDate } from '@castcle-api/utils/commons';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bull';
+import { Types } from 'mongoose';
 import { FirebaseAdmin, InjectFirebaseAdmin } from 'nestjs-firebase';
 
 @Injectable()
@@ -32,19 +41,128 @@ import { FirebaseAdmin, InjectFirebaseAdmin } from 'nestjs-firebase';
 export class NotificationConsumer {
   private logger = new CastLogger(NotificationConsumer.name);
 
-  constructor(@InjectFirebaseAdmin() private firebase: FirebaseAdmin) {}
+  constructor(
+    @InjectFirebaseAdmin() private firebase: FirebaseAdmin,
+    private notificationService: NotificationServiceV2,
+    private repository: Repository,
+  ) {}
 
   @Process()
-  async readOperationJob(job: Job<NotificationMessage>) {
-    this.logger.log(JSON.stringify(job));
+  async readOperationJob({ data }: Job<NotificationMessageV2>) {
+    const { createNotification, requestedBy, language } = data;
+
+    this.logger.log(JSON.stringify(data));
+    this.logger.log('Check user action notify.');
+    if (String(createNotification.sourceUserId) === String(requestedBy._id))
+      return;
+
+    this.logger.log('Check configuration notify to user.');
+    if (!this.notificationService.checkNotify(createNotification)) return;
+
+    const filters = {
+      contentRef: createNotification.contentRef ?? { $exists: false },
+      commentRef: createNotification.commentRef ?? { $exists: false },
+      replyRef: createNotification.replyRef ?? { $exists: false },
+      profileRef: createNotification.profileRef ?? { $exists: false },
+      source: createNotification.source,
+      account: createNotification.account,
+      type: createNotification.type,
+    };
+    this.logger.log(`Check interval time follow user.`);
+
+    if (createNotification.type === NotificationType.Follow) {
+      const haveNotify = await this.repository.findNotification(filters, {
+        sort: { createdAt: -1 },
+      });
+
+      const intervalFollow = CastcleDate.checkIntervalNotify(
+        haveNotify?.createdAt,
+        Number(Environment.NOTIFY_FOLLOW_INTERVAL),
+      );
+
+      if (!intervalFollow) return;
+    }
+
+    if (
+      [
+        NotificationType.Tag,
+        NotificationType.Follow,
+        NotificationType.IllegalDone,
+        NotificationType.IllegalClosed,
+        NotificationType.NotIllegal,
+      ].some((type) => type === createNotification.type)
+    ) {
+      await this.repository.createNotification({
+        ...createNotification,
+        ...{ user: requestedBy._id },
+      });
+    } else {
+      const { sourceUserId, read, ...updateNotifyBody } = createNotification;
+      const updateNotify = await this.repository.updateNotification(
+        filters,
+        {
+          $set: { read, user: requestedBy._id },
+          $setOnInsert: updateNotifyBody,
+          $addToSet: { sourceUserId },
+        },
+        { upsert: true },
+      );
+
+      if (!updateNotify.modifiedCount && !updateNotify.upsertedCount) return;
+    }
+
+    this.logger.log('Insert data into notification is done.');
+
+    const notify = await this.repository.findNotification(filters, {
+      sort: { createdAt: -1 },
+    });
+
+    this.logger.log('Get devices by account.');
+
+    const account = await this.repository.findAccount({
+      _id: new Types.ObjectId(createNotification.account as any),
+    });
+
+    if (!account?.devices) return;
+
+    this.logger.log('Generate notification message.');
+
+    const { message, user, haveUser } =
+      await this.notificationService.generateMessage(
+        notify,
+        requestedBy,
+        language,
+      );
+
+    this.logger.log('Generate notification message is done.');
+
+    if (!message) return;
+
+    this.logger.log('Send notification message.', JSON.stringify(message));
+
+    const badgeCounts = await this.repository.findNotificationCount({
+      user: requestedBy._id,
+      account: requestedBy.ownerAccount,
+      read: false,
+    });
+
+    const prepareNotification = this.notificationService.prepareNotification(
+      notify,
+      account,
+      message,
+      badgeCounts,
+      user,
+      haveUser,
+    );
+
     await this.firebase.messaging
       .sendMulticast({
-        data: job.data.payload,
-        notification: job.data.notification,
-        android: job.data.android,
-        tokens: job.data.firebaseTokens,
+        data: prepareNotification.payload,
+        notification: prepareNotification.notification,
+        android: prepareNotification.android,
+        tokens: prepareNotification.firebaseTokens,
         apns: {
-          payload: { aps: job.data.aps },
+          payload: { aps: prepareNotification.aps },
         },
       })
       .catch((error) => this.logger.error(error));

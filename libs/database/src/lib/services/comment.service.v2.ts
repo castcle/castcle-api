@@ -29,9 +29,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AnyKeys, FilterQuery, Model, Types } from 'mongoose';
 import {
+  CommentDto,
   CommentIncludes,
   CommentPayload,
   CommentResponse,
+  CreateCommentDto,
   CreateNotification,
   EntityVisibility,
   ExpansionQuery,
@@ -40,6 +42,7 @@ import {
   NotificationType,
   PaginationQuery,
   ResponseDto,
+  UpdateCommentDto,
 } from '../dtos';
 import { CommentType, EngagementType, UserType } from '../models';
 import { Repository } from '../repositories';
@@ -51,7 +54,6 @@ import {
   Hashtag,
   Notification,
   Relationship,
-  Revision,
   User,
 } from '../schemas';
 import {
@@ -59,30 +61,28 @@ import {
   createCastcleMeta,
   getRelationship,
 } from '../utils/common';
+import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
 import { UserService } from './user.service';
+import { UserServiceV2 } from './user.service.v2';
 
 @Injectable()
 export class CommentServiceV2 {
   private logger = new CastLogger(CommentServiceV2.name);
   constructor(
     @InjectModel('Comment')
-    public commentModel: Model<Comment>,
+    private commentModel: Model<Comment>,
     @InjectModel('Engagement')
     private engagementModel: Model<Engagement>,
     @InjectModel('Relationship')
     private relationshipModel: Model<Relationship>,
-    @InjectModel('Revision')
-    private revisionModel: Model<Revision>,
     @InjectModel('Hashtag')
     private hashtagModel: Model<Hashtag>,
-    @InjectModel('Revision')
-    public _revisionModel: Model<Revision>,
-    @InjectModel('Engagement')
-    public _engagementModel: Model<Engagement>,
-    private userService: UserService,
+    private hashtagService: HashtagService,
     private notificationServiceV2: NotificationServiceV2,
     private repository: Repository,
+    private userService: UserService,
+    private userServiceV2: UserServiceV2,
   ) {}
 
   private removeEngagementComment = async (comment: Comment) => {
@@ -111,19 +111,6 @@ export class CommentServiceV2 {
       },
       type: CommentType.Comment,
     });
-  };
-
-  private removeRevision = async (comment: Comment) => {
-    const query: FilterQuery<Revision> = {
-      targetRef: {
-        $ref: 'comment',
-        $id: comment.targetRef.$id ?? comment.targetRef.oid,
-      },
-    };
-
-    const revisions = await this._revisionModel.find(query).exec();
-    await Promise.all(revisions.map((revision) => revision.remove()));
-    return true;
   };
 
   /**
@@ -194,91 +181,6 @@ export class CommentServiceV2 {
         } as IncludeUser);
   }
 
-  async convertCommentToCommentResponse(
-    viewer: User,
-    comment: Comment,
-    engagements: Engagement[],
-    { hasRelationshipExpansion }: ExpansionQuery,
-  ) {
-    const users: IncludeUser[] = [];
-    const [replies, revisionCount] = await Promise.all([
-      this.commentModel
-        .find({
-          type: CommentType.Reply,
-          targetRef: { $id: comment._id, $ref: 'comment' },
-          visibility: EntityVisibility.Publish,
-        })
-        .exec(),
-      this.revisionModel
-        .countDocuments({
-          objectRef: { $id: comment._id, $ref: 'comment' },
-          'payload.author._id': comment.author._id,
-        })
-        .exec(),
-    ]);
-
-    const authorIds = [
-      comment.author._id,
-      ...replies.map((reply) => reply.author._id),
-    ];
-
-    const relationships = hasRelationshipExpansion
-      ? await this.relationshipModel.find({
-          $or: [
-            { user: viewer._id, followedUser: { $in: authorIds } },
-            { user: { $in: authorIds }, followedUser: viewer._id },
-          ],
-          visibility: EntityVisibility.Publish,
-        })
-      : [];
-
-    if (comment.author) {
-      users.push(
-        this.convertUserToAuthor(
-          comment.author,
-          viewer,
-          hasRelationshipExpansion,
-          relationships,
-        ),
-      );
-    }
-
-    const engagementsReply = await this.engagementModel.find({
-      targetRef: {
-        $in: replies.map((r) => ({ $ref: 'comment', $id: r._id })),
-      },
-    });
-
-    const replyPayload = await Promise.all(
-      replies.map(async (reply) => {
-        const revisionReplyCount = await this.revisionModel
-          .countDocuments({
-            objectRef: { $id: reply._id, $ref: 'comment' },
-            'payload.author._id': reply.author._id,
-          })
-          .exec();
-        return this.mapCommentToCommentResponse(
-          reply,
-          engagementsReply,
-          revisionReplyCount,
-          [],
-          viewer,
-        );
-      }),
-    );
-
-    return {
-      payload: this.mapCommentToCommentResponse(
-        comment,
-        engagements,
-        revisionCount,
-        replies,
-        viewer,
-      ),
-      includes: new CommentIncludes({ comments: replyPayload, users }),
-    } as CommentResponse;
-  }
-
   private getLike(engagements: Engagement[], id: string, viewer?: User) {
     return engagements.some(({ targetRef, type, user }) => {
       return (
@@ -310,6 +212,73 @@ export class CommentServiceV2 {
     } as CommentPayload;
   }
 
+  async convertCommentToCommentResponse(
+    viewer: User,
+    comment: Comment,
+    engagements: Engagement[],
+    { hasRelationshipExpansion }: ExpansionQuery,
+  ) {
+    const users: IncludeUser[] = [];
+    const replies = await this.repository.findComments({
+      type: CommentType.Reply,
+      targetRef: { $id: comment._id, $ref: 'comment' },
+    });
+
+    const authorIds = [
+      comment.author._id,
+      ...replies.map((reply) => reply.author._id),
+    ];
+
+    const relationships = hasRelationshipExpansion
+      ? await this.relationshipModel.find({
+          $or: [
+            { user: viewer._id, followedUser: { $in: authorIds } },
+            { user: { $in: authorIds }, followedUser: viewer._id },
+          ],
+          visibility: EntityVisibility.Publish,
+        })
+      : [];
+
+    if (comment.author) {
+      users.push(
+        this.convertUserToAuthor(
+          comment.author,
+          viewer,
+          hasRelationshipExpansion,
+          relationships,
+        ),
+      );
+    }
+
+    let engagementsReply = [];
+    if (replies.length) {
+      engagementsReply = await this.repository.findEngagements({
+        targetRef: replies.map((r) => ({ $ref: 'comment', $id: r._id })),
+      });
+    }
+
+    const replyPayload = replies.map((reply) => {
+      return this.mapCommentToCommentResponse(
+        reply,
+        engagementsReply,
+        reply.revisionCount,
+        [],
+        viewer,
+      );
+    });
+
+    return {
+      payload: this.mapCommentToCommentResponse(
+        comment,
+        engagements,
+        comment.revisionCount,
+        replies,
+        viewer,
+      ),
+      includes: new CommentIncludes({ comments: replyPayload, users }),
+    } as CommentResponse;
+  }
+
   async convertCommentsToCommentResponse(
     viewer: User,
     comments: Comment[],
@@ -319,26 +288,14 @@ export class CommentServiceV2 {
     const users: IncludeUser[] = [];
     const commentsIds = comments.map(({ _id }) => _id);
     const commentsAuthorIds = comments.map(({ author }) => author._id);
-    const [replies, revisions] = await Promise.all([
-      this.commentModel
-        .find({
-          'targetRef.$id': { $in: commentsIds },
-          'targetRef.$ref': 'comment',
-          type: CommentType.Reply,
-          visibility: EntityVisibility.Publish,
-        })
-        .exec(),
-      this.revisionModel
-        .find(
-          {
-            'objectRef.$id': { $in: commentsIds },
-            'objectRef.$ref': 'comment',
-            'payload.author._id': { $in: commentsAuthorIds },
-          },
-          { 'objectRef.$id': true },
-        )
-        .exec(),
-    ]);
+
+    let replies = [];
+    if (commentsIds.length) {
+      replies = await this.repository.findComments({
+        type: CommentType.Reply,
+        targetRef: { $id: commentsIds, $ref: 'comment' },
+      });
+    }
 
     const authorIds = [
       ...commentsAuthorIds,
@@ -356,14 +313,15 @@ export class CommentServiceV2 {
           })
         : [];
 
-    const engagementsReply = await this.engagementModel.find({
-      targetRef: {
-        $in: replies.map((r) => ({ $ref: 'comment', $id: r._id })),
-      },
-    });
+    let engagementsReply = [];
+    if (replies.length) {
+      engagementsReply = await this.repository.findEngagements({
+        targetRef: replies.map((r) => ({ $ref: 'comment', $id: r._id })),
+      });
+    }
 
     const replyPayload = await Promise.all(
-      replies.map(async (reply) => {
+      replies.map((reply) => {
         if (reply.author) {
           users.push(
             this.convertUserToAuthor(
@@ -374,27 +332,18 @@ export class CommentServiceV2 {
             ),
           );
         }
-        const revisionReplyCount = await this.revisionModel
-          .countDocuments({
-            objectRef: { $id: reply._id, $ref: 'comment' },
-            'payload.author._id': reply.author._id,
-          })
-          .exec();
+
         return this.mapCommentToCommentResponse(
           reply,
           engagementsReply,
-          revisionReplyCount,
+          reply.revisionCount,
           [],
           viewer,
         );
       }),
     );
 
-    const commentPlyload = comments.map((comment) => {
-      const revisionCount = revisions.filter(
-        ({ objectRef }) => String(objectRef.oid) === String(comment._id),
-      ).length;
-
+    const commentPayload = comments.map((comment) => {
       const commentReplies = replies.filter(({ targetRef }) => {
         return String(targetRef.oid) === String(comment._id);
       });
@@ -413,14 +362,14 @@ export class CommentServiceV2 {
       return this.mapCommentToCommentResponse(
         comment,
         engagements,
-        revisionCount,
+        comment.revisionCount,
         commentReplies,
         viewer,
       );
     });
 
     return {
-      payload: commentPlyload,
+      payload: commentPayload,
       includes: new CommentIncludes({ comments: replyPayload, users }),
     };
   }
@@ -546,14 +495,12 @@ export class CommentServiceV2 {
     if (rootComment.hashtags) await this.removeFromTags(rootComment.hashtags);
     await this.removeEngagementContent(rootComment, rootComment.author._id);
     await this.removeEngagementComment(rootComment);
-    await this.removeRevision(rootComment);
 
     this.logger.log('Delete reply comment.');
     await Promise.all(
       replies.map((reply) => {
         if (reply.hashtags) this.removeFromTags(reply.hashtags);
         this.removeEngagementComment(reply);
-        this.removeRevision(reply);
         reply.remove();
       }),
     );
@@ -569,7 +516,7 @@ export class CommentServiceV2 {
     user: User,
     account: Account,
   ) => {
-    const engagement = await this._engagementModel.findOne({
+    const engagement = await this.engagementModel.findOne({
       user: user._id,
       targetRef: {
         $ref: 'comment',
@@ -580,7 +527,7 @@ export class CommentServiceV2 {
 
     if (engagement) throw new CastcleException('LIKE_COMMENT_IS_EXIST');
 
-    await new this._engagementModel({
+    await new this.engagementModel({
       type: EngagementType.Like,
       user: user._id,
       account: user.ownerAccount,
@@ -627,7 +574,7 @@ export class CommentServiceV2 {
   };
 
   unlikeCommentCast = async (commentId: string, user: User) => {
-    const engagement = await this._engagementModel.findOne({
+    const engagement = await this.engagementModel.findOne({
       user: user._id,
       targetRef: {
         $ref: 'comment',
@@ -662,5 +609,107 @@ export class CommentServiceV2 {
       await notification.remove();
 
     return engagement.remove();
+  };
+
+  comment = async (
+    user: User,
+    commentDto: CreateCommentDto,
+    languages: string,
+  ) => {
+    const content = await this.repository.findContent({
+      _id: commentDto.contentId,
+    });
+
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
+
+    const comment = await this.createCommentForContent(user, content, {
+      message: commentDto.message,
+    });
+
+    const userOwner = await this.userServiceV2.getUser(content.author.id);
+
+    await this.notificationServiceV2.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Comment,
+        contentRef: content._id,
+        commentRef: comment._id,
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      languages,
+    );
+
+    const payload = await this.convertCommentToCommentResponse(
+      user,
+      comment,
+      [],
+      { hasRelationshipExpansion: false },
+    );
+
+    return payload;
+  };
+
+  private createCommentForContent = async (
+    author: User,
+    content: Content,
+    updateCommentDto: UpdateCommentDto,
+  ) => {
+    const commentDto = {
+      author: author as User,
+      message: updateCommentDto.message,
+      targetRef: {
+        $id: content._id,
+        $ref: 'content',
+      },
+      type: CommentType.Comment,
+    } as CommentDto;
+
+    const comment = await this.repository.createComment({
+      ...commentDto,
+      hashtags: this.hashtagService.extractHashtagFromCommentDto(commentDto),
+    });
+
+    await Promise.all([
+      this.hashtagService.createFromTags(comment.hashtags),
+      comment.save(),
+    ]);
+
+    await this.updateCommentCounter(comment, author._id, author);
+
+    return comment;
+  };
+
+  private updateCommentCounter = async (
+    comment: Comment,
+    commentBy?: any,
+    user?: User,
+  ) => {
+    if (![CommentType.Comment, CommentType.Reply].includes(comment.type))
+      return;
+
+    const query = {
+      type: EngagementType.Comment,
+      targetRef: {
+        $ref: comment.type === CommentType.Comment ? 'content' : 'comment',
+        $id: comment.targetRef.$id ?? comment.targetRef.oid,
+      },
+    };
+
+    if (comment.visibility === EntityVisibility.Publish) {
+      await this.repository.createEngagement({
+        ...query,
+        visibility: EntityVisibility.Publish,
+        user: commentBy,
+        account: user.ownerAccount,
+      });
+    } else {
+      this.repository.deleteEngagements(query);
+    }
   };
 }
