@@ -45,3 +45,9 @@ export type PersonalizeAdsItem = {
   content?: string;
   score: number;
 };
+
+export type ContentFlowItem = {
+  illegalClass: boolean;
+  illegalSubject?: string;
+  illegalMessage?: string;
+};

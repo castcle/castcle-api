@@ -1738,4 +1738,28 @@ export class Repository {
   async findNetwork(chainId: string): Promise<Network> {
     return this.networkModel.findOne({ chainId });
   }
+
+  async updateCastByReCastORQuote(
+    contentId: string,
+    visibility: EntityVisibility,
+    increase?: number,
+  ) {
+    await this.updateContents(
+      {
+        originalPost: contentId,
+        visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+      },
+      { $set: { visibility } },
+    );
+
+    const contents = await this.findContents({
+      originalPost: contentId,
+    });
+    await this.updateUsers(
+      {
+        _id: contents.map(({ author }) => author.id),
+      },
+      { $inc: { casts: increase ?? -1 } },
+    );
+  }
 }
