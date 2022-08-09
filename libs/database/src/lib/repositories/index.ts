@@ -70,6 +70,7 @@ import {
   AdsPaymentMethod,
   CAccountNo,
   CastcleIdMetadata,
+  CommentType,
   ContentType,
   Country,
   EmailDomainDisposable,
@@ -250,6 +251,12 @@ type ReportingQuery = {
   type?: ReportingType;
   status?: ReportingStatus[];
   createdAt_lt?: Date;
+};
+
+type CommentQuery = {
+  _id?: string;
+  targetRef?: any;
+  type?: CommentType;
 };
 
 @Injectable()
@@ -492,6 +499,29 @@ export class Repository {
     return query;
   };
 
+  private getCommentQuery = (filter: CommentQuery) => {
+    const query: FilterQuery<Comment> = {
+      visibility: EntityVisibility.Publish,
+    };
+
+    if (filter.type) query.type = filter.type;
+    if (filter.targetRef) {
+      let id;
+      if (isArray(filter.targetRef.$id)) {
+        id = { $in: filter.targetRef.$id };
+      } else {
+        id = new Types.ObjectId(filter.targetRef.$id);
+      }
+
+      query.targetRef = {
+        $ref: filter.targetRef.$ref,
+        $id: id,
+      };
+    }
+
+    return query;
+  };
+
   private getEngagementQuery = (filter: EngagementQuery) => {
     const query: FilterQuery<Engagement> = {
       visibility: EntityVisibility.Publish,
@@ -505,6 +535,10 @@ export class Repository {
       query.targetRef = {
         $ref: filter.targetRef.$ref,
         $id: new Types.ObjectId(filter.targetRef.$id),
+      };
+    if (isArray(filter.targetRef))
+      query.targetRef = {
+        $in: query.targetRef,
       };
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -1160,6 +1194,16 @@ export class Repository {
 
   accountSession(): Promise<ClientSession> {
     return this.accountModel.startSession();
+  }
+
+  createComment(comment: AnyKeys<Comment>) {
+    return new this.commentModel(comment).save();
+  }
+
+  findComments(filter: CommentQuery, queryOptions?: QueryOptions) {
+    return this.commentModel
+      .find(this.getCommentQuery(filter), {}, queryOptions)
+      .exec();
   }
 
   updateComments(

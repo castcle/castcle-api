@@ -249,40 +249,10 @@ export class UsersControllerV2 {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    const content = await this.contentService.getContentById(
-      commentDto.contentId,
-    );
-
-    const comment = await this.contentService.createCommentForContent(
+    const payload = await this.commentService.comment(
       user,
-      content,
-      { message: commentDto.message },
-    );
-
-    const userOwner = await this.userService.getUser(content.author.id);
-
-    await this.notificationServiceV2.notifyToUser(
-      {
-        source:
-          userOwner.type === UserType.PEOPLE
-            ? NotificationSource.Profile
-            : NotificationSource.Page,
-        sourceUserId: user._id,
-        type: NotificationType.Comment,
-        contentRef: content._id,
-        commentRef: comment._id,
-        account: userOwner.ownerAccount,
-        read: false,
-      },
-      userOwner,
+      commentDto,
       authorizer.account.preferences.languages[0],
-    );
-
-    const payload = await this.commentService.convertCommentToCommentResponse(
-      user,
-      comment,
-      [],
-      { hasRelationshipExpansion: false },
     );
 
     return payload;
