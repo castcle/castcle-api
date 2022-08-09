@@ -38,10 +38,12 @@ export enum TransactionStatus {
 export enum TransactionType {
   AIRDROP = 'airdrop',
   DEPOSIT = 'deposit',
+  CONTENT_REACH = 'content-reach',
   FARMED = 'farmed',
   FARMING = 'farming',
   RECEIVE = 'receive',
   REFERRAL = 'referral',
+  SEEN_ADS = 'seen-ads',
   SEND = 'send',
   SOCIAL = 'social',
   UNFARMING = 'unfarming',
