@@ -1120,11 +1120,32 @@ export class ContentServiceV2 {
       ? this.toCastPayload({ content })
       : undefined;
 
+    const user = await this.repository.findUser({
+      _id: content.author.id,
+    });
+
+    const relationships = await this.repository.findRelationships({
+      userId: userId as any,
+      followedUser: [user._id],
+    });
+
+    const relationship = relationships?.find(
+      (relationship) =>
+        String(relationship.followedUser) === String(content?.author?.id),
+    );
+
+    const responseUser = await user?.toPublicResponse({
+      blocked: relationship?.blocking ?? false,
+      blocking: relationship?.blocking ?? false,
+      followed: relationship?.following ?? false,
+    });
+
     return new ContentFarmingResponse(
       contentFarming,
       balance,
       lockBalance,
       totalContentFarming,
+      responseUser,
       contentPayload,
     );
   };
@@ -1864,6 +1885,7 @@ export class ContentServiceV2 {
     const author = await this.repository.findUser({ _id: content.author.id });
 
     if (!author) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
     if (String(author.ownerAccount) === String(user.ownerAccount))
       throw new CastcleException('CAN_NOT_FARMING_YOUR_CAST');
 
@@ -1873,6 +1895,22 @@ export class ContentServiceV2 {
         $ref: 'content',
         $id: contentId,
       },
+    });
+
+    const relationships = await this.repository.findRelationships({
+      userId: user._id,
+      followedUser: [author._id],
+    });
+
+    const relationship = relationships?.find(
+      (relationship) =>
+        String(relationship.followedUser) === String(content?.author?.id),
+    );
+
+    const responseUser = await author?.toPublicResponse({
+      blocked: relationship?.blocking ?? false,
+      blocking: relationship?.blocking ?? false,
+      followed: relationship?.following ?? false,
     });
 
     const totalContentFarming = await this.contentFarmingModel.countDocuments({
@@ -1886,6 +1924,7 @@ export class ContentServiceV2 {
       balance,
       lockBalance,
       totalContentFarming || 1,
+      responseUser,
       content ? this.toCastPayload({ content, engagements }) : undefined,
     );
   };
@@ -1915,17 +1954,42 @@ export class ContentServiceV2 {
         viewer,
       });
 
+    const users = await this.repository.findUsers({
+      _id: contents.map(({ author }) => author.id),
+    });
+
+    const relationships = await this.repository.findRelationships({
+      userId: viewer._id,
+      followedUser: contents.map(({ author }) => author.id),
+    });
+
     const farmingPayload = await Promise.all(
       contentFarmings.map(async (contentFarming, index) => {
         const content = contents.find(
           (content) => String(content._id) === String(contentFarming.content),
         );
 
+        const userFarming = users.find(
+          ({ _id }) => String(_id) === String(content?.author?.id),
+        );
+
+        const relationship = relationships?.find(
+          (relationship) =>
+            String(relationship.followedUser) === String(content?.author?.id),
+        );
+
+        const responseUser = await userFarming?.toPublicResponse({
+          blocked: relationship?.blocking ?? false,
+          blocking: relationship?.blocking ?? false,
+          followed: relationship?.following ?? false,
+        });
+
         return new ContentFarmingResponse(
           contentFarming,
           balance,
           lockBalance,
           totalContentFarming - index,
+          responseUser,
           content ? this.toCastPayload({ content, engagements }) : undefined,
         );
       }),
@@ -1968,17 +2032,42 @@ export class ContentServiceV2 {
         viewer,
       });
 
+    const users = await this.repository.findUsers({
+      _id: contents.map(({ author }) => author.id),
+    });
+
+    const relationships = await this.repository.findRelationships({
+      userId: viewer._id,
+      followedUser: contents.map(({ author }) => author.id),
+    });
+
     const farmingPayload = await Promise.all(
       contentFarmings.map(async (contentFarming) => {
         const content = contents.find(
           (content) => String(content._id) === String(contentFarming.content),
         );
 
+        const userFarming = users.find(
+          ({ _id }) => String(_id) === String(content?.author?.id),
+        );
+
+        const relationship = relationships?.find(
+          (relationship) =>
+            String(relationship.followedUser) === String(content?.author?.id),
+        );
+
+        const responseUser = await userFarming?.toPublicResponse({
+          blocked: relationship?.blocking ?? false,
+          blocking: relationship?.blocking ?? false,
+          followed: relationship?.following ?? false,
+        });
+
         return new ContentFarmingResponse(
           contentFarming,
           balance,
           lockBalance,
           undefined,
+          responseUser,
           content ? this.toCastPayload({ content, engagements }) : undefined,
         );
       }),

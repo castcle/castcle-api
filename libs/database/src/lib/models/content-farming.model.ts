@@ -22,15 +22,27 @@
  */
 
 import { Environment } from '@castcle-api/environments';
-import { CastPayload } from '../dtos';
+import { CastcleImage } from '@castcle-api/utils/aws';
+import { CastPayload, PublicUserResponse } from '../dtos';
 import { ContentFarming } from '../schemas';
 import { ContentFarmingStatus } from './content-farming.enum';
+import { PublicVerification } from './user.model';
 
 export type ContentFarmingCDF = {
   contentId: string;
   contentFarmings: ContentFarming[];
 };
 
+class ContentFarmingUserPayload {
+  id: string;
+  castcleId: string;
+  displayName: string;
+  followed: boolean;
+  blocking: boolean;
+  blocked: boolean;
+  avatar: CastcleImage;
+  verified: PublicVerification;
+}
 export class ContentFarmingResponse {
   'id': string;
   'number': number;
@@ -46,6 +58,9 @@ export class ContentFarmingResponse {
     farming: 0,
     total: 0,
   };
+  includes: {
+    users: ContentFarmingUserPayload[];
+  };
   'status': string;
   'createdAt'?: Date;
   'updatedAt'?: Date;
@@ -56,6 +71,7 @@ export class ContentFarmingResponse {
     currentBalance: number,
     lockedBalance: number,
     farmNo: number,
+    user?: PublicUserResponse,
     contentPayload?: CastPayload,
   ) {
     this.id = contentFarming?.id ?? null;
@@ -74,6 +90,22 @@ export class ContentFarmingResponse {
         contentFarming?.status !== ContentFarmingStatus.Farming
       ? ContentFarmingStatus.Available
       : ContentFarmingStatus.Limit;
+    this.includes = {
+      users: user
+        ? [
+            {
+              id: user.id,
+              castcleId: user.castcleId,
+              displayName: user.displayName,
+              avatar: user.images.avatar,
+              verified: user.verified,
+              followed: user.followed,
+              blocked: user.blocked,
+              blocking: user.blocking,
+            },
+          ]
+        : [],
+    };
     this.createdAt = contentFarming?.createdAt ?? null;
     this.updatedAt = contentFarming?.updatedAt;
     this.farmedAt = contentFarming?.endedAt;

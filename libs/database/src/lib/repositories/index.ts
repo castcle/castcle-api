@@ -161,7 +161,7 @@ type EngagementQuery = {
 
 type RelationshipQuery = {
   userId?: User | User[] | Types.ObjectId;
-  followedUser?: User | User[] | Types.ObjectId;
+  followedUser?: User | User[] | Types.ObjectId | string[];
   blocking?: boolean;
   following?: boolean;
   sinceId?: string;
