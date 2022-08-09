@@ -52,7 +52,8 @@ import {
 } from '../models';
 import { Repository } from '../repositories';
 import { MicroTransaction, TLedger, Transaction } from '../schemas';
-import { cAccount } from '../schemas/cAccount.schema';
+import { cAccount } from '../schemas/c-account.schema';
+
 describe('TAccount Service', () => {
   let moduleRef: TestingModule;
   let mongod: MongoMemoryReplSet;
@@ -264,77 +265,78 @@ describe('TAccount Service', () => {
     it('should get wallet history', async () => {
       const depositValue = Types.Decimal128.fromString('10');
       const sendValue = Types.Decimal128.fromString('9');
-      const fakeUserId = new Types.ObjectId();
-      await new transactionModel({
-        from: {
-          type: WalletType.CASTCLE_MINT_CONTRACT,
-          value: depositValue,
-          user: fakeUserId,
-        } as MicroTransaction,
-        to: [
-          {
-            type: WalletType.CASTCLE_AIRDROP,
+      const userId = new Types.ObjectId();
+      await transactionModel.create([
+        {
+          from: {
+            type: WalletType.CASTCLE_MINT_CONTRACT,
             value: depositValue,
+            user: userId,
           } as MicroTransaction,
-        ],
-        type: TransactionType.DEPOSIT,
-        ledgers: [
-          {
-            debit: {
-              cAccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount.no,
+          to: [
+            {
+              type: WalletType.CASTCLE_AIRDROP,
               value: depositValue,
-            },
-            credit: {
-              cAccountNo:
-                CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount.no,
-              value: depositValue,
-            },
-          } as TLedger,
-        ],
-      }).save();
-      await new transactionModel({
-        from: {
-          type: WalletType.CASTCLE_MINT_CONTRACT,
-          value: sendValue,
-        } as MicroTransaction,
-        to: [
-          {
-            type: WalletType.CASTCLE_AIRDROP,
+            } as MicroTransaction,
+          ],
+          type: TransactionType.DEPOSIT,
+          ledgers: [
+            {
+              debit: {
+                cAccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount.no,
+                value: depositValue,
+              },
+              credit: {
+                cAccountNo:
+                  CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount
+                    .no,
+                value: depositValue,
+              },
+            } as TLedger,
+          ],
+        },
+        {
+          from: {
+            type: WalletType.CASTCLE_MINT_CONTRACT,
             value: sendValue,
-            user: fakeUserId,
           } as MicroTransaction,
-        ],
-        type: TransactionType.DEPOSIT,
-        ledgers: [
-          {
-            debit: {
-              cAccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount.no,
+          to: [
+            {
+              type: WalletType.CASTCLE_AIRDROP,
               value: sendValue,
-            },
-            credit: {
-              cAccountNo:
-                CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount.no,
-              value: sendValue,
-            },
-          } as TLedger,
-        ],
-      }).save();
+              user: userId,
+            } as MicroTransaction,
+          ],
+          type: TransactionType.DEPOSIT,
+          ledgers: [
+            {
+              debit: {
+                cAccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.cAccount.no,
+                value: sendValue,
+              },
+              credit: {
+                cAccountNo:
+                  CHART_OF_ACCOUNT.MINT_AND_BURN.DISTRIBUTED_AIRDROP.cAccount
+                    .no,
+                value: sendValue,
+              },
+            } as TLedger,
+          ],
+        },
+      ]);
+
       const result = await service.getWalletHistory(
-        fakeUserId.toString(),
+        userId,
         TransactionFilter.DEPOSIT_SEND,
       );
       const expectArr = [
         expect.objectContaining({
           type: TransactionType.DEPOSIT,
-          /*  value: {
-            $numberDecimal: `${sendValue}`
-          },*/
+          value: Number(sendValue),
         }),
         expect.objectContaining({
           type: TransactionType.DEPOSIT,
-          /*value: {
-            $numberDecimal: `${depositValue}`
-          },*/
+          value: Number(depositValue),
         }),
       ];
       expect(result.payload).toEqual(expect.arrayContaining(expectArr));

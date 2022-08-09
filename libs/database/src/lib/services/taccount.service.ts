@@ -26,11 +26,12 @@ import { CastcleImage } from '@castcle-api/utils/aws';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ClientSession, FilterQuery, Model } from 'mongoose';
+import { ClientSession, FilterQuery, Model, Types } from 'mongoose';
 import {
   GetBalanceResponse,
   GetWalletRecentResponse,
   pipelineOfGetBalanceFromWalletType,
+  pipelineOfGetWalletHistory,
   pipelineOfGetWalletRecentFromType,
 } from '../aggregations';
 import {
@@ -43,6 +44,7 @@ import {
   CastcleNumber,
   TopUpDto,
   TransactionFilter,
+  TransactionType,
   WalletHistoryResponse,
   WalletType,
 } from '../models';
@@ -194,32 +196,60 @@ export class TAccountService {
     else return allCredit - allDebit;
   }
 
-  async getWalletHistory(userId: string, filter: TransactionFilter) {
-    const from: any = {};
-    from['from.user'] = userId;
-    from[`data.filter.${filter}`] = true;
-    const to: any = {};
-    to['to.user'] = userId;
-    to[`data.filter.${filter}`] = true;
-    const txs = await this.transactionModel.find({
-      $or: [from, to],
-    });
-    console.log('txs', txs);
-    return {
-      payload: txs.map<WalletHistoryResponse>((tx) => ({
-        id: tx.id,
-        status: tx.status,
-        type: tx.type,
-        value: Number(
-          String(tx.from.user) === String(userId)
-            ? tx.from.value
-            : tx.to.find((t) => String(t.user) === String(userId)).value,
-        ),
-        createdAt: tx.createdAt,
-        updatedAt: tx.updatedAt,
-      })),
-    };
+  async getWalletHistory(userId: Types.ObjectId, filter: TransactionFilter) {
+    const types: TransactionType[] = [];
+
+    if (filter === TransactionFilter.AIRDROP_REFERRAL) {
+      types.push(
+        TransactionType.AIRDROP,
+        TransactionType.DEPOSIT,
+        TransactionType.RECEIVE,
+        TransactionType.REFERRAL,
+        TransactionType.SEND,
+        TransactionType.SOCIAL,
+        TransactionType.WITHDRAW,
+      );
+    } else if (filter === TransactionFilter.CONTENT_FARMING) {
+      types.push(
+        TransactionType.FARMED,
+        TransactionType.FARMING,
+        TransactionType.UNFARMING,
+      );
+    } else if (filter === TransactionFilter.DEPOSIT_SEND) {
+      types.push(
+        TransactionType.DEPOSIT,
+        TransactionType.SEND,
+        TransactionType.RECEIVE,
+        TransactionType.WITHDRAW,
+      );
+    } else if (filter === TransactionFilter.SOCIAL_REWARDS) {
+      types.push(
+        TransactionType.CONTENT_REACH,
+        TransactionType.FARMED,
+        TransactionType.FARMING,
+        TransactionType.SEEN_ADS,
+        TransactionType.UNFARMING,
+      );
+    } else if (filter === TransactionFilter.WALLET_BALANCE) {
+      types.push(
+        TransactionType.AIRDROP,
+        TransactionType.DEPOSIT,
+        TransactionType.RECEIVE,
+        TransactionType.REFERRAL,
+        TransactionType.SEND,
+        TransactionType.SOCIAL,
+        TransactionType.WITHDRAW,
+      );
+    }
+
+    const histories =
+      await this.transactionModel.aggregate<WalletHistoryResponse>(
+        pipelineOfGetWalletHistory(userId, types),
+      );
+
+    return { payload: histories };
   }
+
   /**
    * Use for dev only
    * @param topUpDto
