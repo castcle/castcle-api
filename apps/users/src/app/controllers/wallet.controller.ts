@@ -21,6 +21,10 @@
  * or have any questions.
  */
 import {
+  GetWalletBalanceQuery,
+  GetWalletBalanceResponse,
+} from '@castcle-api/cqrs';
+import {
   GetAccountParam,
   GetKeywordQuery,
   GetShortcutParam,
@@ -54,12 +58,14 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
 import { WalletHistoryQueryDto } from '../dtos/wallet.dto';
 import { WalletService } from '../services/wallet.service';
 
 @CastcleControllerV2({ path: 'wallets' })
 export class WalletController {
   constructor(
+    private queryBus: QueryBus,
     private tAccountService: TAccountService,
     private userService: UserServiceV2,
     private walletService: WalletService,
@@ -76,7 +82,11 @@ export class WalletController {
       ? authorizer.user
       : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
-    return this.walletService.getWalletBalance(user);
+
+    return this.queryBus.execute<
+      GetWalletBalanceQuery,
+      GetWalletBalanceResponse
+    >(new GetWalletBalanceQuery(user));
   }
 
   @CastcleAuth(CacheKeyName.Users)

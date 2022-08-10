@@ -22,7 +22,7 @@
  */
 
 import { CastcleCqrs } from '@castcle-api/cqrs';
-import { DatabaseModule, QueueName } from '@castcle-api/database';
+import { DatabaseModule } from '@castcle-api/database';
 import {
   CastcleBackofficeMongooseModule,
   CastcleBullModule,
@@ -30,7 +30,6 @@ import {
 import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Mailer } from '@castcle-api/utils/clients';
-import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { AdsController } from './controllers/ads.controller';
 import { AirdropsController } from './controllers/airdrops.controller';
@@ -49,10 +48,6 @@ import { UserBackofficeService } from './services/users.service';
 @Module({
   imports: [
     BackOfficeMongooseForFeatures,
-    BullModule.registerQueue(
-      { name: QueueName.CAMPAIGN },
-      { name: QueueName.NOTIFICATION },
-    ),
     CastcleBackofficeMongooseModule,
     CastcleBullModule,
     CastcleCqrs,
