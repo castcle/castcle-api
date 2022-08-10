@@ -21,29 +21,29 @@
  * or have any questions.
  */
 
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { AppModule } from './app.module';
 import { CampaignScheduler } from './campaign.scheduler';
 
-jest.mock('libs/environments/src/lib/factories');
 describe('App Module', () => {
-  let mongo: MongoMemoryReplSet;
+  let mongoServer: MongoMemoryReplSet;
+  let moduleRef: TestingModule;
   let campaignScheduler: CampaignScheduler;
 
   beforeAll(async () => {
-    mongo = await MongoMemoryReplSet.create();
-    global.mongoUri = mongo.getUri();
+    mongoServer = await MongoMemoryReplSet.create();
+    global.mongoUri = mongoServer.getUri();
 
-    const module = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
-    campaignScheduler = module.get(CampaignScheduler);
+    campaignScheduler = moduleRef.get(CampaignScheduler);
   });
 
   afterAll(async () => {
-    await mongo.stop();
+    await Promise.all([mongoServer.stop(), moduleRef.close()]);
   });
 
   it('should be defined', () => {

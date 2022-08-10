@@ -27,6 +27,7 @@ import {
   CampaignType,
   EntityVisibility,
   FeedItem,
+  QueueName,
   Transaction,
   TransactionStatus,
   TransactionType,
@@ -35,8 +36,10 @@ import {
   WalletType,
 } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { InjectQueue } from '@nestjs/bull';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { InjectModel } from '@nestjs/mongoose';
+import { Queue } from 'bull';
 import { Model, Types } from 'mongoose';
 import {
   EligibleAccounts,
@@ -54,6 +57,8 @@ export class ClaimAirdropHandler
     @InjectModel('FeedItem') private feedModel: Model<FeedItem>,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
+    @InjectQueue(QueueName.NEW_TRANSACTION)
+    private verifier: Queue<Transaction>,
   ) {}
 
   async execute(command: ClaimAirdropCommand) {
@@ -102,24 +107,26 @@ export class ClaimAirdropHandler
       pipelineOfEstimateContentReach(campaign),
     );
 
-    return Promise.all(
-      !eligibleAccounts.to.length
-        ? [campaign.updateOne({ $set: { status: CampaignStatus.COMPLETED } })]
-        : [
-            new this.transactionModel({
-              from: {
-                type: WalletType.CASTCLE_AIRDROP,
-                value: campaign.rewardBalance,
-              },
-              to: eligibleAccounts.to,
-              type: TransactionType.AIRDROP,
-              data: { campaign },
-            }).save(),
-            campaign.updateOne({
-              $set: { rewardBalance: 0, status: CampaignStatus.COMPLETED },
-            }),
-          ],
-    );
+    if (!eligibleAccounts.to.length) {
+      return campaign.updateOne({ $set: { status: CampaignStatus.COMPLETED } });
+    }
+
+    const [transaction] = await Promise.all([
+      new this.transactionModel({
+        from: {
+          type: WalletType.CASTCLE_AIRDROP,
+          value: campaign.rewardBalance,
+        },
+        to: eligibleAccounts.to,
+        type: TransactionType.AIRDROP,
+        data: { campaign: campaign._id },
+      }).save(),
+      campaign.updateOne({
+        $set: { rewardBalance: 0, status: CampaignStatus.COMPLETED },
+      }),
+    ]);
+
+    return this.verifier.add(transaction, { removeOnComplete: true });
   }
 
   private async claimFriendReferralAirdrop(
@@ -153,7 +160,7 @@ export class ClaimAirdropHandler
       to: [
         { user, type: WalletType.PERSONAL, value: campaign.rewardsPerClaim },
       ],
-      data: { campaign },
+      data: { campaign: campaign._id },
     });
 
     const rewardsToReferredUser = Number(campaign.rewardsPerClaim);
@@ -173,36 +180,38 @@ export class ClaimAirdropHandler
       visibility: EntityVisibility.Publish,
     });
 
-    if (!referrer) {
-      return Promise.all([
-        campaign.updateOne(pipelineOfDistributeCampaignReward()).exec(),
-        transaction.save(),
-      ]);
-    }
-
-    return Promise.all([
-      campaign.updateOne(pipelineOfDistributeCampaignReward(2)).exec(),
-      transaction.updateOne(
-        [
-          {
-            $set: {
-              'from.value': { $multiply: ['$from.value', 2] },
-              to: {
-                $concatArrays: [
-                  '$to',
-                  {
-                    user: referrer._id,
-                    type: WalletType.PERSONAL,
-                    value: campaign.rewardsPerClaim,
+    await Promise.all(
+      !referrer
+        ? [
+            transaction.save(),
+            campaign.updateOne(pipelineOfDistributeCampaignReward()).exec(),
+          ]
+        : [
+            transaction.updateOne(
+              [
+                {
+                  $set: {
+                    'from.value': { $multiply: ['$from.value', 2] },
+                    to: {
+                      $concatArrays: [
+                        '$to',
+                        {
+                          user: referrer._id,
+                          type: WalletType.PERSONAL,
+                          value: campaign.rewardsPerClaim,
+                        },
+                      ],
+                    },
                   },
-                ],
-              },
-            },
-          },
-        ],
-        { upsert: true },
-      ),
-    ]);
+                },
+              ],
+              { upsert: true },
+            ),
+            campaign.updateOne(pipelineOfDistributeCampaignReward(2)).exec(),
+          ],
+    );
+
+    return this.verifier.add(transaction, { removeOnComplete: true });
   }
 
   private async claimVerifyMobileAirdrop(
@@ -237,7 +246,7 @@ export class ClaimAirdropHandler
       throw new CastcleException('NOT_ELIGIBLE_FOR_CAMPAIGN');
     }
 
-    return Promise.all([
+    const [transaction] = await Promise.all([
       new this.transactionModel({
         type: TransactionType.AIRDROP,
         from: {
@@ -252,12 +261,14 @@ export class ClaimAirdropHandler
           },
         ],
         data: {
-          campaign,
+          campaign: campaign._id,
           mobileCountryCode: user.ownerAccount.mobile.countryCode,
           mobileNumber: user.ownerAccount.mobile.number,
         },
       }).save(),
       campaign.updateOne(pipelineOfDistributeCampaignReward()).exec(),
     ]);
+
+    return this.verifier.add(transaction, { removeOnComplete: true });
   }
 }
