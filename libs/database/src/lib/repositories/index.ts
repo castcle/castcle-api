@@ -54,6 +54,7 @@ import {
 import {
   AccessTokenPayload,
   BlogPayload,
+  CastcleQueryOptions,
   CreateContentDto,
   CreateCredentialDto,
   EntityVisibility,
@@ -62,6 +63,7 @@ import {
   NotificationType,
   RefreshTokenPayload,
   ShortPayload,
+  SortDirection,
   Url,
   UserField,
 } from '../dtos';
@@ -1806,4 +1808,38 @@ export class Repository {
       { $inc: { casts: increase ?? -1 } },
     );
   }
+
+  /**
+   * Get all hashtag that could get from the system sort by score
+   * @param {string} keyword
+   * @param {CastcleQueryOptions} queryOption
+   * @returns {Hashtag[]}
+   */
+  searchHashtag = async (
+    keyword: string,
+    queryOptions: CastcleQueryOptions,
+  ) => {
+    const newKeyword = keyword.charAt(0) === '#' ? keyword.slice(1) : keyword;
+    const query = {
+      tag: { $regex: new RegExp('^' + newKeyword.toLowerCase(), 'i') },
+    };
+
+    queryOptions.sortBy = {
+      field: 'score',
+      type: SortDirection.DESC,
+    };
+
+    let hashtagQuery = this.hashtagModel.find(query);
+
+    if (queryOptions?.limit)
+      hashtagQuery = hashtagQuery.limit(queryOptions.limit);
+    if (queryOptions?.page)
+      hashtagQuery = hashtagQuery.skip(queryOptions.page - 1);
+    if (queryOptions?.sortBy) {
+      const sortDirection = queryOptions.sortBy.type === 'desc' ? '-' : '';
+      const sortOrder = `${sortDirection}${queryOptions.sortBy.field}`;
+      hashtagQuery = hashtagQuery.sort(sortOrder);
+    }
+    return hashtagQuery.exec();
+  };
 }
