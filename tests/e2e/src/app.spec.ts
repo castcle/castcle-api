@@ -15,6 +15,7 @@ import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.clien
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model } from 'mongoose';
 import { testContentFarming } from './routes/content-farming.spec';
+import { testGetWalletBalance } from './routes/get-wallet-balance.spec';
 import { testReviewTransaction } from './routes/review-transaction.spec';
 import { testSendTransaction } from './routes/send-transaction.spec';
 import { request } from './utils.spec';
@@ -54,18 +55,7 @@ describe('Castcle E2E Tests', () => {
     await Promise.all([app.close(), mongoServer.stop()]);
   });
 
-  it.only('should be defined and status OK', () => {
-    expect(app.getHttpServer()).toBeDefined();
-
-    return Promise.all([
-      request().get('/analytics/healthy').expect('').expect(200),
-      request().get('/authentications/healthy').expect('').expect(200),
-      request().get('/feeds/healthy').expect('').expect(200),
-      request().get('/users/healthy').expect('').expect(200),
-    ]);
-  });
-
-  it.only('should be defined and status OK 2', () => {
+  it('should be defined and status OK', () => {
     expect(app.getHttpServer()).toBeDefined();
 
     return Promise.all([
@@ -79,4 +69,5 @@ describe('Castcle E2E Tests', () => {
   testReviewTransaction();
   testSendTransaction();
   testContentFarming();
+  testGetWalletBalance();
 });

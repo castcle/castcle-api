@@ -26,13 +26,23 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { ClaimAirdropCommand } from './lib/claim-airdrop/claim-airdrop.command';
 import { ClaimAirdropHandler } from './lib/claim-airdrop/claim-airdrop.handler';
+import { GetWalletBalanceHandler } from './lib/get-wallet-balance/get-wallet-balance.handler';
+import {
+  GetWalletBalanceQuery,
+  GetWalletBalanceResponse,
+} from './lib/get-wallet-balance/get-wallet-balance.query';
 
 @Module({
   imports: [CqrsModule, DatabaseModule],
   controllers: [],
-  providers: [ClaimAirdropHandler],
+  providers: [ClaimAirdropHandler, GetWalletBalanceHandler],
   exports: [CqrsModule],
 })
 class CastcleCqrs {}
 
-export { CastcleCqrs, ClaimAirdropCommand };
+export {
+  CastcleCqrs,
+  ClaimAirdropCommand,
+  GetWalletBalanceQuery,
+  GetWalletBalanceResponse,
+};

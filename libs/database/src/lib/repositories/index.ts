@@ -170,13 +170,6 @@ type RelationshipQuery = {
   untilId?: string;
 };
 
-type CredentialQuery = {
-  refreshToken?: string;
-  accessToken?: string;
-  deviceUUID?: string;
-  'account.isGuest'?: boolean;
-};
-
 type NotificationQueryOption = {
   _id?: string;
   account?: Account;
@@ -1047,7 +1040,7 @@ export class Repository {
     ]);
   }
 
-  findCredential(filter: CredentialQuery) {
+  findCredential(filter: FilterQuery<Credential>) {
     return this.credentialModel.findOne(filter);
   }
 

@@ -21,50 +21,29 @@
  * or have any questions.
  */
 
-export enum TransactionFilter {
-  AIRDROP_REFERRAL = 'airdrop-referral',
-  CONTENT_FARMING = 'content-farming',
-  DEPOSIT_SEND = 'deposit-send',
-  SOCIAL_REWARDS = 'social-rewards',
-  WALLET_BALANCE = 'wallet-balance',
+import { User } from '@castcle-api/database';
+import { Types } from 'mongoose';
+
+export class GetWalletBalanceQuery {
+  constructor(public user: Types.ObjectId | User) {}
 }
 
-export enum TransactionStatus {
-  FAILED = 'failed',
-  PENDING = 'pending',
-  VERIFIED = 'verified',
+export class GetWalletBalanceResponse {
+  id: string;
+  displayName: string;
+  castcleId: string;
+  availableBalance: string;
+  adsCredit: string;
+  farmBalance: string;
+  totalBalance: string;
+
+  constructor(dto: GetWalletBalanceResponse) {
+    this.id = dto.id;
+    this.displayName = dto.displayName;
+    this.castcleId = dto.castcleId;
+    this.availableBalance = dto.availableBalance;
+    this.adsCredit = dto.adsCredit;
+    this.farmBalance = dto.farmBalance;
+    this.totalBalance = dto.totalBalance;
+  }
 }
-
-export enum TransactionType {
-  AIRDROP = 'airdrop',
-  DEPOSIT = 'deposit',
-  CONTENT_REACH = 'content-reach',
-  FARMED = 'farmed',
-  FARMING = 'farming',
-  RECEIVE = 'receive',
-  REFERRAL = 'referral',
-  SEEN_ADS = 'seen-ads',
-  SEND = 'send',
-  SOCIAL = 'social',
-  UNFARMING = 'unfarming',
-  WITHDRAW = 'withdraw',
-}
-
-export enum WalletType {
-  // Castcle Wallet Type
-  CASTCLE_AIRDROP = 'castcle.airdrop',
-  CASTCLE_SOCIAL = 'castcle.social',
-  EXTERNAL_DEPOSIT = 'external.deposit',
-  EXTERNAL_WITHDRAW = 'external.withdraw',
-
-  // User Wallet Type
-  ADS = 'ads',
-  FARM_LOCKED = 'farm.locked',
-  PERSONAL = 'personal',
-}
-
-export const UserWalletTypes = [
-  WalletType.ADS,
-  WalletType.FARM_LOCKED,
-  WalletType.PERSONAL,
-];

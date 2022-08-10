@@ -29,6 +29,7 @@ import {
   EntityVisibility,
   FeedItem as Feed,
   FeedItemSchema,
+  QueueName,
   Transaction,
   TransactionSchema,
   TransactionStatus,
@@ -39,6 +40,7 @@ import {
   WalletType,
 } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { getQueueToken } from '@nestjs/bull';
 import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -68,7 +70,13 @@ describe('ClaimAirdropHandler', () => {
           { name: User.name, schema: UserSchema },
         ]),
       ],
-      providers: [ClaimAirdropHandler],
+      providers: [
+        ClaimAirdropHandler,
+        {
+          provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
+      ],
     }).compile();
 
     handler = moduleRef.get(ClaimAirdropHandler);

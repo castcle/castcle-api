@@ -164,10 +164,6 @@ describe('AppController', () => {
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.CAMPAIGN),
-          useValue: { add: jest.fn() },
-        },
-        {
           provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
@@ -1277,7 +1273,7 @@ describe('AppController', () => {
 
       await new transactionModel({
         from: {
-          type: WalletType.CASTCLE_TREASURY,
+          type: WalletType.EXTERNAL_DEPOSIT,
           value: 999999,
         },
         to: [
@@ -1347,7 +1343,7 @@ describe('AppController', () => {
 
       await new transactionModel({
         from: {
-          type: WalletType.CASTCLE_TREASURY,
+          type: WalletType.EXTERNAL_DEPOSIT,
           value: 999999,
         },
         to: [
@@ -1578,7 +1574,7 @@ describe('AppController', () => {
       };
       await new transactionModel({
         from: {
-          type: WalletType.CASTCLE_TREASURY,
+          type: WalletType.EXTERNAL_DEPOSIT,
           value: 999999,
         },
         to: [
