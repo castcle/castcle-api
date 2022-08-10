@@ -30,7 +30,6 @@ import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
-import { CqrsModule } from '@nestjs/cqrs';
 import {
   AsyncModelFactory,
   ModelDefinition,
@@ -248,10 +247,9 @@ const exportProviders = [
     CastcleBullModule,
     CastcleCacheModule,
     CastcleMongooseModule,
-    CqrsModule,
     BullModule.registerQueue(
-      { name: QueueName.CAMPAIGN },
       { name: QueueName.CONTENT },
+      { name: QueueName.NEW_TRANSACTION },
       { name: QueueName.NOTIFICATION },
       { name: QueueName.REPORTING },
       { name: QueueName.USER },
@@ -263,7 +261,7 @@ const exportProviders = [
     UtilsClientsModule,
   ],
   providers,
-  exports: [...exportProviders, CqrsModule, MongooseModule],
+  exports: [...exportProviders, BullModule, MongooseModule],
 })
 export class DatabaseModule {}
 

@@ -22,13 +22,13 @@
  */
 
 export enum QueueName {
-  CAMPAIGN = 'campaign',
   CONTENT = 'content',
   NOTIFICATION = 'notification',
   USER = 'user',
   SOCIAL_REWARD = 'social-reward',
   REPORTING = 'reporting',
   VERIFY_EMAIL = 'verify-email',
+  NEW_TRANSACTION = 'new-transaction',
 }
 
 export enum QueueStatus {

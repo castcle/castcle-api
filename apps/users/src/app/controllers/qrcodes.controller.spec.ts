@@ -83,10 +83,6 @@ describe('QRCodeControllerV2', () => {
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(QueueName.CAMPAIGN),
-          useValue: { add: jest.fn() },
-        },
-        {
           provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },

@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleCqrs } from '@castcle-api/cqrs';
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleCacheModule } from '@castcle-api/environments';
 import { CastcleHealthyModule } from '@castcle-api/healthy';
@@ -43,6 +44,7 @@ import { WalletService } from './services/wallet.service';
 @Module({
   imports: [
     CastcleCacheModule,
+    CastcleCqrs,
     CastcleHealthyModule.register({ pathPrefix: 'users' }),
     CastcleThrottlerModule,
     CastcleTracingModule.forRoot({ serviceName: 'users' }),

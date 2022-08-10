@@ -22,19 +22,15 @@
  */
 
 import { CastcleCqrs } from '@castcle-api/cqrs';
-import {
-  CampaignService,
-  DatabaseModule,
-  QueueName,
-} from '@castcle-api/database';
+import { DatabaseModule } from '@castcle-api/database';
 import { CastcleBullModule } from '@castcle-api/environments';
 import { CastcleTracingModule } from '@castcle-api/tracing';
-import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminScheduler } from './admin-action.scheduler';
 import { CampaignScheduler } from './campaign.scheduler';
 import { ContentFarmingScheduler } from './content-farming.sheduler';
+import { TransactionVerifier } from './transaction-verifier/transaction-verifier';
 
 @Module({
   imports: [
@@ -42,19 +38,14 @@ import { ContentFarmingScheduler } from './content-farming.sheduler';
     CastcleCqrs,
     CastcleTracingModule.forRoot({ serviceName: 'queues' }),
     DatabaseModule,
-    BullModule.registerQueue(
-      { name: QueueName.CONTENT },
-      { name: QueueName.CAMPAIGN },
-      { name: QueueName.NOTIFICATION },
-    ),
     ScheduleModule.forRoot(),
   ],
   controllers: [],
   providers: [
     AdminScheduler,
     CampaignScheduler,
-    CampaignService,
     ContentFarmingScheduler,
+    TransactionVerifier,
   ],
 })
 export class AppModule {}

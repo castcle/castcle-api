@@ -23,6 +23,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   ByKeywordResponseDto,
+  CastcleQueryOptions,
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
   GetByQuery,
   GetKeywordQuery,
@@ -182,4 +183,7 @@ export class SearchServiceV2 {
       meta: Meta.fromDocuments(users),
     });
   }
+
+  searchHashtag = async (keyword: string, queryOptions: CastcleQueryOptions) =>
+    this.repository.searchHashtag(keyword, queryOptions);
 }
