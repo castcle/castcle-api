@@ -20,8 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { registerUser, request } from '../utils.spec';
+import { getModelToken } from '@nestjs/mongoose';
+import { app, registerUser, request } from '../utils.spec';
 
 export const testSearchHashtag = () => {
   describe('GET v2/searches/hashtags', () => {
@@ -38,6 +38,54 @@ export const testSearchHashtag = () => {
         .send({})
         .expect(({ body }) => {
           expect(body.payload).toEqual([]);
+        });
+    });
+    it('should found 1 hashtag that related to query', async () => {
+      const user = await registerUser();
+      await app()
+        .get(getModelToken('Hashtag'))
+        .create({
+          tag: 'testdo',
+          name: 'testdo',
+          score: 20,
+          aggregator: {
+            name: 'default',
+          },
+        });
+      await app()
+        .get(getModelToken('Hashtag'))
+        .create({
+          tag: 'testno',
+          name: 'testno',
+          score: 1,
+          aggregator: {
+            name: 'default',
+          },
+        });
+      await request()
+        .get('/v2/searches/hashtags')
+        .auth(user.accessToken, { type: 'bearer' })
+        .set({
+          'Accept-Language': 'en',
+          Device: 'CastclePhone',
+          Platform: 'CastcleOS',
+        })
+        .send({})
+        .expect(({ body }) => {
+          expect(body.payload[0]).toEqual(
+            expect.objectContaining({
+              name: 'testdo',
+              rank: 1,
+              slug: 'testdo',
+            }),
+          );
+          expect(body.payload[1]).toEqual(
+            expect.objectContaining({
+              name: 'testno',
+              rank: 2,
+              slug: 'testno',
+            }),
+          );
         });
     });
   });
