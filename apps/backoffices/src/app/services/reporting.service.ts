@@ -290,7 +290,7 @@ export class ReportingService {
           await this.reduceFollows(targetReporting.id, -1);
         }
       } else {
-        await this.repository.deleteContent(targetReporting.id);
+        await this.repository.deleteAllContent(targetReporting.id);
         if (body.type === ReportingType.USER)
           await this.repository.deleteUser(targetReporting.id);
       }
@@ -451,7 +451,7 @@ export class ReportingService {
         content.visibility = EntityVisibility.Deleted;
         await content.save();
 
-        await this.repository.deleteContent(content.id);
+        await this.repository.deleteAllContent(content.id);
 
         const userOwner = await this.repository.findUser({
           _id: content.author.id,

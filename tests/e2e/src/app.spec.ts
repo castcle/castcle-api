@@ -17,6 +17,7 @@ import { Model } from 'mongoose';
 import { testContentFarming } from './routes/content-farming.spec';
 import { testGetWalletBalance } from './routes/get-wallet-balance.spec';
 import { testReviewTransaction } from './routes/review-transaction.spec';
+import { testSearchHashtag } from './routes/search-hashtag.spec';
 import { testSendTransaction } from './routes/send-transaction.spec';
 import { request } from './utils.spec';
 
@@ -70,4 +71,5 @@ describe('Castcle E2E Tests', () => {
   testSendTransaction();
   testContentFarming();
   testGetWalletBalance();
+  testSearchHashtag();
 });
