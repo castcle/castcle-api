@@ -189,7 +189,7 @@ type NotificationQueryOption = {
 
 type ContentQuery = {
   _id?: string | string[];
-  author?: string | Types.ObjectId;
+  author?: string | Types.ObjectId | string[];
   contentType?: string;
   decayDays?: number;
   excludeAuthor?: string[] | User[];
@@ -420,6 +420,7 @@ export class Repository {
     if (filter.originalPost)
       query['originalPost._id'] = new Types.ObjectId(filter.originalPost);
     if (filter.author) query['author.id'] = filter.author;
+    if (isArray(filter.author)) query['author.id'] = { $in: filter.author };
     if (filter.isRecast) query.isRecast = filter.isRecast;
     if (filter.isQuote) query.isQuote = filter.isQuote;
     if (isArray(filter.type)) query.type = { $in: filter.type };
@@ -1308,10 +1309,6 @@ export class Repository {
     return this.feedItemModel.deleteMany(filter, queryOptions);
   }
 
-  deleteRevisions(filter: FilterQuery<Revision>, queryOptions?: QueryOptions) {
-    return this.revisionModel.deleteMany(filter, queryOptions);
-  }
-
   findHashtags(filter: HashtagQuery, queryOptions?: QueryOptions) {
     return this.hashtagModel.find(
       this.getHashtagQuery(filter),
@@ -1520,7 +1517,6 @@ export class Repository {
         this.deleteEngagements({ user: pageId }),
         this.deleteComments({ 'author._id': pageId }, { session }),
         this.deleteFeedItems({ author: pageId }, { session }),
-        this.deleteRevisions({ author: pageId }, { session }),
         this.deleteSocialSyncs({ user: pageId }, { session }),
         this.deleteNotifications({ user: pageId }, { session }),
       ]);
@@ -1529,15 +1525,20 @@ export class Repository {
     });
   }
 
-  async deleteContent(contentId: string) {
+  async deleteAllContent(contentId: string) {
     const session = await this.contentModel.startSession();
+
+    const contents = await this.contentModel.find({
+      'originalPost._id': new Types.ObjectId(contentId),
+    });
+
     await session.withTransaction(async () => {
       await Promise.all([
         this.deleteContents({
-          _id: new Types.ObjectId(contentId),
+          'originalPost._id': new Types.ObjectId(contentId) as any,
         }),
         this.deleteContents({
-          originalPost: new Types.ObjectId(contentId) as any,
+          _id: new Types.ObjectId(contentId),
         }),
         this.deleteEngagements({
           targetRef: {
@@ -1558,12 +1559,14 @@ export class Repository {
           { content: new Types.ObjectId(contentId) as any },
           { session },
         ),
-        this.deleteRevisions(
-          { 'payload._id': new Types.ObjectId(contentId) },
-          { session },
-        ),
         this.deleteNotifications(
           { contentRef: new Types.ObjectId(contentId) },
+          { session },
+        ),
+        this.notificationModel.deleteMany(
+          {
+            contentRef: contents.map(({ _id }) => _id),
+          },
           { session },
         ),
       ]);
@@ -1619,7 +1622,6 @@ export class Repository {
         this.deleteEngagements({ user: userId as any }),
         this.deleteComments({ 'author._id': userId }, { session }),
         this.deleteFeedItems({ author: userId }, { session }),
-        this.deleteRevisions({ author: userId }, { session }),
         this.deleteSocialSyncs({ user: userId }, { session }),
         this.deleteNotifications({ user: userId as any }, { session }),
       ]);

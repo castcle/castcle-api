@@ -541,18 +541,17 @@ export class ContentServiceV2 {
   };
 
   undoRecast = async (contentId: string, user: User) => {
+    const users = await this.repository.findUsers({
+      accountId: user.ownerAccount as any,
+    });
+
     const content = await this.repository.findContent({
       originalPost: contentId,
-      author: user._id,
+      author: users.map((user) => user._id),
+      isRecast: true,
     });
 
     if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
-
-    const engagement = await this.repository.findEngagement({
-      user: user._id,
-      itemId: content._id,
-      type: EngagementType.Recast,
-    });
 
     if (content.hashtags) {
       await this.repository.removeFromTags(content.hashtags, {
@@ -562,17 +561,32 @@ export class ContentServiceV2 {
       });
     }
 
-    await this.repository.updateNotification(
-      {
-        type: NotificationType.Recast,
-        contentRef: new Types.ObjectId(contentId),
-        commentRef: { $exists: false },
-        replyRef: { $exists: false },
-      },
-      {
-        $pull: { sourceUserId: { $eq: user._id } },
-      },
-    );
+    await Promise.all([
+      this.repository.updateUser(
+        { _id: content.author.id },
+        { $inc: { casts: -1 } },
+      ),
+      this.repository.deleteEngagements({
+        user: content.author.id as any,
+        targetRef: {
+          $ref: 'content',
+          $id: contentId,
+        },
+      }),
+      this.repository.updateNotification(
+        {
+          type: NotificationType.Recast,
+          contentRef: new Types.ObjectId(contentId),
+          commentRef: { $exists: false },
+          replyRef: { $exists: false },
+        },
+        {
+          $pull: { sourceUserId: { $eq: user._id } },
+        },
+      ),
+      content.remove(),
+    ]);
+
     const notification = await this.repository.findNotification({
       type: NotificationType.Recast,
       contentRef: new Types.ObjectId(contentId),
@@ -582,8 +596,6 @@ export class ContentServiceV2 {
 
     if (notification && !notification?.sourceUserId?.length)
       await notification.remove();
-
-    return Promise.all([content.remove(), engagement.remove()]);
   };
 
   quoteCast = async (
@@ -1246,14 +1258,14 @@ export class ContentServiceV2 {
 
   getUserContents = async (
     { hasRelationshipExpansion, ...query }: PaginationQuery,
-    user?: User,
+    user: User,
     requestedBy?: User,
   ) => {
     const [contents] = await this.repository.aggregationContent({
       viewer: requestedBy,
-      author: user?._id,
+      author: user._id,
       visibility:
-        String(user?.ownerAccount) === String(requestedBy?.ownerAccount)
+        String(user.ownerAccount) === String(requestedBy?.ownerAccount)
           ? [EntityVisibility.Publish, EntityVisibility.Illegal]
           : undefined,
       ...query,
@@ -1344,24 +1356,52 @@ export class ContentServiceV2 {
   };
 
   deleteContent = async (contentId: string, user: User) => {
+    const users = await this.repository.findUsers({
+      accountId: user.ownerAccount as any,
+    });
+
+    if (!users) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
     const content = await this.repository.findContent({
       _id: contentId,
-      author: user._id,
+      author: users.map(({ _id }) => _id),
     });
 
     if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
-    await this.repository.deleteContents({ _id: contentId });
-    await this.repository.updateUser(
-      { _id: user._id },
-      { $inc: { casts: -1 } },
-    );
+    if (!users.some((user) => user.id === String(content.author.id)))
+      throw new CastcleException('FORBIDDEN');
 
-    if (content.isRecast || content.isQuote) {
-      await this.repository.deleteEngagements({ itemId: content._id });
-    }
-    //pause ads
-    await this.repository.pauseAdsFromContentId(contentId);
+    const contents = await this.repository.findContents({
+      originalPost: contentId,
+    });
+
+    const usersAction = await this.repository.findUsers({
+      _id: contents.map(({ author }) => author.id),
+    });
+
+    await Promise.all([
+      usersAction.map(async (user) =>
+        this.repository.updateUser(
+          {
+            _id: user._id,
+          },
+          {
+            $inc: {
+              casts: -contents.filter(
+                (content) => String(content.author.id) === user.id,
+              ).length,
+            },
+          },
+        ),
+      ),
+      this.repository.deleteAllContent(content._id),
+      this.repository.updateUser(
+        { _id: content.author.id },
+        { $inc: { casts: -1 } },
+      ),
+      this.repository.pauseAdsFromContentId(content._id),
+    ]);
   };
 
   getParticipates = async (contentId: string, account: Account) => {
