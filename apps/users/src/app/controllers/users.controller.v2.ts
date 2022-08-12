@@ -586,6 +586,7 @@ export class UsersControllerV2 {
     return this.userService.unblockUser(user, targetCastcleId);
   }
 
+  // @CastcleClearCacheAuth(CacheKeyName.Contents)
   @CastcleBasicAuth()
   @Post(':userId/recasts')
   async recastContent(
@@ -762,8 +763,6 @@ export class UsersControllerV2 {
     const user = isMe
       ? authorizer.user
       : await this.userService.getUser(userId);
-
-    authorizer.requestAccessForAccount(authorizer.account._id);
 
     return this.contentServiceV2.getUserContents(query, user, authorizer.user);
   }
