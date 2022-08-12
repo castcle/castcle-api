@@ -1309,10 +1309,6 @@ export class Repository {
     return this.feedItemModel.deleteMany(filter, queryOptions);
   }
 
-  deleteRevisions(filter: FilterQuery<Revision>, queryOptions?: QueryOptions) {
-    return this.revisionModel.deleteMany(filter, queryOptions);
-  }
-
   findHashtags(filter: HashtagQuery, queryOptions?: QueryOptions) {
     return this.hashtagModel.find(
       this.getHashtagQuery(filter),
@@ -1521,7 +1517,6 @@ export class Repository {
         this.deleteEngagements({ user: pageId }),
         this.deleteComments({ 'author._id': pageId }, { session }),
         this.deleteFeedItems({ author: pageId }, { session }),
-        this.deleteRevisions({ author: pageId }, { session }),
         this.deleteSocialSyncs({ user: pageId }, { session }),
         this.deleteNotifications({ user: pageId }, { session }),
       ]);
@@ -1562,10 +1557,6 @@ export class Repository {
         ),
         this.deleteFeedItems(
           { content: new Types.ObjectId(contentId) as any },
-          { session },
-        ),
-        this.deleteRevisions(
-          { 'payload._id': new Types.ObjectId(contentId) },
           { session },
         ),
         this.deleteNotifications(
@@ -1631,7 +1622,6 @@ export class Repository {
         this.deleteEngagements({ user: userId as any }),
         this.deleteComments({ 'author._id': userId }, { session }),
         this.deleteFeedItems({ author: userId }, { session }),
-        this.deleteRevisions({ author: userId }, { session }),
         this.deleteSocialSyncs({ user: userId }, { session }),
         this.deleteNotifications({ user: userId as any }, { session }),
       ]);
