@@ -33,7 +33,7 @@ import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
 import {
   AnalyticService,
@@ -86,7 +86,7 @@ import { NotificationServiceV2 } from './notification.service.v2';
 import { TAccountService } from './taccount.service';
 
 describe('ContentServiceV2', () => {
-  let mongod: MongoMemoryServer;
+  let mongod: MongoMemoryReplSet;
   let moduleRef: TestingModule;
   let service: ContentServiceV2;
   let repository: Repository;
@@ -98,7 +98,7 @@ describe('ContentServiceV2', () => {
   let transactionModel: Model<Transaction>;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create();
     moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
