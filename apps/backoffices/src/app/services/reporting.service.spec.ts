@@ -209,7 +209,11 @@ describe('ReportingService', () => {
 
   describe('getReporting', () => {
     it('should get reporting filter type content', async () => {
-      const reportings = await service.getReporting({ type: ['content'] });
+      const reportings = await service.getReporting({
+        type: ['content'],
+        maxResults: 25,
+        hasRelationshipExpansion: false,
+      });
 
       expect(reportings.payload).toBeDefined();
 
@@ -220,7 +224,11 @@ describe('ReportingService', () => {
     });
 
     it('should get reporting filter type user', async () => {
-      const reportings = await service.getReporting({ type: ['user'] });
+      const reportings = await service.getReporting({
+        type: ['user'],
+        maxResults: 25,
+        hasRelationshipExpansion: false,
+      });
 
       expect(reportings.payload).toBeDefined();
 

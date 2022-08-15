@@ -159,6 +159,7 @@ export class RankerService {
     const payloadFeeds = await this._feedItemsToPayloadItems(mergeFeeds);
 
     const authors = [
+      ...defaultFeeds.map(({ content }) => content.author),
       ...guestFeeds.map(({ content }) => content.author),
       ...casts.map(({ author }) => author),
     ];

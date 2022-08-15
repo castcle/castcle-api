@@ -23,6 +23,7 @@
 
 import {
   Content,
+  PaginationQuery,
   ReportingStatus,
   ReportingType,
   User,
@@ -36,7 +37,7 @@ import {
   IsString,
 } from 'class-validator';
 
-export class GetReportingQuery {
+export class GetReportingQuery extends PaginationQuery {
   @IsOptional()
   @IsEnum(ReportingType, { each: true })
   @TransformStringToArrayOfStrings()
@@ -49,7 +50,7 @@ export class GetReportingQuery {
 }
 
 class ReportingPayload {
-  id: string;
+  payloadId: string;
   reportBy: string[];
   status: string;
   type: string;
