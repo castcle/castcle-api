@@ -32,6 +32,7 @@ import { pipelineNotificationBadge } from '../aggregations';
 import {
   AndroidMessagePriority,
   CreateNotification,
+  EntityVisibility,
   NotificationLandingPage,
   NotificationPayloadDto,
   NotificationQuery,
@@ -85,20 +86,34 @@ export class NotificationServiceV2 {
     if (
       (type === NotificationType.Like &&
         targetRef === NotificationRef.Content) ||
-      type === NotificationType.Recast ||
-      type === NotificationType.Quote ||
-      type === NotificationType.Farm
+      [
+        NotificationType.Farm,
+        NotificationType.Quote,
+        NotificationType.Recast,
+      ].some((ref) => ref === type)
     ) {
       return NotificationLandingPage.Cast;
     } else if (
       (type === NotificationType.Like &&
         targetRef === NotificationRef.Comment) ||
-      type === NotificationType.Comment ||
-      type === NotificationType.Reply
+      [NotificationType.Reply, NotificationType.Comment].some(
+        (ref) => ref === type,
+      )
     ) {
       return NotificationLandingPage.Comment;
     } else if (type === NotificationType.Follow) {
       return NotificationLandingPage.Follower;
+    } else if (
+      [
+        NotificationType.IllegalClosed,
+        NotificationType.IllegalDone,
+        NotificationType.NotIllegal,
+      ].some((ref) => ref === type)
+    ) {
+      if (targetRef === NotificationRef.Content)
+        return NotificationLandingPage.Cast;
+
+      return NotificationLandingPage.Profile;
     } else {
       return;
     }
@@ -298,7 +313,11 @@ export class NotificationServiceV2 {
         message,
         this.checkNotificationTypePage(
           notify.type,
-          notify.commentRef ? NotificationRef.Comment : NotificationRef.Content,
+          notify.commentRef
+            ? NotificationRef.Comment
+            : notify.contentRef
+            ? NotificationRef.Content
+            : undefined,
         ),
         user,
         haveUsers,
@@ -438,6 +457,7 @@ export class NotificationServiceV2 {
         const userOwner = notify?.user
           ? await this.repository.findUser({
               _id: notify.user._id,
+              visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
             })
           : null;
 
@@ -454,7 +474,9 @@ export class NotificationServiceV2 {
             notify.type,
             notify.commentRef
               ? NotificationRef.Comment
-              : NotificationRef.Content,
+              : notify.contentRef
+              ? NotificationRef.Content
+              : undefined,
           ),
           user,
           haveUser,
