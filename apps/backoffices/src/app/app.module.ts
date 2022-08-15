@@ -26,6 +26,7 @@ import { DatabaseModule } from '@castcle-api/database';
 import {
   CastcleBackofficeMongooseModule,
   CastcleBullModule,
+  CastcleCacheModule,
 } from '@castcle-api/environments';
 import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleTracingModule } from '@castcle-api/tracing';
@@ -51,6 +52,7 @@ import { UserBackofficeService } from './services/users.service';
     CastcleBackofficeMongooseModule,
     CastcleBullModule,
     CastcleCqrs,
+    CastcleCacheModule,
     CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
     CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
     DatabaseModule,

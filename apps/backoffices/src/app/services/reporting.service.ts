@@ -25,6 +25,7 @@ import {
   Content,
   ContentServiceV2,
   EntityVisibility,
+  Meta,
   NotificationServiceV2,
   NotificationSource,
   NotificationType,
@@ -124,7 +125,7 @@ export class ReportingService {
         const content =
           reporting.type === ReportingType.CONTENT
             ? await this.repository.findContent({
-                _id: reporting.id,
+                _id: reporting.payloadId,
                 visibility: [
                   EntityVisibility.Illegal,
                   EntityVisibility.Publish,
@@ -136,7 +137,7 @@ export class ReportingService {
         const user = users?.find((user) => user.id === String(reporting.user));
 
         return {
-          id: reporting.id,
+          id: reporting.payloadId,
           status: reporting.status,
           type: reporting.type,
           user: {
@@ -152,7 +153,7 @@ export class ReportingService {
           reportBy: reporting.reportBy.map((reportByUserId) => {
             const payloadReportBy = reportedBy.find(
               ({ user, payload }) =>
-                String(payload._id) === String(reporting.id) &&
+                String(payload._id) === String(reporting.payloadId) &&
                 String(user) === String(reportByUserId),
             );
 
@@ -172,9 +173,11 @@ export class ReportingService {
               payload:
                 reporting.type === ReportingType.USER
                   ? reportUser?.toPublicResponse()
-                  : this.contentService.toCastPayload({
+                  : payloadReportBy?.payload
+                  ? this.contentService.toCastPayload({
                       content: payloadReportBy?.payload as Content,
-                    }),
+                    })
+                  : undefined,
               createdAt: payloadReportBy?.createdAt,
               updatedAt: payloadReportBy?.updatedAt,
             };
@@ -187,23 +190,17 @@ export class ReportingService {
   }
 
   async getReporting(query?: GetReportingQuery) {
-    this.logger.log(
-      `#pipelineOfGetReporting::${JSON.stringify(
-        pipelineOfGetReporting(query),
-      )}`,
-    );
+    const pipelines = pipelineOfGetReporting(query);
+
+    this.logger.log(`#pipelineOfGetReporting::${JSON.stringify(pipelines)}`);
 
     const [payloadReporting] = await this.repository.aggregateReporting(
-      pipelineOfGetReporting(query),
+      pipelines,
     );
-
-    if (!payloadReporting)
-      return {
-        payload: [],
-      };
 
     return ResponseDto.ok({
       payload: await this.toPayloadReportings(payloadReporting),
+      meta: Meta.fromDocuments(payloadReporting.reportings),
     });
   }
 
