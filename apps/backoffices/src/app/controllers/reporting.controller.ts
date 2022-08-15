@@ -25,12 +25,14 @@ import { ReportingIllegal } from '@castcle-api/database';
 import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
 import {
   Body,
+  CacheInterceptor,
   Get,
   HttpCode,
   HttpStatus,
   Post,
   Query,
   Req,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 import { BackofficeAuth } from '../decorators';
@@ -44,6 +46,7 @@ import { ReportingService } from '../services/reporting.service';
 export class ReportingController {
   constructor(private reportingService: ReportingService) {}
 
+  @UseInterceptors(CacheInterceptor)
   @BackofficeAuth()
   @RequiredPermissions(Permission.Read)
   @Get('reporting')

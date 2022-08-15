@@ -22,32 +22,45 @@
  */
 
 import { Reporting } from '@castcle-api/database';
-import { FilterQuery } from 'mongoose';
+import { FilterQuery, Types } from 'mongoose';
 
 class GetReportingFilter {
   type?: string[];
   status?: string[];
+  sinceId?: string;
+  untilId?: string;
+  maxResults?: number;
 }
 const filterReporting = (filter?: GetReportingFilter) => {
   const query: FilterQuery<Reporting> = {};
   if (filter?.type) query.type = { $in: filter.type } as any;
   if (filter?.status) query.status = { $in: filter.status } as any;
-
+  if (filter.sinceId) {
+    query._id = {
+      $gt: new Types.ObjectId(filter.sinceId),
+    };
+  }
+  if (filter.untilId) {
+    query._id = {
+      $lt: new Types.ObjectId(filter.untilId),
+    };
+  }
   return query;
 };
 export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
   {
-    $sort: { createdAt: -1 },
-  },
-  {
-    $match: filterReporting(filter),
-  },
-  {
     $facet: {
       reportings: [
         {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $match: filterReporting(filter),
+        },
+        {
           $group: {
             _id: '$payload._id',
+            reportingId: { $first: '$_id' },
             reportBy: { $addToSet: '$by' },
             status: { $first: '$status' },
             type: { $first: '$type' },
@@ -60,9 +73,12 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
           $sort: { createdAt: -1 },
         },
         {
+          $limit: filter.maxResults,
+        },
+        {
           $project: {
-            _id: 0,
-            id: '$_id',
+            _id: '$reportingId',
+            payloadId: '$_id',
             reportBy: 1,
             status: 1,
             type: 1,
@@ -73,6 +89,15 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
         },
       ],
       reportedBy: [
+        {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $match: filterReporting(filter),
+        },
+        {
+          $limit: filter.maxResults,
+        },
         {
           $lookup: {
             from: 'metadatas',
@@ -101,7 +126,6 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
         },
         {
           $project: {
-            _id: 0,
             id: '$_id',
             message: 1,
             payload: 1,
