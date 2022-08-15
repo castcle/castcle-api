@@ -43,4 +43,5 @@ export class CastcleRegExp {
   };
 
   static CASTCLE_ID_PATTERN = /^@[\w\s]+$/;
+  static CASTCLE_ID_MAX_LENGTH = 31;
 }
