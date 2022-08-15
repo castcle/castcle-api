@@ -40,7 +40,7 @@ export const getCacheModuleOptions = (): CacheModuleOptions => ({
   host: Environment.REDIS_CACHE_HOST,
   port: Environment.REDIS_CACHE_PORT,
   password: Environment.REDIS_CACHE_PASSWORD,
-  ttl: 1000,
+  ttl: 10,
 });
 
 export const getMongooseModuleOptions = (): MongooseModuleOptions => ({

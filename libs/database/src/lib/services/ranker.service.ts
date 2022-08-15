@@ -23,6 +23,7 @@
 
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { LocalizationLang } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { DocumentDefinition, Model } from 'mongoose';
@@ -125,13 +126,13 @@ export class RankerService {
 
     const filtersGuest = createCastcleFilter(
       {
-        countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en',
+        countryCode:
+          viewer.geolocation?.countryCode?.toLowerCase() ??
+          LocalizationLang.English,
         content: { $nin: excludeContents },
       },
       { ...query, reversePagination: true },
     );
-
-    console.log(filtersDefault);
 
     const pipeline = pipelineOfGetGuestFeedContents({
       filtersDefault,
@@ -141,37 +142,32 @@ export class RankerService {
 
     this.logger.log(JSON.stringify(pipeline), 'getFeeds:aggregate');
 
-    const [feedResponses] =
+    const [{ defaultFeeds, guestFeeds, casts }] =
       await this._defaultContentModel.aggregate<GetGuestFeedContentsResponse>(
         pipeline,
       );
-    //hot fix for defaultFeed
 
-    if (!feedResponses.defaultFeeds.length && !feedResponses.guestFeeds.length)
+    if (!defaultFeeds.length && !guestFeeds.length)
       return {
         payload: [],
         includes: { casts: [], users: [] },
-        meta: { resultCount: 0 },
+        meta: null,
       } as FeedItemResponse;
-    //hot fix guest has id
-    const newDefaultFeeds = feedResponses.defaultFeeds.map((t) => {
-      t.id = 'default';
-      t._id = 'default';
-      return t;
-    });
-    const mergeFeeds = [...newDefaultFeeds, ...feedResponses.guestFeeds];
 
-    const payloadFeeds = await this._feedItemsToPayloadItems(
-      mergeFeeds,
-      undefined,
-      feedResponses.engagements,
+    const mergeFeeds = [...defaultFeeds, ...guestFeeds];
+
+    const payloadFeeds = await this._feedItemsToPayloadItems(mergeFeeds);
+
+    const authors = [
+      ...guestFeeds.map(({ content }) => content.author),
+      ...casts.map(({ author }) => author),
+    ];
+
+    const includesUsers = authors.map((author) =>
+      new Author(author as any).toIncludeUser(),
     );
 
-    const includesUsers = feedResponses.authors.map((author) =>
-      new Author(author).toIncludeUser(),
-    );
-
-    const payloadCasts = feedResponses.casts.map((cast) =>
+    const payloadCasts = casts.map((cast) =>
       signedContentPayloadItem(toUnsignedContentPayloadItem(cast)),
     );
 
@@ -181,7 +177,7 @@ export class RankerService {
         casts: payloadCasts,
         users: includesUsers,
       }),
-      meta: Meta.fromDocuments(mergeFeeds),
+      meta: Meta.fromDocuments(guestFeeds),
     } as FeedItemResponse;
   };
 

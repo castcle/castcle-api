@@ -48,7 +48,6 @@ import {
   HttpStatus,
   Param,
   Post,
-  Put,
   Query,
 } from '@nestjs/common';
 import { ApiResponse } from '@nestjs/swagger';
@@ -84,7 +83,7 @@ export class AdsController {
   @ApiResponse({ status: 204 })
   @HttpCode(HttpStatus.NO_CONTENT)
   @CastcleBasicAuth()
-  @Put(':id/running')
+  @Post(':id/running')
   async adsRunning(@Auth() authorizer: Authorizer, @Param('id') adsId: string) {
     authorizer.requireActivation();
     const adsCampaign = await this._verifyAdsApprove(authorizer.user, adsId);
@@ -105,7 +104,7 @@ export class AdsController {
   @ApiResponse({ status: 204 })
   @HttpCode(HttpStatus.NO_CONTENT)
   @CastcleBasicAuth()
-  @Put(':id/pause')
+  @Post(':id/pause')
   async adsPause(@Auth() authorizer: Authorizer, @Param('id') adsId: string) {
     this.logger.log(`Start pause ads.`);
     authorizer.requireActivation();
@@ -127,7 +126,7 @@ export class AdsController {
   @ApiResponse({ status: 204 })
   @HttpCode(HttpStatus.NO_CONTENT)
   @CastcleBasicAuth()
-  @Put(':id/end')
+  @Post(':id/end')
   async adsEnd(@Auth() authorizer: Authorizer, @Param('id') adsId: string) {
     this.logger.log(`Start end ads.`);
     authorizer.requireActivation();

@@ -22,8 +22,6 @@
  */
 
 import { FilterQuery, PipelineStage, Types } from 'mongoose';
-import { Author, CastcleMetric } from '../dtos';
-import { EngagementType } from '../models';
 import { Content, DefaultContent, FeedItem, GuestFeedItem } from '../schemas';
 
 export class GetFeedContentsResponse {
@@ -38,8 +36,6 @@ export class GetGuestFeedContentsResponse {
   defaultFeeds: FeedItem[];
   guestFeeds: FeedItem[];
   casts: Content[];
-  engagements: CastcleMetric[];
-  authors: Author[];
 }
 
 export class GetFeedContentsParams {
@@ -76,10 +72,9 @@ export const pipelineOfGetGuestFeedContents = ({
     {
       $unionWith: {
         coll: 'guestfeeditems',
-        pipeline: [{ $match: filtersGuest }, { $sort: { createdAt: 1 } }],
+        pipeline: [{ $match: filtersGuest }, { $sort: { score: -1 } }],
       },
     },
-    { $limit: maxResults },
     {
       $facet: {
         defaultFeeds: [
@@ -97,27 +92,26 @@ export const pipelineOfGetGuestFeedContents = ({
           {
             $addFields: { content: { $arrayElemAt: ['$content', 0] } },
           },
+          {
+            $addFields: { _id: 'default' },
+          },
         ],
         guestFeeds: [
           {
             $sort: {
-              createdAt: 1,
+              score: -1,
             },
           },
           {
             $match: { index: { $exists: false } },
           },
+          { $limit: maxResults },
           {
             $lookup: {
               from: 'contents',
               localField: 'content',
               foreignField: '_id',
               as: 'content',
-            },
-          },
-          {
-            $match: {
-              $expr: { $gt: [{ $size: '$content' }, 0] },
             },
           },
           {
@@ -133,6 +127,7 @@ export const pipelineOfGetGuestFeedContents = ({
               ],
             },
           },
+          { $limit: maxResults },
           {
             $lookup: {
               from: 'contents',
@@ -142,137 +137,6 @@ export const pipelineOfGetGuestFeedContents = ({
             },
           },
           { $replaceWith: { $arrayElemAt: ['$content', 0] } as any },
-        ],
-        engagements: [
-          {
-            $lookup: {
-              from: 'engagements',
-              let: { contentId: '$content' },
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $and: [
-                        { $eq: ['$targetRef.$ref', 'content'] },
-                        { $eq: ['$targetRef.$id', '$$contentId'] },
-                      ],
-                    },
-                  },
-                },
-                {
-                  $group: {
-                    _id: '$targetRef.$id',
-                    likeCount: {
-                      $sum: {
-                        $cond: {
-                          if: { $eq: ['$type', EngagementType.Like] },
-                          then: 1,
-                          else: 0,
-                        },
-                      },
-                    },
-                    commentCount: {
-                      $sum: {
-                        $cond: {
-                          if: { $eq: ['$type', EngagementType.Comment] },
-                          then: 1,
-                          else: 0,
-                        },
-                      },
-                    },
-                    quoteCount: {
-                      $sum: {
-                        $cond: {
-                          if: { $eq: ['$type', EngagementType.Quote] },
-                          then: 1,
-                          else: 0,
-                        },
-                      },
-                    },
-                    recastCount: {
-                      $sum: {
-                        $cond: {
-                          if: { $eq: ['$type', EngagementType.Recast] },
-                          then: 1,
-                          else: 0,
-                        },
-                      },
-                    },
-                    // TODO: feature add metric reports
-                    // reportedCount: {
-                    //   $sum: {
-                    //     $cond: {
-                    //       if: { $eq: ['$type', 'reported'] },
-                    //       then: 1,
-                    //       else: 0,
-                    //     },
-                    //   },
-                    // },
-                  },
-                },
-              ],
-              as: 'engagements',
-            },
-          },
-          {
-            $unwind: {
-              path: '$engagements',
-            },
-          },
-          {
-            $replaceRoot: { newRoot: '$engagements' },
-          },
-        ],
-        authors: [
-          {
-            $lookup: {
-              from: 'users',
-              localField: 'author',
-              foreignField: '_id',
-              as: 'author',
-            },
-          },
-          {
-            $lookup: {
-              from: 'users',
-              localField: 'originalAuthor',
-              foreignField: '_id',
-              as: 'originalAuthor',
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              authors: { $addToSet: { $arrayElemAt: ['$author', 0] } },
-              originalAuthors: {
-                $addToSet: {
-                  $cond: {
-                    if: { $gt: [{ $size: '$originalAuthor' }, 0] },
-                    then: { $arrayElemAt: ['$originalAuthor', 0] },
-                    else: '$$REMOVE',
-                  },
-                },
-              },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              authors: { $concatArrays: ['$authors', '$originalAuthors'] },
-            },
-          },
-          { $unwind: '$authors' },
-          { $replaceWith: '$authors' as any },
-          {
-            $project: {
-              id: '$_id',
-              avatar: '$profile.images.avatar',
-              castcleId: '$displayId',
-              displayName: '$displayName',
-              type: '$type',
-              verified: '$verified',
-            },
-          },
         ],
       },
     },
