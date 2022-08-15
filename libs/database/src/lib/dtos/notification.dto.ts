@@ -67,6 +67,7 @@ export enum NotificationLandingPage {
   Cast = 'cast',
   Comment = 'comment',
   Follower = 'follower',
+  Profile = 'profile',
 }
 
 export enum SoundDeviceDefault {

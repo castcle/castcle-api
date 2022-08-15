@@ -221,7 +221,11 @@ describe('NotificationServiceV2', () => {
 
       const landingPage = (service as any).checkNotificationTypePage(
         notify.type,
-        notify.commentRef ? NotificationRef.Comment : NotificationRef.Content,
+        notify.commentRef
+          ? NotificationRef.Comment
+          : notify.contentRef
+          ? NotificationRef.Content
+          : undefined,
       );
       expect(landingPage).toEqual('comment');
     });
@@ -235,7 +239,11 @@ describe('NotificationServiceV2', () => {
 
       const landingPage = (service as any).checkNotificationTypePage(
         notify.type,
-        notify.commentRef ? NotificationRef.Comment : NotificationRef.Content,
+        notify.commentRef
+          ? NotificationRef.Comment
+          : notify.contentRef
+          ? NotificationRef.Content
+          : undefined,
       );
       expect(landingPage).toEqual('follower');
     });
