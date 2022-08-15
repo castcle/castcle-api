@@ -307,7 +307,7 @@ export class AdsService {
       adsItem = {
         id: adsplacement.id,
         type: 'ads-page',
-        payload: [page.toPageResponse()],
+        payload: [page.toPublicResponse()],
         feature: {
           slug: 'feed',
           key: 'feature.feed',
