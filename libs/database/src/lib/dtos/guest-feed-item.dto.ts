@@ -24,7 +24,7 @@
 import { GuestFeedItemType, User } from '../schemas';
 import { CastcleMeta } from './common.dto';
 import { CastcleIncludes, ContentPayloadItem } from './content.dto';
-import { PageResponseDto, UserResponseDto } from './user.dto';
+import { PublicUserResponse } from './user.dto';
 
 export class GuestFeedItemDto {
   content?: any;
@@ -50,7 +50,7 @@ export class FeedItemPayloadItem {
   type: 'content' | 'suggestion-follow' | 'ads-content' | 'ads-page'; // content or suggestion or reminder or ads
   campaignName?: string; //for ads only
   campaignMessage?: string; // for ads only
-  payload: ContentPayloadItem | (UserResponseDto | PageResponseDto)[];
+  payload: ContentPayloadItem | PublicUserResponse[];
 }
 
 export class FeedItemResponse {
