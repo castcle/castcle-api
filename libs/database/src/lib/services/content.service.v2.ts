@@ -150,21 +150,35 @@ export class ContentServiceV2 {
       },
       participate: {
         liked:
-          dto.engagements?.some(({ type }) => type === EngagementType.Like) ??
-          false,
+          dto.engagements?.some(
+            ({ targetRef, type }) =>
+              String(targetRef.oid) === String(dto.content._id) &&
+              type === EngagementType.Like,
+          ) ?? false,
         commented:
           dto.engagements?.some(
-            ({ type }) => type === EngagementType.Comment,
+            ({ targetRef, type }) =>
+              String(targetRef.oid) === String(dto.content._id) &&
+              type === EngagementType.Comment,
           ) ?? false,
         quoted:
-          dto.engagements?.some(({ type }) => type === EngagementType.Quote) ??
-          false,
+          dto.engagements?.some(
+            ({ targetRef, type }) =>
+              String(targetRef.oid) === String(dto.content._id) &&
+              type === EngagementType.Quote,
+          ) ?? false,
         recasted:
-          dto.engagements?.some(({ type }) => type === EngagementType.Recast) ??
-          false,
+          dto.engagements?.some(
+            ({ targetRef, type }) =>
+              String(targetRef.oid) === String(dto.content._id) &&
+              type === EngagementType.Recast,
+          ) ?? false,
         reported:
-          dto.engagements?.some(({ type }) => type === EngagementType.Report) ??
-          false,
+          dto.engagements?.some(
+            ({ targetRef, type }) =>
+              String(targetRef.oid) === String(dto.content._id) &&
+              type === EngagementType.Report,
+          ) ?? false,
       },
       referencedCasts:
         dto.content.isRecast || dto.content.isQuote
