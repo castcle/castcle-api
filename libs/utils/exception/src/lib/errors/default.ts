@@ -466,4 +466,9 @@ export const DefaultErrors = {
     code: '8013',
     message: 'Reporting status not found. Please try again.',
   },
+  ACCOUNT_DISABLED: {
+    statusCode: '403',
+    code: '8014',
+    message: 'Your account has been disabled for violating our terms.',
+  },
 };
