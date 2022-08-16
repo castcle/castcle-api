@@ -25,6 +25,7 @@ import {
   Campaign,
   CampaignSchema,
   CampaignType,
+  QueueName,
   Transaction,
   TransactionSchema,
   TransactionStatus,
@@ -33,6 +34,7 @@ import {
   UserSchema,
   WalletType,
 } from '@castcle-api/database';
+import { getQueueToken } from '@nestjs/bull';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Job } from 'bull';
@@ -58,7 +60,13 @@ describe('TransactionVerifier', () => {
           { name: User.name, schema: UserSchema },
         ]),
       ],
-      providers: [TransactionVerifier],
+      providers: [
+        TransactionVerifier,
+        {
+          provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
+      ],
     }).compile();
 
     verifier = moduleRef.get(TransactionVerifier);

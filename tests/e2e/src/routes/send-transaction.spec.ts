@@ -30,7 +30,7 @@ import {
 } from '@castcle-api/database';
 import { TwilioChannel } from '@castcle-api/utils/clients';
 import { getModelToken } from '@nestjs/mongoose';
-import { app, registerUser, request } from '../utils.spec';
+import { app, registerUser, request, topUp } from '../utils.spec';
 
 export const testSendTransaction = () =>
   describe('wallets/:userId/send/confirm', () => {
@@ -295,11 +295,7 @@ export const testSendTransaction = () =>
           chainId: 'internal',
           visibility: EntityVisibility.Publish,
         }),
-        app().get(TAccountService).topUp({
-          type: WalletType.PERSONAL,
-          value: 1,
-          userId: user.profile.id,
-        }),
+        topUp(user.profile.id, 1),
       ]);
 
       await request()
@@ -350,11 +346,7 @@ export const testSendTransaction = () =>
           chainId: 'internal',
           visibility: EntityVisibility.Publish,
         }),
-        app().get(TAccountService).topUp({
-          type: WalletType.PERSONAL,
-          value: 1,
-          userId: user.profile.id,
-        }),
+        topUp(user.profile.id, 1),
       ]);
 
       await request()
@@ -429,11 +421,7 @@ export const testSendTransaction = () =>
           chainId: 'internal',
           visibility: EntityVisibility.Publish,
         }),
-        app().get(TAccountService).topUp({
-          type: WalletType.PERSONAL,
-          value: 1,
-          userId: user.profile.id,
-        }),
+        topUp(user.profile.id, 1),
       ]);
 
       await request()
@@ -512,11 +500,7 @@ export const testSendTransaction = () =>
           chainId: 'castcle',
           visibility: EntityVisibility.Publish,
         }),
-        app().get(TAccountService).topUp({
-          type: WalletType.PERSONAL,
-          value: 1,
-          userId: user.profile.id,
-        }),
+        topUp(user.profile.id, 1),
       ]);
 
       await request()

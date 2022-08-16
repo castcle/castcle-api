@@ -157,7 +157,7 @@ class VerifyTransactionByMobileDto {
   otp: string;
 }
 
-class VerifyTransactionDto {
+export class VerifyTransactionDto {
   @Type(() => VerifyTransactionByEmailDto)
   @ValidateNested()
   @IsNotEmptyObject()

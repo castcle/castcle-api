@@ -39,7 +39,6 @@ import { UsersController } from './controllers/users.controller';
 import { UsersControllerV2 } from './controllers/users.controller.v2';
 import { WalletController } from './controllers/wallet.controller';
 import { SuggestionService } from './services/suggestion.service';
-import { WalletService } from './services/wallet.service';
 
 @Module({
   imports: [
@@ -63,6 +62,6 @@ import { WalletService } from './services/wallet.service';
     UsersControllerV2,
     WalletController,
   ],
-  providers: [SuggestionService, WalletService],
+  providers: [SuggestionService],
 })
 export class AppModule {}
