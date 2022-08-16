@@ -22,9 +22,8 @@
  */
 
 export class CastcleRegExp {
-  /** Minimum 6 characters. At least 1 capital letter, 1 small letter and 1 number */
-  static PASSWORD_PATTERN =
-    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,}$/;
+  /** Minimum 6 characters. At least 1 capital letter, 1 small letter */
+  static PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,}$/;
 
   static replaceEscapeStrings = (str: string) => {
     return str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
