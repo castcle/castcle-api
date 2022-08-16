@@ -21,8 +21,13 @@
  * or have any questions.
  */
 
-import { Transaction, User } from '@castcle-api/database';
-import { Environment } from '@castcle-api/environments';
+import {
+  EntityVisibility,
+  Network,
+  NetworkType,
+  Repository,
+  Transaction,
+} from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { InjectModel } from '@nestjs/mongoose';
@@ -30,49 +35,53 @@ import { Model } from 'mongoose';
 import {
   WalletBalance,
   pipelineOfGetWalletBalance,
-} from './get-wallet-balance.aggregation';
-import {
-  GetWalletBalanceQuery,
-  GetWalletBalanceResponse,
-} from './get-wallet-balance.query';
+} from '../get-wallet-balance/aggregation';
+import { ReviewTransactionQuery } from './query';
 
-@QueryHandler(GetWalletBalanceQuery)
-export class GetWalletBalanceHandler
-  implements IQueryHandler<GetWalletBalanceQuery>
+@QueryHandler(ReviewTransactionQuery)
+export class ReviewTransactionHandler
+  implements IQueryHandler<ReviewTransactionQuery>
 {
   constructor(
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
-    @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('Network') private networkModel: Model<Network>,
+    private repository: Repository,
   ) {}
 
-  async execute(
-    command: GetWalletBalanceQuery,
-  ): Promise<GetWalletBalanceResponse> {
-    const [[walletBalance], user] = await Promise.all([
+  async execute({
+    chainId,
+    address,
+    amount,
+    requestedBy,
+  }: ReviewTransactionQuery) {
+    const [network, [balance]] = await Promise.all([
+      this.networkModel.findOne({ chainId }),
       this.transactionModel.aggregate<WalletBalance>(
-        pipelineOfGetWalletBalance(command.user._id),
+        pipelineOfGetWalletBalance(requestedBy._id),
       ),
-      command.user instanceof User
-        ? command.user
-        : this.userModel.findById(command.user),
     ]);
 
-    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+    if (!network) {
+      throw new CastcleException('NETWORK_NOT_FOUND');
+    }
+    if (network.visibility !== EntityVisibility.Publish) {
+      throw new CastcleException('NETWORK_TEMPORARILY_DISABLED');
+    }
+    if (amount > Number(balance.personal)) {
+      throw new CastcleException('NOT_ENOUGH_BALANCE');
+    }
+    if (network.type !== NetworkType.INTERNAL) {
+      return { network, isInternalNetwork: false };
+    }
 
-    return new GetWalletBalanceResponse({
-      id: user._id,
-      displayName: user.displayName,
-      castcleId: user.displayId,
-      availableBalance: Number(walletBalance?.available).toFixed(
-        Environment.DECIMALS_FLOAT,
-      ),
-      adsCredit: Number(walletBalance?.ads).toFixed(Environment.DECIMALS_FLOAT),
-      farmBalance: Number(walletBalance?.farm).toFixed(
-        Environment.DECIMALS_FLOAT,
-      ),
-      totalBalance: Number(walletBalance?.total).toFixed(
-        Environment.DECIMALS_FLOAT,
-      ),
-    });
+    const receiver = await this.repository.findUser({ _id: address });
+    if (receiver?.visibility !== EntityVisibility.Publish) {
+      throw new CastcleException('RECEIVER_NOT_FOUND');
+    }
+    if (requestedBy.id === receiver.id) {
+      throw new CastcleException('PAYMENT_TO_OWN_WALLET');
+    }
+
+    return { network, receiver, isInternalNetwork: true };
   }
 }

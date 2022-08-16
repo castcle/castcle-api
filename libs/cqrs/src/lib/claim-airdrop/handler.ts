@@ -45,8 +45,8 @@ import {
   EligibleAccounts,
   pipelineOfDistributeCampaignReward,
   pipelineOfEstimateContentReach,
-} from './claim-airdrop.aggregation';
-import { ClaimAirdropCommand } from './claim-airdrop.command';
+} from './aggregation';
+import { ClaimAirdropCommand } from './command';
 
 @CommandHandler(ClaimAirdropCommand)
 export class ClaimAirdropHandler
