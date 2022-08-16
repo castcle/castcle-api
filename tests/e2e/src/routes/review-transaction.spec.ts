@@ -21,14 +21,9 @@
  * or have any questions.
  */
 
-import {
-  EntityVisibility,
-  NetworkType,
-  TAccountService,
-  WalletType,
-} from '@castcle-api/database';
+import { EntityVisibility, NetworkType } from '@castcle-api/database';
 import { getModelToken } from '@nestjs/mongoose';
-import { app, registerUser, request } from '../utils.spec';
+import { app, registerUser, request, topUp } from '../utils.spec';
 
 export const testReviewTransaction = () =>
   describe('wallets/:userId/send/review', () => {
@@ -224,11 +219,7 @@ export const testReviewTransaction = () =>
           chainId: 'internal',
           visibility: EntityVisibility.Publish,
         }),
-        app().get(TAccountService).topUp({
-          type: WalletType.PERSONAL,
-          value: 1,
-          userId: user.profile.id,
-        }),
+        topUp(user.profile.id, 1),
       ]);
 
       await request()
@@ -266,11 +257,7 @@ export const testReviewTransaction = () =>
           chainId: 'internal',
           visibility: EntityVisibility.Publish,
         }),
-        app().get(TAccountService).topUp({
-          type: WalletType.PERSONAL,
-          value: 1,
-          userId: user.profile.id,
-        }),
+        topUp(user.profile.id, 1),
       ]);
 
       await request()
@@ -306,11 +293,7 @@ export const testReviewTransaction = () =>
           chainId: 'castcle',
           visibility: EntityVisibility.Publish,
         }),
-        app().get(TAccountService).topUp({
-          type: WalletType.PERSONAL,
-          value: 1,
-          userId: user.profile.id,
-        }),
+        topUp(user.profile.id, 1),
       ]);
 
       await request()
