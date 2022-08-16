@@ -26,10 +26,15 @@ import {
   ContentServiceV2,
   ContentType,
   OwnerResponse,
+  Transaction,
+  TransactionStatus,
+  TransactionType,
   User,
+  WalletType,
 } from '@castcle-api/database';
 import { getModelToken } from '@nestjs/mongoose';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { Model } from 'mongoose';
 import * as supertest from 'supertest';
 
 export const app = (): NestFastifyApplication => global.__APP__;
@@ -94,4 +99,22 @@ export const createContent = async (userId: string) => {
     );
 
   return contentPayload as CastPayload;
+};
+
+export const topUp = async (userId: string, amount: number) => {
+  return app()
+    .get<Model<Transaction>>(getModelToken('Transaction'))
+    .create({
+      from: {
+        type: WalletType.EXTERNAL_DEPOSIT,
+        value: amount,
+      },
+      to: {
+        type: WalletType.PERSONAL,
+        value: amount,
+        user: userId,
+      },
+      status: TransactionStatus.VERIFIED,
+      type: TransactionType.DEPOSIT,
+    });
 };

@@ -46,7 +46,7 @@ import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
-import { ClaimAirdropHandler } from './claim-airdrop.handler';
+import { ClaimAirdropHandler } from './handler';
 
 describe('ClaimAirdropHandler', () => {
   let handler: ClaimAirdropHandler;

@@ -28,9 +28,15 @@ import {
   TransactionType,
 } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
-import { OnQueueCompleted, Process, Processor } from '@nestjs/bull';
+import {
+  InjectQueue,
+  OnQueueCompleted,
+  Process,
+  Processor,
+} from '@nestjs/bull';
 import { InjectModel } from '@nestjs/mongoose';
-import { Job } from 'bull';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Job, Queue } from 'bull';
 import { Model, Types } from 'mongoose';
 import {
   TransactionVerification,
@@ -49,7 +55,21 @@ export class TransactionVerifier {
 
   constructor(
     @InjectModel(Transaction.name) private txModel: Model<Transaction>,
+    @InjectQueue(QueueName.NEW_TRANSACTION) private txQueue: Queue<Transaction>,
   ) {}
+
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async addPendingTransactions() {
+    const jobCounts = await this.txQueue.getJobCounts();
+    this.logger.log(`remaining job(s): ${JSON.stringify(jobCounts)}`);
+    if (jobCounts.waiting) return;
+
+    const filter = { status: TransactionStatus.PENDING };
+    const transactions = await this.txModel.find(filter).limit(5);
+    const jobs = transactions.map((tx) => ({ data: tx }));
+    await this.txQueue.addBulk(jobs);
+    this.logger.log(`add new pending transactions: ${jobs.length} job(s)`);
+  }
 
   @Process()
   async handleTransaction({ id, data: tx }: Job<Transaction>) {

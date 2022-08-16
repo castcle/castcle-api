@@ -23,6 +23,8 @@
 import {
   GetWalletBalanceQuery,
   GetWalletBalanceResponse,
+  ReviewTransactionQuery,
+  SendTransactionCommand,
 } from '@castcle-api/cqrs';
 import {
   GetAccountParam,
@@ -58,17 +60,16 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { QueryBus } from '@nestjs/cqrs';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { WalletHistoryQueryDto } from '../dtos/wallet.dto';
-import { WalletService } from '../services/wallet.service';
 
 @CastcleControllerV2({ path: 'wallets' })
 export class WalletController {
   constructor(
+    private commandBus: CommandBus,
     private queryBus: QueryBus,
     private tAccountService: TAccountService,
     private userService: UserServiceV2,
-    private walletService: WalletService,
     private walletShortcutService: WalletShortcutService,
   ) {}
 
@@ -117,10 +118,9 @@ export class WalletController {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    await this.walletService.reviewTransaction({
-      ...transaction,
-      requestedBy: user.id,
-    });
+    await this.queryBus.execute(
+      new ReviewTransactionQuery({ ...transaction, requestedBy: user }),
+    );
   }
 
   @CastcleBasicAuth()
@@ -137,10 +137,9 @@ export class WalletController {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    await this.walletService.sendTransaction({
-      ...dto,
-      requestedBy: user.id,
-    });
+    await this.commandBus.execute(
+      new SendTransactionCommand({ ...dto, requestedBy: user }),
+    );
   }
 
   @CastcleBasicAuth()
