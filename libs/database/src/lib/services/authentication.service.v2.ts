@@ -155,12 +155,24 @@ export class AuthenticationServiceV2 {
 
   private async login(credential: Credential, account: Account) {
     const users = await this.repository.findUsers(
-      { accountId: account._id },
+      {
+        accountId: account._id,
+        visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+      },
       { sort: { updatedAt: -1 } },
     );
 
     const user = users.find((user) => user.type === UserType.PEOPLE);
-    const pages = users.filter((user) => user.type === UserType.PAGE);
+
+    if (user.visibility === EntityVisibility.Illegal)
+      throw new CastcleException('ACCOUNT_DISABLED');
+
+    const pages = users.filter(
+      (user) =>
+        user.type === UserType.PAGE &&
+        user.visibility === EntityVisibility.Publish,
+    );
+
     const tokenPayload = this.generateTokenPayload(credential, user);
     const { accessToken, refreshToken } = await credential.renewTokens(
       tokenPayload,
