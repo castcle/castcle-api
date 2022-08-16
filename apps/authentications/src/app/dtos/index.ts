@@ -26,9 +26,9 @@ import {
   CastcleId,
   OtpObjective,
   PageResponseDto,
+  PasswordPattern,
   UserResponseDto,
 } from '@castcle-api/database';
-import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -38,7 +38,6 @@ import {
   IsNotEmptyObject,
   IsOptional,
   IsString,
-  Matches,
   ValidateNested,
 } from 'class-validator';
 
@@ -74,7 +73,7 @@ class RegisterWithEmailPayload {
   email: string;
 
   @IsString()
-  @Matches(CastcleRegExp.PASSWORD_PATTERN)
+  @PasswordPattern()
   password: string;
 
   @IsString()
