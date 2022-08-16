@@ -57,7 +57,7 @@ describe('CastcleRegExp', () => {
 
     it('should return false if has minimum 6 characters, contains only small and capital letters', () => {
       const text = 'abcDEF';
-      expect(CastcleRegExp.PASSWORD_PATTERN.test(text)).toBeFalsy();
+      expect(CastcleRegExp.PASSWORD_PATTERN.test(text)).toBeTruthy();
     });
 
     it('should return true if has minimum 6 characters, at least 1 capital letter, 1 small letter and 1 number', () => {

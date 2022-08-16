@@ -293,7 +293,7 @@ export const pipelineGetContents = (
               from: 'engagements',
               let: {
                 contentId: '$_id',
-                userId: query.viewer?._id,
+                accountId: query.viewer?.ownerAccount,
               },
               pipeline: [
                 {
@@ -302,7 +302,7 @@ export const pipelineGetContents = (
                       $and: [
                         { $eq: ['$targetRef.$ref', 'content'] },
                         { $eq: ['$targetRef.$id', '$$contentId'] },
-                        { $eq: ['$user', '$$userId'] },
+                        { $eq: ['$account', '$$accountId'] },
                         { $eq: ['$visibility', EntityVisibility.Publish] },
                       ],
                     },
@@ -327,7 +327,7 @@ export const pipelineGetContents = (
               from: 'engagements',
               let: {
                 contentId: '$originalPost._id',
-                userId: query.viewer?._id,
+                accountId: query.viewer?.ownerAccount,
               },
               pipeline: [
                 {
@@ -336,7 +336,7 @@ export const pipelineGetContents = (
                       $and: [
                         { $eq: ['$targetRef.$ref', 'content'] },
                         { $eq: ['$targetRef.$id', '$$contentId'] },
-                        { $eq: ['$user', '$$userId'] },
+                        { $eq: ['$account', '$$accountId'] },
                         { $eq: ['$visibility', EntityVisibility.Publish] },
                       ],
                     },

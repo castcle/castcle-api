@@ -12,3 +12,11 @@ export const CastcleId = () => {
     }),
   );
 };
+
+export const PasswordPattern = () => {
+  return applyDecorators(
+    Matches(CastcleRegExp.PASSWORD_PATTERN, {
+      message: 'The password contains characters that are not allowed.',
+    }),
+  );
+};
