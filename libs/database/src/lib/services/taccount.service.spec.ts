@@ -111,6 +111,10 @@ describe('TAccount Service', () => {
           provide: getQueueToken(QueueName.VERIFY_EMAIL),
           useValue: { add: jest.fn() },
         },
+        {
+          provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 
