@@ -23,10 +23,15 @@
 
 import {
   AdsBoostStatus,
+  AdsCastDto,
   AdsQuery,
-  AdsRequestDto,
   AdsService,
   AdsStatus,
+  AdsUserDto,
+  ContentServiceV2,
+  GetAdsParams,
+  Meta,
+  ResponseDto,
   User,
   UserServiceV2,
 } from '@castcle-api/database';
@@ -35,7 +40,7 @@ import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
-  CastcleBasicAuth,
+  CastcleAuth,
   CastcleClearCacheAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
@@ -50,42 +55,46 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiResponse } from '@nestjs/swagger';
 
 @CastcleControllerV2({ path: 'ads' })
 export class AdsController {
   constructor(
     private adsService: AdsService,
     private userService: UserServiceV2,
+    private contentService: ContentServiceV2,
   ) {}
   private logger = new CastLogger(AdsController.name);
 
-  @CastcleClearCacheAuth(CacheKeyName.Feeds)
-  @Delete(':id')
-  async deleteAds(@Auth() { user }: Authorizer, @Param('id') adsId: string) {
+  private _verifyAdsApprove = async (user: User, adsId: string) => {
     const adsCampaign = await this.adsService.lookupAds(user, adsId);
-    if (!adsCampaign) {
-      throw new CastcleException('FORBIDDEN');
-    }
-    await this.adsService.deleteAdsById(adsId);
-  }
-
-  _verifyAdsApprove = async (user: User, adsId: string) => {
-    const adsCampaign = await this.adsService.lookupAds(user, adsId);
-    if (!adsCampaign || adsCampaign.status !== AdsStatus.Approved) {
+    if (adsCampaign?.status !== AdsStatus.Approved) {
       this.logger.log('Ads campaign not found.');
-      console.log('Ads campaign not found.');
       throw new CastcleException('FORBIDDEN');
     }
     return adsCampaign;
   };
 
-  @ApiResponse({ status: 204 })
+  @CastcleClearCacheAuth(CacheKeyName.Feeds)
+  @Delete(':adsId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @CastcleBasicAuth()
-  @Post(':id/running')
-  async adsRunning(@Auth() authorizer: Authorizer, @Param('id') adsId: string) {
+  async deleteAds(
+    @Auth() authorizer: Authorizer,
+    @Param() { adsId }: GetAdsParams,
+  ) {
     authorizer.requireActivation();
+
+    await this.adsService.deleteAdsById(adsId);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Feeds)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':adsId/running')
+  async adsRunning(
+    @Auth() authorizer: Authorizer,
+    @Param() { adsId }: GetAdsParams,
+  ) {
+    authorizer.requireActivation();
+
     const adsCampaign = await this._verifyAdsApprove(authorizer.user, adsId);
 
     if (adsCampaign.boostStatus !== AdsBoostStatus.Pause) {
@@ -95,17 +104,16 @@ export class AdsController {
       throw new CastcleException('ADS_BOOST_STATUS_MISMATCH');
     }
 
-    await this.adsService.updateAdsBoostStatus(
-      adsCampaign._id,
-      AdsBoostStatus.Running,
-    );
+    await this.adsService.adsRunning(adsCampaign);
   }
 
-  @ApiResponse({ status: 204 })
+  @CastcleClearCacheAuth(CacheKeyName.Feeds)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @CastcleBasicAuth()
-  @Post(':id/pause')
-  async adsPause(@Auth() authorizer: Authorizer, @Param('id') adsId: string) {
+  @Post(':adsId/pause')
+  async adsPause(
+    @Auth() authorizer: Authorizer,
+    @Param() { adsId }: GetAdsParams,
+  ) {
     this.logger.log(`Start pause ads.`);
     authorizer.requireActivation();
     const adsCampaign = await this._verifyAdsApprove(authorizer.user, adsId);
@@ -117,19 +125,20 @@ export class AdsController {
       throw new CastcleException('ADS_BOOST_STATUS_MISMATCH');
     }
 
-    await this.adsService.updateAdsBoostStatus(
-      adsCampaign._id,
-      AdsBoostStatus.Pause,
-    );
+    await this.adsService.adsPause(adsCampaign);
   }
 
-  @ApiResponse({ status: 204 })
+  @CastcleClearCacheAuth(CacheKeyName.Feeds)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @CastcleBasicAuth()
-  @Post(':id/end')
-  async adsEnd(@Auth() authorizer: Authorizer, @Param('id') adsId: string) {
+  @Post(':adsId/end')
+  async adsEnd(
+    @Auth() authorizer: Authorizer,
+    @Param() { adsId }: GetAdsParams,
+  ) {
     this.logger.log(`Start end ads.`);
+
     authorizer.requireActivation();
+
     const adsCampaign = await this._verifyAdsApprove(authorizer.user, adsId);
 
     if (
@@ -151,16 +160,48 @@ export class AdsController {
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Feeds)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':adsId/cancel')
+  async adsCancel(
+    @Auth() authorizer: Authorizer,
+    @Param() { adsId }: GetAdsParams,
+  ) {
+    this.logger.log(`Start cancel ads.`);
+
+    authorizer.requireActivation();
+
+    const adsCampaign = await this.adsService.lookupAds(authorizer.user, adsId);
+
+    if (adsCampaign.boostStatus === AdsBoostStatus.Unknown) {
+      this.logger.log(
+        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`,
+      );
+      throw new CastcleException('AD_RUNNING_CAN_NOT_CANCEL');
+    }
+
+    await this.adsService.updateAdsBoostStatus(
+      adsCampaign._id,
+      AdsBoostStatus.End,
+    );
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Feeds)
   @Post('user')
   async createUserAds(
     @Auth() authorizer: Authorizer,
-    @Body() adsRequestDto: AdsRequestDto,
+    @Body() adsRequestDto: AdsUserDto,
   ) {
     authorizer.requireActivation();
+
     const user = await this.userService.getUser(adsRequestDto.castcleId);
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
     authorizer.requestAccessForAccount(user.ownerAccount);
-    const ad = await this.adsService.createAds(authorizer.user, adsRequestDto);
-    const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
+
+    const ad = await this.adsService.createAds(user, adsRequestDto);
+    const [adResponse] = await this.adsService.convertAdsToAdResponses(
+      [ad],
+      true,
+    );
     return adResponse;
   }
 
@@ -168,29 +209,50 @@ export class AdsController {
   @Post('cast')
   async createCastAds(
     @Auth() authorizer: Authorizer,
-    @Body() adsRequestDto: AdsRequestDto,
+    @Body() adsRequestDto: AdsCastDto,
   ) {
     authorizer.requireActivation();
-    const ad = await this.adsService.createAds(authorizer.user, adsRequestDto);
+
+    const content = await this.contentService.findContent(
+      adsRequestDto.contentId,
+    );
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
+
+    const user = await this.userService.getUser(content.author.id);
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
+    const ad = await this.adsService.createAds(user, adsRequestDto);
     const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
     return adResponse;
   }
 
-  @CastcleBasicAuth()
-  @Get(':id')
-  async lookupAds(@Auth() authorizer: Authorizer, @Param('id') adsId: string) {
+  @CastcleAuth(CacheKeyName.Users)
+  @Get(':adsId')
+  async lookupAds(
+    @Auth() authorizer: Authorizer,
+    @Param() { adsId }: GetAdsParams,
+  ) {
     authorizer.requireActivation();
+
     const ad = await this.adsService.lookupAds(authorizer.user, adsId);
-    if (!ad) return;
-    const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
+    if (!ad) throw new CastcleException('AD_NOT_FOUND');
+
+    const [adResponse] = await this.adsService.convertAdsToAdResponses(
+      [ad],
+      true,
+    );
     return adResponse;
   }
 
-  @CastcleBasicAuth()
+  @CastcleAuth(CacheKeyName.Users)
   @Get()
   async listAds(@Auth() authorizer: Authorizer, @Query() adsQuery: AdsQuery) {
     authorizer.requireActivation();
+
     const ads = await this.adsService.getListAds(authorizer.user, adsQuery);
-    return this.adsService.convertAdsToAdResponses(ads);
+    return ResponseDto.ok({
+      payload: await this.adsService.convertAdsToAdResponses(ads),
+      meta: Meta.fromDocuments(ads),
+    });
   }
 }

@@ -50,18 +50,19 @@ export class CastcleLocalization {
       default:
         switch (displayNames.length) {
           case 1:
-            return `${displayNames[0]} like ${page || 'your'} cast`;
+            return `${displayNames[0]} like ${page || 'your'} cast.`;
           case 2:
             return `${displayNames[0]} and ${displayNames[1]} like ${
               page || 'your'
-            } cast`;
+            } cast.`;
           default:
             return `${displayNames[0]}, ${displayNames[1]} and ${
               displayNames.length - 2
-            } other people like ${page || 'your'} cast`;
+            } other people like ${page || 'your'} cast.`;
         }
     }
   };
+
   static getTemplateComment = (
     language: string,
     displayNames: string[],
@@ -86,18 +87,19 @@ export class CastcleLocalization {
       default:
         switch (displayNames.length) {
           case 1:
-            return `${displayNames[0]} commented on ${page || 'your'} cast`;
+            return `${displayNames[0]} commented on ${page || 'your'} cast.`;
           case 2:
             return `${displayNames[0]} and ${displayNames[1]} commented on ${
               page || 'your'
-            } cast`;
+            } cast.`;
           default:
             return `${displayNames[0]}, ${displayNames[1]} and ${
               displayNames.length - 2
-            } other people commented on ${page || 'your'} cast`;
+            } other people commented on ${page || 'your'} cast.`;
         }
     }
   };
+
   static getTemplateFarm = (
     language: string,
     displayNames: string[],
@@ -122,18 +124,19 @@ export class CastcleLocalization {
       default:
         switch (displayNames.length) {
           case 1:
-            return `${displayNames[0]} farm ${page || 'your'} cast`;
+            return `${displayNames[0]} farm ${page || 'your'} cast.`;
           case 2:
             return `${displayNames[0]} and ${displayNames[1]} farm ${
               page || 'your'
-            } cast`;
+            } cast.`;
           default:
             return `${displayNames[0]}, ${displayNames[1]} and ${
               displayNames.length - 2
-            } other people farm ${page || 'your'} cast`;
+            } other people farm ${page || 'your'} cast.`;
         }
     }
   };
+
   static getTemplateQuote = (
     language: string,
     displayNames: string[],
@@ -158,18 +161,19 @@ export class CastcleLocalization {
       default:
         switch (displayNames.length) {
           case 1:
-            return `${displayNames[0]} quote ${page || 'your'} cast`;
+            return `${displayNames[0]} quote ${page || 'your'} cast.`;
           case 2:
             return `${displayNames[0]} and ${displayNames[1]} quote ${
               page || 'your'
-            } cast`;
+            } cast.`;
           default:
             return `${displayNames[0]}, ${displayNames[1]} and ${
               displayNames.length - 2
-            } other people quote ${page || 'your'} cast`;
+            } other people quote ${page || 'your'} cast.`;
         }
     }
   };
+
   static getTemplateRecast = (
     language: string,
     displayNames: string[],
@@ -194,18 +198,19 @@ export class CastcleLocalization {
       default:
         switch (displayNames.length) {
           case 1:
-            return `${displayNames[0]} recast ${page || 'your'} cast`;
+            return `${displayNames[0]} recast ${page || 'your'} cast.`;
           case 2:
             return `${displayNames[0]} and ${displayNames[1]} recast ${
               page || 'your'
-            } cast`;
+            } cast.`;
           default:
             return `${displayNames[0]}, ${displayNames[1]} and ${
               displayNames.length - 2
-            } other people recast ${page || 'your'} cast`;
+            } other people recast ${page || 'your'} cast.`;
         }
     }
   };
+
   static getTemplateReply = (
     language: string,
     displayNames: string[],
@@ -232,18 +237,19 @@ export class CastcleLocalization {
           case 1:
             return `${displayNames[0]} reply commented on ${
               page || 'your'
-            } cast`;
+            } cast.`;
           case 2:
             return `${displayNames[0]} and ${
               displayNames[1]
-            } reply commented on ${page || 'your'} cast`;
+            } reply commented on ${page || 'your'} cast.`;
           default:
             return `${displayNames[0]}, ${displayNames[1]} and ${
               displayNames.length - 2
-            } other people reply commented on ${page || 'your'} cast`;
+            } other people reply commented on ${page || 'your'} cast.`;
         }
     }
   };
+
   static getTemplateSystem = (language: string, displayNames: string[]) => {
     switch (language) {
       case LocalizationLang.Thai:
@@ -266,6 +272,7 @@ export class CastcleLocalization {
         }
     }
   };
+
   static getTemplateTag = (
     language: string,
     displayNames: string[],
@@ -288,59 +295,61 @@ export class CastcleLocalization {
       default:
         switch (displayNames.length) {
           case 1:
-            return `${displayNames[0]} tag to ${page || 'you'}`;
+            return `${displayNames[0]} tag to ${page || 'you'}.`;
           case 2:
             return `${displayNames[0]} and ${displayNames[1]} tag to ${
               page || 'you'
-            }`;
+            }.`;
           default:
             return `${displayNames[0]}, ${displayNames[1]} and ${
               displayNames.length - 2
-            } other people tag to ${page || 'you'}`;
+            } other people tag to ${page || 'you'}.`;
         }
     }
   };
+
   static getTemplateAdsApprove = (language: string) => {
     switch (language) {
       case LocalizationLang.Thai:
         return `โฆษณาของคุณได้รับการอนุมัติเรียบร้อยแล้ว`;
       default:
-        return `Your ads has been approved`;
+        return `Your ads has been approved.`;
     }
   };
+
   static getTemplateAdsDecline = (language: string) => {
     switch (language) {
       case LocalizationLang.Thai:
         return `โฆษณาของคุณปฏิเสธ กรุณาตรวจสอบใหม่อีกครั้ง`;
       default:
-        return `Your ads is declined. Please check again`;
+        return `Your ads is declined. Please check again.`;
     }
   };
 
   static getTemplateIllegalDone = (language: string) => {
     switch (language) {
       case LocalizationLang.Thai:
-        return `Cast violates Castcle Terms and Agreement. Please review`;
+        return `Cast violates Castcle Terms and Agreement. Please review.`;
       default:
-        return `Cast violates Castcle Terms and Agreement. Please review`;
+        return `Cast violates Castcle Terms and Agreement. Please review.`;
     }
   };
 
   static getTemplateIllegalClosed = (language: string) => {
     switch (language) {
       case LocalizationLang.Thai:
-        return `Your cast has been removed by Castcle's admin`;
+        return `Your cast has been removed by Castcle's admin.`;
       default:
-        return `Your cast has been removed by Castcle's admin`;
+        return `Your cast has been removed by Castcle's admin.`;
     }
   };
 
   static getTemplateNotIllegal = (language: string) => {
     switch (language) {
       case LocalizationLang.Thai:
-        return `Your Cast has been reviewed. It will become visible again`;
+        return `Your Cast has been reviewed. It will become visible again.`;
       default:
-        return `Your Cast has been reviewed. It will become visible again`;
+        return `Your Cast has been reviewed. It will become visible again.`;
     }
   };
 
@@ -370,18 +379,19 @@ export class CastcleLocalization {
           case 1:
             return `${displayNames[0]} like commented on ${
               page || 'your'
-            } cast`;
+            } cast.`;
           case 2:
             return `${displayNames[0]} and ${
               displayNames[1]
-            } like commented on ${page || 'your'} cast`;
+            } like commented on ${page || 'your'} cast.`;
           default:
             return `${displayNames[0]}, ${displayNames[1]} and ${
               displayNames.length - 2
-            } other people like commented on ${page || 'your'} cast`;
+            } other people like commented on ${page || 'your'} cast.`;
         }
     }
   };
+
   static getTemplateFollow = (
     language: string,
     displayNames: string[],
@@ -404,15 +414,15 @@ export class CastcleLocalization {
       default:
         switch (displayNames.length) {
           case 1:
-            return `${displayNames[0]} started following ${page || 'you'}`;
+            return `${displayNames[0]} started following ${page || 'you'}.`;
           case 2:
             return `${displayNames[0]} and ${
               displayNames[1]
-            } started following ${page || 'you'}`;
+            } started following ${page || 'you'}.`;
           default:
             return `${displayNames[0]}, ${displayNames[1]} and ${
               displayNames.length - 2
-            } other people started following ${page || 'you'}`;
+            } other people started following ${page || 'you'}.`;
         }
     }
   };

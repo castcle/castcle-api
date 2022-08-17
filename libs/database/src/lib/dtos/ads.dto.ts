@@ -24,6 +24,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEnum,
+  IsMongoId,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -33,6 +34,7 @@ import {
   AdsBidType,
   AdsBoostType,
   AdsObjective,
+  AdsPaymentMethod,
   FilterInterval,
 } from '../models';
 import { AdsCampaign } from '../schemas';
@@ -56,7 +58,7 @@ export class AdsRequestDto {
   @ApiProperty()
   campaignMessage: string;
 
-  @IsEnum([AdsObjective.Engagement, AdsObjective.Reach])
+  @IsEnum(AdsObjective)
   @IsNotEmpty()
   @ApiProperty()
   objective: AdsObjective;
@@ -113,6 +115,8 @@ export class AdsResponse {
   engagement: any;
   createdAt: Date;
   updatedAt: Date;
+  startAt?: Date;
+  endedAt?: Date;
 }
 
 export class AdsCampaignStatisticResponse {
@@ -131,10 +135,62 @@ export class AdsCampaignStatisticResponse {
 
 export class AdsQuery extends PaginationQuery {
   @IsOptional()
-  @IsEnum(FilterInterval)
-  filter?: FilterInterval;
+  @IsString()
+  timezone? = '+00:00';
 
   @IsOptional()
+  @IsEnum(FilterInterval)
+  filter?: FilterInterval;
+}
+
+export class GetAdsParams {
+  @IsNotEmpty()
+  @IsMongoId()
+  adsId: string;
+}
+
+export class AdsDto {
   @IsString()
-  timezone = '+00:00';
+  @IsNotEmpty()
+  campaignName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  campaignMessage: string;
+
+  @IsEnum(AdsObjective)
+  @IsNotEmpty()
+  objective: AdsObjective;
+
+  @IsNumber()
+  @IsNotEmpty()
+  dailyBudget: number;
+
+  @IsEnum(AdsBidType)
+  @IsNotEmpty()
+  dailyBidType: AdsBidType;
+
+  @IsNumber()
+  @IsOptional()
+  dailyBidValue?: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  duration: number;
+
+  @IsNotEmpty()
+  @IsEnum(AdsPaymentMethod)
+  paymentMethod: AdsPaymentMethod;
+}
+
+export class AdsCastDto extends AdsDto {
+  @IsNotEmpty()
+  @IsMongoId()
+  contentId: string;
+}
+
+export class AdsUserDto extends AdsDto {
+  @IsNotEmpty()
+  @IsString()
+  castcleId: string;
 }

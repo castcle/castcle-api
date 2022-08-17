@@ -22,6 +22,7 @@
  */
 
 import { CastcleBullModule, Environment } from '@castcle-api/environments';
+import { Downloader } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
   GoogleClient,
@@ -47,6 +48,7 @@ import {
   MongooseForFeatures,
   NotificationServiceV2,
   RankerService,
+  SocialSyncServiceV2,
   SuggestionServiceV2,
   TAccountService,
   UserService,
@@ -61,6 +63,7 @@ import {
   QueueName,
   ReportingStatus,
   ReportingSubject,
+  SocialProvider,
   UserType,
 } from '../models';
 import { Repository } from '../repositories';
@@ -107,12 +110,14 @@ describe('UserServiceV2', () => {
         CommentService,
         ContentService,
         DataService,
+        Downloader,
         HashtagService,
         MockUserService,
         NotificationServiceV2,
         RankerService,
         Repository,
         SuggestionServiceV2,
+        SocialSyncServiceV2,
         TAccountService,
         UserService,
         UserServiceV2,
@@ -404,6 +409,28 @@ describe('UserServiceV2', () => {
     it('should return page of user when created', async () => {
       const pages = await userServiceV2.getMyPages(userDemo);
       expect(pages[0]).toBeDefined();
+    });
+
+    it('should return page when user create page with syncsocial', async () => {
+      const page = await userServiceV2.createPageAndSyncSocial(userDemo, {
+        provider: SocialProvider.Twitter,
+        socialId: 'twitterId',
+        userName: 'evekung',
+        displayName: 'evejung',
+      } as any);
+
+      expect(page.castcleId).toEqual('@evekung');
+    });
+
+    it('should add postfix if castcleid exist', async () => {
+      const page = await userServiceV2.createPageAndSyncSocial(userDemo, {
+        provider: SocialProvider.Twitter,
+        socialId: 'twitterId',
+        userName: 'evekung',
+        displayName: 'evejung',
+      } as any);
+
+      expect(page.castcleId).toEqual('@evekung1');
     });
   });
 

@@ -33,10 +33,12 @@ import {
   NotificationServiceV2,
   QRCodeImageSize,
   QueueName,
+  SocialSyncServiceV2,
   UserService,
   UserServiceV2,
   generateMockUsers,
 } from '@castcle-api/database';
+import { Downloader } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
@@ -74,6 +76,8 @@ describe('QRCodeControllerV2', () => {
         Repository,
         UserService,
         UserServiceV2,
+        { provide: SocialSyncServiceV2, useValue: {} },
+        { provide: Downloader, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: HashtagService, useValue: {} },
         { provide: Mailer, useValue: {} },

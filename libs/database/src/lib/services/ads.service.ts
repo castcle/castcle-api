@@ -22,10 +22,11 @@
  */
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { CastcleDate } from '@castcle-api/utils/commons';
+import { CastcleDate, LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { DateTime } from 'luxon';
 import { DBRef } from 'mongodb';
 import { ClientSession, Document, FilterQuery, Model, Types } from 'mongoose';
 import {
@@ -39,6 +40,8 @@ import {
   ContentPayloadItem,
   FeedItemPayloadItem,
   FeedItemResponse,
+  NotificationSource,
+  NotificationType,
 } from '../dtos';
 import {
   AdsBoostStatus,
@@ -67,6 +70,7 @@ import {
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { createCastcleFilter } from '../utils/common';
 import { DataService } from './data.service';
+import { NotificationServiceV2 } from './notification.service.v2';
 import { TAccountService } from './taccount.service';
 
 /**
@@ -90,24 +94,16 @@ export class AdsService {
     private dataService: DataService,
     private tAccountService: TAccountService,
     private repository: Repository,
+    private notificationService: NotificationServiceV2,
   ) {}
 
-  async find(dto: {
-    adStatus: AdsStatus[];
-    boostStatus: AdsBoostStatus[];
-    boostType: AdsBoostType[];
-  }) {
-    const query: FilterQuery<Ad> = {};
-    if (dto.adStatus) query.status = { $in: dto.adStatus };
-    if (dto.boostStatus) query.boostStatus = { $in: dto.boostStatus };
-    if (dto.boostType) query['adsRef.$ref'] = { $in: dto.boostType };
-
-    const campaigns = await this.adsModel
-      .find(query)
-      .sort({ createdAt: 'desc' });
-
-    return campaigns;
-  }
+  private runningCodeAd = () => {
+    const dateString = String(Date.now());
+    return `ADS${dateString.substring(
+      dateString.length - 5,
+      dateString.length,
+    )}`;
+  };
 
   private isContentAd = (ad: { adsRef: DBRef }) => {
     return ad.adsRef.collection === AdsBoostType.Content;
@@ -117,7 +113,39 @@ export class AdsService {
     return ({ _id }: Document) => String(_id) === String(ad.adsRef.oid);
   };
 
-  convertAdsToAdResponses = async (ads: Ad[]) => {
+  private _getUserIds = async (ownerAccount: any, _id: any) => {
+    const pages = await this.userModel.find({
+      ownerAccount: ownerAccount,
+      type: UserType.PAGE,
+    });
+
+    const ids = pages.map((p) => p._id);
+
+    return [...ids, _id];
+  };
+
+  private validateAds = async (user: User, adsRequest: AdsRequestDto) => {
+    const balance = await this.tAccountService.getAccountBalance(
+      user.id,
+      adsRequest.paymentMethod === AdsPaymentMethod.ADS_CREDIT
+        ? WalletType.ADS
+        : WalletType.PERSONAL,
+    );
+    this.logger.log(
+      `balance : ${balance}
+       cast price : ${balance / mockOracleService.getCastPrice()}
+       daily budget : ${adsRequest.dailyBudget}
+      `,
+      'validateAds:checking',
+    );
+
+    return balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget;
+  };
+
+  private auctionAds = async (accountId: string) =>
+    (await this.getAds(accountId))[0];
+
+  convertAdsToAdResponses = async (ads: Ad[], excludeUser?: boolean) => {
     const contentIds = [];
     const userIds = [];
 
@@ -130,8 +158,14 @@ export class AdsService {
       this.userModel.find({ _id: { $in: userIds } }),
     ]);
 
+    const usersContent = contents.length
+      ? await this.repository.findUsers({
+          _id: [...contents.map(({ author }) => author.id)],
+        })
+      : [];
+
     return ads.map<AdsResponse>((ad) => ({
-      id: ad.id,
+      id: ad._id,
       campaignName: ad.detail.name,
       campaignMessage: ad.detail.message,
       adStatus: ad.status,
@@ -145,6 +179,8 @@ export class AdsService {
       dailyBidType: ad.detail.dailyBidType,
       dailyBidValue: ad.detail.dailyBidValue,
       objective: ad.objective,
+      startedAt: ad.startAt,
+      endedAt: ad.endedAt,
       payload: this.isContentAd(ad)
         ? contents.find(this.isPayloadOf(ad))?.toContentPayloadItem()
         : users.find(this.isPayloadOf(ad))?.toPublicResponse(),
@@ -158,23 +194,79 @@ export class AdsService {
       },
       createdAt: ad.createdAt,
       updatedAt: ad.updatedAt,
+      includes: !excludeUser
+        ? {
+            users: [
+              [...usersContent, ...users]
+                .find(
+                  ({ id }) =>
+                    id ===
+                    String(contents.find(this.isPayloadOf(ad)).author.id),
+                )
+                ?.toPublicResponse(),
+            ],
+          }
+        : undefined,
     }));
+  };
+
+  find = async (dto: {
+    adStatus: AdsStatus[];
+    boostStatus: AdsBoostStatus[];
+    boostType: AdsBoostType[];
+  }) => {
+    const query: FilterQuery<Ad> = {};
+    if (dto.adStatus) query.status = { $in: dto.adStatus };
+    if (dto.boostStatus) query.boostStatus = { $in: dto.boostStatus };
+    if (dto.boostType) query['adsRef.$ref'] = { $in: dto.boostType };
+
+    return this.adsModel.find(query).sort({ createdAt: 'desc' });
   };
 
   approveAd = async (adId: string) => {
     const ad = await this.adsModel.findById(adId);
     if (!ad) throw new CastcleException('AD_NOT_FOUND');
+
+    if (![AdsStatus.Declined, AdsStatus.Processing].includes(ad.status)) {
+      throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
+    }
+
     if (ad.status === AdsStatus.Processing) {
       ad.boostStatus = AdsBoostStatus.Running;
       ad.status = AdsStatus.Approved;
-      return ad.save();
     }
     if (ad.status === AdsStatus.Declined) {
       ad.status = AdsStatus.Approved;
-      return ad.save();
     }
 
-    throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
+    ad.startAt = DateTime.local().toJSDate();
+    ad.endedAt = DateTime.local().plus({ days: ad.detail.duration }).toJSDate();
+
+    await ad.save();
+
+    const userOwner = await this.repository.findUser({
+      _id: ad.owner as any,
+    });
+
+    const accountOwner = await this.repository.findAccount({
+      _id: userOwner.ownerAccount as any,
+    });
+
+    await this.notificationService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: undefined,
+        type: NotificationType.AdsApprove,
+        advertiseId: ad._id,
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      accountOwner?.preferences?.languages[0] || LocalizationLang.English,
+    );
   };
 
   declineAd = async (adId: string, statusReason: string) => {
@@ -184,7 +276,31 @@ export class AdsService {
       throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
     }
 
-    return ad.set({ status: AdsStatus.Declined, statusReason }).save();
+    const userOwner = await this.repository.findUser({
+      _id: ad.owner as any,
+    });
+
+    const accountOwner = await this.repository.findAccount({
+      _id: userOwner.ownerAccount as any,
+    });
+
+    await this.notificationService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: undefined,
+        type: NotificationType.AdsDecline,
+        advertiseId: ad._id,
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      accountOwner?.preferences?.languages[0] || LocalizationLang.English,
+    );
+
+    await ad.set({ status: AdsStatus.Declined, statusReason }).save();
   };
 
   selectContentAds = async (
@@ -327,120 +443,75 @@ export class AdsService {
     return feeds;
   };
 
-  /**
-   * Validate if ads owner can create ads or not
-   * @param user
-   * @param adsRequest
-   * @returns
-   */
-  validateAds = async (user: User, adsRequest: AdsRequestDto) => {
-    const balance = await this.tAccountService.getAccountBalance(
-      user.id,
-      adsRequest.paymentMethod === AdsPaymentMethod.ADS_CREDIT
-        ? WalletType.ADS
-        : WalletType.PERSONAL,
-    );
-    //invalid balance
-    if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
-      return false;
-    return true;
-  };
-
   updateAllAdsStatus = async () => {
-    const runningCampaigns = await this.adsModel.find({
-      boostStatus: AdsBoostStatus.Running,
-    });
     //update daily Spent
 
-    runningCampaigns[0].statistics.dailySpent = 0;
-  };
-
-  getAdsRef = async (user: User, adsRequest: AdsRequestDto) => {
-    if (adsRequest.castcleId) {
-      try {
-        const requestUser = await this.repository.findUser({
-          castcleId: adsRequest.castcleId,
-        });
-        //check permission
-        if (String(user.ownerAccount) === String(requestUser.ownerAccount))
-          return new DBRef('user', new Types.ObjectId(requestUser.id));
-        else throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
-      } catch (e) {
-        throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
-      }
-    } else {
-      const content = await this.contentModel.findById(adsRequest.contentId);
-      if (String(content.author.id) === String(user._id))
-        return new DBRef('content', new Types.ObjectId(adsRequest.contentId));
-      else throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
-    }
-  };
-
-  /**
-   * Create a ads campaign
-   * @param user
-   * @param adsRequest
-   * @returns {Ad}
-   */
-  createAds = async (user: User, adsRequest: AdsRequestDto) => {
-    const adsRef = await this.getAdsRef(user, adsRequest);
-
-    if (!(await this.validateAds(user, adsRequest)))
-      throw new CastcleException('INVALID_TRANSACTIONS_DATA');
-    console.log(
-      JSON.stringify({
-        adsRef: adsRef,
-        owner: user.id,
-        objective: adsRequest.objective,
-        detail: {
-          name: adsRequest.campaignName,
-          message: adsRequest.campaignMessage,
-          code: user._id + Math.random(), //TODO !!! have to change according to biz logic for example ADSPAGE00001  = 1 ads that promote page or it have to linked with owner account from the code
-          dailyBudget: adsRequest.dailyBudget,
-          duration: adsRequest.duration,
-          paymentMethod: adsRequest.paymentMethod,
-          dailyBidType: adsRequest.dailyBidType,
-          dailyBidValue: adsRequest.dailyBidValue,
-        } as AdsDetail,
-        statistics: DefaultAdsStatistic,
-        status: AdsStatus.Processing,
-        boostStatus: AdsBoostStatus.Unknown,
-      }),
+    await this.adsModel.updateMany(
+      {
+        boostStatus: AdsBoostStatus.Running,
+      },
+      { $set: { 'statistics.dailySpent': new Types.Decimal128('0') } },
     );
-    return new this.adsModel({
+  };
+
+  getAdsRef = async (user: User, { castcleId, contentId }: AdsRequestDto) => {
+    if (castcleId) {
+      const requestUser = await this.repository.findUser({
+        castcleId: castcleId,
+      });
+
+      if (String(user.ownerAccount) !== String(requestUser.ownerAccount))
+        throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
+
+      return new DBRef('user', new Types.ObjectId(requestUser.id));
+    }
+
+    const content = await this.contentModel.findById(contentId);
+
+    if (String(content.author.id) !== user.id)
+      throw new CastcleException('ACTION_CANNOT_BE_COMPLETED');
+
+    return new DBRef('content', new Types.ObjectId(contentId));
+  };
+
+  createAds = async (user: User, adsRequest: AdsRequestDto) => {
+    const [adsRef, validateAds] = await Promise.all([
+      this.getAdsRef(user, adsRequest),
+      this.validateAds(user, adsRequest),
+    ]);
+
+    if (!validateAds) throw new CastcleException('NOT_ENOUGH_BALANCE');
+
+    const adDto = {
       adsRef: adsRef,
-      owner: user.id,
+      owner: user._id,
       objective: adsRequest.objective,
-      detail: {
+      detail: <AdsDetail>{
         name: adsRequest.campaignName,
         message: adsRequest.campaignMessage,
-        code: user._id + Math.random(), //TODO !!! have to change according to biz logic for example ADSPAGE00001  = 1 ads that promote page or it have to linked with owner account from the code
+        code: this.runningCodeAd(),
         dailyBudget: adsRequest.dailyBudget,
         duration: adsRequest.duration,
         paymentMethod: adsRequest.paymentMethod,
         dailyBidType: adsRequest.dailyBidType,
         dailyBidValue: adsRequest.dailyBidValue,
-      } as AdsDetail,
+      },
       statistics: DefaultAdsStatistic,
       status: AdsStatus.Processing,
       boostStatus: AdsBoostStatus.Unknown,
-    }).save();
+    };
+
+    this.logger.log(JSON.stringify(adDto), 'adDto:createAds');
+
+    const ad = await new this.adsModel(adDto).save();
+
+    return this.lookupAds(user, ad._id);
   };
 
-  async _getUserIds(ownerAccount: any, _id: any) {
-    const pages = await this.userModel.find({
-      ownerAccount: ownerAccount,
-      type: UserType.PAGE,
-    });
-    const ids = pages.map((p) => p._id);
-    ids.push(_id);
-    return ids;
-  }
-
-  async getListAds(
+  getListAds = async (
     { _id, ownerAccount }: User,
     { sinceId, untilId, maxResults, filter, timezone }: AdsQuery,
-  ) {
+  ) => {
     const ids = await this._getUserIds(ownerAccount, _id);
     const filters: FilterQuery<Ad> = createCastcleFilter(
       { owner: { $in: ids } },
@@ -461,24 +532,41 @@ export class AdsService {
       };
     }
 
-    return this.adsModel
-      .find(filters)
-      .limit(maxResults)
-      .sort({ createdAt: -1, _id: -1 });
-  }
+    return this.adsModel.aggregate([
+      { $sort: { createdAt: -1, _id: -1 } },
+      { $match: filters },
+      { $limit: maxResults },
+      {
+        $addFields: {
+          'statistics.dailySpent': { $toDouble: '$statistics.dailySpent' },
+          'statistics.budgetSpent': { $toDouble: '$statistics.budgetSpent' },
+        },
+      },
+    ]);
+  };
 
-  async lookupAds({ _id, ownerAccount }: User, adsId: string) {
+  lookupAds = async ({ _id, ownerAccount }: User, adsId: string) => {
     const ids = await this._getUserIds(ownerAccount, _id);
-    ids.push(_id);
-    return this.adsModel
-      .findOne({
-        owner: { $in: ids },
-        _id: adsId,
-      })
-      .exec();
-  }
 
-  async updateAdsById(adsId: string, adsRequest: AdsRequestDto) {
+    const [ad] = await this.adsModel.aggregate<Ad>([
+      {
+        $match: {
+          owner: { $in: [...ids, _id] },
+          _id: new Types.ObjectId(adsId),
+        },
+      },
+      {
+        $addFields: {
+          'statistics.dailySpent': { $toDouble: '$statistics.dailySpent' },
+          'statistics.budgetSpent': { $toDouble: '$statistics.budgetSpent' },
+        },
+      },
+    ]);
+
+    return ad;
+  };
+
+  updateAdsById = async (adsId: string, adsRequest: AdsRequestDto) => {
     return this.adsModel.updateOne(
       { _id: adsId, status: AdsStatus.Processing },
       {
@@ -493,15 +581,24 @@ export class AdsService {
         },
       },
     );
-  }
-  async deleteAdsById(adsId: string) {
-    return this.adsModel.deleteOne({
-      _id: adsId,
-      status: AdsStatus.Processing,
-    });
-  }
+  };
 
-  async updateAdsBoostStatus(adsId: string, adsBoostStatus: AdsBoostStatus) {
+  deleteAdsById = async (adsId: string) => {
+    const ad = await this.adsModel.findOne({
+      _id: adsId,
+    });
+    if (!ad) throw new CastcleException('AD_NOT_FOUND');
+
+    if (ad.status !== AdsStatus.Processing)
+      throw new CastcleException('AD_RUNNING_CAN_NOT_DELETE');
+
+    await ad.remove();
+  };
+
+  updateAdsBoostStatus = async (
+    adsId: string,
+    adsBoostStatus: AdsBoostStatus,
+  ) => {
     return this.adsModel.updateOne(
       { _id: adsId, status: AdsStatus.Approved },
       {
@@ -510,7 +607,7 @@ export class AdsService {
         },
       },
     );
-  }
+  };
 
   seenAds = async (adsPlacementId: string, seenByCredentialId: string) => {
     const adsPlacement = await this.adsPlacementModel.findById(adsPlacementId);
@@ -577,7 +674,7 @@ export class AdsService {
               ? WalletType.ADS
               : WalletType.PERSONAL,
           );
-          //if balance < 1 CAST THen pause ads
+          //if balance < 1 CAST Then pause ads
           if (
             adsOwnerBalance - adsPlacement.cost.UST <=
             mockOracleService.getCastPrice()
@@ -640,8 +737,6 @@ export class AdsService {
       });
   };
 
-  auctionAds = async (accountId: string) => (await this.getAds(accountId))[0];
-
   distributeAllSocialRewardByType = async (paymentType: AdsPaymentMethod) => {
     const castRate = await this.repository.getCastUSDDistributeRate();
     const adsPlacements = await this.repository.getUndistributedAdsplacements(
@@ -654,7 +749,7 @@ export class AdsService {
       const session = await this.adsPlacementModel.startSession();
       session.withTransaction(async () => {
         await this.distributeAdsReward(adsplacement, reward, session);
-        adsplacement.isModified('cost');
+        adsplacement.markModified('cost');
         await adsplacement.save();
       });
       session.endSession();
@@ -869,5 +964,49 @@ export class AdsService {
         );
       }
     }
+  };
+
+  adsRunning = async (ad: Ad) => {
+    this.logger.log(ad.startAt.toISOString(), 'adsRunning:startAt');
+    this.logger.log(
+      ad.pauseInterval[ad.pauseInterval.length - 1].pause.toISOString(),
+      'adsRunning:pauseInterval',
+    );
+
+    const pauseDate = ad.pauseInterval[ad.pauseInterval.length - 1].pause;
+
+    const diff = DateTime.local().diff(
+      DateTime.fromJSDate(pauseDate),
+      'milliseconds',
+    ).milliseconds;
+
+    const newEndedAt = DateTime.fromJSDate(ad.endedAt)
+      .plus({ milliseconds: diff })
+      .toJSDate();
+
+    await this.adsModel.updateOne(
+      { _id: ad._id, 'pauseInterval.pause': pauseDate },
+      {
+        $set: {
+          endedAt: newEndedAt,
+          boostStatus: AdsBoostStatus.Running,
+          'pauseInterval.$.resume': new Date(),
+        },
+      },
+    );
+  };
+
+  adsPause = async (ad: Ad) => {
+    await this.adsModel.updateOne(
+      { _id: ad._id },
+      {
+        $set: { boostStatus: AdsBoostStatus.Pause },
+        $push: {
+          pauseInterval: {
+            pause: new Date(),
+          },
+        },
+      },
+    );
   };
 }

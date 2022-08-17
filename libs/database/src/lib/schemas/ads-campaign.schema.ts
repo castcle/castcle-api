@@ -24,7 +24,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { DBRef } from 'mongodb';
 import { SchemaTypes } from 'mongoose';
-import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
+import {
+  AdsBoostStatus,
+  AdsObjective,
+  AdsStatus,
+  PauseInterval,
+} from '../models';
 import { AdsDetail } from './ads-detail.schema';
 import { AdsStatistic, AdsStatisticSchema } from './ads-statistic.schema';
 import { CastcleBase } from './base.schema';
@@ -41,14 +46,22 @@ export class AdsCampaign extends CastcleBase {
   @Prop({ required: true, type: String, index: true })
   status: AdsStatus;
 
-  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'User' })
+  @Prop({
+    required: true,
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    index: true,
+  })
   owner: User;
 
-  @Prop({ required: true, type: Object })
+  @Prop({ required: true, type: Object, index: true })
   adsRef: DBRef;
 
-  @Prop()
+  @Prop({ type: Date, index: true })
   startAt?: Date;
+
+  @Prop({ type: Date, index: true })
+  endedAt?: Date;
 
   @Prop({ type: Object })
   statusReason?: any;
@@ -58,6 +71,9 @@ export class AdsCampaign extends CastcleBase {
 
   @Prop({ type: AdsStatisticSchema })
   statistics: AdsStatistic;
+
+  @Prop({ type: Array })
+  pauseInterval?: PauseInterval[];
 }
 
 export const AdsCampaignSchema = SchemaFactory.createForClass(AdsCampaign);

@@ -64,10 +64,12 @@ export class NotificationConsumer {
       commentRef: createNotification.commentRef ?? { $exists: false },
       replyRef: createNotification.replyRef ?? { $exists: false },
       profileRef: createNotification.profileRef ?? { $exists: false },
+      advertiseId: createNotification.advertiseId ?? { $exists: false },
       source: createNotification.source,
       account: createNotification.account,
       type: createNotification.type,
     };
+
     this.logger.log(`Check interval time follow user.`);
 
     if (createNotification.type === NotificationType.Follow) {
@@ -157,7 +159,7 @@ export class NotificationConsumer {
 
     await this.firebase.messaging
       .sendMulticast({
-        data: prepareNotification.payload,
+        data: JSON.parse(JSON.stringify(prepareNotification.payload)),
         notification: prepareNotification.notification,
         android: prepareNotification.android,
         tokens: prepareNotification.firebaseTokens,

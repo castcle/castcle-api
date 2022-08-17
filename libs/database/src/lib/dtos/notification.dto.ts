@@ -68,6 +68,7 @@ export enum NotificationLandingPage {
   Comment = 'comment',
   Follower = 'follower',
   Profile = 'profile',
+  Ads = 'ads',
 }
 
 export enum SoundDeviceDefault {
@@ -156,6 +157,7 @@ export interface CreateNotification {
   type: NotificationType;
   sourceUserId?: Types.ObjectId;
   contentRef?: Types.ObjectId;
+  advertiseId?: Types.ObjectId;
   profileRef?: Types.ObjectId;
   commentRef?: Types.ObjectId;
   replyRef?: Types.ObjectId;

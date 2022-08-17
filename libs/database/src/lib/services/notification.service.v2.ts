@@ -112,8 +112,13 @@ export class NotificationServiceV2 {
     ) {
       if (targetRef === NotificationRef.Content)
         return NotificationLandingPage.Cast;
-
       return NotificationLandingPage.Profile;
+    } else if (
+      [NotificationType.AdsApprove, NotificationType.AdsDecline].some(
+        (ref) => ref === type,
+      )
+    ) {
+      return NotificationLandingPage.Ads;
     } else {
       return;
     }
@@ -308,20 +313,22 @@ export class NotificationServiceV2 {
         sound: SoundDeviceDefault.Default,
         'mutable-content': 1,
       },
-      payload: this.toNotificationPayload(
-        notify,
-        message,
-        this.checkNotificationTypePage(
-          notify.type,
-          notify.commentRef
-            ? NotificationRef.Comment
-            : notify.contentRef
-            ? NotificationRef.Content
-            : undefined,
-        ),
-        user,
-        haveUsers,
-      ) as any,
+      payload: <PushNotificationPayload>(
+        this.toNotificationPayload(
+          notify,
+          message,
+          this.checkNotificationTypePage(
+            notify.type,
+            notify.commentRef
+              ? NotificationRef.Comment
+              : notify.contentRef
+              ? NotificationRef.Content
+              : undefined,
+          ),
+          user,
+          haveUsers,
+        )
+      ),
       firebaseTokens: account?.devices.map((item) => item.firebaseToken),
     };
   };
@@ -332,25 +339,25 @@ export class NotificationServiceV2 {
     landingPage: string,
     user?: User,
     haveUsers?: number,
-  ) => {
+  ): PushNotificationPayload => {
     return {
       message,
       landingPage,
-      id: String(notify._id),
+      id: notify._id,
       source: notify.source,
       type: notify.type,
-      user: String(notify.user?._id),
-      actionId: haveUsers === 1 ? String(user?._id) : undefined,
+      user: notify.user?._id,
+      actionId: haveUsers === 1 ? user?._id : undefined,
       actionCastcleId: haveUsers === 1 ? user?.displayId : undefined,
       commentId: String(notify.commentRef),
       contentId: String(notify.contentRef),
       replyId: String(notify.replyRef),
-      advertiseId: String(notify.adsRef),
+      advertiseId: String(notify.advertiseId),
       profileId: String(notify.profileRef),
       systemId: String(notify.systemRef),
       createdAt: notify.createdAt.toISOString(),
       updatedAt: notify.updatedAt.toISOString(),
-    } as PushNotificationPayload;
+    };
   };
 
   private toNotificationResponse = (
@@ -376,7 +383,7 @@ export class NotificationServiceV2 {
       commentId: notify.commentRef,
       contentId: notify.contentRef,
       replyId: notify.replyRef,
-      advertiseId: notify.adsRef,
+      advertiseId: notify.advertiseId,
       profileId: notify.profileRef,
       systemId: notify.systemRef,
       createdAt: notify.createdAt,

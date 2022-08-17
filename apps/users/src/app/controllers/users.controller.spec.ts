@@ -47,6 +47,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  NotificationServiceV2,
   NotificationSource,
   NotificationType,
   PageDto,
@@ -138,22 +139,23 @@ describe('AppController', () => {
         { provide: DataService, useValue: {} },
         { provide: UserServiceV2, useValue: {} },
         { provide: CommandBus, useValue: {} },
-        UserService,
-        AuthenticationService,
-        ContentService,
-        HashtagService,
-        SocialSyncService,
-        CampaignService,
-        TAccountService,
-        SuggestionService,
         AdsService,
         AnalyticService,
-        NotificationService,
+        AuthenticationService,
+        CampaignService,
+        ContentService,
         DownloaderProvider,
         FacebookClientProvider,
+        HashtagService,
+        NotificationService,
+        NotificationServiceV2,
         RankerService,
-        SocialSyncServiceV2,
         Repository,
+        SocialSyncService,
+        SocialSyncServiceV2,
+        SuggestionService,
+        TAccountService,
+        UserService,
         WalletShortcutService,
         {
           provide: getQueueToken(QueueName.CONTENT),
@@ -1602,8 +1604,8 @@ describe('AppController', () => {
           paymentMethod: AdsPaymentMethod.ADS_CREDIT,
           dailyBidType: AdsBidType.Auto,
         };
-        await adsService.updateAdsById(mockAds.id, adsUpdate);
-        const adsCampaign = await adsModel.findById(mockAds.id).exec();
+        await adsService.updateAdsById(mockAds._id, adsUpdate);
+        const adsCampaign = await adsModel.findById(mockAds._id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.detail.name).toEqual(adsUpdate.campaignName);
@@ -1640,7 +1642,7 @@ describe('AppController', () => {
           { credential: mocks[0].credential, user: mocks[0].user } as any,
           ads._id,
         );
-        const adsCampaign = await adsModel.findById(ads.id).exec();
+        const adsCampaign = await adsModel.findById(ads._id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Running);
@@ -1658,7 +1660,7 @@ describe('AppController', () => {
           { credential: mocks[0].credential, user: mocks[0].user } as any,
           ads._id,
         );
-        const adsCampaign = await adsModel.findById(ads.id).exec();
+        const adsCampaign = await adsModel.findById(ads._id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
@@ -1676,7 +1678,7 @@ describe('AppController', () => {
           { credential: mocks[0].credential, user: mocks[0].user } as any,
           ads._id,
         );
-        const adsCampaign = await adsModel.findById(ads.id).exec();
+        const adsCampaign = await adsModel.findById(ads._id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.End);
@@ -1693,8 +1695,8 @@ describe('AppController', () => {
 
     describe('#deleteAds', () => {
       it('should be able delete ads is correct.', async () => {
-        await adsService.deleteAdsById(mockAds.id);
-        const adsCampaign = await adsModel.findById(mockAds.id).exec();
+        await adsService.deleteAdsById(mockAds._id);
+        const adsCampaign = await adsModel.findById(mockAds._id).exec();
 
         expect(adsCampaign).toBeNull();
       });

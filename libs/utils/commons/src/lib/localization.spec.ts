@@ -54,14 +54,14 @@ describe('CastcleLocalization', () => {
           LocalizationLang.English,
           ['test1'],
         );
-        expect(message).toEqual('test1 like your cast');
+        expect(message).toEqual('test1 like your cast.');
       });
       it('should get template like two people default language.', () => {
         const message = CastcleLocalization.getTemplateLike(
           LocalizationLang.English,
           ['test1', 'test2'],
         );
-        expect(message).toEqual('test1 and test2 like your cast');
+        expect(message).toEqual('test1 and test2 like your cast.');
       });
       it('should get template like more than two people default language.', () => {
         const message = CastcleLocalization.getTemplateLike(
@@ -69,7 +69,7 @@ describe('CastcleLocalization', () => {
           ['test1', 'test2', 'test3', 'test4'],
         );
         expect(message).toEqual(
-          'test1, test2 and 2 other people like your cast',
+          'test1, test2 and 2 other people like your cast.',
         );
       });
     });
@@ -109,14 +109,14 @@ describe('CastcleLocalization', () => {
           LocalizationLang.English,
           ['test1'],
         );
-        expect(message).toEqual('test1 commented on your cast');
+        expect(message).toEqual('test1 commented on your cast.');
       });
       it('should get template comment two people default language.', () => {
         const message = CastcleLocalization.getTemplateComment(
           LocalizationLang.English,
           ['test1', 'test2'],
         );
-        expect(message).toEqual('test1 and test2 commented on your cast');
+        expect(message).toEqual('test1 and test2 commented on your cast.');
       });
       it('should get template comment more than two people default language.', () => {
         const message = CastcleLocalization.getTemplateComment(
@@ -124,7 +124,7 @@ describe('CastcleLocalization', () => {
           ['test1', 'test2', 'test3', 'test4'],
         );
         expect(message).toEqual(
-          'test1, test2 and 2 other people commented on your cast',
+          'test1, test2 and 2 other people commented on your cast.',
         );
       });
     });
@@ -160,14 +160,14 @@ describe('CastcleLocalization', () => {
           LocalizationLang.English,
           ['test1'],
         );
-        expect(message).toEqual('test1 farm your cast');
+        expect(message).toEqual('test1 farm your cast.');
       });
       it('should get template farm two people default language.', () => {
         const message = CastcleLocalization.getTemplateFarm(
           LocalizationLang.English,
           ['test1', 'test2'],
         );
-        expect(message).toEqual('test1 and test2 farm your cast');
+        expect(message).toEqual('test1 and test2 farm your cast.');
       });
       it('should get template farm more than two people default language.', () => {
         const message = CastcleLocalization.getTemplateFarm(
@@ -175,7 +175,7 @@ describe('CastcleLocalization', () => {
           ['test1', 'test2', 'test3', 'test4'],
         );
         expect(message).toEqual(
-          'test1, test2 and 2 other people farm your cast',
+          'test1, test2 and 2 other people farm your cast.',
         );
       });
     });
@@ -211,14 +211,14 @@ describe('CastcleLocalization', () => {
           LocalizationLang.English,
           ['test1'],
         );
-        expect(message).toEqual('test1 quote your cast');
+        expect(message).toEqual('test1 quote your cast.');
       });
       it('should get template quote two people default language.', () => {
         const message = CastcleLocalization.getTemplateQuote(
           LocalizationLang.English,
           ['test1', 'test2'],
         );
-        expect(message).toEqual('test1 and test2 quote your cast');
+        expect(message).toEqual('test1 and test2 quote your cast.');
       });
       it('should get template quote more than two people default language.', () => {
         const message = CastcleLocalization.getTemplateQuote(
@@ -226,7 +226,7 @@ describe('CastcleLocalization', () => {
           ['test1', 'test2', 'test3', 'test4'],
         );
         expect(message).toEqual(
-          'test1, test2 and 2 other people quote your cast',
+          'test1, test2 and 2 other people quote your cast.',
         );
       });
     });
@@ -262,14 +262,14 @@ describe('CastcleLocalization', () => {
           LocalizationLang.English,
           ['test1'],
         );
-        expect(message).toEqual('test1 recast your cast');
+        expect(message).toEqual('test1 recast your cast.');
       });
       it('should get template recast two people default language.', () => {
         const message = CastcleLocalization.getTemplateRecast(
           LocalizationLang.English,
           ['test1', 'test2'],
         );
-        expect(message).toEqual('test1 and test2 recast your cast');
+        expect(message).toEqual('test1 and test2 recast your cast.');
       });
       it('should get template recast more than two people default language.', () => {
         const message = CastcleLocalization.getTemplateRecast(
@@ -277,7 +277,7 @@ describe('CastcleLocalization', () => {
           ['test1', 'test2', 'test3', 'test4'],
         );
         expect(message).toEqual(
-          'test1, test2 and 2 other people recast your cast',
+          'test1, test2 and 2 other people recast your cast.',
         );
       });
     });
@@ -317,14 +317,16 @@ describe('CastcleLocalization', () => {
           LocalizationLang.English,
           ['test1'],
         );
-        expect(message).toEqual('test1 reply commented on your cast');
+        expect(message).toEqual('test1 reply commented on your cast.');
       });
       it('should get template reply comment two people default language.', () => {
         const message = CastcleLocalization.getTemplateReply(
           LocalizationLang.English,
           ['test1', 'test2'],
         );
-        expect(message).toEqual('test1 and test2 reply commented on your cast');
+        expect(message).toEqual(
+          'test1 and test2 reply commented on your cast.',
+        );
       });
       it('should get template reply comment more than two people default language.', () => {
         const message = CastcleLocalization.getTemplateReply(
@@ -332,7 +334,7 @@ describe('CastcleLocalization', () => {
           ['test1', 'test2', 'test3', 'test4'],
         );
         expect(message).toEqual(
-          'test1, test2 and 2 other people reply commented on your cast',
+          'test1, test2 and 2 other people reply commented on your cast.',
         );
       });
     });
@@ -368,21 +370,21 @@ describe('CastcleLocalization', () => {
           LocalizationLang.English,
           ['test1'],
         );
-        expect(message).toEqual('test1 tag to you');
+        expect(message).toEqual('test1 tag to you.');
       });
       it('should get template tag two people default language.', () => {
         const message = CastcleLocalization.getTemplateTag(
           LocalizationLang.English,
           ['test1', 'test2'],
         );
-        expect(message).toEqual('test1 and test2 tag to you');
+        expect(message).toEqual('test1 and test2 tag to you.');
       });
       it('should get template tag more than two people default language.', () => {
         const message = CastcleLocalization.getTemplateTag(
           LocalizationLang.English,
           ['test1', 'test2', 'test3', 'test4'],
         );
-        expect(message).toEqual('test1, test2 and 2 other people tag to you');
+        expect(message).toEqual('test1, test2 and 2 other people tag to you.');
       });
     });
   });
@@ -401,7 +403,7 @@ describe('CastcleLocalization', () => {
         const message = CastcleLocalization.getTemplateAdsApprove(
           LocalizationLang.English,
         );
-        expect(message).toEqual('Your ads has been approved');
+        expect(message).toEqual('Your ads has been approved.');
       });
     });
   });
@@ -420,7 +422,7 @@ describe('CastcleLocalization', () => {
         const message = CastcleLocalization.getTemplateAdsDecline(
           LocalizationLang.English,
         );
-        expect(message).toEqual('Your ads is declined. Please check again');
+        expect(message).toEqual('Your ads is declined. Please check again.');
       });
     });
   });
@@ -457,14 +459,14 @@ describe('CastcleLocalization', () => {
           LocalizationLang.English,
           ['test1'],
         );
-        expect(message).toEqual('test1 like commented on your cast');
+        expect(message).toEqual('test1 like commented on your cast.');
       });
       it('should get template like comment two people default language.', () => {
         const message = CastcleLocalization.getTemplateLikeComment(
           LocalizationLang.English,
           ['test1', 'test2'],
         );
-        expect(message).toEqual('test1 and test2 like commented on your cast');
+        expect(message).toEqual('test1 and test2 like commented on your cast.');
       });
       it('should get template like comment more than two people default language.', () => {
         const message = CastcleLocalization.getTemplateLikeComment(
@@ -472,7 +474,7 @@ describe('CastcleLocalization', () => {
           ['test1', 'test2', 'test3', 'test4'],
         );
         expect(message).toEqual(
-          'test1, test2 and 2 other people like commented on your cast',
+          'test1, test2 and 2 other people like commented on your cast.',
         );
       });
     });
@@ -509,14 +511,14 @@ describe('CastcleLocalization', () => {
           LocalizationLang.English,
           ['test1'],
         );
-        expect(message).toEqual('test1 started following you');
+        expect(message).toEqual('test1 started following you.');
       });
       it('should get template like comment two people default language.', () => {
         const message = CastcleLocalization.getTemplateFollow(
           LocalizationLang.English,
           ['test1', 'test2'],
         );
-        expect(message).toEqual('test1 and test2 started following you');
+        expect(message).toEqual('test1 and test2 started following you.');
       });
       it('should get template like comment more than two people default language.', () => {
         const message = CastcleLocalization.getTemplateFollow(
@@ -524,7 +526,7 @@ describe('CastcleLocalization', () => {
           ['test1', 'test2', 'test3', 'test4'],
         );
         expect(message).toEqual(
-          'test1, test2 and 2 other people started following you',
+          'test1, test2 and 2 other people started following you.',
         );
       });
     });
