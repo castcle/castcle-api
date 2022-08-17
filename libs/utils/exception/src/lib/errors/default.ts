@@ -278,7 +278,7 @@ export const DefaultErrors = {
   ACTION_CANNOT_BE_COMPLETED: {
     statusCode: '400',
     code: '3029',
-    message: 'action cannot be completed',
+    message: 'Action cannot be completed',
   },
   USER_OR_PAGE_NOT_FOUND: {
     statusCode: '404',
@@ -470,5 +470,16 @@ export const DefaultErrors = {
     statusCode: '403',
     code: '8014',
     message: 'Your account has been disabled for violating our terms.',
+  },
+  AD_RUNNING_CAN_NOT_DELETE: {
+    statusCode: '400',
+    code: '8015',
+    message: `The ads is running, can't be deleted.`,
+  },
+
+  AD_RUNNING_CAN_NOT_CANCEL: {
+    statusCode: '400',
+    code: '8016',
+    message: `The ads is running, can't be cancel.`,
   },
 };

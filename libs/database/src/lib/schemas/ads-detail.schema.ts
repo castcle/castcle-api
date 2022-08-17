@@ -36,7 +36,7 @@ export class AdsDetail {
   @Prop({ required: true })
   message: string;
 
-  @Prop()
+  @Prop({ required: true })
   code: string;
 
   @Prop({ required: true, type: SchemaTypes.Decimal128 })

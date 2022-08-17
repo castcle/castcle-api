@@ -194,7 +194,7 @@ describe('NotificationServiceV2', () => {
         mocksUsers[0].user,
       );
 
-      expect(newMessage).toEqual('people-1 commented on your cast');
+      expect(newMessage).toEqual('people-1 commented on your cast.');
     });
 
     it('generate message by type notification and language thai.', async () => {
@@ -346,7 +346,7 @@ describe('NotificationServiceV2', () => {
         'en',
       );
       expect(message).toBeDefined();
-      expect(message).toEqual('people-1 started following you');
+      expect(message).toEqual('people-1 started following you.');
     });
 
     it('should generate message notification by language thai is correct.', async () => {
@@ -379,9 +379,9 @@ describe('NotificationServiceV2', () => {
 
       notifyResp.forEach((item) => {
         if (item.type === NotificationType.Comment) {
-          expect(item.message).toEqual('people-1 commented on your cast');
+          expect(item.message).toEqual('people-1 commented on your cast.');
         } else {
-          expect(item.message).toEqual('people-1 started following you');
+          expect(item.message).toEqual('people-1 started following you.');
         }
       });
     });
@@ -408,31 +408,31 @@ describe('NotificationServiceV2', () => {
     });
   });
 
-  // describe('deleteNotify', () => {
-  //   it('should delete notification by id is correct.', async () => {
-  //     await (service as any).deleteNotify(notification[0]._id);
+  describe('deleteNotify', () => {
+    it('should delete notification by id is correct.', async () => {
+      await (service as any).deleteNotify(notification[0]._id);
 
-  //     const notify = await (service as any).getFromId(notification[0]._id);
+      const notify = await (service as any).getFromId(notification[0]._id);
 
-  //     expect(notify).toBeNull();
-  //   });
-  // });
+      expect(notify).toBeNull();
+    });
+  });
 
-  // describe('getAllNotify', () => {
-  //   it('should delete all notification by source is correct.', async () => {
-  //     await (service as any).deleteAllSourceNotify(
-  //       mocksUsers[0].account,
-  //       NotificationSource.Profile,
-  //     );
+  describe('getAllNotify', () => {
+    it('should delete all notification by source is correct.', async () => {
+      await (service as any).deleteAllSourceNotify(
+        mocksUsers[0].account,
+        NotificationSource.Profile,
+      );
 
-  //     const notifies = await (service as any).getAllNotify(
-  //       mocksUsers[0].account,
-  //       { maxResults: 100 },
-  //     );
+      const notifies = await (service as any).getAllNotify(
+        mocksUsers[0].account,
+        { maxResults: 100 },
+      );
 
-  //     expect(notifies).toHaveLength(0);
-  //   });
-  // });
+      expect(notifies).toHaveLength(0);
+    });
+  });
 
   afterAll(async () => {
     await moduleRef.close();

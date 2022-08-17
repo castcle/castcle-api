@@ -182,7 +182,7 @@ type NotificationQueryOption = {
   contentRef?: Types.ObjectId | any;
   commentRef?: Types.ObjectId | any;
   replyRef?: Types.ObjectId | any;
-  adsRef?: Types.ObjectId | any;
+  advertiseId?: Types.ObjectId | any;
   profileRef?: Types.ObjectId | any;
   sourceUserId?: Types.ObjectId;
 };
@@ -556,7 +556,7 @@ export class Repository {
     if (filter?.commentRef) query.commentRef = filter.commentRef;
     if (filter?.replyRef) query.replyRef = filter.replyRef;
     if (filter?.profileRef) query.profileRef = filter.profileRef;
-    if (filter?.adsRef) query.adsRef = filter.adsRef;
+    if (filter?.advertiseId) query.advertiseId = filter.advertiseId;
     if (filter?.sourceUserId) query.sourceUserId = filter.sourceUserId;
 
     return createCastcleFilter(query, {

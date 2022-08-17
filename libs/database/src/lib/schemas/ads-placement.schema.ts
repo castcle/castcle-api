@@ -42,7 +42,7 @@ export class AdsPlacement extends CastcleBase {
   @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'User' })
   user: User;
 
-  @Prop({ type: Object })
+  @Prop({ required: true, type: Object })
   engagements: { [key: string]: number };
 
   @Prop()

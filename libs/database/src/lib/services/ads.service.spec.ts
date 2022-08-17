@@ -33,6 +33,7 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  NotificationServiceV2,
   TAccountService,
 } from '../database.module';
 import { AdsQuery, AdsRequestDto, ShortPayload } from '../dtos';
@@ -95,6 +96,7 @@ describe('AdsService', () => {
         TAccountService,
         HashtagService,
         Repository,
+        NotificationServiceV2,
         {
           provide: DataService,
           useValue: {
@@ -112,6 +114,10 @@ describe('AdsService', () => {
         },
         {
           provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
         {
@@ -277,8 +283,8 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
-      await service.updateAdsById(ads.id, adsUpdate);
-      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
+      await service.updateAdsById(ads._id, adsUpdate);
+      const adsCampaign = await adsCampaignModel.findById(ads._id).exec();
 
       expect(adsCampaign).toBeTruthy();
       expect(adsCampaign.detail.name).toEqual(adsUpdate.campaignName);
@@ -288,6 +294,7 @@ describe('AdsService', () => {
       expect(adsCampaign.objective).toEqual(adsUpdate.objective);
     });
   });
+
   describe('#deleteAds', () => {
     it('should be able delete ads is correct.', async () => {
       const adsInput: AdsRequestDto = {
@@ -302,12 +309,68 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
-      await service.deleteAdsById(ads.id);
-      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
+      await service.deleteAdsById(ads._id);
+      const adsCampaign = await adsCampaignModel.findById(ads._id).exec();
 
       expect(adsCampaign).toBeNull();
     });
   });
+
+  describe('#adsRunning', () => {
+    it('should be able update ads is correct.', async () => {
+      const adsInput: AdsRequestDto = {
+        campaignName: 'Ads1',
+        campaignMessage: 'This is ads',
+        castcleId: mocks[0].pages[0].displayId,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
+      };
+      const ads = await service.createAds(mocks[0].pages[0], adsInput);
+
+      await service.approveAd(ads._id);
+      await service.adsPause(ads);
+
+      const adsCampaign = await adsCampaignModel.findById(ads._id).exec();
+
+      expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
+
+      await service.adsRunning(adsCampaign);
+      const adsCampaign1 = await adsCampaignModel.findById(ads._id).exec();
+
+      expect(adsCampaign1.boostStatus).toEqual(AdsBoostStatus.Running);
+      expect(adsCampaign1.pauseInterval).toHaveLength(1);
+    });
+  });
+
+  describe('#adsPause', () => {
+    it('should be able update ads is correct.', async () => {
+      const adsInput: AdsRequestDto = {
+        campaignName: 'Ads1',
+        campaignMessage: 'This is ads',
+        castcleId: mocks[0].pages[0].displayId,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
+      };
+      const ads = await service.createAds(mocks[0].pages[0], adsInput);
+
+      await service.approveAd(ads._id);
+      await service.adsPause(ads);
+
+      const adsCampaign = await adsCampaignModel.findById(ads._id).exec();
+
+      expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
+      expect(adsCampaign.pauseInterval).toHaveLength(1);
+    });
+  });
+
   describe('#updateAdsBoostStatus', () => {
     it('should be able update ads boost status.', async () => {
       const adsInput: AdsRequestDto = {
@@ -331,8 +394,8 @@ describe('AdsService', () => {
         },
       );
 
-      await service.updateAdsBoostStatus(ads.id, AdsBoostStatus.Pause);
-      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
+      await service.updateAdsBoostStatus(ads._id, AdsBoostStatus.Pause);
+      const adsCampaign = await adsCampaignModel.findById(ads._id).exec();
 
       expect(adsCampaign).toBeTruthy();
       expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
@@ -374,13 +437,18 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       };
       const c1 = await service.createAds(mocks[0].user, adsIput);
-      c1.status = AdsStatus.Approved;
-      c1.boostStatus = AdsBoostStatus.Running;
-      c1.statistics.dailySpent = 4.99;
-      c1.markModified('statistics');
-      adsCampaigns[0] = await c1.save();
+
+      const ad1 = await adsCampaignModel.findOne({
+        _id: new Types.ObjectId(c1._id),
+      });
+
+      ad1.status = AdsStatus.Approved;
+      ad1.boostStatus = AdsBoostStatus.Running;
+      ad1.statistics.dailySpent = 4.99;
+      ad1.markModified('statistics');
+      adsCampaigns[0] = await ad1.save();
       for (let i = 1; i < mockRelevanceScores.length - 1; i++) {
-        adsCampaigns[i] = await service.createAds(mocks[0].user, {
+        await service.createAds(mocks[0].user, {
           campaignName: 'cf2',
           campaignMessage: 'This is ads',
           contentId: adsContents[i].id,
@@ -391,6 +459,11 @@ describe('AdsService', () => {
           dailyBidType: AdsBidType.Auto,
           dailyBidValue: 1,
         });
+
+        adsCampaigns[i] = await adsCampaignModel.findOne({
+          _id: new Types.ObjectId(c1._id),
+        });
+
         adsCampaigns[i].status = AdsStatus.Approved;
         adsCampaigns[i].boostStatus = AdsBoostStatus.Running;
         await adsCampaigns[i].save();
@@ -408,11 +481,12 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       };
       const cLast = await service.createAds(mocks[0].user, adsIputLast);
-      cLast.statistics.dailySpent = 5;
-      cLast.markModified('statistics');
-      cLast.status = AdsStatus.Approved;
-      cLast.boostStatus = AdsBoostStatus.Running;
-      adsCampaigns[mockRelevanceScores.length - 1] = await cLast.save();
+      const ad2 = await adsCampaignModel.findOne({ _id: cLast._id });
+      ad2.status = AdsStatus.Approved;
+      ad2.boostStatus = AdsBoostStatus.Running;
+      ad2.statistics.dailySpent = 4.99;
+      ad2.markModified('statistics');
+      adsCampaigns[mockRelevanceScores.length - 1] = await ad2.save();
       const mockObj: { [key: string]: number } = {};
       mockRelevanceScores.forEach((item, index) => {
         mockObj[adsContents[index].id] = item;
@@ -484,7 +558,8 @@ describe('AdsService', () => {
       });
     });
   });
-  describe('Distrute Reward cases', () => {
+
+  describe('Distribute Reward cases', () => {
     beforeAll(async () => {
       const socialReward = await new cAccountModel({
         no: CAccountNo.SOCIAL_REWARD.NO,
@@ -778,6 +853,7 @@ describe('AdsService', () => {
           expect(newBalance).not.toEqual(topupValue);
         });
       });
+
       it('should distribute all rewards to all counter parties', async () => {
         const authors = [
           new Types.ObjectId(),
