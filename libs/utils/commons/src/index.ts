@@ -26,6 +26,7 @@ export * from './lib/castcle-qrcode';
 export * from './lib/datetime';
 export * from './lib/documentation';
 export * from './lib/localization';
+export * from './lib/parser';
 export * from './lib/password';
 export * from './lib/regexp';
 export * from './lib/token';

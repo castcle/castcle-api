@@ -2231,4 +2231,10 @@ export class ContentServiceV2 {
       ),
     ]);
   }
+
+  findContent = async (contentId: string) => {
+    return this.repository.findContent({
+      _id: contentId,
+    });
+  };
 }

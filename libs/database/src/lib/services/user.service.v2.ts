@@ -22,6 +22,13 @@
  */
 
 import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
+import {
+  AVATAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS,
+  Downloader,
+  Image,
+} from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { CastcleQRCode, LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
@@ -53,7 +60,9 @@ import {
   QRCodeImageSize,
   ReportUserDto,
   ResponseDto,
+  SocialPageDto,
   SortDirection,
+  SyncSocialDtoV2,
   UpdateMobileDto,
   UserField,
   UserResponseDto,
@@ -70,11 +79,15 @@ import {
 } from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, User } from '../schemas';
+import { getSocialPrefix } from '../utils/common';
 import { AnalyticService } from './analytic.service';
 import { NotificationServiceV2 } from './notification.service.v2';
+import { SocialSyncServiceV2 } from './social-sync.service.v2';
 
 @Injectable()
 export class UserServiceV2 {
+  private logger = new CastLogger(UserServiceV2.name);
+
   constructor(
     @InjectModel('Relationship')
     private relationshipModel: Model<Relationship>,
@@ -83,9 +96,11 @@ export class UserServiceV2 {
     @InjectQueue(QueueName.REPORTING)
     private reportingQueue: Queue<ReportingMessage>,
     private analyticService: AnalyticService,
+    private download: Downloader,
     private mailerService: Mailer,
     private notificationService: NotificationServiceV2,
     private repository: Repository,
+    private socialSyncService: SocialSyncServiceV2,
   ) {}
 
   getUser = async (userId: string) => {
@@ -821,4 +836,109 @@ export class UserServiceV2 {
       },
     );
   };
+
+  async createPageAndSyncSocial(user: User, socialPageDto: SyncSocialDtoV2) {
+    this.logger.log(`Start create sync social.`);
+    this.logger.log(JSON.stringify(socialPageDto));
+
+    let castcleId = '';
+    const socialPage = new SocialPageDto();
+    if (socialPageDto.userName && socialPageDto.displayName) {
+      castcleId = socialPageDto.userName;
+      socialPage.displayName = socialPageDto.displayName;
+    } else if (socialPageDto.userName) {
+      castcleId = socialPageDto.userName;
+      socialPage.displayName = socialPageDto.userName;
+    } else if (socialPageDto.displayName) {
+      castcleId = socialPageDto.displayName;
+      socialPage.displayName = socialPageDto.displayName;
+    } else {
+      const genId = getSocialPrefix(
+        socialPageDto.socialId,
+        socialPageDto.provider,
+      );
+      socialPage.displayName = castcleId = genId;
+    }
+
+    socialPage.castcleId = await this.repository.suggestCastcleId(
+      `@${castcleId}`,
+    );
+
+    if (socialPageDto.avatar) {
+      this.logger.log(`download avatar from ${socialPageDto.avatar}`);
+      const imgAvatar = await this.download.getImageFromUrl(
+        socialPageDto.avatar,
+      );
+
+      this.logger.log('upload avatar to s3');
+      const avatar = await Image.upload(imgAvatar, {
+        filename: `page-avatar-${socialPage.castcleId}`,
+        addTime: true,
+        sizes: AVATAR_SIZE_CONFIGS,
+        subpath: `page_${socialPage.castcleId}`,
+      });
+
+      socialPage.avatar = avatar.image;
+      this.logger.log('Upload avatar');
+    }
+
+    if (socialPageDto.cover) {
+      this.logger.log(`download avatar from ${socialPageDto.cover}`);
+      const imgCover = await this.download.getImageFromUrl(socialPageDto.cover);
+
+      this.logger.log('upload cover to s3');
+      const cover = await Image.upload(imgCover, {
+        filename: `page-cover-${socialPage.castcleId}`,
+        addTime: true,
+        sizes: COMMON_SIZE_CONFIGS,
+        subpath: `page_${socialPage.castcleId}`,
+      });
+      socialPage.cover = cover.image;
+      this.logger.log('Suggest Cover');
+    }
+
+    socialPage.overview = socialPageDto.overview;
+    if (socialPageDto.link) {
+      socialPage.links = { [socialPageDto.provider]: socialPageDto.link };
+    }
+
+    this.logger.log('Create new page');
+    const page = await this.repository.createUser({
+      ownerAccount: user.ownerAccount,
+      type: UserType.PAGE,
+      displayId: socialPage.castcleId,
+      displayName: socialPage.displayName,
+      profile: {
+        overview: socialPage.overview,
+        images: {
+          avatar: socialPage.avatar,
+          cover: socialPage.cover,
+        },
+        socials: {
+          facebook: socialPage.links?.facebook,
+          twitter: socialPage.links?.twitter,
+          youtube: socialPage.links?.youtube,
+          medium: socialPage.links?.medium,
+        },
+      },
+    });
+
+    this.logger.log('Create sync social');
+    await this.socialSyncService.sync(page, {
+      socialId: socialPageDto.socialId,
+      provider: socialPageDto.provider,
+      userName: socialPageDto.userName,
+      displayName: socialPageDto.displayName,
+      avatar: socialPageDto.avatar,
+      active: (socialPageDto.active ??= true),
+      autoPost: (socialPageDto.autoPost ??= true),
+      authToken: socialPageDto.authToken,
+    });
+
+    this.logger.log(`get page data.`);
+
+    const pageResponse = await this.getPublicUser(user, page.id);
+
+    return { ...pageResponse, socialSyncs: true };
+  }
 }

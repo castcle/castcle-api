@@ -77,3 +77,8 @@ export type AdsCpm = {
   rankingScore?: number;
   adsCampaignId?: string;
 };
+
+export type PauseInterval = {
+  pause: Date;
+  resume?: Date;
+};

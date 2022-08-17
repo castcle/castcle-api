@@ -223,7 +223,7 @@ describe('NotificationsController', () => {
             read: false,
             type: 'comment',
             id: 'test',
-            message: 'test commented on your cast',
+            message: 'test commented on your cast.',
             replyId: undefined,
             source: 'page',
           },

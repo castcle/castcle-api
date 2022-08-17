@@ -35,10 +35,12 @@ import {
   NotificationServiceV2,
   QueueName,
   SearchServiceV2,
+  SocialSyncServiceV2,
   UserService,
   UserServiceV2,
   generateMockUsers,
 } from '@castcle-api/database';
+import { Downloader } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
@@ -73,14 +75,16 @@ describe('SearchesControllerV2', () => {
       ],
       controllers: [SearchesControllerV2],
       providers: [
-        SearchServiceV2,
-        Repository,
-        UserServiceV2,
-        ContentService,
         AuthenticationService,
-        UserService,
+        ContentService,
         HashtagService,
         NotificationServiceV2,
+        Repository,
+        SearchServiceV2,
+        UserService,
+        UserServiceV2,
+        { provide: SocialSyncServiceV2, useValue: {} },
+        { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },

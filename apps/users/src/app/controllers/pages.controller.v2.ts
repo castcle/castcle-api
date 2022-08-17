@@ -20,7 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { PageDto, UserServiceV2 } from '@castcle-api/database';
+import {
+  PageDto,
+  ResponseDto,
+  SyncSocialDtoV2,
+  UserServiceV2,
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import {
   Auth,
@@ -58,5 +63,21 @@ export class PagesControllerV2 {
     @Body() { password }: DeleteUserDto,
   ) {
     await this.userServiceV2.deletePage(account, pageId, password);
+  }
+
+  @CastcleBasicAuth()
+  @Post('sync-social')
+  async createPageAndSyncSocial(
+    @Auth() authorizer: Authorizer,
+    @Body() socialSyncDto: SyncSocialDtoV2,
+  ) {
+    authorizer.requestAccessForAccount(authorizer.user.ownerAccount);
+
+    const createPage = await this.userServiceV2.createPageAndSyncSocial(
+      authorizer.user,
+      socialSyncDto,
+    );
+
+    return ResponseDto.ok({ payload: createPage });
   }
 }

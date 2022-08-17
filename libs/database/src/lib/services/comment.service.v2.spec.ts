@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Downloader } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
   GoogleClient,
@@ -45,6 +46,7 @@ import {
   MongooseForFeatures,
   NotificationService,
   NotificationServiceV2,
+  SocialSyncServiceV2,
   UserService,
   UserServiceV2,
 } from '../database.module';
@@ -88,6 +90,8 @@ describe('CommentServiceV2', () => {
         Repository,
         UserService,
         UserServiceV2,
+        { provide: SocialSyncServiceV2, useValue: {} },
+        { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: FacebookClient, useValue: {} },
