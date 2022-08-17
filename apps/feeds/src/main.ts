@@ -22,7 +22,7 @@
  */
 
 import { Configs } from '@castcle-api/environments';
-import { Documentation } from '@castcle-api/utils/commons';
+import { Documentation, jsonParser } from '@castcle-api/utils/commons';
 import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -40,6 +40,7 @@ async function bootstrap() {
     fastifyAdapter,
   );
 
+  fastifyAdapter.getInstance().getDefaultJsonParser = jsonParser;
   Documentation.setup('Feeds', app);
   app.useGlobalFilters(new CastcleExceptionFilter());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
