@@ -21,13 +21,20 @@
  * or have any questions.
  */
 
-export * from './lib/castcle-name';
-export * from './lib/castcle-qrcode';
-export * from './lib/datetime';
-export * from './lib/documentation';
-export * from './lib/localization';
-export * from './lib/parser';
-export * from './lib/password';
-export * from './lib/regexp';
-export * from './lib/token';
-export * from './lib/transformers';
+import { FastifyRequest } from 'fastify';
+import { ContentTypeParserDoneFunction } from 'fastify/types/content-type-parser';
+
+export const jsonParser =
+  () =>
+  (
+    _: FastifyRequest,
+    body: Buffer | string,
+    done: ContentTypeParserDoneFunction,
+  ) => {
+    try {
+      const bodyStr = body.toString();
+      done(null, bodyStr ? JSON.parse(bodyStr) : {});
+    } catch (err) {
+      done(err, {});
+    }
+  };
