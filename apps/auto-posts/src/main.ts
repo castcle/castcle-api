@@ -34,21 +34,6 @@ async function bootstrap() {
   const port = process.env.PORT || 3342;
   const prefix = 'auto-posts';
   const fastifyAdapter = new FastifyAdapter();
-
-  fastifyAdapter
-    .getInstance()
-    .addContentTypeParser(
-      'application/json',
-      { parseAs: 'string' },
-      (_, body: string, done) => {
-        try {
-          done(null, JSON.parse(body || '{}'));
-        } catch (err) {
-          done(err, {});
-        }
-      },
-    );
-
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     fastifyAdapter,

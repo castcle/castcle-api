@@ -160,6 +160,10 @@ describe('AppController', () => {
           useValue: { add: jest.fn() },
         },
         {
+          provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
+        {
           provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },

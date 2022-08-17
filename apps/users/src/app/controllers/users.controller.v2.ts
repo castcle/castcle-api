@@ -586,8 +586,7 @@ export class UsersControllerV2 {
     return this.userService.unblockUser(user, targetCastcleId);
   }
 
-  // @CastcleClearCacheAuth(CacheKeyName.Contents)
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Post(':userId/recasts')
   async recastContent(
     @Auth() authorizer: Authorizer,
@@ -627,7 +626,6 @@ export class UsersControllerV2 {
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Contents)
-  @CastcleBasicAuth()
   @Delete(':userId/recasts/:sourceContentId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async undoRecast(
@@ -663,7 +661,7 @@ export class UsersControllerV2 {
     return ResponseDto.ok({ payload: users, meta });
   }
 
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Post(':userId/quotecasts')
   async quoteContent(
     @Auth() authorizer: Authorizer,

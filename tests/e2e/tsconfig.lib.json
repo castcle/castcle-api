@@ -5,5 +5,5 @@
     "module": "commonjs",
     "types": ["node"]
   },
-  "exclude": ["**/*.ts"]
+  "exclude": ["**/*.ts", "jest.config.ts"]
 }

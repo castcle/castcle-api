@@ -157,6 +157,10 @@ describe('UsersControllerV2', () => {
         { provide: Mailer, useValue: { sendRegistrationEmail: jest.fn() } },
         { provide: DataService, useValue: {} },
         {
+          provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
+        {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
         },
