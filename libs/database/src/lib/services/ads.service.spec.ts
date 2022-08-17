@@ -111,6 +111,10 @@ describe('AdsService', () => {
           useValue: { add: jest.fn() },
         },
         {
+          provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
+        {
           provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
@@ -147,7 +151,7 @@ describe('AdsService', () => {
     it('should be able to create ads for promote Page', async () => {
       await new transactionModel({
         from: {
-          type: WalletType.CASTCLE_TREASURY,
+          type: WalletType.EXTERNAL_DEPOSIT,
           value: 999999,
         },
         to: [
@@ -180,7 +184,7 @@ describe('AdsService', () => {
     it('should be able to create ads for promote contents', async () => {
       await new transactionModel({
         from: {
-          type: WalletType.CASTCLE_TREASURY,
+          type: WalletType.EXTERNAL_DEPOSIT,
           value: 999999,
         },
         to: [

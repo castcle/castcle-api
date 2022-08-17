@@ -555,13 +555,9 @@ export class ContentServiceV2 {
   };
 
   undoRecast = async (contentId: string, user: User) => {
-    const users = await this.repository.findUsers({
-      accountId: user.ownerAccount as any,
-    });
-
     const content = await this.repository.findContent({
       originalPost: contentId,
-      author: users.map((user) => user._id),
+      author: user._id,
       isRecast: true,
     });
 

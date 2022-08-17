@@ -24,8 +24,10 @@
 import { Configs, Environment } from '@castcle-api/environments';
 import { CastcleImage } from '@castcle-api/utils/aws';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Queue } from 'bull';
 import { ClientSession, FilterQuery, Model, Types } from 'mongoose';
 import {
   GetBalanceResponse,
@@ -42,6 +44,7 @@ import {
 import {
   CAccountNo,
   CastcleNumber,
+  QueueName,
   TopUpDto,
   TransactionFilter,
   TransactionType,
@@ -62,6 +65,7 @@ export class TAccountService {
   constructor(
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('cAccount') private cAccountModel: Model<cAccount>,
+    @InjectQueue(QueueName.NEW_TRANSACTION) private txQueue: Queue<Transaction>,
     private repository: Repository,
   ) {}
 
@@ -159,7 +163,9 @@ export class TAccountService {
     const isValidDto = await this.validateTransfer(dto);
     if (!isValidDto) throw new CastcleException('INVALID_TRANSACTIONS_DATA');
 
-    return new this.transactionModel(dto).save({ session: session });
+    const tx = await new this.transactionModel(dto).save({ session: session });
+    await this.txQueue.add(tx, { removeOnComplete: true });
+    return tx;
   }
 
   async getBalance(cAccountNo: string) {

@@ -58,7 +58,7 @@ export class TransactionVerifier {
     @InjectQueue(QueueName.NEW_TRANSACTION) private txQueue: Queue<Transaction>,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async addPendingTransactions() {
     const jobCounts = await this.txQueue.getJobCounts();
     this.logger.log(`remaining job(s): ${JSON.stringify(jobCounts)}`);
@@ -79,7 +79,7 @@ export class TransactionVerifier {
         : pipelineOfTransactionVerification(tx),
     );
 
-    this.logger.log(validation, `${id}:validationResult`);
+    this.logger.log(JSON.stringify(validation), `${id}:validationResult`);
 
     if (!validation.isValidWalletType) {
       return this.markTransactionFailed(tx._id, this.Error.INVALID_WALLET_TYPE);
@@ -97,11 +97,11 @@ export class TransactionVerifier {
   @OnQueueCompleted()
   onVerificationComplete({ id, data, returnvalue }: Job<Transaction>) {
     this.logger.log(
-      {
+      JSON.stringify({
         transactionId: data._id,
         status: returnvalue.status,
         failureMessage: returnvalue.failureMessage,
-      },
+      }),
       `${id}:onVerificationComplete`,
     );
   }

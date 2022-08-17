@@ -133,6 +133,10 @@ describe('UserServiceV2', () => {
           useValue: { add: jest.fn() },
         },
         {
+          provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
+        {
           provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },

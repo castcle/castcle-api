@@ -22,6 +22,7 @@
  */
 
 import { HttpModule } from '@nestjs/axios';
+import { getQueueToken } from '@nestjs/bull';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -30,6 +31,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '../database.module';
+import { QueueName } from '../models';
 import { Repository } from '../repositories';
 import { TAccountService } from './taccount.service';
 
@@ -47,7 +49,15 @@ describe('Campaign Service', () => {
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
       ],
-      providers: [CampaignService, TAccountService, Repository],
+      providers: [
+        CampaignService,
+        TAccountService,
+        Repository,
+        {
+          provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
+      ],
     }).compile();
 
     campaignService = moduleRef.get(CampaignService);
