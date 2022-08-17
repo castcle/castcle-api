@@ -42,10 +42,12 @@ import {
   ReportingSubject,
   ReportingType,
   Repository,
+  SocialSyncServiceV2,
   TAccountService,
   UserServiceV2,
 } from '@castcle-api/database';
 import { CastcleBackofficeMongooseModule } from '@castcle-api/environments';
+import { Downloader } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
   GoogleClient,
@@ -110,6 +112,8 @@ describe('ReportingService', () => {
         ReportingService,
         Repository,
         UserServiceV2,
+        { provide: SocialSyncServiceV2, useValue: {} },
+        { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: DataService, useValue: {} },

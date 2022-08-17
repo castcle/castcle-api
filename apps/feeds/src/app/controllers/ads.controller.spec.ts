@@ -41,6 +41,7 @@ import {
   NotificationService,
   NotificationServiceV2,
   QueueName,
+  SocialSyncServiceV2,
   TAccountService,
   Transaction,
   UserService,
@@ -48,6 +49,7 @@ import {
   generateMockUsers,
   mockDeposit,
 } from '@castcle-api/database';
+import { Downloader } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
@@ -86,14 +88,16 @@ describe('AdsController', () => {
         AnalyticService,
         AuthenticationService,
         ContentService,
-        Repository,
-        UserService,
-        UserServiceV2,
         ContentServiceV2,
+        HashtagService,
         NotificationService,
         NotificationServiceV2,
-        HashtagService,
+        Repository,
         TAccountService,
+        UserService,
+        UserServiceV2,
+        { provide: SocialSyncServiceV2, useValue: {} },
+        { provide: Downloader, useValue: {} },
         {
           provide: DataService,
           useValue: {

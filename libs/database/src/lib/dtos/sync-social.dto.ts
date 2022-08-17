@@ -63,4 +63,19 @@ export class SyncSocialDtoV2 {
   @IsOptional()
   @IsString()
   authToken?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  cover?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  link?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  overview?: string;
 }

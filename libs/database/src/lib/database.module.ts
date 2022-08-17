@@ -26,6 +26,7 @@ import {
   CastcleCacheModule,
   CastcleMongooseModule,
 } from '@castcle-api/environments';
+import { Downloader } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
@@ -195,6 +196,7 @@ export const providers = [
   ContentService,
   ContentServiceV2,
   DataService,
+  Downloader,
   HashtagService,
   MetadataServiceV2,
   NotificationService,
