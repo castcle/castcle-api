@@ -38,12 +38,14 @@ import {
   NotificationServiceV2,
   QueueName,
   RankerService,
+  SocialSyncServiceV2,
   SuggestionServiceV2,
   TAccountService,
   UserService,
   UserServiceV2,
   generateMockUsers,
 } from '@castcle-api/database';
+import { Downloader } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
@@ -87,6 +89,8 @@ describe('FeedsControllerV2', () => {
         SuggestionServiceV2,
         UserService,
         UserServiceV2,
+        { provide: SocialSyncServiceV2, useValue: {} },
+        { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },

@@ -33,11 +33,13 @@ import {
   NotificationService,
   NotificationServiceV2,
   QueueName,
+  SocialSyncServiceV2,
   User,
   UserService,
   UserServiceV2,
   generateMockUsers,
 } from '@castcle-api/database';
+import { Downloader } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
@@ -82,6 +84,8 @@ describe('CommentControllerV2', () => {
         Repository,
         UserService,
         UserServiceV2,
+        { provide: SocialSyncServiceV2, useValue: {} },
+        { provide: Downloader, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
