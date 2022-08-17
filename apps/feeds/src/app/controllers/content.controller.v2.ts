@@ -39,7 +39,6 @@ import {
   CastcleClearCacheAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { CastcleException } from '@castcle-api/utils/exception';
 import {
   Body,
   Delete,
@@ -210,7 +209,7 @@ export class ContentControllerV2 {
     @Auth() authorizer: Authorizer,
     @Param() { contentId }: GetContentDto,
   ) {
-    if (authorizer.account.isGuest) throw new CastcleException('FORBIDDEN');
+    authorizer.requireActivation();
 
     return this.contentServiceV2.getParticipates(contentId, authorizer.account);
   }
