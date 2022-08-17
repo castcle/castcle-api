@@ -21,11 +21,6 @@
  * or have any questions.
  */
 
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
-
 import { Configs } from '@castcle-api/environments';
 import { Documentation } from '@castcle-api/utils/commons';
 import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
@@ -40,21 +35,6 @@ import { AppModule } from './app/app.module';
 async function bootstrap() {
   const port = process.env.PORT || 3334;
   const fastifyAdapter = new FastifyAdapter();
-
-  fastifyAdapter
-    .getInstance()
-    .addContentTypeParser(
-      'application/json',
-      { parseAs: 'string' },
-      (_, body: string, done) => {
-        try {
-          done(null, JSON.parse(body || '{}'));
-        } catch (err) {
-          done(err, {});
-        }
-      },
-    );
-
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     fastifyAdapter,

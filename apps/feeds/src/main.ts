@@ -34,22 +34,7 @@ import { AppModule } from './app/app.module';
 
 async function bootstrap() {
   const port = process.env.PORT || 3339;
-  const fastifyAdapter = new FastifyAdapter();
-
-  fastifyAdapter
-    .getInstance()
-    .addContentTypeParser(
-      'application/json',
-      { bodyLimit: 100e6, parseAs: 'string' },
-      (_, body: string, done) => {
-        try {
-          done(null, JSON.parse(body || '{}'));
-        } catch (err) {
-          done(err, {});
-        }
-      },
-    );
-
+  const fastifyAdapter = new FastifyAdapter({ bodyLimit: 100e6 });
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     fastifyAdapter,

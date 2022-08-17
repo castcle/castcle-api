@@ -46,7 +46,23 @@ export const pipelineOfGetWalletHistory = (
       _id: 0,
       id: '$_id',
       status: '$status',
-      type: '$type',
+      type: {
+        $cond: {
+          if: {
+            $eq: ['$type', TransactionType.SEND],
+          },
+          then: {
+            $cond: {
+              if: {
+                $eq: ['$from.user', userId],
+              },
+              then: '$type',
+              else: TransactionType.RECEIVE,
+            },
+          },
+          else: '$type',
+        },
+      },
       value: {
         $toDouble: {
           $cond: {
