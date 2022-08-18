@@ -70,6 +70,7 @@ import {
   ReportingMessage,
   ReportingStatus,
   ReportingType,
+  TransactionStatus,
   TransactionType,
   UserType,
   WalletType,
@@ -711,8 +712,8 @@ export class ContentServiceV2 {
       );
       const session = await this.contentFarmingModel.startSession();
       const contentFarming = await new this.contentFarmingModel({
-        content: contentId,
-        user: userId,
+        content: new Types.ObjectId(contentId),
+        user: new Types.ObjectId(userId),
         status: ContentFarmingStatus.Farming,
         farmAmount: farmAmount,
         startAt: new Date(),
@@ -735,6 +736,7 @@ export class ContentServiceV2 {
             },
           ],
           type: TransactionType.FARMING,
+          status: TransactionStatus.VERIFIED,
           ledgers: [
             {
               debit: {
@@ -793,6 +795,7 @@ export class ContentServiceV2 {
             },
           ],
           type: TransactionType.FARMING,
+          status: TransactionStatus.VERIFIED,
           ledgers: [
             {
               debit: {
@@ -919,6 +922,7 @@ export class ContentServiceV2 {
             },
           ],
           type: TransactionType.UNFARMING,
+          status: TransactionStatus.VERIFIED,
           ledgers: [
             {
               debit: {
@@ -976,6 +980,7 @@ export class ContentServiceV2 {
             },
           ],
           type: TransactionType.UNFARMING,
+          status: TransactionStatus.VERIFIED,
           ledgers: [
             {
               debit: {
@@ -1029,6 +1034,7 @@ export class ContentServiceV2 {
           },
         ],
         type: TransactionType.FARMED,
+        status: TransactionStatus.VERIFIED,
         ledgers: [
           {
             debit: {
