@@ -86,7 +86,7 @@ export class SearchesController {
 
     return {
       hashtags: result.hashtags.map((hashtag, index) =>
-        hashtag.toSearchTopTrendhPayload(index),
+        hashtag.toSearchTopTrendPayload(index),
       ),
       follows: result.follows.map((user) => user.toSearchTopTrendResponse()),
       topics: [],

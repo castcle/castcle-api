@@ -77,8 +77,8 @@ export class SearchesControllerV2 {
     return this.searchServiceV2.getTopTrends(query, authorizer.user);
   }
 
-  @Get('hashtags')
   @CastcleAuth(CacheKeyName.Hashtags)
+  @Get('hashtags')
   async hashtagSearch(@Query('keyword', KeywordHashtagPipe) keyword: string) {
     const result = await this.searchServiceV2.searchHashtag(keyword, {
       page: DEFAULT_QUERY_OPTIONS.page,
@@ -86,7 +86,7 @@ export class SearchesControllerV2 {
     });
     return {
       payload: result.map((hashtag, index) =>
-        hashtag.toSearchTopTrendhPayload(index),
+        hashtag.toSearchTopTrendPayload(index),
       ),
     };
   }

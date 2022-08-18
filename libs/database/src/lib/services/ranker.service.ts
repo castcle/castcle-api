@@ -38,6 +38,7 @@ import {
   CastcleIncludes,
   CastcleMeta,
   CastcleMetric,
+  EntityVisibility,
   FeedItemPayloadItem,
   FeedItemResponse,
   FeedQuery,
@@ -105,6 +106,7 @@ export class RankerService {
           })),
         },
         user: viewer.user.id,
+        visibility: EntityVisibility.Publish,
       })
       .exec();
   };
@@ -330,6 +332,7 @@ export class RankerService {
 
     const contents = await this._contentModel.find({
       _id: { $in: sortedContentIds },
+      visibility: EntityVisibility.Publish,
     });
 
     if (!sortedContentIds.length) {
