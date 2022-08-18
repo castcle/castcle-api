@@ -22,6 +22,7 @@
  */
 
 import { FilterQuery, PipelineStage, Types } from 'mongoose';
+import { EntityVisibility } from '../dtos';
 import { Content, DefaultContent, FeedItem, GuestFeedItem } from '../schemas';
 
 export class GetFeedContentsResponse {
@@ -300,6 +301,7 @@ export const pipelineOfGetFeedContents = (
           dateDiff: new Date(
             new Date().getTime() - params.decayDays * 1000 * 86400,
           ),
+          visibility: EntityVisibility.Publish,
         },
         pipeline: [
           { $sort: { createdAt: -1 } },
@@ -307,6 +309,7 @@ export const pipelineOfGetFeedContents = (
             $match: {
               $expr: {
                 $and: [
+                  { $eq: ['$visibility', '$$visibility'] },
                   { $in: ['$author.id', '$$followings.followedUser'] },
                   {
                     $and: [

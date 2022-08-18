@@ -60,7 +60,7 @@ export const getHtmlReportingContent = (
       padding: 0;
       margin: 0;
     ">
-    <div style="padding: 15px; height: 100%; width: 750px; border-radius: 5px">
+    <div style="padding: 15px; height: 100%; width: 720px; border-radius: 5px">
       <div style="background-color: #23262b; padding: 10px; display: flex; vertical-align: middle">
         <img
           src="https://castcle-public.s3.amazonaws.com/assets/castcle-logo.png"
@@ -154,7 +154,7 @@ export const getHtmlReportingContent = (
                 padding: 4px;
                 vertical-align: top;
               ">
-              ${reporting.user.displayName} (@${reporting.user.castcleId})
+              ${reporting.user.displayName} (${reporting.user.castcleId})
             </td>
           </tr>
           <tr>
@@ -436,7 +436,7 @@ export const getHtmlReportingUser = (
               padding: 4px;
               vertical-align: top;
             ">
-            ${reporting.user.displayName} (@${reporting.user.castcleId})
+            ${reporting.user.displayName} (${reporting.user.castcleId})
           </td>
         </tr>
         <tr>

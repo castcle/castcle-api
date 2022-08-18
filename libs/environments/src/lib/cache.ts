@@ -22,7 +22,7 @@
  */
 
 export const CacheStore = {
-  ofTrendsSearch(keyword: string, token?: string) {
-    return `trends-search-${keyword}${token ? `-${token}` : ''}`;
+  ofTrendsSearch(keyword: string, accountId?: string) {
+    return `trends-search-${keyword}${accountId ? `-${accountId}` : ''}`;
   },
 };
