@@ -33,6 +33,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import cdf from 'castcle-cdf';
+import { DBRef } from 'mongodb';
 import { AnyKeys, Model, Types } from 'mongoose';
 import {
   Author,
@@ -1773,16 +1774,20 @@ export class ContentServiceV2 {
 
     if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
-    await Promise.all([
-      this.repository.updateEngagement(
+    if (requestedBy._id && requestedBy.ownerAccount)
+      await this.repository.updateEngagement(
         engagementFilter,
         {
-          ...engagementFilter,
+          user: requestedBy._id,
+          type: EngagementType.Report,
+          targetRef: new DBRef('content', new Types.ObjectId(targetContent.id)),
           visibility: EntityVisibility.Publish,
-          account: user.ownerAccount,
+          account: requestedBy.ownerAccount,
         },
         { upsert: true },
-      ),
+      );
+
+    await Promise.all([
       this.repository.createReporting({
         by: requestedBy._id,
         message: body.message,
@@ -2139,7 +2144,8 @@ export class ContentServiceV2 {
     await this.reportContent(
       {
         _id: null,
-        displayName: 'ds',
+        ownerAccount: null,
+        displayName: 'ds guardian',
       } as User,
       {
         targetContentId: content.id,
