@@ -78,7 +78,7 @@ export const pipelineOfAirdropTransactionVerification = (
                 input: '$to',
                 initialValue: {
                   $cond: {
-                    if: { $in: ['$from.type', ['personal']] },
+                    if: { $in: ['$from.type', UserWalletTypes] },
                     then: { $eq: [{ $type: '$from.user' }, 'objectId'] },
                     else: true,
                   },
@@ -190,7 +190,7 @@ export const pipelineOfTransactionVerification = (
                   },
                   walletType: {
                     $cond: {
-                      if: { $in: ['$from.type', ['personal']] },
+                      if: { $in: ['$from.type', UserWalletTypes] },
                       then: { $eq: [{ $type: '$from.user' }, 'objectId'] },
                       else: true,
                     },
@@ -254,7 +254,10 @@ export const pipelineOfTransactionVerification = (
                     branches: [
                       {
                         case: {
-                          $ne: ['$$this.user', tx.from.user],
+                          $ne: [
+                            '$$this.user',
+                            new Types.ObjectId(tx.from.user),
+                          ],
                         },
                         then: '$$value',
                       },
