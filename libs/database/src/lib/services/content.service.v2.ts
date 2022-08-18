@@ -836,8 +836,8 @@ export class ContentServiceV2 {
   ) =>
     this.contentFarmingModel.findOne(
       {
-        content: contentId,
-        user: userId,
+        content: new Types.ObjectId(contentId),
+        user: new Types.ObjectId(userId),
       },
       projection,
     );

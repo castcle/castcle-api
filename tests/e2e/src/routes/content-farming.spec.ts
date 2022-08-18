@@ -152,7 +152,7 @@ export const testContentFarming = async () => {
         .send({
           targetContentId: content.id,
         });
-      //balance of user should lesser
+      //can't refarm
       await request()
         .get(`/v2/wallets/me`)
         .auth(requestedBy.accessToken, { type: 'bearer' })
@@ -163,8 +163,62 @@ export const testContentFarming = async () => {
         })
         .send({})
         .expect(({ body }) => {
-          //expect(body.availableBalance).toEqual("4750.00000000");
+          expect(body.availableBalance).toEqual('4750.00000000');
           expect(body.farmBalance).toEqual('250.00000000');
+        });
+      await request()
+        .post(`/v2/users/${requestedBy.profile.id}/farming/cast`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
+        .set({
+          'Accept-Language': 'en',
+          Device: 'CastclePhone',
+          Platform: 'CastcleOS',
+        })
+        .send({
+          targetContentId: content.id,
+        })
+        .expect(({ body }) => {
+          expect(body.message).toEqual('You already farm this cast');
+        })
+        .expect(400);
+      //should not have effect because previous should error
+      await request()
+        .get(`/v2/wallets/me`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
+        .set({
+          'Accept-Language': 'en',
+          Device: 'CastclePhone',
+          Platform: 'CastcleOS',
+        })
+        .send({})
+        .expect(({ body }) => {
+          expect(body.availableBalance).toEqual('4750.00000000');
+          expect(body.farmBalance).toEqual('250.00000000');
+        });
+      const content2 = await createContent(user.profile.id);
+      await request()
+        .post(`/v2/users/${requestedBy.profile.id}/farming/cast`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
+        .set({
+          'Accept-Language': 'en',
+          Device: 'CastclePhone',
+          Platform: 'CastcleOS',
+        })
+        .send({
+          targetContentId: content2.id,
+        });
+      await request()
+        .get(`/v2/wallets/me`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
+        .set({
+          'Accept-Language': 'en',
+          Device: 'CastclePhone',
+          Platform: 'CastcleOS',
+        })
+        .send({})
+        .expect(({ body }) => {
+          expect(body.availableBalance).toEqual('4500.00000000');
+          expect(body.farmBalance).toEqual('500.00000000');
         });
     });
     it('should return content farming status equal "farming"', async () => {
