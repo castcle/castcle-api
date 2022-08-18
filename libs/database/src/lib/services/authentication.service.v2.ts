@@ -333,8 +333,9 @@ export class AuthenticationServiceV2 {
 
     if (castcleIdAlreadyExists) throw new CastcleException('USER_ID_IS_EXIST');
 
-    if (await this.repository.isEmailDisposable(dto.email))
-      throw new CastcleException('DUPLICATE_EMAIL');
+    if (Environment.EMAIL_DISPOSABLE)
+      if (await this.repository.isEmailDisposable(dto.email))
+        throw new CastcleException('DUPLICATE_EMAIL');
 
     await this.repository.updateCredentials(
       { 'account._id': account._id },
