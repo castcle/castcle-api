@@ -34,7 +34,7 @@ import {
 } from '@castcle-api/database';
 import { getModelToken } from '@nestjs/mongoose';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as supertest from 'supertest';
 
 export const app = (): NestFastifyApplication => global.__APP__;
@@ -112,7 +112,7 @@ export const topUp = async (userId: string, amount: number) => {
       to: {
         type: WalletType.PERSONAL,
         value: amount,
-        user: userId,
+        user: new Types.ObjectId(userId),
       },
       status: TransactionStatus.VERIFIED,
       type: TransactionType.DEPOSIT,

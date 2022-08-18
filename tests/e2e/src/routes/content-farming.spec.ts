@@ -22,7 +22,7 @@
  */
 
 import { Types } from 'mongoose';
-import { createContent, registerUser, request } from '../utils.spec';
+import { createContent, registerUser, request, topUp } from '../utils.spec';
 
 export const testContentFarming = async () => {
   describe(`users/:userId/farming/cast/:contentId`, () => {
@@ -136,10 +136,41 @@ export const testContentFarming = async () => {
         })
         .expect(200);
     });
-
+    it('should be able to use user token to farm ', async () => {
+      const user = await registerUser();
+      const requestedBy = await registerUser();
+      const content = await createContent(user.profile.id);
+      await topUp(requestedBy.profile.id, 5000);
+      await request()
+        .post(`/v2/users/${requestedBy.profile.id}/farming/cast`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
+        .set({
+          'Accept-Language': 'en',
+          Device: 'CastclePhone',
+          Platform: 'CastcleOS',
+        })
+        .send({
+          targetContentId: content.id,
+        });
+      //balance of user should lesser
+      await request()
+        .get(`/v2/wallets/me`)
+        .auth(requestedBy.accessToken, { type: 'bearer' })
+        .set({
+          'Accept-Language': 'en',
+          Device: 'CastclePhone',
+          Platform: 'CastcleOS',
+        })
+        .send({})
+        .expect(({ body }) => {
+          //expect(body.availableBalance).toEqual("4750.00000000");
+          expect(body.farmBalance).toEqual('250.00000000');
+        });
+    });
     it('should return content farming status equal "farming"', async () => {
       const user = await registerUser();
       const requestedBy = await registerUser();
+      await topUp(requestedBy.profile.id, 5000);
       const content = await createContent(user.profile.id);
 
       const { body: contentFarming } = await request()
@@ -255,7 +286,7 @@ export const testContentFarming = async () => {
       const user = await registerUser();
       const requestedBy = await registerUser();
       const content = await createContent(user.profile.id);
-
+      await topUp(requestedBy.profile.id, 5000);
       const { body: contentFarming } = await request()
         .post(`/v2/users/${requestedBy.profile.id}/farming/cast`)
         .auth(requestedBy.accessToken, { type: 'bearer' })

@@ -718,7 +718,6 @@ export class ContentServiceV2 {
         farmAmount: farmAmount,
         startAt: new Date(),
       });
-
       try {
         session.startTransaction();
         await contentFarming.save();
@@ -750,6 +749,7 @@ export class ContentServiceV2 {
             },
           ],
         });
+
         await session.commitTransaction();
         return contentFarming;
       } catch (error) {
@@ -1912,8 +1912,8 @@ export class ContentServiceV2 {
   lookupFarming = async (contentId: string, user: User) => {
     const contentFarming = await this.contentFarmingModel.findOne(
       {
-        user: user.id,
-        content: contentId,
+        user: new Types.ObjectId(user.id),
+        content: new Types.ObjectId(contentId),
       },
       {
         updatedAt: 0,
@@ -1925,7 +1925,6 @@ export class ContentServiceV2 {
       this.tAccountService.getAccountBalance(user.id, WalletType.PERSONAL),
       this.tAccountService.getAccountBalance(user.id, WalletType.FARM_LOCKED),
     ]);
-
     if (
       contentFarming &&
       contentFarming?.status !== ContentFarmingStatus.Farming
@@ -1992,13 +1991,12 @@ export class ContentServiceV2 {
   farmingActive = async (viewer: User) => {
     const contentFarmings = await this.contentFarmingModel.find(
       {
-        user: viewer.id,
+        user: new Types.ObjectId(viewer.id),
         status: ContentFarmingStatus.Farming,
       },
       {},
       { sort: { createdAt: -1 } },
     );
-
     const [balance, lockBalance, totalContentFarming] = await Promise.all([
       this.tAccountService.getAccountBalance(viewer.id, WalletType.PERSONAL),
       this.tAccountService.getAccountBalance(viewer.id, WalletType.FARM_LOCKED),
@@ -2067,7 +2065,7 @@ export class ContentServiceV2 {
     const contentFarmings = await this.contentFarmingModel.find(
       createCastcleFilter(
         {
-          user: viewer.id,
+          user: new Types.ObjectId(viewer.id),
           status: ContentFarmingStatus.Farmed,
         },
         { untilId },
