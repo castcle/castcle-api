@@ -1600,7 +1600,6 @@ export class Repository {
         this.updateUsers(
           {
             _id: following.map(({ _id }) => _id),
-            visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
           },
           { $inc: { followedCount: -1 } },
           { session },
@@ -1608,7 +1607,6 @@ export class Repository {
         this.updateUsers(
           {
             _id: follower.map(({ _id }) => _id),
-            visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
           },
           { $inc: { followerCount: -1 } },
           { session },
