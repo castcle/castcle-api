@@ -149,10 +149,10 @@ describe('AdsService', () => {
     });
   });
 
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
+  afterAll(() => {
+    return Promise.all([moduleRef.close(), mongod.stop()]);
   });
+
   describe('#createAds', () => {
     it('should be able to create ads for promote Page', async () => {
       await new transactionModel({
@@ -407,7 +407,7 @@ describe('AdsService', () => {
     const adsCampaigns: AdsCampaign[] = [];
     beforeAll(async () => {
       //remove all adsCampaign
-      await adsCampaignModel.remove({});
+      await adsCampaignModel.deleteMany({});
       expect(await adsCampaignModel.countDocuments()).toEqual(0);
       const mockRelevanceScores = [
         0.1, 0.3, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.15, 0.22, 0.23, 0.34, 0.67,
@@ -595,7 +595,7 @@ describe('AdsService', () => {
           CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
         ],
       }).save();
-      cAccountModel.insertMany([
+      await cAccountModel.insertMany([
         {
           no: CAccountNo.LIABILITY.USER_WALLET.ADS,
           name: 'LIABILITY.ADS_CREDIT',
@@ -629,7 +629,7 @@ describe('AdsService', () => {
           const campaign = new Types.ObjectId();
           const viewer = new Types.ObjectId();
           const topupValue = 100;
-          new transactionModel({
+          await new transactionModel({
             from: {
               type: WalletType.EXTERNAL_DEPOSIT,
               value: topupValue,
@@ -710,7 +710,7 @@ describe('AdsService', () => {
           const viewer = new Types.ObjectId();
           const topupValue = 100;
           await transactionModel.deleteMany({});
-          new transactionModel({
+          await new transactionModel({
             from: {
               type: WalletType.EXTERNAL_DEPOSIT,
               value: topupValue,
@@ -791,7 +791,7 @@ describe('AdsService', () => {
           const viewer = new Types.ObjectId();
           const topupValue = 100;
           await transactionModel.deleteMany({});
-          new transactionModel({
+          await new transactionModel({
             from: {
               type: WalletType.EXTERNAL_DEPOSIT,
               value: topupValue,
@@ -870,7 +870,7 @@ describe('AdsService', () => {
         const viewer = new Types.ObjectId();
         const topupValue = 100;
         await transactionModel.deleteMany({});
-        new transactionModel({
+        await new transactionModel({
           from: {
             type: WalletType.EXTERNAL_DEPOSIT,
             value: topupValue,
@@ -941,11 +941,5 @@ describe('AdsService', () => {
         }
       });
     });
-  });
-  afterAll(() => {
-    adsCampaignModel.deleteMany({});
-    userService._accountModel.deleteMany({});
-    userService._userModel.deleteMany({});
-    contentService._contentModel.deleteMany({});
   });
 });
