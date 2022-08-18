@@ -64,7 +64,6 @@ export class FeedsControllerV2 {
       query,
       authorizer.user,
       authorizer.account,
-      authorizer.credential.accessToken,
     );
   }
 

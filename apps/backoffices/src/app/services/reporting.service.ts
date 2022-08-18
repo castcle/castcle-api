@@ -39,7 +39,8 @@ import {
 import { CastLogger } from '@castcle-api/logger';
 import { LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { Cache } from 'cache-manager';
 import { DateTime } from 'luxon';
 import { Types } from 'mongoose';
 import { pipelineOfGetReporting } from '../aggregations';
@@ -58,6 +59,8 @@ export class ReportingService {
     private repository: Repository,
     private notificationService: NotificationServiceV2,
     private contentService: ContentServiceV2,
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
   ) {}
 
   private async reduceFollows(userId: string, increase?: number) {
@@ -308,6 +311,7 @@ export class ReportingService {
     }
 
     await Promise.all([
+      this.cacheManager.reset(),
       userOwner.save(),
       targetReporting.save(),
       reportings.map(async (reporting) => {
@@ -394,6 +398,7 @@ export class ReportingService {
     const uniqueContents = checkUnique(contents);
 
     await Promise.all([
+      this.cacheManager.reset(),
       this.repository.updateReportings(
         {
           payloadId: [
