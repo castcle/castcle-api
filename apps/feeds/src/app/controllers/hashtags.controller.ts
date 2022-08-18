@@ -76,7 +76,7 @@ export class HashtagsController {
     this.logger.log('Success search hashtags');
     return {
       payload: result.map((hashtag, index) =>
-        hashtag.toSearchTopTrendhPayload(index),
+        hashtag.toSearchTopTrendPayload(index),
       ),
     };
   }

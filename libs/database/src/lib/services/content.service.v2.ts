@@ -1495,7 +1495,6 @@ export class ContentServiceV2 {
     }: GetSearchQuery,
     viewer: User,
     account: Account,
-    token: string,
   ) => {
     const blocking = await this.userServiceV2.getUserRelationships(
       viewer,
@@ -1511,7 +1510,7 @@ export class ContentServiceV2 {
       `${query.keyword.input}${
         query.contentType ? `-${query.contentType}` : ''
       }`,
-      token,
+      account.id,
     );
 
     let contentScore = (await this.cacheManager.get(scoreKey))
@@ -1538,12 +1537,16 @@ export class ContentServiceV2 {
         },
       );
 
-      await this.cacheManager.set(contentKey, JSON.stringify(contentsId));
+      await this.cacheManager.set(contentKey, JSON.stringify(contentsId), {
+        ttl: Environment.TOP_TREND_TTL,
+      });
     }
 
     if (!contentScore && !account.isGuest) {
       contentScore = await this.sortContentsByScore(account._id, contentsId);
-      await this.cacheManager.set(scoreKey, JSON.stringify(contentScore));
+      await this.cacheManager.set(scoreKey, JSON.stringify(contentScore), {
+        ttl: Environment.TOP_TREND_TTL,
+      });
     }
 
     if (!contentsId.length)

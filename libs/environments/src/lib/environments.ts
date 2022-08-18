@@ -282,4 +282,7 @@ export class Environment {
 
   // Check email disposable
   static EMAIL_DISPOSABLE = process.env.EMAIL_DISPOSABLE || 0;
+
+  // TTL number top trend search cache
+  static TOP_TREND_TTL = Number(process.env.TOP_TREND_TTL) || 600;
 }
