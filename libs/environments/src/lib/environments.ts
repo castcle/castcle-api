@@ -279,4 +279,7 @@ export class Environment {
 
   // Content farming limit
   static FARMING_LIMIT = process.env.FARMING_LIMIT || 0;
+
+  // Check email disposable
+  static EMAIL_DISPOSABLE = process.env.EMAIL_DISPOSABLE || 0;
 }
