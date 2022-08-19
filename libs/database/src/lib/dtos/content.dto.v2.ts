@@ -150,3 +150,10 @@ export class GetFarmingParam {
   @IsMongoId()
   contentId: string;
 }
+
+export class GetContentParam {
+  @IsString()
+  @IsMongoId()
+  @IsNotEmpty()
+  contentId: string;
+}
