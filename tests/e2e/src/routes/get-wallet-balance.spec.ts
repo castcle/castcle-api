@@ -175,7 +175,7 @@ export const testGetWalletBalance = () =>
             id: user.profile.id,
             displayName: user.profile.displayName,
             castcleId: user.profile.castcleId,
-            availableBalance: '3000.00000000',
+            availableBalance: '2000.00000000',
             adsCredit: '1000.00000000',
             farmBalance: '1000.00000000',
             totalBalance: '4000.00000000',
