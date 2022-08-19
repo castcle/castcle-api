@@ -47,6 +47,7 @@ import {
   QueueName,
   TopUpDto,
   TransactionFilter,
+  TransactionStatus,
   TransactionType,
   WalletHistoryResponse,
   WalletType,
@@ -276,6 +277,7 @@ export class TAccountService {
               user: topUpDto.userId,
             },
           ],
+          status: TransactionStatus.VERIFIED,
           ledgers: [
             {
               credit: {
@@ -302,6 +304,7 @@ export class TAccountService {
               user: topUpDto.userId,
             },
           ],
+          status: TransactionStatus.VERIFIED,
           ledgers: [
             {
               credit: {

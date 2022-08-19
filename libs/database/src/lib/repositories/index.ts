@@ -501,6 +501,7 @@ export class Repository {
     };
 
     if (filter.type) query.type = filter.type;
+
     if (filter.targetRef) {
       let id;
       if (isArray(filter.targetRef.$id)) {
@@ -509,10 +510,8 @@ export class Repository {
         id = new Types.ObjectId(filter.targetRef.$id);
       }
 
-      query.targetRef = {
-        $ref: filter.targetRef.$ref,
-        $id: id,
-      };
+      query['targetRef.$id'] = id;
+      query['targetRef.$ref'] = filter.targetRef.$ref;
     }
 
     return query;
@@ -530,12 +529,15 @@ export class Repository {
     if (filter.targetRef)
       query.targetRef = {
         $ref: filter.targetRef.$ref,
-        $id: new Types.ObjectId(filter.targetRef.$id),
+        $id: isArray(filter.targetRef.$id)
+          ? { $in: filter.targetRef.$id }
+          : new Types.ObjectId(filter.targetRef.$id),
       };
-    if (isArray(filter.targetRef))
+    if (isArray(filter.targetRef)) {
       query.targetRef = {
         $in: query.targetRef,
       };
+    }
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
         sinceId: filter.sinceId,

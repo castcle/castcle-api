@@ -248,10 +248,7 @@ export const pipelineOfGetWalletBalance = (
   {
     $addFields: {
       available: {
-        $subtract: [
-          { $sum: ['$ads', '$farm', '$personal', '$others'] },
-          '$unavailable',
-        ],
+        $subtract: [{ $sum: ['$ads', '$personal', '$others'] }, '$unavailable'],
       },
       total: {
         $sum: ['$ads', '$farm', '$personal', '$others'],
