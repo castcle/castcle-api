@@ -172,7 +172,7 @@ export class AdsController {
 
     const adsCampaign = await this.adsService.lookupAds(authorizer.user, adsId);
 
-    if (adsCampaign.boostStatus === AdsBoostStatus.Unknown) {
+    if (adsCampaign.boostStatus !== AdsBoostStatus.Unknown) {
       this.logger.log(
         `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`,
       );
