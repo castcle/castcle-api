@@ -2001,7 +2001,7 @@ export class ContentServiceV2 {
       this.tAccountService.getAccountBalance(viewer.id, WalletType.PERSONAL),
       this.tAccountService.getAccountBalance(viewer.id, WalletType.FARM_LOCKED),
       this.contentFarmingModel.countDocuments({
-        user: viewer.id,
+        user: new Types.ObjectId(viewer.id),
         status: ContentFarmingStatus.Farming,
       }),
     ]);

@@ -575,6 +575,56 @@ describe('ContentServiceV2', () => {
       });
     });
   });
+  describe('farmingActive', () => {
+    let content: Content;
+    beforeAll(async () => {
+      const { payload } = await service.createContent(
+        {
+          payload: { message: 'content farming' },
+          type: ContentType.Short,
+          castcleId: mocksUsers[2].user.displayId,
+        },
+        mocksUsers[2].user,
+      );
+      content = await repository.findContent({ _id: payload.id });
+      await mockDeposit(mocksUsers[3].user, 5000, transactionModel);
+      await service.farm(
+        content.id,
+        mocksUsers[3].user.id,
+        mocksUsers[3].account.id,
+      );
+    });
+    it('should return response of content farming status "farming"', async () => {
+      const contentFarmings = await service.farmingActive(mocksUsers[3].user);
+
+      expect(contentFarmings.payload[0].number).toEqual(1);
+      expect(String(contentFarmings.payload[0].content.id)).toEqual(content.id);
+      expect(contentFarmings.payload[0].status).toEqual(
+        ContentFarmingStatus.Farming,
+      );
+    });
+  });
+
+  describe('farmingHistory', () => {
+    it('should return response of content farming status "farmed"', async () => {
+      await service.expireAllFarmedToken();
+      const contentFarmings = await service.farmingHistory(
+        { maxResults: 25, hasRelationshipExpansion: false },
+        mocksUsers[3].user,
+      );
+
+      expect(contentFarmings.payload[0].farmedAt).not.toBeNull();
+      expect(String(contentFarmings.payload[0].content.authorId)).toEqual(
+        mocksUsers[2].user.id,
+      );
+      expect(contentFarmings.payload[0].content.message).toEqual(
+        'content farming',
+      );
+      expect(contentFarmings.payload[0].status).toEqual(
+        ContentFarmingStatus.Farmed,
+      );
+    });
+  });
 
   describe('#getQuoteByCast()', () => {
     it('should create quote cast user on cast.', async () => {
@@ -1179,56 +1229,6 @@ describe('ContentServiceV2', () => {
       await expect(
         service.lookupFarming(content.id, mocksUsers[0].user),
       ).rejects.toThrowError(new CastcleException('CAN_NOT_FARMING_YOUR_CAST'));
-    });
-  });
-
-  describe('farmingActive', () => {
-    let content: Content;
-    beforeAll(async () => {
-      const { payload } = await service.createContent(
-        {
-          payload: { message: 'content farming' },
-          type: ContentType.Short,
-          castcleId: mocksUsers[0].user.displayId,
-        },
-        mocksUsers[0].user,
-      );
-      content = await repository.findContent({ _id: payload.id });
-
-      await service.farm(
-        content.id,
-        mocksUsers[1].user.id,
-        mocksUsers[1].account.id,
-      );
-    });
-    it('should return response of content farming status "farming"', async () => {
-      const contentFarmings = await service.farmingActive(mocksUsers[1].user);
-
-      expect(contentFarmings.payload[0].number).toEqual(1);
-      expect(String(contentFarmings.payload[0].content.id)).toEqual(content.id);
-      expect(contentFarmings.payload[0].status).toEqual(
-        ContentFarmingStatus.Farming,
-      );
-    });
-  });
-
-  describe('farmingHistory', () => {
-    it('should return response of content farming status "farmed"', async () => {
-      const contentFarmings = await service.farmingHistory(
-        { maxResults: 25, hasRelationshipExpansion: false },
-        mocksUsers[1].user,
-      );
-
-      expect(contentFarmings.payload[0].farmedAt).not.toBeNull();
-      expect(String(contentFarmings.payload[0].content.authorId)).toEqual(
-        mocksUsers[0].user.id,
-      );
-      expect(contentFarmings.payload[0].content.message).toEqual(
-        'content farming',
-      );
-      expect(contentFarmings.payload[0].status).toEqual(
-        ContentFarmingStatus.Farmed,
-      );
     });
   });
 
