@@ -316,7 +316,10 @@ export class CommentServiceV2 {
     let engagementsReply = [];
     if (replies.length) {
       engagementsReply = await this.repository.findEngagements({
-        targetRef: replies.map((r) => ({ $ref: 'comment', $id: r._id })),
+        targetRef: {
+          $ref: 'comment',
+          $id: replies.map((r) => new Types.ObjectId(r._id)),
+        },
       });
     }
 
