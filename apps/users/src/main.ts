@@ -34,7 +34,7 @@ import { AppModule } from './app/app.module';
 
 async function bootstrap() {
   const port = process.env.PORT || 3338;
-  const fastifyAdapter = new FastifyAdapter();
+  const fastifyAdapter = new FastifyAdapter({ bodyLimit: 100e6 });
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     fastifyAdapter,
