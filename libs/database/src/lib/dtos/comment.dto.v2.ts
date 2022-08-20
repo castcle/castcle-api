@@ -54,16 +54,23 @@ export class CommentIncludes {
 }
 
 export class CreateCommentDto {
-  @ApiProperty()
+  @IsNotEmpty()
   @IsString()
   message: string;
-  @ApiProperty()
-  @IsString()
+
+  @IsNotEmpty()
+  @IsMongoId()
   contentId: string;
 }
 export class CommentParam extends GetUserParam {
   @IsMongoId()
-  @ApiProperty()
+  @IsNotEmpty()
+  sourceCommentId: string;
+}
+
+export class GetCommentSourceParam {
+  @IsMongoId()
+  @IsNotEmpty()
   sourceCommentId: string;
 }
 
