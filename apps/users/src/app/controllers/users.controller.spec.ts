@@ -105,12 +105,8 @@ describe('AppController', () => {
   let socialSyncService: SocialSyncService;
   let notifyService: NotificationService;
   let adsService: AdsService;
-  let accountModel: Model<Account>;
   let adsModel: Model<AdsCampaign>;
-  let contentModel: Model<Content>;
-  let credentialModel: Model<Credential>;
   let engagementModel: Model<Engagement>;
-  let notificationModel: Model<Notification>;
   let transactionModel: Model<Transaction>;
   let userModel: Model<User>;
 
@@ -183,12 +179,8 @@ describe('AppController', () => {
     socialSyncService = app.get<SocialSyncService>(SocialSyncService);
     notifyService = app.get<NotificationService>(NotificationService);
     adsService = app.get<AdsService>(AdsService);
-    accountModel = app.get(getModelToken('Account'));
     adsModel = app.get(getModelToken('AdsCampaign'));
-    contentModel = app.get(getModelToken('Content'));
-    credentialModel = app.get(getModelToken('Credential'));
     engagementModel = app.get(getModelToken('Engagement'));
-    notificationModel = app.get(getModelToken('Notification'));
     transactionModel = app.get(getModelToken('Transaction'));
     userModel = app.get(getModelToken('User'));
 
@@ -1121,10 +1113,6 @@ describe('AppController', () => {
       expect(pageResponse.images.cover).toBeDefined();
       expect(pageResponse.castcleId).toEqual(pageDto.castcleId);
     });
-    afterAll(() => {
-      credentialModel.deleteMany({});
-      userModel.deleteMany({});
-    });
   });
 
   describe('likeContent', () => {
@@ -1192,13 +1180,6 @@ describe('AppController', () => {
       const result = await contentService.getContentFromId(contentId);
       expect(result.engagements.like.count).toBe(0);
     });
-    afterAll(() => {
-      userModel.deleteMany({});
-      accountModel.deleteMany({});
-      credentialModel.deleteMany({});
-      contentModel.deleteMany({});
-      notificationModel.deleteMany({});
-    });
   });
 
   describe('#getEngagementFromUser', () => {
@@ -1251,12 +1232,6 @@ describe('AppController', () => {
         String(mockUsers[0].user._id),
       );
       expect(response.payload[0].message).toBe(content['payload'].message);
-    });
-
-    afterAll(() => {
-      userModel.deleteMany({});
-      contentModel.deleteMany({});
-      engagementModel.deleteMany({});
     });
   });
 
@@ -1324,10 +1299,6 @@ describe('AppController', () => {
         mockAds.detail.message,
       );
     });
-    afterAll(() => {
-      adsModel.deleteMany({});
-      contentModel.deleteMany({});
-    });
   });
 
   describe('#lookupAds', () => {
@@ -1385,10 +1356,6 @@ describe('AppController', () => {
       expect(adsResponse.duration).toEqual(mockAds.detail.duration);
       expect(adsResponse.dailyBudget).toEqual(mockAds.detail.dailyBudget);
       expect(adsResponse.campaignMessage).toBe(mockAds.detail.message);
-    });
-    afterAll(() => {
-      adsModel.deleteMany({});
-      contentModel.deleteMany({});
     });
   });
 
@@ -1700,10 +1667,6 @@ describe('AppController', () => {
 
         expect(adsCampaign).toBeNull();
       });
-    });
-    afterAll(() => {
-      adsModel.deleteMany({});
-      contentModel.deleteMany({});
     });
   });
 
