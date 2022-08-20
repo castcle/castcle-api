@@ -142,7 +142,7 @@ describe('CommentControllerV2', () => {
       });
 
       const comments = await commentController.getAllComment(
-        content.id,
+        { contentId: content.id },
         credential,
         { hasRelationshipExpansion: false },
       );
@@ -173,8 +173,8 @@ describe('CommentControllerV2', () => {
       });
 
       const replyComments = await commentController.getAllReplyComment(
-        content.id,
-        comment.id,
+        { contentId: content.id },
+        { sourceCommentId: comment.id },
         credential,
         { hasRelationshipExpansion: false },
       );

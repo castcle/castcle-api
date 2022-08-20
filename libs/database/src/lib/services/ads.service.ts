@@ -201,7 +201,8 @@ export class AdsService {
                 .find(
                   ({ id }) =>
                     id ===
-                    String(contents.find(this.isPayloadOf(ad)).author.id),
+                      String(contents.find(this.isPayloadOf(ad))?.author?.id) ||
+                    id === String(users.find(this.isPayloadOf(ad))?.id),
                 )
                 ?.toPublicResponse(),
             ],
