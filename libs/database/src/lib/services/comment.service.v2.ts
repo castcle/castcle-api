@@ -505,12 +505,9 @@ export class CommentServiceV2 {
     this.logger.log('Delete reply comment.');
     await Promise.all(
       replies.map((reply) => {
-        const $updates: Promise<any>[] = [
-          this.removeEngagementComment(reply),
-          reply.remove(),
-        ];
-        if (reply.hashtags) $updates.push(this.removeFromTags(reply.hashtags));
-        return Promise.all($updates);
+        if (reply.hashtags) this.removeFromTags(reply.hashtags);
+        this.removeEngagementComment(reply);
+        reply.remove();
       }),
     );
 

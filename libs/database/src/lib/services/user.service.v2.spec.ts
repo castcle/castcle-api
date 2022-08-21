@@ -201,11 +201,11 @@ describe('UserServiceV2', () => {
         order: 1,
       },
     }).save();
-    jest.spyOn(dataService, 'getFollowingSuggestions').mockRestore();
   });
 
   afterAll(async () => {
     await Promise.all([moduleRef.close(), mongod.stop()]);
+    jest.spyOn(dataService, 'getFollowingSuggestions').mockRestore();
   });
 
   describe('#getUserRelationships', () => {

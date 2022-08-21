@@ -981,11 +981,9 @@ describe('ContentService', () => {
     });
 
     afterAll(() => {
-      return Promise.all([
-        service._userModel.deleteMany({}),
-        service._contentModel.deleteMany({}),
-        service._engagementModel.deleteMany({}),
-      ]);
+      service._userModel.deleteMany({});
+      service._contentModel.deleteMany({});
+      service._engagementModel.deleteMany({});
     });
   });
 });

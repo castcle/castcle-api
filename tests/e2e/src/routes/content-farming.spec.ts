@@ -24,7 +24,7 @@
 import { Types } from 'mongoose';
 import { createContent, registerUser, request, topUp } from '../utils.spec';
 
-export const testContentFarming = () => {
+export const testContentFarming = async () => {
   describe(`users/:userId/farming/cast/:contentId`, () => {
     it('should throw UNAUTHORIZED when sending request without credential', async () => {
       await request()

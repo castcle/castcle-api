@@ -45,4 +45,4 @@ jest.mock('nodemailer', () => ({
 
 jest.mock('twitter-api-v2');
 
-process.env = { NODE_ENV: global.process.env.NODE_ENV };
+global.process.env = { NODE_ENV: global.process.env.NODE_ENV };

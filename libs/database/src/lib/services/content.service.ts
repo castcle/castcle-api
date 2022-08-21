@@ -780,7 +780,7 @@ export class ContentService {
     const result = comment.save();
     if (comment.hashtags)
       await this.hashtagService.removeFromTags(comment.hashtags);
-    await this._updateCommentCounter(comment);
+    this._updateCommentCounter(comment);
     return result;
   };
 
