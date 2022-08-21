@@ -898,7 +898,6 @@ describe('ContentServiceV2', () => {
         },
         mocksUsers[0].user,
         mocksUsers[0].account,
-        'testtesttesttesttesttesttesttesttesttest',
       );
 
       expect(getSearchTrends.payload).toHaveLength(25);
