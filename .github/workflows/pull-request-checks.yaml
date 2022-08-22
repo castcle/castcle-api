@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: '16.10'
           cache: 'npm'
       - uses: actions/cache@v3
         id: cache
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: '16.10'
           cache: 'npm'
       - uses: actions/cache@v3
         id: cache
@@ -57,19 +57,21 @@ jobs:
         run: npm ci
       - name: Build Project
         run: npm run build ${{ matrix.app }}
+      - name: Test Project
+        run: npm run test ${{ matrix.app }} -- --silent --maxWorkers=1
 
   test:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - topic: All Except Database and E2E
-            args: npm run nx run-many -- --target=test --silent --parallel=1 --maxWorkers=1 --all --exclude=database,e2e
-            key: all
-          - topic: Only Database
-            args: npm run nx test database -- --silent --maxWorkers=1
+          - topic: Libs
+            args: npm run nx run-many -- --target=test --silent --parallel=1 --maxWorkers=1 --all --exclude=database,e2e,analytics,authentications,auto-posts,backgrounds,backoffices,feeds,queues,users
+            key: others
+          - topic: Database
+            args: npm run nx test database -- --silent --maxWorkers=1 --logHeapUsage
             key: database
-          - topic: Only E2E
+          - topic: E2E
             args: npm run nx test e2e -- --silent --maxWorkers=1
             key: e2e
     name: Test ${{ matrix.topic }}
@@ -80,7 +82,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: '16.10'
           cache: 'npm'
       - uses: actions/cache@v3
         id: cache

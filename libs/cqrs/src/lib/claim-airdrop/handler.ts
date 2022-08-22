@@ -26,7 +26,7 @@ import {
   CampaignStatus,
   CampaignType,
   EntityVisibility,
-  FeedItem,
+  FeedItemV2,
   QueueName,
   Transaction,
   TransactionStatus,
@@ -54,7 +54,7 @@ export class ClaimAirdropHandler
 {
   constructor(
     @InjectModel('Campaign') private campaignModel: Model<Campaign>,
-    @InjectModel('FeedItem') private feedModel: Model<FeedItem>,
+    @InjectModel('FeedItemV2') private feedModel: Model<FeedItemV2>,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
     @InjectQueue(QueueName.NEW_TRANSACTION)
@@ -136,7 +136,7 @@ export class ClaimAirdropHandler
     const now = new Date();
     const hasCampaignStarted = now > campaign.startDate;
     const hasCampaignEnded = now > campaign.endDate;
-    if (hasCampaignStarted || !hasCampaignEnded) {
+    if (!hasCampaignStarted || hasCampaignEnded) {
       throw new CastcleException('CAMPAIGN_HAS_NOT_STARTED');
     }
     if (Number(campaign.rewardBalance) < Number(campaign.rewardsPerClaim)) {
@@ -221,7 +221,8 @@ export class ClaimAirdropHandler
     const now = new Date();
     const hasCampaignStarted = now > campaign.startDate;
     const hasCampaignEnded = now > campaign.endDate;
-    if (hasCampaignStarted || !hasCampaignEnded) {
+
+    if (!hasCampaignStarted || hasCampaignEnded) {
       throw new CastcleException('CAMPAIGN_HAS_NOT_STARTED');
     }
     if (Number(campaign.rewardBalance) < Number(campaign.rewardsPerClaim)) {

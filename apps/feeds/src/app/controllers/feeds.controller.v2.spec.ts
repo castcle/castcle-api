@@ -127,18 +127,20 @@ describe('FeedsControllerV2', () => {
       accountService: authService,
     });
 
-    for (let index = 0; index < 20; index++) {
-      contentServiceV2.createContent(
-        {
-          payload: {
-            message: `hello content ${index}`,
+    await Promise.all(
+      Array.from({ length: 20 }, (_, index) =>
+        contentServiceV2.createContent(
+          {
+            payload: {
+              message: `hello content ${index}`,
+            },
+            type: ContentType.Short,
+            castcleId: mocksUsers[0].user.displayId,
           },
-          type: ContentType.Short,
-          castcleId: mocksUsers[0].user.displayId,
-        },
-        mocksUsers[0].user,
-      );
-    }
+          mocksUsers[0].user,
+        ),
+      ),
+    );
   });
 
   describe('#getSearchRecent', () => {

@@ -47,14 +47,14 @@ export class AdsController {
   }
 
   @BackofficeAuth()
-  @RequiredPermissions(Permission.Manage)
+  @RequiredPermissions(Permission.Update)
   @Post(':adId/approve')
   async approveAd(@Param() { adId }: GetAdParam) {
     await this.adsService.approveAd(adId);
   }
 
   @BackofficeAuth()
-  @RequiredPermissions(Permission.Manage)
+  @RequiredPermissions(Permission.Update)
   @Post(':adId/decline')
   async declineAd(
     @Body() { reason }: ManageAdDto,
