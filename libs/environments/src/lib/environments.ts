@@ -278,10 +278,10 @@ export class Environment {
   static CHAIN_INTERNAL = process.env.CHAIN_INTERNAL;
 
   // Content farming limit
-  static FARMING_LIMIT = process.env.FARMING_LIMIT || 0;
+  static FARMING_LIMIT = Number(process.env.FARMING_LIMIT) || 999;
 
   // Check email disposable
-  static EMAIL_DISPOSABLE = process.env.EMAIL_DISPOSABLE || 0;
+  static EMAIL_DISPOSABLE = Number(process.env.EMAIL_DISPOSABLE) || 0;
 
   // TTL number top trend search cache
   static TOP_TREND_TTL = Number(process.env.TOP_TREND_TTL) || 600;

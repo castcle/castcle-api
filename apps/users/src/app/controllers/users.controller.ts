@@ -222,7 +222,7 @@ export class UsersController {
 
   _verifyAdsApprove = async (user: User, adsId: string) => {
     const adsCampaign = await this.adsService.lookupAds(user, adsId);
-    if (!adsCampaign || adsCampaign.status !== AdsStatus.Approved) {
+    if (!adsCampaign || adsCampaign.adStatus !== AdsStatus.Approved) {
       this.logger.log('Ads campaign not found.');
       console.log('Ads campaign not found.');
       throw new CastcleException('FORBIDDEN');
@@ -548,13 +548,11 @@ export class UsersController {
 
   @CastcleBasicAuth()
   @Post('me/advertise')
-  async createAds(
+  createAds(
     @Auth() { user }: Authorizer,
     @Body() adsRequestDto: AdsRequestDto,
   ) {
-    const ad = await this.adsService.createAds(user, adsRequestDto);
-    const [adsResponse] = await this.adsService.convertAdsToAdResponses([ad]);
-    return adsResponse;
+    return this.adsService.createAds(user, adsRequestDto);
   }
 
   @ApiOkResponse({
@@ -1560,15 +1558,8 @@ export class UsersController {
 
   @CastcleBasicAuth()
   @Get('me/advertise')
-  async listAds(@Auth() { user }: Authorizer, @Query() adsQuery: AdsQuery) {
-    const ads = await this.adsService.getListAds(user, adsQuery);
-    if (!ads) return { payload: null };
-
-    const adsResponses = await this.adsService.convertAdsToAdResponses(ads);
-    return ResponseDto.ok({
-      payload: adsResponses,
-      meta: createCastcleMeta(ads),
-    });
+  listAds(@Auth() { user }: Authorizer, @Query() adsQuery: AdsQuery) {
+    return this.adsService.getListAds(user, adsQuery);
   }
 
   /**
@@ -1580,9 +1571,7 @@ export class UsersController {
   @Get('me/advertise/:id')
   async lookupAds(@Auth() { user }: Authorizer, @Param('id') adsId: string) {
     const ad = await this.adsService.lookupAds(user, adsId);
-    if (!ad) return;
-    const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
-    return adResponse;
+    return ad;
   }
 
   /**
@@ -1981,7 +1970,7 @@ export class UsersController {
     }
 
     await this.adsService.updateAdsBoostStatus(
-      adsCampaign._id,
+      adsCampaign.id,
       AdsBoostStatus.Running,
     );
   }
@@ -2006,7 +1995,7 @@ export class UsersController {
     }
 
     await this.adsService.updateAdsBoostStatus(
-      adsCampaign._id,
+      adsCampaign.id,
       AdsBoostStatus.Pause,
     );
   }
@@ -2036,7 +2025,7 @@ export class UsersController {
     }
 
     await this.adsService.updateAdsBoostStatus(
-      adsCampaign._id,
+      adsCampaign.id,
       AdsBoostStatus.End,
     );
   }

@@ -99,6 +99,7 @@ export class AdsRequestDto {
 }
 
 export class AdsResponse {
+  id: string;
   campaignName: string;
   campaignMessage: string;
   campaignCode: string;

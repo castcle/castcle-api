@@ -26,13 +26,9 @@ import {
   AdsCastDto,
   AdsQuery,
   AdsService,
-  AdsStatus,
   AdsUserDto,
   ContentServiceV2,
   GetAdsParams,
-  Meta,
-  ResponseDto,
-  User,
   UserServiceV2,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
@@ -41,6 +37,7 @@ import {
   Auth,
   Authorizer,
   CastcleAuth,
+  CastcleBasicAuth,
   CastcleClearCacheAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
@@ -65,15 +62,6 @@ export class AdsController {
   ) {}
   private logger = new CastLogger(AdsController.name);
 
-  private _verifyAdsApprove = async (user: User, adsId: string) => {
-    const adsCampaign = await this.adsService.lookupAds(user, adsId);
-    if (adsCampaign?.status !== AdsStatus.Approved) {
-      this.logger.log('Ads campaign not found.');
-      throw new CastcleException('FORBIDDEN');
-    }
-    return adsCampaign;
-  };
-
   @CastcleClearCacheAuth(CacheKeyName.Feeds)
   @Delete(':adsId')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -95,7 +83,10 @@ export class AdsController {
   ) {
     authorizer.requireActivation();
 
-    const adsCampaign = await this._verifyAdsApprove(authorizer.user, adsId);
+    const adsCampaign = await this.adsService.verifyAdsApprove(
+      authorizer.user,
+      adsId,
+    );
 
     if (adsCampaign.boostStatus !== AdsBoostStatus.Pause) {
       this.logger.log(
@@ -116,7 +107,10 @@ export class AdsController {
   ) {
     this.logger.log(`Start pause ads.`);
     authorizer.requireActivation();
-    const adsCampaign = await this._verifyAdsApprove(authorizer.user, adsId);
+    const adsCampaign = await this.adsService.verifyAdsApprove(
+      authorizer.user,
+      adsId,
+    );
 
     if (adsCampaign.boostStatus !== AdsBoostStatus.Running) {
       this.logger.log(
@@ -139,7 +133,10 @@ export class AdsController {
 
     authorizer.requireActivation();
 
-    const adsCampaign = await this._verifyAdsApprove(authorizer.user, adsId);
+    const adsCampaign = await this.adsService.verifyAdsApprove(
+      authorizer.user,
+      adsId,
+    );
 
     if (
       !(
@@ -170,7 +167,10 @@ export class AdsController {
 
     authorizer.requireActivation();
 
-    const adsCampaign = await this.adsService.lookupAds(authorizer.user, adsId);
+    const adsCampaign = await this.adsService.verifyAdsApprove(
+      authorizer.user,
+      adsId,
+    );
 
     if (adsCampaign.boostStatus !== AdsBoostStatus.Unknown) {
       this.logger.log(
@@ -197,12 +197,7 @@ export class AdsController {
     if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    const ad = await this.adsService.createAds(user, adsRequestDto);
-    const [adResponse] = await this.adsService.convertAdsToAdResponses(
-      [ad],
-      true,
-    );
-    return adResponse;
+    return this.adsService.createAds(user, adsRequestDto);
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Feeds)
@@ -221,9 +216,7 @@ export class AdsController {
     const user = await this.userService.getUser(content.author.id);
     if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
-    const ad = await this.adsService.createAds(user, adsRequestDto);
-    const [adResponse] = await this.adsService.convertAdsToAdResponses([ad]);
-    return adResponse;
+    return this.adsService.createAds(user, adsRequestDto);
   }
 
   @CastcleAuth(CacheKeyName.Users)
@@ -235,24 +228,16 @@ export class AdsController {
     authorizer.requireActivation();
 
     const ad = await this.adsService.lookupAds(authorizer.user, adsId);
-    if (!ad) throw new CastcleException('AD_NOT_FOUND');
 
-    const [adResponse] = await this.adsService.convertAdsToAdResponses(
-      [ad],
-      true,
-    );
-    return adResponse;
+    return ad;
   }
 
-  @CastcleAuth(CacheKeyName.Users)
+  // @CastcleAuth(CacheKeyName.Users)
+  @CastcleBasicAuth()
   @Get()
   async listAds(@Auth() authorizer: Authorizer, @Query() adsQuery: AdsQuery) {
     authorizer.requireActivation();
 
-    const ads = await this.adsService.getListAds(authorizer.user, adsQuery);
-    return ResponseDto.ok({
-      payload: await this.adsService.convertAdsToAdResponses(ads),
-      meta: Meta.fromDocuments(ads),
-    });
+    return this.adsService.getListAds(authorizer.user, adsQuery);
   }
 }
