@@ -532,7 +532,6 @@ export class UsersControllerV2 {
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Comments)
-  @CastcleBasicAuth()
   @Delete(':userId/likes-comments/:sourceCommentId')
   async unlikeCommentCast(
     @Auth() authorizer: Authorizer,
@@ -554,7 +553,7 @@ export class UsersControllerV2 {
   }
 
   @Post(':userId/blocking')
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.Users)
   @HttpCode(HttpStatus.NO_CONTENT)
   async blockUser(
     @Auth() authorizer: Authorizer,
@@ -571,7 +570,7 @@ export class UsersControllerV2 {
   }
 
   @Delete(':userId/blocking/:targetCastcleId')
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.Users)
   @HttpCode(HttpStatus.NO_CONTENT)
   async unblockUser(
     @Auth() authorizer: Authorizer,

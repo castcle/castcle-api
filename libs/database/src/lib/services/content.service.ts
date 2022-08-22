@@ -1119,12 +1119,6 @@ Message: ${message}`,
       : [];
 
     users.forEach((author) => {
-      const authorRelationship = relationships.find(
-        ({ followedUser, user }) =>
-          String(user) === String(author.id) &&
-          String(followedUser) === String(viewer?.id),
-      );
-
       const getterRelationship = relationships.find(
         ({ followedUser, user }) =>
           String(followedUser) === String(author.id) &&
@@ -1132,7 +1126,6 @@ Message: ${message}`,
       );
 
       author.blocked = Boolean(getterRelationship?.blocking);
-      author.blocking = Boolean(authorRelationship?.blocking);
       author.followed = Boolean(getterRelationship?.following);
     });
   }

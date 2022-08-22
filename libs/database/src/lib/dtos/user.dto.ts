@@ -53,11 +53,11 @@ import { CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 import { Meta } from './response.dto';
 
-class UserWallet {
+export class UserWallet {
   balance: number;
 }
 
-class UserImageDto {
+export class UserImageDto {
   @IsOptional()
   @IsString()
   avatar?: string;
@@ -146,7 +146,7 @@ export class SocialLinks {
   website?: string;
 }
 
-class Counter {
+export class Counter {
   @ApiProperty()
   count: number;
 }
@@ -209,9 +209,6 @@ export class UserResponseDto {
   blocked: boolean;
 
   @ApiProperty()
-  blocking: boolean;
-
-  @ApiProperty()
   passwordNotSet: boolean;
 
   @ApiProperty()
@@ -240,7 +237,7 @@ export class UserResponseDto {
 
 type LinkedSocials = Partial<Record<AuthenticationProvider, LinkedSocial>>;
 
-class LinkedSocial {
+export class LinkedSocial {
   socialId: string;
 }
 
@@ -324,9 +321,6 @@ export class PageResponseDto {
 
   @ApiProperty()
   blocked: boolean;
-
-  @ApiProperty()
-  blocking: boolean;
 
   @ApiProperty()
   updatedAt: string;
@@ -536,7 +530,6 @@ export class PublicUserResponse {
   followers: Counter;
   following: Counter;
   followed?: boolean;
-  blocking?: boolean;
   blocked?: boolean;
   contact: ContactDto;
   casts: number;
