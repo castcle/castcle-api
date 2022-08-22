@@ -29,6 +29,7 @@ import {
   AdsPaymentMethod,
   AdsQuery,
   AdsRequestDto,
+  AdsResponse,
   AdsService,
   AdsStatus,
   AnalyticService,
@@ -1236,7 +1237,7 @@ describe('AppController', () => {
   describe('#listAds', () => {
     let mocks: MockUserDetail[];
     let content: Content;
-    let mockAds: AdsCampaign;
+    let mockAds: AdsResponse;
     beforeAll(async () => {
       mocks = await generateMockUsers(2, 1, {
         accountService: authService,
@@ -1284,17 +1285,15 @@ describe('AppController', () => {
         } as AdsQuery,
       );
 
-      expect(mockAds.adsRef).not.toBeUndefined();
+      expect(mockAds.payload).not.toBeUndefined();
       expect(adsResponse.payload?.length).toBeGreaterThan(0);
-      expect(adsResponse.payload[0].campaignName).toBe(mockAds.detail.name);
+      expect(adsResponse.payload[0].campaignName).toBe(mockAds.campaignName);
       expect(adsResponse.payload[0].boostType).toBe('content');
-      expect(adsResponse.payload[0].adStatus).toBe(mockAds.status);
-      expect(adsResponse.payload[0].duration).toEqual(mockAds.detail.duration);
-      expect(adsResponse.payload[0].dailyBudget).toEqual(
-        mockAds.detail.dailyBudget,
-      );
+      expect(adsResponse.payload[0].adStatus).toBe(mockAds.adStatus);
+      expect(adsResponse.payload[0].duration).toEqual(mockAds.duration);
+      expect(adsResponse.payload[0].dailyBudget).toEqual(mockAds.dailyBudget);
       expect(adsResponse.payload[0].campaignMessage).toBe(
-        mockAds.detail.message,
+        mockAds.campaignMessage,
       );
     });
   });
@@ -1302,7 +1301,7 @@ describe('AppController', () => {
   describe('#lookupAds', () => {
     let mocks: MockUserDetail[];
     let content: Content;
-    let mockAds: AdsCampaign;
+    let mockAds: AdsResponse;
     beforeAll(async () => {
       mocks = await generateMockUsers(1, 1, {
         accountService: authService,
@@ -1343,17 +1342,17 @@ describe('AppController', () => {
     it('should be able to lookup ads detail exist.', async () => {
       const adsResponse = await appController.lookupAds(
         { user: mocks[0].user as User } as Authorizer,
-        mockAds._id,
+        mockAds.id,
       );
 
-      expect(mockAds.adsRef).not.toBeUndefined();
+      expect(mockAds.payload).not.toBeUndefined();
       expect(adsResponse).toBeTruthy();
-      expect(adsResponse.campaignName).toBe(mockAds.detail.name);
+      expect(adsResponse.campaignName).toBe(mockAds.campaignName);
       expect(adsResponse.boostType).toBe('content');
-      expect(adsResponse.adStatus).toBe(mockAds.status);
-      expect(adsResponse.duration).toEqual(mockAds.detail.duration);
-      expect(adsResponse.dailyBudget).toEqual(mockAds.detail.dailyBudget);
-      expect(adsResponse.campaignMessage).toBe(mockAds.detail.message);
+      expect(adsResponse.adStatus).toBe(mockAds.adStatus);
+      expect(adsResponse.duration).toEqual(mockAds.duration);
+      expect(adsResponse.dailyBudget).toEqual(mockAds.dailyBudget);
+      expect(adsResponse.campaignMessage).toBe(mockAds.campaignMessage);
     });
   });
 
@@ -1527,7 +1526,7 @@ describe('AppController', () => {
 
   describe('#updateAds', () => {
     let mocks: MockUserDetail[];
-    let mockAds: AdsCampaign;
+    let mockAds: AdsResponse;
     beforeAll(async () => {
       mocks = await generateMockUsers(2, 1, {
         accountService: authService,
@@ -1569,8 +1568,8 @@ describe('AppController', () => {
           paymentMethod: AdsPaymentMethod.ADS_CREDIT,
           dailyBidType: AdsBidType.Auto,
         };
-        await adsService.updateAdsById(mockAds._id, adsUpdate);
-        const adsCampaign = await adsModel.findById(mockAds._id).exec();
+        await adsService.updateAdsById(mockAds.id, adsUpdate);
+        const adsCampaign = await adsModel.findById(mockAds.id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.detail.name).toEqual(adsUpdate.campaignName);
@@ -1581,7 +1580,7 @@ describe('AppController', () => {
       });
     });
     describe('#adsRunning, #adsPause, #adsEnd', () => {
-      let ads: AdsCampaign;
+      let ads: AdsResponse;
       it('should be able update ads running.', async () => {
         const adsInput: AdsRequestDto = {
           campaignName: 'Ads2',
@@ -1595,7 +1594,7 @@ describe('AppController', () => {
         };
         ads = await adsService.createAds(mocks[0].pages[0], adsInput);
         await adsModel.updateOne(
-          { _id: ads._id },
+          { _id: ads.id },
           {
             $set: {
               status: AdsStatus.Approved,
@@ -1605,9 +1604,9 @@ describe('AppController', () => {
         );
         await appController.adsRunning(
           { credential: mocks[0].credential, user: mocks[0].user } as any,
-          ads._id,
+          ads.id,
         );
-        const adsCampaign = await adsModel.findById(ads._id).exec();
+        const adsCampaign = await adsModel.findById(ads.id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Running);
@@ -1616,16 +1615,16 @@ describe('AppController', () => {
         await expect(
           appController.adsRunning(
             { credential: mocks[0].credential, user: mocks[0].user } as any,
-            ads._id,
+            ads.id,
           ),
         ).rejects.toEqual(new CastcleException('ADS_BOOST_STATUS_MISMATCH'));
       });
       it('should be able update ads Pause.', async () => {
         await appController.adsPause(
           { credential: mocks[0].credential, user: mocks[0].user } as any,
-          ads._id,
+          ads.id,
         );
-        const adsCampaign = await adsModel.findById(ads._id).exec();
+        const adsCampaign = await adsModel.findById(ads.id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
@@ -1634,16 +1633,16 @@ describe('AppController', () => {
         await expect(
           appController.adsPause(
             { credential: mocks[0].credential, user: mocks[0].user } as any,
-            ads._id,
+            ads.id,
           ),
         ).rejects.toEqual(new CastcleException('ADS_BOOST_STATUS_MISMATCH'));
       });
       it('should be able update ads End.', async () => {
         await appController.adsEnd(
           { credential: mocks[0].credential, user: mocks[0].user } as any,
-          ads._id,
+          ads.id,
         );
-        const adsCampaign = await adsModel.findById(ads._id).exec();
+        const adsCampaign = await adsModel.findById(ads.id).exec();
 
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.End);
@@ -1652,7 +1651,7 @@ describe('AppController', () => {
         await expect(
           appController.adsEnd(
             { credential: mocks[0].credential, user: mocks[0].user } as any,
-            ads._id,
+            ads.id,
           ),
         ).rejects.toEqual(new CastcleException('ADS_BOOST_STATUS_MISMATCH'));
       });
@@ -1660,8 +1659,8 @@ describe('AppController', () => {
 
     describe('#deleteAds', () => {
       it('should be able delete ads is correct.', async () => {
-        await adsService.deleteAdsById(mockAds._id);
-        const adsCampaign = await adsModel.findById(mockAds._id).exec();
+        await adsService.deleteAdsById(mockAds.id);
+        const adsCampaign = await adsModel.findById(mockAds.id).exec();
 
         expect(adsCampaign).toBeNull();
       });

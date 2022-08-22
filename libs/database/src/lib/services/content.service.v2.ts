@@ -839,12 +839,20 @@ export class ContentServiceV2 {
     );
 
   farm = async (contentId: string, userId: string, accountId: string) => {
-    const [contentFarming, content, users, account] = await Promise.all([
-      this.getContentFarming(contentId, userId),
-      this.repository.findContent({ _id: contentId }),
-      this.repository.findUsers({ accountId }),
-      this.repository.findAccount({ _id: accountId }),
-    ]);
+    const [contentFarming, content, users, account, totalContentFarming] =
+      await Promise.all([
+        this.getContentFarming(contentId, userId),
+        this.repository.findContent({ _id: contentId }),
+        this.repository.findUsers({ accountId }),
+        this.repository.findAccount({ _id: accountId }),
+        this.contentFarmingModel.countDocuments({
+          user: new Types.ObjectId(userId),
+          status: ContentFarmingStatus.Farming,
+        }),
+      ]);
+
+    if (totalContentFarming >= Environment.FARMING_LIMIT)
+      throw new CastcleException('CONTENT_FARMING_LIMIT');
 
     if (users.some(({ id }) => id === String(content.author.id)))
       throw new CastcleException('CAN_NOT_FARMING_YOUR_CAST');
@@ -869,9 +877,9 @@ export class ContentServiceV2 {
       account.preferences.languages[0],
     );
 
-    if (this.checkFarming(contentFarming)) {
-      return this.updateContentFarming(contentFarming);
-    } else return this.createContentFarming(contentId, userId);
+    return this.checkFarming(contentFarming)
+      ? this.updateContentFarming(contentFarming)
+      : this.createContentFarming(contentId, userId);
   };
 
   unfarmByFarmingId = async (farmingId: string, userId: string) => {
@@ -1129,12 +1137,8 @@ export class ContentServiceV2 {
     contentFarming: ContentFarming,
     userId: string,
   ) => {
-    const [[balance], totalContentFarming, content] = await Promise.all([
+    const [[balance], content] = await Promise.all([
       this.repository.aggregateTransaction(new Types.ObjectId(userId)),
-      this.contentFarmingModel.countDocuments({
-        _id: { $lte: contentFarming.id },
-        user: userId,
-      }),
       this.repository.findContent({
         _id: contentFarming.content as any,
       }),
@@ -1160,20 +1164,37 @@ export class ContentServiceV2 {
         String(relationship.followedUser) === String(content?.author?.id),
     );
 
-    const responseUser = await user?.toPublicResponse({
+    const totalContentFarming = await this.contentFarmingModel.countDocuments({
+      _id: { $lte: contentFarming._id },
+      user: new Types.ObjectId(userId),
+      status: ContentFarmingStatus.Farming,
+    });
+
+    const includesUsers = new Author({
+      id: user.id,
+      avatar: user.profile?.images?.avatar,
+      castcleId: user.displayId,
+      displayName: user.displayName,
+      type: user.type,
+      verified: user.verified,
+    }).toIncludeUser({
       blocked: relationship?.blocking ?? false,
       followed: relationship?.following ?? false,
     });
 
-    return new ContentFarmingResponse(
-      contentFarming,
-      Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
-      Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
-      Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
-      totalContentFarming,
-      responseUser,
-      contentPayload,
-    );
+    return {
+      ...new ContentFarmingResponse(
+        contentFarming,
+        Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
+        Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
+        Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
+        totalContentFarming,
+        contentPayload,
+      ),
+      includes: new CastcleIncludes({
+        users: [includesUsers],
+      }),
+    };
   };
 
   getEngagementCast = async (
@@ -1963,26 +1984,46 @@ export class ContentServiceV2 {
         String(relationship.followedUser) === String(content?.author?.id),
     );
 
-    const responseUser = await author?.toPublicResponse({
+    const [lastActive] = await this.contentFarmingModel.find(
+      {
+        user: user._id,
+        status: ContentFarmingStatus.Farming,
+      },
+      {},
+      { sort: { _id: -1 }, limit: 1 },
+    );
+
+    const totalContentFarming = await this.contentFarmingModel.countDocuments({
+      _id: { $lte: lastActive?._id },
+      user: user._id,
+      status: ContentFarmingStatus.Farming,
+    });
+
+    const includesUsers = new Author({
+      id: user.id,
+      avatar: user.profile?.images?.avatar,
+      castcleId: user.displayId,
+      displayName: user.displayName,
+      type: user.type,
+      verified: user.verified,
+    }).toIncludeUser({
       blocked: relationship?.blocking ?? false,
       followed: relationship?.following ?? false,
     });
 
-    const totalContentFarming = await this.contentFarmingModel.countDocuments({
-      _id: { $lte: contentFarming?.id },
-      user: user.id,
-      status: ContentFarmingStatus.Farming,
-    });
-
-    return new ContentFarmingResponse(
-      contentFarming,
-      Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
-      Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
-      Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
-      totalContentFarming || 1,
-      responseUser,
-      content ? this.toCastPayload({ content, engagements }) : undefined,
-    );
+    return {
+      ...new ContentFarmingResponse(
+        contentFarming,
+        Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
+        Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
+        Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
+        totalContentFarming + 1,
+        content ? this.toCastPayload({ content, engagements }) : undefined,
+      ),
+      includes: new CastcleIncludes({
+        users: [includesUsers],
+      }),
+    };
   };
 
   farmingActive = async (viewer: User) => {
@@ -2023,34 +2064,40 @@ export class ContentServiceV2 {
           (content) => String(content._id) === String(contentFarming.content),
         );
 
-        const userFarming = users.find(
-          ({ _id }) => String(_id) === String(content?.author?.id),
-        );
-
-        const relationship = relationships?.find(
-          (relationship) =>
-            String(relationship.followedUser) === String(content?.author?.id),
-        );
-
-        const responseUser = await userFarming?.toPublicResponse({
-          blocked: relationship?.blocking ?? false,
-          followed: relationship?.following ?? false,
-        });
-
         return new ContentFarmingResponse(
           contentFarming,
           Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
           Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
           Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
           totalContentFarming - index,
-          responseUser,
           content ? this.toCastPayload({ content, engagements }) : undefined,
         );
       }),
     );
 
+    const includesUsers = users.map((user) => {
+      const relationship = relationships?.find(
+        (relationship) => String(relationship.user) === String(viewer.id),
+      );
+
+      return new Author({
+        id: user.id,
+        avatar: user.profile?.images?.avatar,
+        castcleId: user.displayId,
+        displayName: user.displayName,
+        type: user.type,
+        verified: user.verified,
+      }).toIncludeUser({
+        blocked: relationship?.blocking ?? false,
+        followed: relationship?.following ?? false,
+      });
+    });
+
     return ResponseDto.ok({
       payload: farmingPayload,
+      includes: new CastcleIncludes({
+        users: includesUsers,
+      }),
     });
   };
 
@@ -2098,34 +2145,40 @@ export class ContentServiceV2 {
           (content) => String(content._id) === String(contentFarming.content),
         );
 
-        const userFarming = users.find(
-          ({ _id }) => String(_id) === String(content?.author?.id),
-        );
-
-        const relationship = relationships?.find(
-          (relationship) =>
-            String(relationship.followedUser) === String(content?.author?.id),
-        );
-
-        const responseUser = await userFarming?.toPublicResponse({
-          blocked: relationship?.blocking ?? false,
-          followed: relationship?.following ?? false,
-        });
-
         return new ContentFarmingResponse(
           contentFarming,
           Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
           Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
           Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
           undefined,
-          responseUser,
           content ? this.toCastPayload({ content, engagements }) : undefined,
         );
       }),
     );
+    const includesUsers = users.map((user) => {
+      const relationship = relationships?.find(
+        (relationship) => String(relationship.user) === String(viewer.id),
+      );
+
+      return new Author({
+        id: user.id,
+        avatar: user.profile?.images?.avatar,
+        castcleId: user.displayId,
+        displayName: user.displayName,
+        type: user.type,
+        verified: user.verified,
+      }).toIncludeUser({
+        blocked: relationship?.blocking ?? false,
+        followed: relationship?.following ?? false,
+      });
+    });
 
     return ResponseDto.ok({
       payload: farmingPayload,
+      includes: new CastcleIncludes({
+        users: includesUsers,
+      }),
+      meta: Meta.fromDocuments(farmingPayload),
     });
   };
 
