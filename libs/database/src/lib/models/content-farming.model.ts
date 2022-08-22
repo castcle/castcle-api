@@ -38,38 +38,33 @@ class ContentFarmingUserPayload {
   castcleId: string;
   displayName: string;
   followed: boolean;
-  blocking: boolean;
   blocked: boolean;
   avatar: CastcleImage;
   verified: PublicVerification;
 }
 export class ContentFarmingResponse {
-  'id': string;
-  'number': number;
-  'content'?: CastPayload;
-  'balance': {
-    farmed: number;
-    available: number;
-    farming: number;
-    total: number;
-  } = {
-    farmed: 0,
-    available: 0,
-    farming: 0,
-    total: 0,
+  id: string;
+  number: number;
+  content?: CastPayload;
+  balance: {
+    farmed: string;
+    available: string;
+    farming: string;
+    total: string;
   };
   includes: {
     users: ContentFarmingUserPayload[];
   };
-  'status': string;
-  'createdAt'?: Date;
-  'updatedAt'?: Date;
-  'farmedAt'?: Date;
+  status: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  farmedAt?: Date;
 
   constructor(
     contentFarming: ContentFarming,
-    currentBalance: number,
-    lockedBalance: number,
+    totalBalance: string,
+    farmBalance: string,
+    availableBalance: string,
     farmNo: number,
     user?: PublicUserResponse,
     contentPayload?: CastPayload,
@@ -77,13 +72,17 @@ export class ContentFarmingResponse {
     this.id = contentFarming?.id ?? null;
     this.number = farmNo;
     this.content = contentPayload;
-    this.balance['available'] = currentBalance;
-    this.balance['total'] = currentBalance + lockedBalance;
-    this.balance['farming'] = (currentBalance + lockedBalance) * 0.05;
-    this.balance['farmed'] =
-      contentFarming?.status === ContentFarmingStatus.Farming
-        ? lockedBalance
-        : 0;
+    this.balance = {
+      available: availableBalance,
+      total: totalBalance,
+      farming: Number(
+        Number(totalBalance) * Environment.DISTRIBUTE_FARMING,
+      ).toFixed(Environment.DECIMALS_FLOAT),
+      farmed:
+        contentFarming?.status === ContentFarmingStatus.Farming
+          ? farmBalance
+          : Number(0).toFixed(Environment.DECIMALS_FLOAT),
+    };
     this.status = contentFarming?.status
       ? contentFarming?.status
       : farmNo < Environment.FARMING_LIMIT ||
@@ -101,7 +100,6 @@ export class ContentFarmingResponse {
               verified: user.verified,
               followed: user.followed,
               blocked: user.blocked,
-              blocking: user.blocking,
             },
           ]
         : [],

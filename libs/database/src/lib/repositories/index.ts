@@ -48,8 +48,10 @@ import {
 import { lastValueFrom, map } from 'rxjs';
 import {
   GetAvailableIdResponse,
+  WalletBalance,
   pipelineGetContents,
   pipelineOfGetAvailableId,
+  pipelineOfGetWalletBalance,
 } from '../aggregations';
 import {
   AccessTokenPayload,
@@ -1348,6 +1350,12 @@ export class Repository {
     return this.transactionModel.find(findFilter);
   };
 
+  aggregateTransaction = (userId: Types.ObjectId) => {
+    return this.transactionModel.aggregate<WalletBalance>(
+      pipelineOfGetWalletBalance(userId),
+    );
+  };
+
   findCAccountByCaccountNO = (cAccountNo: string) =>
     this.caccountModel.findOne({ no: cAccountNo });
 
@@ -1523,7 +1531,7 @@ export class Repository {
         this.deleteNotifications({ user: pageId }, { session }),
       ]);
       await session.commitTransaction();
-      session.endSession();
+      await session.endSession();
     });
   }
 
@@ -1573,7 +1581,7 @@ export class Repository {
         ),
       ]);
       await session.commitTransaction();
-      session.endSession();
+      await session.endSession();
     });
   }
 
@@ -1590,6 +1598,10 @@ export class Repository {
         following: true,
       });
 
+      const user = await this.userModel.findOne({
+        _id: userId,
+        visibility: EntityVisibility.Publish,
+      });
       await Promise.all([
         this.updateUser(
           {
@@ -1599,20 +1611,22 @@ export class Repository {
           { $set: { visibility: EntityVisibility.Deleted } },
           { session },
         ),
-        this.updateUsers(
-          {
-            _id: following.map(({ _id }) => _id),
-          },
-          { $inc: { followedCount: -1 } },
-          { session },
-        ),
-        this.updateUsers(
-          {
-            _id: follower.map(({ _id }) => _id),
-          },
-          { $inc: { followerCount: -1 } },
-          { session },
-        ),
+        user
+          ? (this.updateUsers(
+              {
+                _id: following.map(({ _id }) => _id),
+              },
+              { $inc: { followedCount: -1 } },
+              { session },
+            ),
+            this.updateUsers(
+              {
+                _id: follower.map(({ _id }) => _id),
+              },
+              { $inc: { followerCount: -1 } },
+              { session },
+            ))
+          : undefined,
         this.deleteRelationships({
           $or: [{ followedUser: userId as any }, { user: userId as any }],
         }),
@@ -1626,7 +1640,7 @@ export class Repository {
         this.deleteNotifications({ user: userId as any }, { session }),
       ]);
       await session.commitTransaction();
-      session.endSession();
+      await session.endSession();
     });
   }
 
@@ -1695,8 +1709,7 @@ export class Repository {
         );
 
         return user.toPublicResponse({
-          blocked: relationship?.blocked ?? false,
-          blocking: relationship?.blocking ?? false,
+          blocked: relationship?.blocking ?? false,
           followed: relationship?.following ?? false,
         });
       }

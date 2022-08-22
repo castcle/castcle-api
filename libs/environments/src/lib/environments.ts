@@ -285,4 +285,7 @@ export class Environment {
 
   // TTL number top trend search cache
   static TOP_TREND_TTL = Number(process.env.TOP_TREND_TTL) || 600;
+
+  // Distribute Farming Percents
+  static DISTRIBUTE_FARMING = Number(process.env.DISTRIBUTE_FARMING) || 0.05;
 }

@@ -65,7 +65,6 @@ export const UserSchemaFactory = (
   UserSchema.methods.toUserResponse = async function ({
     passwordNotSet,
     blocked,
-    blocking,
     followed,
     balance,
     mobile,
@@ -101,7 +100,6 @@ export const UserSchemaFactory = (
       contact: self.contact,
     } as UserResponseDto;
     response.email = self.ownerAccount?.email ?? null;
-    response.blocking = blocking;
     response.blocked = blocked;
     response.passwordNotSet = passwordNotSet;
     response.wallet = {
@@ -145,7 +143,6 @@ export const UserSchemaFactory = (
 
   UserSchema.methods.toPageResponse = function (
     blocked?: boolean,
-    blocking?: boolean,
     followed?: boolean,
     syncSocial?: SocialSync,
     casts?: number,
@@ -175,7 +172,6 @@ export const UserSchemaFactory = (
       },
       verified: { official: this.verified.official },
       blocked,
-      blocking,
       followed,
       updatedAt: this.updatedAt.toISOString(),
       createdAt: this.createdAt.toISOString(),
@@ -248,7 +244,6 @@ export const UserSchemaFactory = (
   UserSchema.methods.toPublicResponse = function (dto?: {
     followed?: boolean;
     blocked?: boolean;
-    blocking?: boolean;
   }): PublicUserResponse {
     return {
       id: this.id,
@@ -275,7 +270,6 @@ export const UserSchemaFactory = (
       following: { count: this.followedCount },
       followed: dto?.followed,
       blocked: dto?.blocked,
-      blocking: dto?.blocking,
       contact: this.contact,
       casts: this.casts,
       createdAt: this.createdAt,
@@ -363,8 +357,9 @@ export const UserSchemaFactory = (
         followedUser.followerCount++;
         await Promise.all([this.save(), followedUser.save()]);
       }
+      await session.commitTransaction();
+      await session.endSession();
     });
-    session.endSession();
   };
 
   UserSchema.methods.unfollow = async function (followedUser: User) {
@@ -394,9 +389,10 @@ export const UserSchemaFactory = (
       }
 
       await Promise.all(toSaves);
-    });
 
-    session.endSession();
+      await session.commitTransaction();
+      await session.endSession();
+    });
   };
 
   return UserSchema;

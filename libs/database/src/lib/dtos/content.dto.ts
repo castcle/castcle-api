@@ -163,19 +163,16 @@ export class Author {
 
   toIncludeUser = ({
     blocked,
-    blocking,
     followed,
   }: Partial<IncludeUser> = {}): IncludeUser => ({
     ...this,
     blocked,
-    blocking,
     followed,
   });
 }
 
 export class IncludeUser extends Author {
   blocked?: boolean;
-  blocking?: boolean;
   followed?: boolean;
 }
 

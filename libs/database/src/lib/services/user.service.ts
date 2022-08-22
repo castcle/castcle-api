@@ -280,22 +280,8 @@ export class UserService {
 
         const userResponse =
           u.type === UserType.PAGE
-            ? u.toPageResponse(
-                undefined,
-                undefined,
-                undefined,
-                syncSocial,
-                content?.total,
-              )
+            ? u.toPageResponse(undefined, undefined, syncSocial, content?.total)
             : await u.toUserResponse({ casts: content?.total });
-
-        const targetRelationship = hasRelationshipExpansion
-          ? relationships.find(
-              ({ followedUser, user }) =>
-                String(user) === String(u.id) &&
-                String(followedUser) === String(viewer?.id),
-            )
-          : undefined;
 
         const getterRelationship = hasRelationshipExpansion
           ? relationships.find(
@@ -306,7 +292,6 @@ export class UserService {
           : undefined;
 
         userResponse.blocked = Boolean(getterRelationship?.blocking);
-        userResponse.blocking = Boolean(targetRelationship?.blocking);
         userResponse.followed = Boolean(getterRelationship?.following);
 
         return userResponse;
@@ -1130,12 +1115,6 @@ Message: ${message}`,
 
       if (!hasRelationshipExpansion) return new Author(author).toIncludeUser();
 
-      const authorRelationship = relationships.find(
-        ({ followedUser, user }) =>
-          String(user) === String(author.id) &&
-          String(followedUser) === String(viewer?.id),
-      );
-
       const getterRelationship = relationships.find(
         ({ followedUser, user }) =>
           String(followedUser) === String(author.id) &&
@@ -1143,10 +1122,9 @@ Message: ${message}`,
       );
 
       const blocked = Boolean(getterRelationship?.blocking);
-      const blocking = Boolean(authorRelationship?.blocking);
       const followed = Boolean(getterRelationship?.following);
 
-      return new Author(author).toIncludeUser({ blocked, blocking, followed });
+      return new Author(author).toIncludeUser({ blocked, followed });
     });
   };
 

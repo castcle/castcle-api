@@ -98,7 +98,6 @@ class UserDocument extends CastcleBase {
 export type UserResponseOption = {
   passwordNotSet?: boolean;
   blocked?: boolean;
-  blocking?: boolean;
   followed?: boolean;
   balance?: number;
   mobile?: { countryCode: string; number: string };
@@ -114,7 +113,6 @@ export class User extends UserDocument {
   toSearchTopTrendResponse: () => SearchFollowsResponseDto;
   toPublicResponse: (dto?: {
     blocked?: boolean;
-    blocking?: boolean;
     followed?: boolean;
   }) => PublicUserResponse;
   toOwnerResponse: (dto?: {
@@ -127,7 +125,6 @@ export class User extends UserDocument {
   /** @deprecated */
   toPageResponse: (
     blocked?: boolean,
-    blocking?: boolean,
     followed?: boolean,
     syncSocial?: SocialSync,
     casts?: number,

@@ -26,16 +26,11 @@ import {
   Network,
   NetworkType,
   Repository,
-  Transaction,
 } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import {
-  WalletBalance,
-  pipelineOfGetWalletBalance,
-} from '../get-wallet-balance/aggregation';
 import { ReviewTransactionQuery } from './query';
 
 @QueryHandler(ReviewTransactionQuery)
@@ -43,7 +38,6 @@ export class ReviewTransactionHandler
   implements IQueryHandler<ReviewTransactionQuery>
 {
   constructor(
-    @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('Network') private networkModel: Model<Network>,
     private repository: Repository,
   ) {}
@@ -56,9 +50,7 @@ export class ReviewTransactionHandler
   }: ReviewTransactionQuery) {
     const [network, [balance]] = await Promise.all([
       this.networkModel.findOne({ chainId }),
-      this.transactionModel.aggregate<WalletBalance>(
-        pipelineOfGetWalletBalance(requestedBy._id),
-      ),
+      this.repository.aggregateTransaction(requestedBy._id),
     ]);
 
     if (!network) {

@@ -264,8 +264,7 @@ export class ContentServiceV2 {
       return new Author(author).toIncludeUser(
         hasRelationshipExpansion
           ? {
-              blocked: relationship?.blocked ?? false,
-              blocking: relationship?.blocking ?? false,
+              blocked: relationship?.blocking ?? false,
               followed: relationship?.following ?? false,
             }
           : {},
@@ -807,7 +806,7 @@ export class ContentServiceV2 {
           ],
         });
       });
-      session.endSession();
+      await session.endSession();
       return contentFarming;
     } else {
       throw new CastcleException('CONTENT_FARMING_NOT_AVAILABLE_BALANCE');
@@ -934,7 +933,7 @@ export class ContentServiceV2 {
           ],
         });
       });
-      session.endSession();
+      await session.endSession();
       return contentFarming;
     } catch (e) {
       throw new CastcleException('CONTENT_FARMING_NOT_FOUND');
@@ -992,7 +991,7 @@ export class ContentServiceV2 {
           ],
         });
       });
-      session.endSession();
+      await session.endSession();
       return contentFarming;
     } else {
       throw new CastcleException('CONTENT_FARMING_NOT_FOUND');
@@ -1046,7 +1045,7 @@ export class ContentServiceV2 {
         ],
       });
     });
-    session.endSession();
+    await session.endSession();
     return contentFarming;
   };
 
@@ -1130,18 +1129,16 @@ export class ContentServiceV2 {
     contentFarming: ContentFarming,
     userId: string,
   ) => {
-    const [balance, lockBalance, totalContentFarming, content] =
-      await Promise.all([
-        this.tAccountService.getAccountBalance(userId, WalletType.PERSONAL),
-        this.tAccountService.getAccountBalance(userId, WalletType.FARM_LOCKED),
-        this.contentFarmingModel.countDocuments({
-          _id: { $lte: contentFarming.id },
-          user: userId,
-        }),
-        this.repository.findContent({
-          _id: contentFarming.content as any,
-        }),
-      ]);
+    const [[balance], totalContentFarming, content] = await Promise.all([
+      this.repository.aggregateTransaction(new Types.ObjectId(userId)),
+      this.contentFarmingModel.countDocuments({
+        _id: { $lte: contentFarming.id },
+        user: userId,
+      }),
+      this.repository.findContent({
+        _id: contentFarming.content as any,
+      }),
+    ]);
 
     if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
@@ -1165,14 +1162,14 @@ export class ContentServiceV2 {
 
     const responseUser = await user?.toPublicResponse({
       blocked: relationship?.blocking ?? false,
-      blocking: relationship?.blocking ?? false,
       followed: relationship?.following ?? false,
     });
 
     return new ContentFarmingResponse(
       contentFarming,
-      balance,
-      lockBalance,
+      Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
+      Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
+      Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
       totalContentFarming,
       responseUser,
       contentPayload,
@@ -1240,7 +1237,6 @@ export class ContentServiceV2 {
     const userResponses = usersEngagement.map(({ user }) =>
       user.toPublicResponse({
         blocked: relationship?.blocking ?? false,
-        blocking: relationship?.blocking ?? false,
         followed: relationship?.following ?? false,
       }),
     );
@@ -1925,10 +1921,7 @@ export class ContentServiceV2 {
       },
     );
 
-    const [balance, lockBalance] = await Promise.all([
-      this.tAccountService.getAccountBalance(user.id, WalletType.PERSONAL),
-      this.tAccountService.getAccountBalance(user.id, WalletType.FARM_LOCKED),
-    ]);
+    const [balance] = await this.repository.aggregateTransaction(user._id);
     if (
       contentFarming &&
       contentFarming?.status !== ContentFarmingStatus.Farming
@@ -1972,7 +1965,6 @@ export class ContentServiceV2 {
 
     const responseUser = await author?.toPublicResponse({
       blocked: relationship?.blocking ?? false,
-      blocking: relationship?.blocking ?? false,
       followed: relationship?.following ?? false,
     });
 
@@ -1984,8 +1976,9 @@ export class ContentServiceV2 {
 
     return new ContentFarmingResponse(
       contentFarming,
-      balance,
-      lockBalance,
+      Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
+      Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
+      Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
       totalContentFarming || 1,
       responseUser,
       content ? this.toCastPayload({ content, engagements }) : undefined,
@@ -2001,9 +1994,8 @@ export class ContentServiceV2 {
       {},
       { sort: { createdAt: -1 } },
     );
-    const [balance, lockBalance, totalContentFarming] = await Promise.all([
-      this.tAccountService.getAccountBalance(viewer.id, WalletType.PERSONAL),
-      this.tAccountService.getAccountBalance(viewer.id, WalletType.FARM_LOCKED),
+    const [[balance], totalContentFarming] = await Promise.all([
+      this.repository.aggregateTransaction(viewer._id),
       this.contentFarmingModel.countDocuments({
         user: new Types.ObjectId(viewer.id),
         status: ContentFarmingStatus.Farming,
@@ -2042,14 +2034,14 @@ export class ContentServiceV2 {
 
         const responseUser = await userFarming?.toPublicResponse({
           blocked: relationship?.blocking ?? false,
-          blocking: relationship?.blocking ?? false,
           followed: relationship?.following ?? false,
         });
 
         return new ContentFarmingResponse(
           contentFarming,
-          balance,
-          lockBalance,
+          Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
+          Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
+          Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
           totalContentFarming - index,
           responseUser,
           content ? this.toCastPayload({ content, engagements }) : undefined,
@@ -2081,10 +2073,7 @@ export class ContentServiceV2 {
       },
     );
 
-    const [balance, lockBalance] = await Promise.all([
-      this.tAccountService.getAccountBalance(viewer.id, WalletType.PERSONAL),
-      this.tAccountService.getAccountBalance(viewer.id, WalletType.FARM_LOCKED),
-    ]);
+    const [balance] = await this.repository.aggregateTransaction(viewer._id);
 
     const [{ contents, engagements }] =
       await this.repository.aggregationContent({
@@ -2120,14 +2109,14 @@ export class ContentServiceV2 {
 
         const responseUser = await userFarming?.toPublicResponse({
           blocked: relationship?.blocking ?? false,
-          blocking: relationship?.blocking ?? false,
           followed: relationship?.following ?? false,
         });
 
         return new ContentFarmingResponse(
           contentFarming,
-          balance,
-          lockBalance,
+          Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
+          Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
+          Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
           undefined,
           responseUser,
           content ? this.toCastPayload({ content, engagements }) : undefined,
