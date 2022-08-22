@@ -368,7 +368,7 @@ export const DefaultErrors = {
   CONTENT_FARMING_LIMIT: {
     statusCode: '400',
     code: '5010',
-    message: 'You have reach your farming limit, please wait 24hrs',
+    message: 'You have reach your farming limit',
   },
   QUOTE_IS_EXIST: {
     statusCode: '400',

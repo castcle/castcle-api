@@ -178,13 +178,13 @@ describe('AdsService', () => {
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       } as AdsRequestDto;
       const ads = await service.createAds(mocks[0].pages[0], adDto);
-      expect(ads.detail.dailyBudget).toEqual(adDto.dailyBudget);
-      expect(ads.detail.duration).toEqual(adDto.duration);
+      expect(ads.dailyBudget).toEqual(adDto.dailyBudget);
+      expect(ads.duration).toEqual(adDto.duration);
       expect(ads.objective).toEqual(adDto.objective);
-      expect(ads.detail.message).toEqual(adDto.campaignMessage);
-      expect(ads.detail.name).toEqual(adDto.campaignName);
-      expect(ads.adsRef).not.toBeUndefined();
-      expect(ads.adsRef.oid).toEqual(mocks[0].pages[0]._id);
+      expect(ads.campaignMessage).toEqual(adDto.campaignMessage);
+      expect(ads.campaignName).toEqual(adDto.campaignName);
+      expect(ads.payload).not.toBeUndefined();
+      expect(ads.payload.id).toEqual(mocks[0].pages[0].id);
     });
 
     it('should be able to create ads for promote contents', async () => {
@@ -213,13 +213,13 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       } as AdsRequestDto;
       const ads = await service.createAds(mocks[0].user, adsIput);
-      expect(ads.detail.dailyBudget).toEqual(adsIput.dailyBudget);
-      expect(ads.detail.duration).toEqual(adsIput.duration);
+      expect(ads.dailyBudget).toEqual(adsIput.dailyBudget);
+      expect(ads.duration).toEqual(adsIput.duration);
       expect(ads.objective).toEqual(adsIput.objective);
-      expect(ads.detail.message).toEqual(adsIput.campaignMessage);
-      expect(ads.detail.name).toEqual(adsIput.campaignName);
-      expect(ads.adsRef).not.toBeUndefined();
-      expect(ads.adsRef.oid).toEqual(promoteContent._id);
+      expect(ads.campaignMessage).toEqual(adsIput.campaignMessage);
+      expect(ads.campaignName).toEqual(adsIput.campaignName);
+      expect(ads.payload).not.toBeUndefined();
+      expect(ads.payload.id).toEqual(promoteContent.id);
     });
   });
   describe('#listAds', () => {
@@ -230,8 +230,10 @@ describe('AdsService', () => {
         timezone: '+07:00',
       } as AdsQuery);
 
-      expect(adsCampaigns.length).toBeGreaterThan(0);
-      expect(String(adsCampaigns[0].owner)).toBe(String(mocks[0].user._id));
+      expect(adsCampaigns.payload.length).toBeGreaterThan(0);
+      expect(String((adsCampaigns.payload[0].payload as any).authorId)).toBe(
+        String(mocks[0].user.id),
+      );
     });
   });
   describe('#lookupAds', () => {
@@ -251,11 +253,13 @@ describe('AdsService', () => {
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
       const adsCampaign = await service.lookupAds(
         mocks[0].pages[0]._id,
-        ads._id,
+        ads.id,
       );
 
       expect(adsCampaign).toBeTruthy();
-      expect(String(adsCampaign.owner)).toBe(String(mocks[0].pages[0]._id));
+      expect(String(adsCampaign.payload.id)).toBe(
+        String(mocks[0].pages[0]._id),
+      );
     });
   });
 
@@ -283,8 +287,8 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
-      await service.updateAdsById(ads._id, adsUpdate);
-      const adsCampaign = await adsCampaignModel.findById(ads._id).exec();
+      await service.updateAdsById(ads.id, adsUpdate);
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign).toBeTruthy();
       expect(adsCampaign.detail.name).toEqual(adsUpdate.campaignName);
@@ -309,8 +313,8 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
-      await service.deleteAdsById(ads._id);
-      const adsCampaign = await adsCampaignModel.findById(ads._id).exec();
+      await service.deleteAdsById(ads.id);
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign).toBeNull();
     });
@@ -331,15 +335,17 @@ describe('AdsService', () => {
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
 
-      await service.approveAd(ads._id);
-      await service.adsPause(ads);
+      const adCampaign1 = await adsCampaignModel.findById(ads.id).exec();
 
-      const adsCampaign = await adsCampaignModel.findById(ads._id).exec();
+      await service.approveAd(ads.id);
+      await service.adsPause(adCampaign1);
+
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
 
       await service.adsRunning(adsCampaign);
-      const adsCampaign1 = await adsCampaignModel.findById(ads._id).exec();
+      const adsCampaign1 = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign1.boostStatus).toEqual(AdsBoostStatus.Running);
       expect(adsCampaign1.pauseInterval).toHaveLength(1);
@@ -361,10 +367,12 @@ describe('AdsService', () => {
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
 
-      await service.approveAd(ads._id);
-      await service.adsPause(ads);
+      const adCampaign1 = await adsCampaignModel.findById(ads.id).exec();
 
-      const adsCampaign = await adsCampaignModel.findById(ads._id).exec();
+      await service.approveAd(ads.id);
+      await service.adsPause(adCampaign1);
+
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
       expect(adsCampaign.pauseInterval).toHaveLength(1);
@@ -386,7 +394,7 @@ describe('AdsService', () => {
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
       await adsCampaignModel.updateOne(
-        { _id: ads._id },
+        { _id: ads.id },
         {
           $set: {
             status: AdsStatus.Approved,
@@ -394,8 +402,8 @@ describe('AdsService', () => {
         },
       );
 
-      await service.updateAdsBoostStatus(ads._id, AdsBoostStatus.Pause);
-      const adsCampaign = await adsCampaignModel.findById(ads._id).exec();
+      await service.updateAdsBoostStatus(ads.id, AdsBoostStatus.Pause);
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign).toBeTruthy();
       expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
@@ -439,7 +447,7 @@ describe('AdsService', () => {
       const c1 = await service.createAds(mocks[0].user, adsIput);
 
       const ad1 = await adsCampaignModel.findOne({
-        _id: new Types.ObjectId(c1._id),
+        _id: new Types.ObjectId(c1.id),
       });
 
       ad1.status = AdsStatus.Approved;
@@ -461,7 +469,7 @@ describe('AdsService', () => {
         });
 
         adsCampaigns[i] = await adsCampaignModel.findOne({
-          _id: new Types.ObjectId(c1._id),
+          _id: new Types.ObjectId(c1.id),
         });
 
         adsCampaigns[i].status = AdsStatus.Approved;
@@ -481,7 +489,7 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       };
       const cLast = await service.createAds(mocks[0].user, adsIputLast);
-      const ad2 = await adsCampaignModel.findOne({ _id: cLast._id });
+      const ad2 = await adsCampaignModel.findOne({ _id: cLast.id });
       ad2.status = AdsStatus.Approved;
       ad2.boostStatus = AdsBoostStatus.Running;
       ad2.statistics.dailySpent = 4.99;

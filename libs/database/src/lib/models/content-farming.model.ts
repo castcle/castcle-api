@@ -22,26 +22,15 @@
  */
 
 import { Environment } from '@castcle-api/environments';
-import { CastcleImage } from '@castcle-api/utils/aws';
-import { CastPayload, PublicUserResponse } from '../dtos';
+import { CastPayload } from '../dtos';
 import { ContentFarming } from '../schemas';
 import { ContentFarmingStatus } from './content-farming.enum';
-import { PublicVerification } from './user.model';
 
 export type ContentFarmingCDF = {
   contentId: string;
   contentFarmings: ContentFarming[];
 };
 
-class ContentFarmingUserPayload {
-  id: string;
-  castcleId: string;
-  displayName: string;
-  followed: boolean;
-  blocked: boolean;
-  avatar: CastcleImage;
-  verified: PublicVerification;
-}
 export class ContentFarmingResponse {
   id: string;
   number: number;
@@ -51,9 +40,6 @@ export class ContentFarmingResponse {
     available: string;
     farming: string;
     total: string;
-  };
-  includes: {
-    users: ContentFarmingUserPayload[];
   };
   status: string;
   createdAt?: Date;
@@ -66,7 +52,6 @@ export class ContentFarmingResponse {
     farmBalance: string,
     availableBalance: string,
     farmNo: number,
-    user?: PublicUserResponse,
     contentPayload?: CastPayload,
   ) {
     this.id = contentFarming?.id ?? null;
@@ -84,26 +69,12 @@ export class ContentFarmingResponse {
           : Number(0).toFixed(Environment.DECIMALS_FLOAT),
     };
     this.status = contentFarming?.status
-      ? contentFarming?.status
-      : farmNo < Environment.FARMING_LIMIT ||
-        contentFarming?.status !== ContentFarmingStatus.Farming
-      ? ContentFarmingStatus.Available
-      : ContentFarmingStatus.Limit;
-    this.includes = {
-      users: user
-        ? [
-            {
-              id: user.id,
-              castcleId: user.castcleId,
-              displayName: user.displayName,
-              avatar: user.images.avatar,
-              verified: user.verified,
-              followed: user.followed,
-              blocked: user.blocked,
-            },
-          ]
-        : [],
-    };
+      ? contentFarming?.status === ContentFarmingStatus.Farmed && farmNo
+        ? ContentFarmingStatus.Available
+        : contentFarming?.status
+      : farmNo > Environment.FARMING_LIMIT
+      ? ContentFarmingStatus.Limit
+      : ContentFarmingStatus.Available;
     this.createdAt = contentFarming?.createdAt ?? null;
     this.updatedAt = contentFarming?.updatedAt;
     this.farmedAt = contentFarming?.endedAt;

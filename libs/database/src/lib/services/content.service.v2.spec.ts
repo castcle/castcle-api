@@ -1205,7 +1205,7 @@ describe('ContentServiceV2', () => {
 
       expect(contentFarming.id).not.toBeNull();
       expect(contentFarming.createdAt).not.toBeNull();
-      expect(contentFarming.number).toEqual(1);
+      expect(contentFarming.number).toEqual(2);
       expect(contentFarming.content.id).toEqual(content.id);
       expect(contentFarming.status).toEqual(ContentFarmingStatus.Farming);
     });
