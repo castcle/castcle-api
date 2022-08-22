@@ -105,6 +105,7 @@ export class CommentServiceV2 {
 
     await this.repository.deleteEngagements({
       user: userId as any,
+      itemId: comment._id,
       targetRef: {
         $ref: 'content',
         $id: comment.targetRef.$id ?? comment.targetRef.oid,
@@ -716,6 +717,7 @@ export class CommentServiceV2 {
         visibility: EntityVisibility.Publish,
         user: commentBy,
         account: user.ownerAccount,
+        itemId: comment._id,
       });
     } else {
       this.repository.deleteEngagements(query);
