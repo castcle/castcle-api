@@ -521,7 +521,6 @@ describe('ContentController', () => {
               ...response,
               await obj.user.toUserResponse({
                 blocked: relationStatus.blocking,
-                blocking: relationStatus.blocking,
                 followed: relationStatus.following,
               }),
             ];
@@ -529,7 +528,6 @@ describe('ContentController', () => {
         } else {
           const result = await obj.user.toUserResponse();
           result.blocked = false;
-          result.blocking = false;
           result.followed = false;
           response = [...response, result];
         }
@@ -538,7 +536,6 @@ describe('ContentController', () => {
       expect(response).toHaveLength(1);
       expect(response[0].followed).toEqual(true);
       expect(response[0].blocked).toEqual(false);
-      expect(response[0].blocking).toEqual(false);
       expect(String(response[0].id)).toMatch(String(user._id));
     });
     afterAll(() => {

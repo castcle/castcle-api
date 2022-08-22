@@ -308,8 +308,9 @@ export class UserServiceV2 {
           { upsert: true, session },
         ),
       ]);
+      await session.commitTransaction();
+      await session.endSession();
     });
-    session.endSession();
   }
 
   async unblockUser(user: User, targetCastcleId: string) {
@@ -368,7 +369,7 @@ export class UserServiceV2 {
         );
       }
     });
-    session.endSession();
+    await session.endSession();
   }
 
   async getBlockedLookup(

@@ -753,7 +753,7 @@ export class AdsService {
         adsplacement.markModified('cost');
         await adsplacement.save();
       });
-      session.endSession();
+      await session.endSession();
     }
   };
 

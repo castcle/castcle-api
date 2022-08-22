@@ -434,7 +434,6 @@ export class ContentController {
             ...response,
             await obj.user.toUserResponse({
               blocked: relationStatus.blocking,
-              blocking: relationStatus.blocking,
               followed: relationStatus.following,
             }),
           ];
@@ -443,7 +442,6 @@ export class ContentController {
         const result = await obj.user.toUserResponse();
         if (hasRelationshipExpansion) {
           result.blocked = false;
-          result.blocking = false;
           result.followed = false;
         }
         response = [...response, result];

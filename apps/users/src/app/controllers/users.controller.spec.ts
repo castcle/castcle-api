@@ -270,7 +270,6 @@ describe('AppController', () => {
       expect(response.castcleId).toEqual(user.displayId);
       expect(response.email).toEqual(userAccount.email);
       expect(response.followed).toBeDefined();
-      expect(response.blocking).toBeDefined();
       expect(response.blocked).toBeDefined();
       expect(response.casts).toBeDefined();
     });
@@ -513,7 +512,6 @@ describe('AppController', () => {
       expect(response.payload[0].displayName).toBeDefined();
       expect(response.payload[0].followers).toBeDefined();
       expect(response.payload[0].following).toBeDefined();
-      expect(response.payload[0].blocking).toBeDefined();
       expect(response.payload[0].blocked).toBeDefined();
       expect(response.payload[0].followed).toBeDefined();
     });

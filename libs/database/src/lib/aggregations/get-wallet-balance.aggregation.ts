@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
-import { TransactionStatus } from '@castcle-api/database';
 import { PipelineStage, Types } from 'mongoose';
+import { TransactionStatus } from '../models';
 
 enum BalanceType {
   ADS = 'ads',
