@@ -1,6 +1,6 @@
+import { CastcleRegExp, Password, Token } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
 import { Mailer } from '@castcle-api/utils/clients';
-import { CastcleRegExp, Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';

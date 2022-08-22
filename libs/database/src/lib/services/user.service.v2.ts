@@ -21,8 +21,12 @@
  * or have any questions.
  */
 
+import {
+  CastcleLogger,
+  CastcleQRCode,
+  LocalizationLang,
+} from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
@@ -30,7 +34,6 @@ import {
   Image,
 } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
-import { CastcleQRCode, LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
@@ -86,7 +89,7 @@ import { SocialSyncServiceV2 } from './social-sync.service.v2';
 
 @Injectable()
 export class UserServiceV2 {
-  private logger = new CastLogger(UserServiceV2.name);
+  private logger = new CastcleLogger(UserServiceV2.name);
 
   constructor(
     @InjectModel('Relationship')

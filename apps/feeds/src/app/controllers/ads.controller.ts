@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   AdsBoostStatus,
   AdsCastDto,
@@ -36,7 +37,6 @@ import {
   UserServiceV2,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
@@ -63,7 +63,7 @@ export class AdsController {
     private userService: UserServiceV2,
     private contentService: ContentServiceV2,
   ) {}
-  private logger = new CastLogger(AdsController.name);
+  private logger = new CastcleLogger(AdsController.name);
 
   private _verifyAdsApprove = async (user: User, adsId: string) => {
     const adsCampaign = await this.adsService.lookupAds(user, adsId);

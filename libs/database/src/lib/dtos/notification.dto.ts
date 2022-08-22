@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { TransformStringToEnum } from '@castcle-api/common';
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { TransformStringToEnum } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Types } from 'mongoose';

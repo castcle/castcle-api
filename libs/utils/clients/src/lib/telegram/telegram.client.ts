@@ -21,14 +21,14 @@
  * or have any questions.
  */
 import { createHash, createHmac } from 'crypto';
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { TelegramUserInfo } from './telegram.message';
 
 @Injectable()
 export class TelegramClient {
-  private logger = new CastLogger(TelegramClient.name);
+  private logger = new CastcleLogger(TelegramClient.name);
 
   /**
    * Validate user token

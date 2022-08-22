@@ -20,8 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { RemoveLeadingZero } from '@castcle-api/common';
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { RemoveLeadingZero } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform, Type } from 'class-transformer';
 import {

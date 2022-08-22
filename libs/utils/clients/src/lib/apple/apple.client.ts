@@ -20,8 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import {
   AccessTokenResponse,
@@ -33,7 +33,7 @@ import { nanoid } from 'nanoid';
 
 @Injectable()
 export class AppleClient {
-  private logger = new CastLogger(AppleClient.name);
+  private logger = new CastcleLogger(AppleClient.name);
 
   private readonly appleSignIn = new AppleSignIn({
     clientId: Environment.APPLE_CLIENT_ID

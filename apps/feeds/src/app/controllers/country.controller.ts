@@ -20,9 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import { GetCountryQuery, MetadataServiceV2 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { CastcleController } from '@castcle-api/utils/decorators';
 import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
 import {
@@ -37,7 +37,7 @@ import {
 export class CountryController {
   constructor(private metadataService: MetadataServiceV2) {}
 
-  private logger = new CastLogger(CountryController.name);
+  private logger = new CastcleLogger(CountryController.name);
 
   @UseInterceptors(HttpCacheSharedInterceptor)
   @CacheKey(CacheKeyName.Country.Name)

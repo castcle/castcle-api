@@ -21,13 +21,13 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
   SearchService,
   TopTrendsResponse,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { CastcleController } from '@castcle-api/utils/decorators';
 import {
   CredentialInterceptor,
@@ -47,7 +47,7 @@ import { ApiBearerAuth, ApiOkResponse, ApiQuery } from '@nestjs/swagger';
 
 @CastcleController({ path: 'searches', version: '1.0' })
 export class SearchesController {
-  private logger = new CastLogger(SearchesController.name);
+  private logger = new CastcleLogger(SearchesController.name);
 
   constructor(private searchService: SearchService) {}
 

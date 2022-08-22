@@ -20,13 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import {
   DEFAULT_QUERY_OPTIONS,
   HashtagResponse,
   HashtagService,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { CastcleAuth, CastcleController } from '@castcle-api/utils/decorators';
 import {
   CredentialInterceptor,
@@ -46,7 +46,7 @@ import { KeywordHashtagPipe } from '../pipes/keyword.hashtag.pipe';
 export class HashtagsController {
   constructor(private hashtagService: HashtagService) {}
 
-  private logger = new CastLogger(HashtagsController.name);
+  private logger = new CastcleLogger(HashtagsController.name);
 
   @ApiBearerAuth()
   @UseInterceptors(HttpCacheSharedInterceptor)

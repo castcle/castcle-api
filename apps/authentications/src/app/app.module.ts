@@ -21,10 +21,12 @@
  * or have any questions.
  */
 
+import {
+  CastcleHealthyModule,
+  CastcleThrottlerModule,
+  CastcleTracingModule,
+} from '@castcle-api/core';
 import { DatabaseModule } from '@castcle-api/database';
-import { CastcleHealthyModule } from '@castcle-api/healthy';
-import { CastcleThrottlerModule } from '@castcle-api/throttler';
-import { CastcleTracingModule } from '@castcle-api/tracing';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';

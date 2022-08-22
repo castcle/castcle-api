@@ -21,9 +21,9 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { AuthenticationService } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { HttpService } from '@nestjs/axios';
 import {
   CallHandler,
@@ -38,7 +38,7 @@ import { getTokenFromRequest } from '../util';
 
 @Injectable()
 export class IpTrackerInterceptor implements NestInterceptor {
-  #logger = new CastLogger(IpTrackerInterceptor.name);
+  #logger = new CastcleLogger(IpTrackerInterceptor.name);
   #getIPUrl = (ip: string) =>
     Environment.IP_API_KEY
       ? `${Environment.IP_API_URL}/${ip}?fields=continentCode,countryCode&key=${Environment.IP_API_KEY}`

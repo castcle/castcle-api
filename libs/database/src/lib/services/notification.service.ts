@@ -20,9 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import {
+  CastcleDate,
+  CastcleLocalization,
+  CastcleLogger,
+} from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
-import { CastcleDate, CastcleLocalization } from '@castcle-api/utils/commons';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -44,7 +47,7 @@ import { AccountDeviceV1 } from '../schemas/account-device.schema';
 
 @Injectable()
 export class NotificationService {
-  #logger = new CastLogger(NotificationService.name);
+  #logger = new CastcleLogger(NotificationService.name);
 
   constructor(
     @InjectModel('Notification')

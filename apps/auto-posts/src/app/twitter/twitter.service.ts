@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   Author,
   ContentService,
@@ -33,7 +34,6 @@ import {
   SocialSyncService,
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -42,7 +42,7 @@ import TwitterApi, { Tweetv2TimelineResult } from 'twitter-api-v2';
 @Injectable()
 export class TwitterService {
   private readonly client = new TwitterApi(Environment.TWITTER_BEARER_TOKEN).v2;
-  private readonly logger = new CastLogger(TwitterService.name);
+  private readonly logger = new CastcleLogger(TwitterService.name);
 
   constructor(
     private readonly contentService: ContentService,

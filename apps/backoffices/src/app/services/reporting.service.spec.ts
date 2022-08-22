@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { Token } from '@castcle-api/common';
 import {
   AnalyticService,
   AuthenticationServiceV2,
@@ -55,7 +56,6 @@ import {
   TwilioClient,
   TwitterClient,
 } from '@castcle-api/utils/clients';
-import { Token } from '@castcle-api/utils/commons';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';

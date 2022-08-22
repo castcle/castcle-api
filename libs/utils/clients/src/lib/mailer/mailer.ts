@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { createTransport } from 'nodemailer';
 import { getRegistrationHtml } from './templates/registration';
@@ -36,7 +36,7 @@ import {
 
 @Injectable()
 export class Mailer {
-  private logger = new CastLogger(Mailer.name);
+  private logger = new CastcleLogger(Mailer.name);
   private transporter = createTransport({
     host: Environment.SMTP_HOST,
     port: Environment.SMTP_PORT,

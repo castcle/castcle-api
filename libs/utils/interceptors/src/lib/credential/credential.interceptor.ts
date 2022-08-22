@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   Account,
   AuthenticationService,
@@ -28,7 +29,6 @@ import {
   User,
   UserService,
 } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
   CallHandler,
@@ -47,7 +47,7 @@ export interface CredentialRequest extends TokenRequest {
 
 @Injectable()
 export class CredentialInterceptor implements NestInterceptor {
-  #logger = new CastLogger(CredentialInterceptor.name);
+  #logger = new CastcleLogger(CredentialInterceptor.name);
 
   constructor(
     private authService: AuthenticationService,

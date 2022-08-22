@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   NotificationBadgesResponse,
   NotificationQuery,
@@ -32,7 +33,6 @@ import {
   createCastcleMeta,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   CastcleAuth,
   CastcleBasicAuth,
@@ -57,7 +57,7 @@ import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 
 @CastcleController({ path: 'notifications', version: '1.0' })
 export class NotificationsController {
-  #logger = new CastLogger(NotificationsController.name);
+  #logger = new CastcleLogger(NotificationsController.name);
 
   constructor(
     private notificationService: NotificationService,

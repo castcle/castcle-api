@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { CastLogger } from '@castcle-api/logger';
+import { CastcleLogger } from '@castcle-api/common';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isBoolean } from 'class-validator';
@@ -32,7 +32,7 @@ import { SocialSync, User } from '../schemas';
 
 @Injectable()
 export class SocialSyncService {
-  private logger = new CastLogger(SocialSyncService.name);
+  private logger = new CastcleLogger(SocialSyncService.name);
 
   constructor(
     @InjectModel('SocialSync')

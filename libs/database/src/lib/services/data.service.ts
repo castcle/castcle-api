@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { lastValueFrom, map } from 'rxjs';
@@ -35,7 +35,7 @@ import {
 
 @Injectable()
 export class DataService {
-  private logger = new CastLogger(DataService.name);
+  private logger = new CastcleLogger(DataService.name);
 
   constructor(private httpService: HttpService) {}
 
