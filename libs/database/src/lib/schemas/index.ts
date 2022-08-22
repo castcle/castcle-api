@@ -50,6 +50,7 @@ export * from './engagement.schema-factory';
 export * from './engagement.schema';
 export * from './feature.schema';
 export * from './feed-item.schema';
+export * from './feed-item-v2.schema';
 export * from './guest-feed-item.schema';
 export * from './hashtag-item.schema';
 export * from './hashtag.schema';
