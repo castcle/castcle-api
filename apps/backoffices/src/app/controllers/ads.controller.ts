@@ -38,10 +38,7 @@ export class AdsController {
   @Get()
   async getAds(@Query() dto: GetAdsDto) {
     const ads = await this.adsService.find(dto);
-    const adsResponses = await this.adsService.convertAdsToAdResponses(
-      ads,
-      true,
-    );
+    const adsResponses = await this.adsService.convertAdsToAdResponses(ads);
 
     return { payload: adsResponses };
   }

@@ -37,11 +37,15 @@ import {
   AdsQuery,
   AdsRequestDto,
   AdsResponse,
+  Author,
+  CastcleIncludes,
   ContentPayloadItem,
   FeedItemPayloadItem,
   FeedItemResponse,
+  Meta,
   NotificationSource,
   NotificationType,
+  ResponseDto,
 } from '../dtos';
 import {
   AdsBoostStatus,
@@ -145,7 +149,22 @@ export class AdsService {
   private auctionAds = async (accountId: string) =>
     (await this.getAds(accountId))[0];
 
-  convertAdsToAdResponses = async (ads: Ad[], excludeUser?: boolean) => {
+  verifyAdsApprove = async (user: User, adsId: string) => {
+    const adsCampaign = await this.adsModel
+      .findOne({
+        owner: user,
+        _id: adsId,
+      })
+      .exec();
+
+    if (adsCampaign?.status !== AdsStatus.Approved) {
+      this.logger.log('Ads campaign not found.');
+      throw new CastcleException('FORBIDDEN');
+    }
+    return adsCampaign;
+  };
+
+  convertAdsToAdResponses = async (ads: Ad[]) => {
     const contentIds = [];
     const userIds = [];
 
@@ -157,12 +176,6 @@ export class AdsService {
       this.contentModel.find({ _id: { $in: contentIds } }),
       this.userModel.find({ _id: { $in: userIds } }),
     ]);
-
-    const usersContent = contents.length
-      ? await this.repository.findUsers({
-          _id: [...contents.map(({ author }) => author.id)],
-        })
-      : [];
 
     return ads.map<AdsResponse>((ad) => ({
       id: ad._id,
@@ -187,27 +200,13 @@ export class AdsService {
       engagement: ad.statistics.engagements,
       statistics: {
         CPM: ad.statistics.cpm,
-        budgetSpent: ad.statistics.budgetSpent,
-        dailySpent: ad.statistics.dailySpent,
+        budgetSpent: Number(ad.statistics.budgetSpent),
+        dailySpent: Number(ad.statistics.dailySpent),
         impression: { organic: 0, paid: 0 },
         reach: { organic: 0, paid: 0 },
       },
       createdAt: ad.createdAt,
       updatedAt: ad.updatedAt,
-      includes: !excludeUser
-        ? {
-            users: [
-              [...usersContent, ...users]
-                .find(
-                  ({ id }) =>
-                    id ===
-                      String(contents.find(this.isPayloadOf(ad))?.author?.id) ||
-                    id === String(users.find(this.isPayloadOf(ad))?.id),
-                )
-                ?.toPublicResponse(),
-            ],
-          }
-        : undefined,
     }));
   };
 
@@ -532,39 +531,84 @@ export class AdsService {
         $lt: endDate,
       };
     }
-
-    return this.adsModel.aggregate([
+    const ads = await this.adsModel.aggregate([
       { $sort: { createdAt: -1, _id: -1 } },
       { $match: filters },
       { $limit: maxResults },
-      {
-        $addFields: {
-          'statistics.dailySpent': { $toDouble: '$statistics.dailySpent' },
-          'statistics.budgetSpent': { $toDouble: '$statistics.budgetSpent' },
-        },
-      },
     ]);
+
+    const AdResponses = await this.convertAdsToAdResponses(ads);
+
+    const users = await this.userModel
+      .find({
+        _id: AdResponses.map(({ boostType, payload }) =>
+          boostType === AdsBoostType.Content
+            ? (payload as ContentPayloadItem).authorId
+            : payload.id,
+        ),
+      })
+      .exec();
+
+    const includesUsers = users.map((user) =>
+      new Author({
+        id: user.id,
+        avatar: user.profile?.images?.avatar,
+        castcleId: user.displayId,
+        displayName: user.displayName,
+        type: user.type,
+        verified: user.verified,
+      }).toIncludeUser(),
+    );
+
+    return ResponseDto.ok({
+      payload: AdResponses,
+      includes: new CastcleIncludes({
+        users: includesUsers,
+      }),
+      meta: Meta.fromDocuments(ads),
+    });
   };
 
   lookupAds = async ({ _id, ownerAccount }: User, adsId: string) => {
     const ids = await this._getUserIds(ownerAccount, _id);
 
-    const [ad] = await this.adsModel.aggregate<Ad>([
+    const ad = await this.adsModel.aggregate<Ad>([
       {
         $match: {
           owner: { $in: [...ids, _id] },
           _id: new Types.ObjectId(adsId),
         },
       },
-      {
-        $addFields: {
-          'statistics.dailySpent': { $toDouble: '$statistics.dailySpent' },
-          'statistics.budgetSpent': { $toDouble: '$statistics.budgetSpent' },
-        },
-      },
     ]);
 
-    return ad;
+    if (!ad.length) throw new CastcleException('AD_NOT_FOUND');
+
+    const [AdResponse] = await this.convertAdsToAdResponses(ad);
+
+    const user = await this.userModel
+      .findOne({
+        _id:
+          AdResponse.boostType === AdsBoostType.Content
+            ? (AdResponse.payload as ContentPayloadItem).authorId
+            : AdResponse.payload.id,
+      })
+      .exec();
+
+    const includesUsers = new Author({
+      id: user.id,
+      avatar: user.profile?.images?.avatar,
+      castcleId: user.displayId,
+      displayName: user.displayName,
+      type: user.type,
+      verified: user.verified,
+    }).toIncludeUser();
+
+    return {
+      ...AdResponse,
+      includes: new CastcleIncludes({
+        users: [includesUsers],
+      }),
+    };
   };
 
   updateAdsById = async (adsId: string, adsRequest: AdsRequestDto) => {
