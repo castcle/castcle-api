@@ -1590,6 +1590,10 @@ export class Repository {
         following: true,
       });
 
+      const user = await this.userModel.findOne({
+        _id: userId,
+        visibility: EntityVisibility.Publish,
+      });
       await Promise.all([
         this.updateUser(
           {
@@ -1599,20 +1603,22 @@ export class Repository {
           { $set: { visibility: EntityVisibility.Deleted } },
           { session },
         ),
-        this.updateUsers(
-          {
-            _id: following.map(({ _id }) => _id),
-          },
-          { $inc: { followedCount: -1 } },
-          { session },
-        ),
-        this.updateUsers(
-          {
-            _id: follower.map(({ _id }) => _id),
-          },
-          { $inc: { followerCount: -1 } },
-          { session },
-        ),
+        user
+          ? (this.updateUsers(
+              {
+                _id: following.map(({ _id }) => _id),
+              },
+              { $inc: { followedCount: -1 } },
+              { session },
+            ),
+            this.updateUsers(
+              {
+                _id: follower.map(({ _id }) => _id),
+              },
+              { $inc: { followerCount: -1 } },
+              { session },
+            ))
+          : undefined,
         this.deleteRelationships({
           $or: [{ followedUser: userId as any }, { user: userId as any }],
         }),

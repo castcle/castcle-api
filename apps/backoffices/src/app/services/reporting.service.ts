@@ -296,16 +296,26 @@ export class ReportingService {
       }
     } else {
       targetReporting.visibility = EntityVisibility.Publish;
-      delete targetReporting.reportedStatus;
-      delete targetReporting.reportedSubject;
+      const unsetFields = {
+        reportedStatus: 1,
+        reportedSubject: 1,
+      };
       if (body.type === ReportingType.CONTENT) {
         userOwner.casts++;
+        await this.repository.updateContent(
+          { _id: targetReporting._id, visibility: EntityVisibility.Illegal },
+          { $unset: unsetFields },
+        );
         await this.repository.updateCastByReCastORQuote(
           body.id,
           EntityVisibility.Publish,
           1,
         );
       } else {
+        await this.repository.updateUser(
+          { _id: targetReporting._id, visibility: EntityVisibility.Illegal },
+          { $unset: unsetFields },
+        );
         await this.reduceFollows(targetReporting.id, 1);
       }
     }
