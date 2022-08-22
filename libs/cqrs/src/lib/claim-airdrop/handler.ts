@@ -136,7 +136,7 @@ export class ClaimAirdropHandler
     const now = new Date();
     const hasCampaignStarted = now > campaign.startDate;
     const hasCampaignEnded = now > campaign.endDate;
-    if (hasCampaignStarted || !hasCampaignEnded) {
+    if (!hasCampaignStarted || hasCampaignEnded) {
       throw new CastcleException('CAMPAIGN_HAS_NOT_STARTED');
     }
     if (Number(campaign.rewardBalance) < Number(campaign.rewardsPerClaim)) {
@@ -221,7 +221,8 @@ export class ClaimAirdropHandler
     const now = new Date();
     const hasCampaignStarted = now > campaign.startDate;
     const hasCampaignEnded = now > campaign.endDate;
-    if (hasCampaignStarted || !hasCampaignEnded) {
+
+    if (!hasCampaignStarted || hasCampaignEnded) {
       throw new CastcleException('CAMPAIGN_HAS_NOT_STARTED');
     }
     if (Number(campaign.rewardBalance) < Number(campaign.rewardsPerClaim)) {
