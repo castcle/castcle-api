@@ -21,13 +21,12 @@
  * or have any questions.
  */
 
-import { Transaction, User } from '@castcle-api/database';
+import { Repository, User } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { WalletBalance, pipelineOfGetWalletBalance } from './aggregation';
 import { GetWalletBalanceQuery, GetWalletBalanceResponse } from './query';
 
 @QueryHandler(GetWalletBalanceQuery)
@@ -35,17 +34,15 @@ export class GetWalletBalanceHandler
   implements IQueryHandler<GetWalletBalanceQuery>
 {
   constructor(
-    @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
+    private repository: Repository,
   ) {}
 
   async execute(
     command: GetWalletBalanceQuery,
   ): Promise<GetWalletBalanceResponse> {
     const [[walletBalance], user] = await Promise.all([
-      this.transactionModel.aggregate<WalletBalance>(
-        pipelineOfGetWalletBalance(command.user._id),
-      ),
+      this.repository.aggregateTransaction(command.user._id),
       command.user instanceof User
         ? command.user
         : this.userModel.findById(command.user),

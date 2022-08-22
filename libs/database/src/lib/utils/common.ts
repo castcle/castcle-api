@@ -109,8 +109,7 @@ export const getRelationship = (
   );
 
   return {
-    blocked: Boolean(getterRelationship?.blocked),
-    blocking: Boolean(getterRelationship?.blocking),
+    blocked: Boolean(getterRelationship?.blocking),
     followed: Boolean(getterRelationship?.following),
   };
 };

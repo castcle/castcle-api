@@ -311,7 +311,7 @@ export class UsersController {
           followingUser.followingUserId,
         );
       this.logger.log(`Filter block user.`);
-      const resultFilter = publicUser.filter((u) => !u.blocked && !u.blocking);
+      const resultFilter = publicUser.filter((u) => !u.blocked);
       this.logger.log(`Merge mention user`);
       userMentions = [...followingUser.userData.users, ...resultFilter];
     } else {
@@ -1166,7 +1166,6 @@ export class UsersController {
       this.logger.log('build response');
       response = await userReferrer.toUserResponse({
         blocked: relationStatus.blocked,
-        blocking: relationStatus.blocking,
         followed: relationStatus.followed,
       });
     } else {
@@ -1230,7 +1229,6 @@ export class UsersController {
           this.logger.log('build response with relation');
           return await x.toUserResponse({
             blocked: relationStatus.blocked,
-            blocking: relationStatus.blocking,
             followed: relationStatus.followed,
           });
         }),
