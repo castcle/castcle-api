@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   Author,
   ContentService,
@@ -32,14 +33,13 @@ import {
   SocialSyncService,
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { PublishedContent, SubscriptionContent, Youtube } from '../models';
 
 @Injectable()
 export class YoutubeWebhookService {
-  private readonly logger = new CastLogger(YoutubeWebhookService.name);
+  private readonly logger = new CastcleLogger(YoutubeWebhookService.name);
 
   constructor(
     private readonly contentService: ContentService,

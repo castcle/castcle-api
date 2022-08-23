@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleName, CastcleRegExp } from '@castcle-api/common';
 import { Configs } from '@castcle-api/environments';
 import {
   AVATAR_SIZE_CONFIGS,
@@ -29,7 +30,6 @@ import {
   Image,
 } from '@castcle-api/utils/aws';
 import { TwilioChannel } from '@castcle-api/utils/clients';
-import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';

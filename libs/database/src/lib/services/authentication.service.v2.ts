@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleLogger, Password, Token } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   FacebookClient,
   GoogleClient,
@@ -33,7 +33,6 @@ import {
   TwilioStatus,
   TwitterClient,
 } from '@castcle-api/utils/clients';
-import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
@@ -73,7 +72,7 @@ import { AnalyticService } from './analytic.service';
 
 @Injectable()
 export class AuthenticationServiceV2 {
-  private logger = new CastLogger(AuthenticationServiceV2.name);
+  private logger = new CastcleLogger(AuthenticationServiceV2.name);
 
   constructor(
     private analyticService: AnalyticService,

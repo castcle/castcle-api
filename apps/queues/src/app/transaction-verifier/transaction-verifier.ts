@@ -21,13 +21,13 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   QueueName,
   Transaction,
   TransactionStatus,
   TransactionType,
 } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
 import {
   InjectQueue,
   OnQueueCompleted,
@@ -46,7 +46,7 @@ import {
 
 @Processor(QueueName.NEW_TRANSACTION)
 export class TransactionVerifier {
-  private logger = new CastLogger(TransactionVerifier.name);
+  private logger = new CastcleLogger(TransactionVerifier.name);
   private Error = {
     INSUFFICIENT_FUNDS: 'Insufficient funds',
     INVALID_CHECKSUM: 'Invalid checksum',

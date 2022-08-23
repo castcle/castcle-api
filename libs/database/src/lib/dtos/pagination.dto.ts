@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
+import { TransformStringToArrayOfStrings } from '@castcle-api/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform, Type } from 'class-transformer';
 import {

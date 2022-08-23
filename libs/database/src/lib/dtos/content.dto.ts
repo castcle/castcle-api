@@ -20,9 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { TransformStringToEnum } from '@castcle-api/common';
 import { Configs } from '@castcle-api/environments';
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { TransformStringToEnum } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import {

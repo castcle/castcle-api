@@ -5,7 +5,7 @@ import {
   ExtractSubjectType,
   InferSubjects,
 } from '@casl/ability';
-import { Token } from '@castcle-api/utils/commons';
+import { Token } from '@castcle-api/common';
 import { getTokenFromRequest } from '@castcle-api/utils/interceptors';
 import {
   CanActivate,

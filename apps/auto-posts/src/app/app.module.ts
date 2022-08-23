@@ -21,8 +21,7 @@
  * or have any questions.
  */
 
-import { CastcleHealthyModule } from '@castcle-api/healthy';
-import { CastcleTracingModule } from '@castcle-api/tracing';
+import { CastcleHealthyModule, CastcleTracingModule } from '@castcle-api/core';
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FacebookModule } from './facebook/facebook.module';

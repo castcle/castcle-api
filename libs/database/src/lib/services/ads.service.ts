@@ -20,9 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import {
+  CastcleDate,
+  CastcleLogger,
+  LocalizationLang,
+} from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
-import { CastcleDate, LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -87,7 +90,7 @@ const mockOracleService = {
 
 @Injectable()
 export class AdsService {
-  private logger = new CastLogger(AdsService.name);
+  private logger = new CastcleLogger(AdsService.name);
 
   constructor(
     @InjectModel('AdsCampaign') private adsModel: Model<Ad>,

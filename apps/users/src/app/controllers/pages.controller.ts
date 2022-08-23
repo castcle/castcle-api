@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import {
   AuthenticationService,
   ContentResponse,
@@ -43,7 +44,6 @@ import {
   getSocialPrefix,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
@@ -82,7 +82,7 @@ import { DeleteUserDto } from '../dtos';
 
 @CastcleController({ path: 'pages', version: '1.0' })
 export class PagesController {
-  private logger = new CastLogger(PagesController.name);
+  private logger = new CastcleLogger(PagesController.name);
 
   constructor(
     private authService: AuthenticationService,

@@ -20,10 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastLogger } from '@castcle-api/logger';
+import { CastcleLogger, CastcleName, CastcleRegExp } from '@castcle-api/common';
 import { CastcleImage } from '@castcle-api/utils/aws';
 import { TwilioChannel } from '@castcle-api/utils/clients';
-import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
@@ -87,7 +86,7 @@ export interface SignupSocialRequirements {
 /** @deprecated */
 @Injectable()
 export class AuthenticationService {
-  private logger = new CastLogger(AuthenticationService.name);
+  private logger = new CastcleLogger(AuthenticationService.name);
 
   constructor(
     @InjectModel('Account')

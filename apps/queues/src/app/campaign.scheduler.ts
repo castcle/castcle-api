@@ -21,16 +21,16 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { ClaimAirdropCommand } from '@castcle-api/cqrs';
 import { CampaignService } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class CampaignScheduler {
-  logger = new CastLogger(CampaignScheduler.name);
+  logger = new CastcleLogger(CampaignScheduler.name);
 
   constructor(
     private campaignService: CampaignService,

@@ -21,10 +21,9 @@
  * or have any questions.
  */
 
+import { CastcleLocalization, CastcleLogger } from '@castcle-api/common';
 import { Configs, Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { CastcleLocalization } from '@castcle-api/utils/commons';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
@@ -48,7 +47,7 @@ import { Account, Notification, User } from '../schemas';
 
 @Injectable()
 export class NotificationServiceV2 {
-  #logger = new CastLogger(NotificationServiceV2.name);
+  #logger = new CastcleLogger(NotificationServiceV2.name);
 
   constructor(
     @InjectQueue(QueueName.NOTIFICATION)

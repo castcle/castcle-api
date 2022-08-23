@@ -20,9 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import { MetadataServiceV2 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { CastcleController } from '@castcle-api/utils/decorators';
 import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
 import { CacheKey, CacheTTL, Get, UseInterceptors } from '@nestjs/common';
@@ -31,7 +31,7 @@ import { CacheKey, CacheTTL, Get, UseInterceptors } from '@nestjs/common';
 export class LanguagesController {
   constructor(private metadataService: MetadataServiceV2) {}
 
-  private logger = new CastLogger(LanguagesController.name);
+  private logger = new CastcleLogger(LanguagesController.name);
 
   @UseInterceptors(HttpCacheSharedInterceptor)
   @CacheKey(CacheKeyName.LanguagesGet.Name)

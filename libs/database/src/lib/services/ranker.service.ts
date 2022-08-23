@@ -21,9 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleLogger, LocalizationLang } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
-import { LocalizationLang } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { DocumentDefinition, Model } from 'mongoose';
@@ -65,7 +64,7 @@ import { UserService } from './user.service';
 
 @Injectable()
 export class RankerService {
-  private logger = new CastLogger(RankerService.name);
+  private logger = new CastcleLogger(RankerService.name);
 
   constructor(
     @InjectModel('FeedItem')

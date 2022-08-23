@@ -20,9 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger, CastcleRegExp } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
-import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
@@ -80,7 +79,7 @@ import { HashtagService } from './hashtag.service';
 /** @deprecated */
 @Injectable()
 export class ContentService {
-  private logger = new CastLogger(ContentService.name);
+  private logger = new CastcleLogger(ContentService.name);
   private transporter = createTransport({
     host: Environment.SMTP_HOST,
     port: Environment.SMTP_PORT,

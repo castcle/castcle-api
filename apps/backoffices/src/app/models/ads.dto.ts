@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { TransformStringToArrayOfStrings } from '@castcle-api/common';
 import { AdsBoostStatus, AdsBoostType, AdsStatus } from '@castcle-api/database';
-import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
 import { IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
 
 export class GetAdsDto {
