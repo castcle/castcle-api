@@ -562,6 +562,7 @@ export class Repository {
     if (filter?.profileRef) query.profileRef = filter.profileRef;
     if (filter?.advertiseId) query.advertiseId = filter.advertiseId;
     if (filter?.sourceUserId) query.sourceUserId = filter.sourceUserId;
+    if (filter?.user) query.user = filter.user;
 
     return createCastcleFilter(query, {
       sinceId: filter?.sinceId,
