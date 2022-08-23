@@ -21,9 +21,9 @@
  * or have any questions.
  */
 
+import { CastcleTracingModule } from '@castcle-api/core';
 import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
 import { FirebaseModule } from 'nestjs-firebase';

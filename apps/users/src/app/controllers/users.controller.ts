@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import { ClaimAirdropCommand } from '@castcle-api/cqrs';
 import {
   AdsBoostStatus,
@@ -72,7 +73,6 @@ import {
   getSocialPrefix,
 } from '@castcle-api/database';
 import { CacheKeyName, Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
@@ -128,7 +128,7 @@ import { SuggestionService } from '../services/suggestion.service';
 
 @CastcleController({ path: 'users', version: '1.0' })
 export class UsersController {
-  private logger = new CastLogger(UsersController.name);
+  private logger = new CastcleLogger(UsersController.name);
 
   constructor(
     private adsService: AdsService,

@@ -20,12 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import {
+  CastcleHealthyModule,
+  CastcleThrottlerModule,
+  CastcleTracingModule,
+} from '@castcle-api/core';
 import { CastcleCqrs } from '@castcle-api/cqrs';
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleCacheModule } from '@castcle-api/environments';
-import { CastcleHealthyModule } from '@castcle-api/healthy';
-import { CastcleThrottlerModule } from '@castcle-api/throttler';
-import { CastcleTracingModule } from '@castcle-api/tracing';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';

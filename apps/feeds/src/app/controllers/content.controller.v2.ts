@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   ContentServiceV2,
   CreateContentDto,
@@ -30,7 +31,6 @@ import {
   ReportingStatus,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
@@ -53,7 +53,7 @@ import { SaveContentPipe } from '../pipes/save-content.pipe';
 
 @CastcleControllerV2({ path: 'contents' })
 export class ContentControllerV2 {
-  private logger = new CastLogger(ContentControllerV2.name);
+  private logger = new CastcleLogger(ContentControllerV2.name);
 
   constructor(private contentServiceV2: ContentServiceV2) {}
 

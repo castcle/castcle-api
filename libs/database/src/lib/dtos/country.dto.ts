@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { TransformSortStringToSortObject } from '@castcle-api/utils/commons';
+import { TransformSortStringToSortObject } from '@castcle-api/common';
 import { IsObject, IsOptional } from 'class-validator';
 
 export class GetCountryQuery {

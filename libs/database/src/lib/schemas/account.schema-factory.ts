@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { Password, Token } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { Password, Token } from '@castcle-api/utils/commons';
 import { Model } from 'mongoose';
 import { EntityVisibility } from '../dtos';
 import { AccountActivationType, UserType } from '../models';

@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { TransformStringToArrayOfStrings } from '@castcle-api/common';
 import {
   Content,
   PaginationQuery,
@@ -28,7 +29,6 @@ import {
   ReportingType,
   User,
 } from '@castcle-api/database';
-import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
 import {
   IsEnum,
   IsMongoId,

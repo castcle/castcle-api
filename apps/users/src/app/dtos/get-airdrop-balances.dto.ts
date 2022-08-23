@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { TransformStringToArrayOfStrings } from '@castcle-api/common';
 import { CampaignField } from '@castcle-api/database';
-import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
 import { IsEnum, IsOptional } from 'class-validator';
 
 export enum GetAirdropBalancesStatus {

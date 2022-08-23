@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   ContentMessage,
   ContentMessageEvent,
@@ -28,13 +29,12 @@ import {
   DataService,
   QueueName,
 } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
 import { Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 
 @Processor(QueueName.CONTENT)
 export class ContentConsumer {
-  #logger = new CastLogger(ContentConsumer.name);
+  #logger = new CastcleLogger(ContentConsumer.name);
 
   constructor(
     private contentService: ContentServiceV2,

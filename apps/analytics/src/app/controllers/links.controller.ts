@@ -21,15 +21,15 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { Analytic, AnalyticService } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
 import { RequestMeta, RequestMetadata } from '@castcle-api/utils/decorators';
 import { Controller, Get, Query, Res } from '@nestjs/common';
 import { FastifyReply } from 'fastify';
 
 @Controller()
 export class LinksController {
-  private logger = new CastLogger(LinksController.name);
+  private logger = new CastcleLogger(LinksController.name);
 
   constructor(private analyticService: AnalyticService) {}
 

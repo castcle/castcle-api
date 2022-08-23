@@ -20,10 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger, CastcleName } from '@castcle-api/common';
 import { Configs } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { Image } from '@castcle-api/utils/aws';
-import { CastcleName } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -68,7 +67,7 @@ import { UserServiceV2 } from './user.service.v2';
 
 @Injectable()
 export class CommentServiceV2 {
-  private logger = new CastLogger(CommentServiceV2.name);
+  private logger = new CastcleLogger(CommentServiceV2.name);
   constructor(
     @InjectModel('Comment')
     private commentModel: Model<Comment>,

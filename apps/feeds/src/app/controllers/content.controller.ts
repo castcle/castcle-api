@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   ContentResponse,
   ContentService,
@@ -39,7 +40,6 @@ import {
   UserType,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
@@ -74,7 +74,7 @@ import { AppService } from '../services/app.service';
 
 @CastcleController({ path: 'contents', version: '1.0' })
 export class ContentController {
-  private logger = new CastLogger(ContentController.name);
+  private logger = new CastcleLogger(ContentController.name);
   constructor(
     private readonly appService: AppService,
     private userService: UserService,

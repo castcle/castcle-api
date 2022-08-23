@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Password } from '@castcle-api/utils/commons';
+import { Password } from '@castcle-api/common';
 import { Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { CreateCredentialDto, EntityVisibility } from '../dtos';

@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { RemoveLeadingZero } from '@castcle-api/common';
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { RemoveLeadingZero } from '@castcle-api/utils/commons';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,

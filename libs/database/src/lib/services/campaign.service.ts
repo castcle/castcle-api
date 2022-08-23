@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { CastLogger } from '@castcle-api/logger';
+import { CastcleLogger } from '@castcle-api/common';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
@@ -43,7 +43,7 @@ import { Campaign, FeedItem, Queue } from '../schemas';
 
 @Injectable()
 export class CampaignService {
-  private logger = new CastLogger(CampaignService.name);
+  private logger = new CastcleLogger(CampaignService.name);
 
   constructor(
     @InjectModel('Campaign')

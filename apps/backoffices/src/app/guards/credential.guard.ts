@@ -1,5 +1,5 @@
+import { Token } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
   getLanguageFromRequest,

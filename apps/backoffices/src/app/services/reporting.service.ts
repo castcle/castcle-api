@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleLogger, LocalizationLang } from '@castcle-api/common';
 import {
   Content,
   ContentServiceV2,
@@ -36,8 +37,6 @@ import {
   ResponseDto,
   UserType,
 } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
-import { LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
@@ -54,7 +53,7 @@ import { Staff } from '../schemas/staff.schema';
 
 @Injectable()
 export class ReportingService {
-  private logger = new CastLogger(ReportingService.name);
+  private logger = new CastcleLogger(ReportingService.name);
   constructor(
     private repository: Repository,
     private notificationService: NotificationServiceV2,

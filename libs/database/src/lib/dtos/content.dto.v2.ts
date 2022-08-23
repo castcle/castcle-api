@@ -21,11 +21,11 @@
  * or have any questions.
  */
 
-import { CastcleImage } from '@castcle-api/utils/aws';
 import {
   TransformSortStringToSortObject,
   TransformStringToArrayOfStrings,
-} from '@castcle-api/utils/commons';
+} from '@castcle-api/common';
+import { CastcleImage } from '@castcle-api/utils/aws';
 import {
   IsEnum,
   IsMongoId,

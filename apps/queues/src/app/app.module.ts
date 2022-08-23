@@ -21,10 +21,10 @@
  * or have any questions.
  */
 
+import { CastcleTracingModule } from '@castcle-api/core';
 import { CastcleCqrs } from '@castcle-api/cqrs';
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleBullModule } from '@castcle-api/environments';
-import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminScheduler } from './admin-action.scheduler';

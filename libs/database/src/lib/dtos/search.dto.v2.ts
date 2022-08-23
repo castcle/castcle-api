@@ -24,7 +24,7 @@
 import {
   TransformStringToArrayOfStrings,
   TransformStringToKeyword,
-} from '@castcle-api/utils/commons';
+} from '@castcle-api/common';
 import {
   IsEnum,
   IsNotEmpty,

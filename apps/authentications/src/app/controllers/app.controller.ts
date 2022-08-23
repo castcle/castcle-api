@@ -20,13 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import {
   AnalyticService,
   AuthenticationService,
   SocialConnectDto,
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { TwilioChannel } from '@castcle-api/utils/clients';
 import {
   CastcleBasicAuth,
@@ -100,7 +100,7 @@ export class AuthenticationController {
     private authService: AuthenticationService,
   ) {}
 
-  private logger = new CastLogger(AuthenticationController.name);
+  private logger = new CastcleLogger(AuthenticationController.name);
 
   @ApiResponse({
     status: 400,
