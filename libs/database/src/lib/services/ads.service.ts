@@ -197,6 +197,7 @@ export class AdsService {
       objective: ad.objective,
       startedAt: ad.startAt,
       endedAt: ad.endedAt,
+      statusReason: ad.statusReason,
       payload: this.isContentAd(ad)
         ? contents.find(this.isPayloadOf(ad))?.toContentPayloadItem()
         : users.find(this.isPayloadOf(ad))?.toPublicResponse(),
