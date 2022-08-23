@@ -122,21 +122,22 @@ export class ReportingService {
         EntityVisibility.Deleted,
       ],
     });
+
+    const contents = await this.repository.findContents({
+      _id: [...payloadIds],
+      visibility: [
+        EntityVisibility.Publish,
+        EntityVisibility.Illegal,
+        EntityVisibility.Deleted,
+      ],
+    });
     return Promise.all(
       reportings.map(async (reporting) => {
-        const content =
-          reporting.type === ReportingType.CONTENT
-            ? await this.repository.findContent({
-                _id: reporting.payloadId,
-                visibility: [
-                  EntityVisibility.Illegal,
-                  EntityVisibility.Publish,
-                  EntityVisibility.Deleted,
-                ],
-              })
-            : undefined;
+        const content = contents.find(
+          (content) => content.id === String(reporting.payloadId),
+        );
 
-        const user = users?.find((user) => user.id === String(reporting.user));
+        const user = users.find((user) => user.id === String(reporting.user));
 
         return {
           id: reporting.payloadId,
@@ -159,25 +160,26 @@ export class ReportingService {
                 String(user) === String(reportByUserId),
             );
 
-            const reportUser = users?.find(
-              (user) => user.id === String(payloadReportBy?.payload?._id),
+            const reportedUser = users.find(
+              (reportUser) =>
+                reportUser.id === String(payloadReportBy?.payload?._id),
             );
 
-            const reportByUser = users?.find(
-              (user) => user.id === String(payloadReportBy?.user),
+            const reportedByUser = users.find(
+              (reportUser) => reportUser.id === String(payloadReportBy?.user),
             );
 
             return {
               id: payloadReportBy?.id,
-              user: reportByUser?.toPublicResponse(),
+              user: reportedByUser?.toPublicResponse(),
               subject: payloadReportBy?.subject,
               message: payloadReportBy?.message,
               payload:
                 reporting.type === ReportingType.USER
-                  ? reportUser?.toPublicResponse()
+                  ? reportedUser?.toPublicResponse()
                   : payloadReportBy?.payload
                   ? this.contentService.toCastPayload({
-                      content: payloadReportBy?.payload as Content,
+                      content: payloadReportBy.payload as Content,
                     })
                   : undefined,
               createdAt: payloadReportBy?.createdAt,
@@ -195,7 +197,6 @@ export class ReportingService {
     const pipelines = pipelineOfGetReporting(query);
 
     this.logger.log(`#pipelineOfGetReporting::${JSON.stringify(pipelines)}`);
-
     const [payloadReporting] = await this.repository.aggregateReporting(
       pipelines,
     );

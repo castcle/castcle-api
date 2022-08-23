@@ -49,14 +49,14 @@ const filterReporting = (filter?: GetReportingFilter) => {
 };
 export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
   {
+    $sort: { createdAt: -1 },
+  },
+  {
+    $match: filterReporting(filter),
+  },
+  {
     $facet: {
       reportings: [
-        {
-          $sort: { createdAt: -1 },
-        },
-        {
-          $match: filterReporting(filter),
-        },
         {
           $group: {
             _id: '$payload._id',
@@ -64,7 +64,7 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
             reportBy: { $addToSet: '$by' },
             status: { $first: '$status' },
             type: { $first: '$type' },
-            user: { $addToSet: '$user' },
+            user: { $first: '$user' },
             createdAt: { $first: '$createdAt' },
             updatedAt: { $first: '$updatedAt' },
           },
@@ -89,15 +89,6 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
         },
       ],
       reportedBy: [
-        {
-          $sort: { createdAt: -1 },
-        },
-        {
-          $match: filterReporting(filter),
-        },
-        {
-          $limit: filter.maxResults,
-        },
         {
           $lookup: {
             from: 'metadatas',
