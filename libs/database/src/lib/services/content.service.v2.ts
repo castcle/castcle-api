@@ -2124,8 +2124,6 @@ export class ContentServiceV2 {
     const [{ contents, engagements }] =
       await this.repository.aggregationContent({
         _id: contentFarmings.map(({ content }) => content as unknown as string),
-        maxResults,
-        untilId,
         viewer,
       });
 
