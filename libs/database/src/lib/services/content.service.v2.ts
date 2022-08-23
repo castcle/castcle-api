@@ -124,6 +124,7 @@ export class ContentServiceV2 {
     engagements?: Engagement[];
     reportedStatus?: ReportingStatus;
     reportedSubject?: string;
+    farming?: { isUserFarming: boolean; farmingContent: ContentFarming[] };
   }) => {
     return {
       id: dto.content.id ?? dto.content._id,
@@ -148,6 +149,12 @@ export class ContentServiceV2 {
         commentCount: dto.content.engagements?.comment?.count | 0,
         quoteCount: dto.content.engagements?.quote?.count | 0,
         recastCount: dto.content.engagements?.recast?.count | 0,
+        farmCount:
+          dto.farming?.farmingContent?.reduce(
+            (farmCountTotal, { farmAmount }) =>
+              (farmCountTotal += Number(farmAmount)),
+            0,
+          ) | 0,
       },
       participate: {
         liked:
@@ -180,6 +187,7 @@ export class ContentServiceV2 {
               String(targetRef.oid) === String(dto.content._id) &&
               type === EngagementType.Report,
           ) ?? false,
+        farmed: dto.farming?.isUserFarming,
       },
       referencedCasts:
         dto.content.isRecast || dto.content.isQuote
@@ -217,11 +225,17 @@ export class ContentServiceV2 {
         })
       : [];
 
-    const payloadContents = contents.map((content) =>
-      this.toCastPayload({
+    const usersId = requestedBy
+      ? await this.findAllUsersIdFromAccount(requestedBy)
+      : [];
+
+    const payloadContents = contents.map((content) => {
+      const isUserFarming = this.isUserFarmingContent(content, usersId);
+      return this.toCastPayload({
         content,
         engagements,
         metrics: metrics?.find((metric) => String(metric._id) === content.id),
+        farming: { isUserFarming, farmingContent: content.farming },
         reportedStatus: users.some(
           (user) =>
             String(requestedBy?.ownerAccount) === String(user.ownerAccount),
@@ -234,8 +248,8 @@ export class ContentServiceV2 {
         )
           ? content.reportedSubject
           : undefined,
-      }),
-    );
+      });
+    });
 
     const payloadCasts = casts?.map((cast) =>
       this.toCastPayload({
@@ -1458,6 +1472,8 @@ export class ContentServiceV2 {
     });
 
     const userParticipates = users.map((user) => {
+      const isUserFarming = this.isUserFarmingContent(content, [user._id]);
+
       return {
         user: {
           id: user.id,
@@ -1468,6 +1484,8 @@ export class ContentServiceV2 {
         participate: toUnsignedContentPayloadItem(
           content,
           engagements.filter((item) => String(item.user) === String(user._id)),
+          undefined,
+          isUserFarming,
         ).participate,
       };
     });
@@ -1738,6 +1756,23 @@ export class ContentServiceV2 {
       hasRelationshipExpansion,
     );
   };
+
+  private isUserFarmingContent(content: Content, usersId: any[]) {
+    const userIds = usersId.map((user) => String(user._id));
+    return (
+      content.farming?.some((farming) =>
+        userIds.includes(String(farming.user)),
+      ) || false
+    );
+  }
+
+  private async findAllUsersIdFromAccount(requestedBy: User) {
+    const usersInAccount = await this.repository.findUsers({
+      accountId: requestedBy.ownerAccount as any,
+    });
+
+    return usersInAccount;
+  }
 
   offViewFeedItem(accountId: string, feedItemId: string) {
     return this.repository

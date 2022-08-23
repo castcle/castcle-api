@@ -136,6 +136,7 @@ export const toUnsignedContentPayloadItem = (
   content: ContentDocument,
   engagements: Engagement[] = [],
   metrics?: CastcleMetric,
+  isUserFarming = false,
 ) => {
   const engage = engagements.filter(
     (engagement) =>
@@ -156,12 +157,24 @@ export const toUnsignedContentPayloadItem = (
           commentCount: metrics.commentCount,
           quoteCount: metrics.quoteCount,
           recastCount: metrics.recastCount,
+          farmCount:
+            content.farming?.reduce(
+              (farmCountTotal, { farmAmount }) =>
+                (farmCountTotal += Number(farmAmount)),
+              0,
+            ) | 0,
         }
       : {
           likeCount: content.engagements?.like?.count | 0,
           commentCount: content.engagements?.comment?.count | 0,
           quoteCount: content.engagements?.quote?.count | 0,
           recastCount: content.engagements?.recast?.count | 0,
+          farmCount:
+            content.farming?.reduce(
+              (farmCountTotal, { farmAmount }) =>
+                (farmCountTotal += Number(farmAmount)),
+              0,
+            ) | 0,
         },
     participate: {
       liked: engage.some(({ type }) => type === EngagementType.Like),
@@ -169,6 +182,7 @@ export const toUnsignedContentPayloadItem = (
       quoted: engage.some(({ type }) => type === EngagementType.Quote),
       recasted: engage.some(({ type }) => type === EngagementType.Recast),
       reported: engage?.some(({ type }) => type === EngagementType.Report),
+      farmed: isUserFarming,
     },
 
     createdAt: isString(content.createdAt)
