@@ -45,20 +45,19 @@ import {
   UserServiceV2,
   generateMockUsers,
 } from '@castcle-api/database';
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { Downloader } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
+import { JwtModule } from '@nestjs/jwt';
 import { Repository } from 'libs/database/src/lib/repositories';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { FeedsControllerV2 } from './feeds.controller.v2';
 
 describe('FeedsControllerV2', () => {
-  let mongod: MongoMemoryServer;
   let app: TestingModule;
   let controller: FeedsControllerV2;
   let authService: AuthenticationService;
@@ -67,14 +66,14 @@ describe('FeedsControllerV2', () => {
   let mocksUsers: MockUserDetail[];
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    app = await TestingModule.createWithDb({
       imports: [
         HttpModule,
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
         CacheModule.register(),
+        JwtModule,
       ],
       controllers: [FeedsControllerV2],
       providers: [
@@ -114,7 +113,7 @@ describe('FeedsControllerV2', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
+    });
 
     authService = app.get(AuthenticationService);
     userService = app.get(UserService);
@@ -141,6 +140,10 @@ describe('FeedsControllerV2', () => {
         ),
       ),
     );
+  });
+
+  afterAll(() => {
+    return app.close();
   });
 
   describe('#getSearchRecent', () => {
@@ -221,9 +224,5 @@ describe('FeedsControllerV2', () => {
       });
       expect(getSearchTrends.payload).toHaveLength(0);
     });
-  });
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
   });
 });

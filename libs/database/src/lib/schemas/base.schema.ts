@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Prop, Schema } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { EntityVisibility } from '../dtos/common.dto';
@@ -34,4 +35,12 @@ export class CastcleBase extends Document {
 
   @Prop({ type: String })
   visibility?: EntityVisibility;
+}
+
+export class BaseSchema extends Document {
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
 }

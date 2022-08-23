@@ -1,7 +1,6 @@
 jest.setTimeout(20_000);
 
 jest.mock('bull');
-jest.mock('dotenv', () => ({ config: () => true }));
 jest.mock('libs/environments/src/lib/factories', () => ({
   getBullModuleOptions: () => ({ redis: {} }),
   getCacheModuleOptions: () => ({ store: 'memory', ttl: 1000 }),

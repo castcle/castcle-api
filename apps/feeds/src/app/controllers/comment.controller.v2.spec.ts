@@ -39,19 +39,18 @@ import {
   UserServiceV2,
   generateMockUsers,
 } from '@castcle-api/database';
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { Downloader } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
+import { JwtModule } from '@nestjs/jwt';
 import { Repository } from 'libs/database/src/lib/repositories';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { CommentControllerV2 } from './comment.controller.v2';
 
 describe('CommentControllerV2', () => {
-  let mongod: MongoMemoryServer;
   let app: TestingModule;
   let commentController: CommentControllerV2;
   let service: UserService;
@@ -62,14 +61,14 @@ describe('CommentControllerV2', () => {
   let credential;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    app = await TestingModule.createWithDb({
       imports: [
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         CacheModule.register(),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
         HttpModule,
+        JwtModule,
       ],
       controllers: [CommentControllerV2],
       providers: [
@@ -103,7 +102,7 @@ describe('CommentControllerV2', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
+    });
     service = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
@@ -120,9 +119,8 @@ describe('CommentControllerV2', () => {
     } as any;
   });
 
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
+  afterAll(() => {
+    return app.close();
   });
 
   describe('#getAllComment()', () => {

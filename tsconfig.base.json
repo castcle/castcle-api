@@ -20,6 +20,8 @@
       "@castcle-api/cqrs": ["libs/cqrs/src/index.ts"],
       "@castcle-api/database": ["libs/database/src/index.ts"],
       "@castcle-api/environments": ["libs/environments/src/index.ts"],
+      "@castcle-api/services": ["libs/services/src/index.ts"],
+      "@castcle-api/testing": ["libs/testing/src/index.ts"],
       "@castcle-api/utils/aws": ["libs/utils/aws/src/index.ts"],
       "@castcle-api/utils/clients": ["libs/utils/clients/src/index.ts"],
       "@castcle-api/utils/decorators": ["libs/utils/decorators/src/index.ts"],

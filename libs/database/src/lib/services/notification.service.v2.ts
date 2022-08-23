@@ -55,7 +55,7 @@ export class NotificationServiceV2 {
     private repository: Repository,
   ) {}
 
-  checkNotify = (notificationData: CreateNotification) => {
+  checkNotify = (notificationData: Pick<CreateNotification, 'type'>) => {
     switch (notificationData.type) {
       case NotificationType.Like:
         return Environment.NOTIFY_LIKE == '1';

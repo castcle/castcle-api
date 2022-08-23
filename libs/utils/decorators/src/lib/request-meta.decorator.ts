@@ -21,17 +21,33 @@
  * or have any questions.
  */
 
+import { CastcleException } from '@castcle-api/utils/exception';
 import { ExecutionContext, createParamDecorator } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 import { getClientIp } from 'request-ip';
 
 export class RequestMetadata {
-  constructor(
-    public hostUrl?: string,
-    public ip?: string,
-    public userAgent?: string,
-    public source?: string,
-  ) {}
+  device?: string;
+  language: string;
+  platform?: string;
+  hostUrl?: string;
+  ip?: string;
+  userAgent?: string;
+  source?: string;
+
+  constructor(dto: Partial<RequestMetadata>) {
+    if (!dto.language) {
+      throw new CastcleException('MISSING_AUTHORIZATION_HEADERS');
+    }
+
+    this.device = dto.device;
+    this.language = dto.language;
+    this.platform = dto.platform;
+    this.hostUrl = dto.hostUrl;
+    this.ip = dto.ip;
+    this.userAgent = dto.userAgent;
+    this.source = dto.source;
+  }
 }
 
 /**
@@ -49,24 +65,27 @@ export class RequestMetadata {
  * async create(@RequestMeta('ip') ip?: string)
  * ```
  */
-export const RequestMeta: (
-  property?: keyof RequestMetadata,
-) => ParameterDecorator = createParamDecorator(
+export const RequestMeta = createParamDecorator(
   async (property: keyof RequestMetadata, ctx: ExecutionContext) => {
     const req = ctx.switchToHttp().getRequest<FastifyRequest>();
-    const ip = getClientIp(req);
-    const userAgent = req.headers['user-agent'] as string;
-    const hostUrl = `${req.protocol}://${req.hostname}`;
-    const metadata = req.headers['API-Metadata']
-      ? req.headers['API-Metadata']
-      : req.headers['api-metadata'];
-    const source = (metadata as string)?.split(',').reduce((metadata, data) => {
-      const [k, v] = data.split('=');
-      metadata[k] = v;
-      return metadata;
-    }, {} as Record<string, string>).src;
-    const requestMetadata = new RequestMetadata(hostUrl, ip, userAgent, source);
+    const requestMetadata = new RequestMetadata({
+      device: req.headers['device'] as string,
+      language: req.headers['accept-language'],
+      platform: req.headers['platform'] as string,
+      hostUrl: `${req.protocol}://${req.hostname}`,
+      ip: getClientIp(req) || undefined,
+      userAgent: req.headers['user-agent'] as string,
+      source: getSource(req),
+    });
 
     return property ? requestMetadata[property] : requestMetadata;
   },
-);
+) as (property?: keyof RequestMetadata) => ParameterDecorator;
+
+const getSource = (req: FastifyRequest): string | undefined => {
+  const header = req.headers['api-metadata'];
+  const metadata = Array.isArray(header) ? header : header?.split(',');
+  const sourceQuery = metadata?.find((meta) => meta.split('=')[0] === 'src');
+  const source = sourceQuery?.split('=')[1];
+  return source;
+};

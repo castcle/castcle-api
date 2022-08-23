@@ -35,7 +35,7 @@ export class AnalyticService {
     private repository: Repository,
   ) {}
 
-  async track(payload: Analytic) {
+  async track(payload: Omit<Analytic, 'count'>) {
     const analytic = await this.analyticModel.findOne(
       {
         ip: payload.ip,

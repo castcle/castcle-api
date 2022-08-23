@@ -473,10 +473,10 @@ describe('Authentication Service', () => {
           createAccountResult.accountDocument.activateDate,
         ).not.toBeDefined();
         expect(afterVerifyAccount.activateDate).toBeDefined();
-        const postCredential = await service._credentialModel
-          .findById(createAccountResult.credentialDocument._id)
+        const postAccount = await service._accountModel
+          .findById(createAccountResult.credentialDocument.account._id)
           .exec();
-        expect(postCredential.account.isGuest).toBe(false);
+        expect(postAccount.isGuest).toBe(false);
         expect(beforeVerifyAccount.activateDate).not.toBeDefined();
         expect(afterVerifyAccount.activateDate).toBeDefined();
       });
@@ -527,7 +527,7 @@ describe('Authentication Service', () => {
           createAccountResult.accountDocument,
         );
         expect(newCredential._id).toEqual(randomAcc.credentialDocument._id);
-        expect(newCredential.account).toEqual({
+        expect(newCredential.account).toMatchObject({
           _id: createAccountResult.accountDocument._id,
           isGuest: false,
           visibility: EntityVisibility.Publish,
