@@ -37,7 +37,6 @@ import {
   Auth,
   Authorizer,
   CastcleAuth,
-  CastcleBasicAuth,
   CastcleClearCacheAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
@@ -232,8 +231,7 @@ export class AdsController {
     return ad;
   }
 
-  // @CastcleAuth(CacheKeyName.Users)
-  @CastcleBasicAuth()
+  @CastcleAuth(CacheKeyName.Users)
   @Get()
   async listAds(@Auth() authorizer: Authorizer, @Query() adsQuery: AdsQuery) {
     authorizer.requireActivation();

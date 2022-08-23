@@ -43,6 +43,7 @@ import {
   Author,
   CastcleIncludes,
   ContentPayloadItem,
+  EntityVisibility,
   FeedItemPayloadItem,
   FeedItemResponse,
   Meta,
@@ -153,9 +154,18 @@ export class AdsService {
     (await this.getAds(accountId))[0];
 
   verifyAdsApprove = async (user: User, adsId: string) => {
+    const users = await this.userModel
+      .find({
+        ownerAccount: user.ownerAccount,
+        visibility: EntityVisibility.Publish,
+      })
+      .exec();
+
+    if (!users.length) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
     const adsCampaign = await this.adsModel
       .findOne({
-        owner: user,
+        owner: users.map((user) => user._id),
         _id: adsId,
       })
       .exec();
