@@ -45,9 +45,11 @@ import {
   PaginationQuery,
 } from '../dtos';
 import { FeedAggregatorName, FeedAnalyticSource, UserType } from '../models';
+import { Repository } from '../repositories';
 import {
   Account,
   Content,
+  ContentDocument,
   Credential,
   DefaultContent,
   Engagement,
@@ -83,6 +85,7 @@ export class RankerService {
     @InjectModel('Engagement')
     public _engagementModel: Model<Engagement>,
     private dataService: DataService,
+    private repository: Repository,
   ) {}
 
   /**
@@ -193,6 +196,8 @@ export class RankerService {
       ? await this.getAllEngagement(contentIds, viewer)
       : [];
 
+    const userIds = viewer ? await this.getUsersInAccount(viewer) : [];
+
     return feedDocuments.map((item) => {
       return {
         id: item._id,
@@ -214,6 +219,7 @@ export class RankerService {
             metrics?.find(
               (metric) => String(metric.id) === String(item.content._id),
             ),
+            this.isUserFarming(item.content, userIds),
           ),
         ),
         type: 'content',
@@ -393,11 +399,18 @@ export class RankerService {
       query.hasRelationshipExpansion,
     );
 
-    const castPayload = casts.map((cast) =>
-      signedContentPayloadItem(
-        toUnsignedContentPayloadItem(cast, castEngagements),
-      ),
-    );
+    const userIds = await this.getUsersInAccount(viewer);
+
+    const castPayload = casts.map((cast) => {
+      return signedContentPayloadItem(
+        toUnsignedContentPayloadItem(
+          cast,
+          castEngagements,
+          undefined,
+          this.isUserFarming(cast, userIds),
+        ),
+      );
+    });
 
     return {
       payload: feedPayload,
@@ -408,6 +421,22 @@ export class RankerService {
       meta: Meta.fromDocuments(feeds),
     } as FeedItemResponse;
   };
+
+  private isUserFarming(content: Content | ContentDocument, userIds: string[]) {
+    return (
+      content.farming?.some((farming) =>
+        userIds.includes(String(farming.user)),
+      ) || false
+    );
+  }
+
+  private async getUsersInAccount(viewer: Account) {
+    const userInAccount = await this.repository.findUsers({
+      accountId: viewer._id,
+    });
+    const userIds = userInAccount.map((user) => String(user._id));
+    return userIds;
+  }
 
   async sortContentsByScore(accountId: string, contents: Content[]) {
     const contentIds = contents.map((content) => content.id);
