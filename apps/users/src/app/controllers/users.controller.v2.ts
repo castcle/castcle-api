@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import { ClaimAirdropCommand } from '@castcle-api/cqrs';
 import {
   CampaignService,
@@ -68,7 +69,6 @@ import {
   UserType,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
@@ -97,7 +97,7 @@ import { SuggestionService } from '../services/suggestion.service';
 
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
-  private logger = new CastLogger(UsersControllerV2.name);
+  private logger = new CastcleLogger(UsersControllerV2.name);
 
   constructor(
     /** @deprecated */ private contentService: ContentService,

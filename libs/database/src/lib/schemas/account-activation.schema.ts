@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { Token } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { Token } from '@castcle-api/utils/commons';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { EmailVerifyToken } from '../dtos/token.dto';

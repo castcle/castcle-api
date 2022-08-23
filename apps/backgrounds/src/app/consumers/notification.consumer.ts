@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleDate, CastcleLogger } from '@castcle-api/common';
 import {
   NotificationMessageV2,
   NotificationServiceV2,
@@ -28,8 +29,6 @@ import {
   Repository,
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
-import { CastcleDate } from '@castcle-api/utils/commons';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bull';
@@ -39,7 +38,7 @@ import { FirebaseAdmin, InjectFirebaseAdmin } from 'nestjs-firebase';
 @Injectable()
 @Processor(QueueName.NOTIFICATION)
 export class NotificationConsumer {
-  private logger = new CastLogger(NotificationConsumer.name);
+  private logger = new CastcleLogger(NotificationConsumer.name);
 
   constructor(
     @InjectFirebaseAdmin() private firebase: FirebaseAdmin,

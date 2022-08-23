@@ -1,7 +1,7 @@
 import {
   TransformSortStringToSortObject,
   TransformStringToArrayOfStrings,
-} from '@castcle-api/utils/commons';
+} from '@castcle-api/common';
 import { IsEnum, IsObject, IsOptional } from 'class-validator';
 import { UserType } from '../models';
 import { PaginationQuery } from './pagination.dto';

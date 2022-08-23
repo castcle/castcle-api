@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment as env } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import * as AWS from 'aws-sdk';
 import { DateTime } from 'luxon';
 import * as sharp from 'sharp';
@@ -172,7 +172,7 @@ export class Image {
     options?: UploadOptions & { sizes?: Size[] },
   ) {
     const OriginalSuffix = 'original';
-    const logger = new CastLogger(Image.name);
+    const logger = new CastcleLogger(Image.name);
     logger.log(JSON.stringify(options), 'upload');
     const uploader = new Uploader(
       env.ASSETS_BUCKET_NAME ? env.ASSETS_BUCKET_NAME : 'testBucketName',

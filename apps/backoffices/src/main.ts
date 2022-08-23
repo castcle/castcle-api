@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { jsonParser } from '@castcle-api/common';
 import { Configs } from '@castcle-api/environments';
-import { jsonParser } from '@castcle-api/utils/commons';
 import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';

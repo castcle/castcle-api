@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleHealthyModule, CastcleTracingModule } from '@castcle-api/core';
 import { CastcleCqrs } from '@castcle-api/cqrs';
 import { DatabaseModule } from '@castcle-api/database';
 import {
@@ -28,8 +29,6 @@ import {
   CastcleBullModule,
   CastcleCacheModule,
 } from '@castcle-api/environments';
-import { CastcleHealthyModule } from '@castcle-api/healthy';
-import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
 import { AdsController } from './controllers/ads.controller';

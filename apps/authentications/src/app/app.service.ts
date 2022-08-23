@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger, Password } from '@castcle-api/common';
 import {
   Account,
   AccountActivationType,
@@ -34,10 +35,8 @@ import {
   getSocialPrefix,
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { AVATAR_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { TwilioChannel, TwilioClient } from '@castcle-api/utils/clients';
-import { Password } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { HttpService } from '@nestjs/axios';
@@ -64,7 +63,7 @@ export class AppService {
     private httpService: HttpService,
   ) {}
 
-  private logger = new CastLogger(AppService.name);
+  private logger = new CastcleLogger(AppService.name);
   private transporter = createTransport({
     host: Environment.SMTP_HOST,
     port: Environment.SMTP_PORT,

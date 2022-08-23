@@ -21,13 +21,13 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   CastcleQueueAction,
   QueueName,
   UserMessage,
   UserService,
 } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bull';
@@ -35,7 +35,7 @@ import { Job } from 'bull';
 @Injectable()
 @Processor(QueueName.USER)
 export class UserConsumer {
-  private logger = new CastLogger(UserConsumer.name);
+  private logger = new CastcleLogger(UserConsumer.name);
 
   constructor(private userService: UserService) {}
 

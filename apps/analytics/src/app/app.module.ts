@@ -21,9 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleHealthyModule, CastcleTracingModule } from '@castcle-api/core';
 import { DatabaseModule } from '@castcle-api/database';
-import { CastcleHealthyModule } from '@castcle-api/healthy';
-import { CastcleTracingModule } from '@castcle-api/tracing';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
 import { EngagementController } from './controllers/engagement.controller';

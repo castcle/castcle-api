@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { CastcleName } from '@castcle-api/utils/commons';
+import { CastcleName } from '@castcle-api/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';

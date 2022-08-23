@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { QueueName, ReportingMessage } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
@@ -31,7 +31,7 @@ import { Job } from 'bull';
 @Injectable()
 @Processor(QueueName.REPORTING)
 export class ReportingConsumer {
-  private logger = new CastLogger(ReportingConsumer.name);
+  private logger = new CastcleLogger(ReportingConsumer.name);
 
   constructor(private mailerService: Mailer) {}
 

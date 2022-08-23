@@ -21,13 +21,13 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   AccountActivationType,
   QueueName,
   Repository,
   VerifyEmailMessage,
 } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
@@ -36,7 +36,7 @@ import { Job } from 'bull';
 @Injectable()
 @Processor(QueueName.VERIFY_EMAIL)
 export class VerifyEmailConsumer {
-  private logger = new CastLogger(VerifyEmailConsumer.name);
+  private logger = new CastcleLogger(VerifyEmailConsumer.name);
 
   constructor(private mailerService: Mailer, private repository: Repository) {}
 

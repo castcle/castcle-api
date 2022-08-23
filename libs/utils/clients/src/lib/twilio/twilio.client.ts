@@ -21,15 +21,15 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { Twilio } from 'twilio';
 import { TwilioChannel, TwilioStatus } from './twilio.enum';
 
 @Injectable()
 export class TwilioClient {
-  private logger = new CastLogger(TwilioClient.name);
+  private logger = new CastcleLogger(TwilioClient.name);
   private client = new Twilio(
     Environment.TWILIO_ACCOUNT_SID,
     Environment.TWILIO_AUTH_TOKEN,

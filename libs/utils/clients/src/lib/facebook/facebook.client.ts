@@ -20,8 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
@@ -35,7 +35,7 @@ import {
 
 @Injectable()
 export class FacebookClient {
-  private logger = new CastLogger(FacebookClient.name);
+  private logger = new CastcleLogger(FacebookClient.name);
 
   constructor(private httpService: HttpService) {}
   private readonly accessTokenUrl = `${Environment.FACEBOOK_HOST}/oauth/access_token?`;

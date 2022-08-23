@@ -1,4 +1,4 @@
-import { CastcleRegExp } from '@castcle-api/utils/commons';
+import { CastcleRegExp } from '@castcle-api/common';
 import { applyDecorators } from '@nestjs/common';
 import { Matches, MaxLength } from 'class-validator';
 

@@ -21,11 +21,10 @@
  * or have any questions.
  */
 
+import { CastcleLogger, LocalizationLang } from '@castcle-api/common';
 import { CacheStore, Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { CastcleImage } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
-import { LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
@@ -99,7 +98,7 @@ import { UserServiceV2 } from './user.service.v2';
 
 @Injectable()
 export class ContentServiceV2 {
-  private logger = new CastLogger(ContentServiceV2.name);
+  private logger = new CastcleLogger(ContentServiceV2.name);
   constructor(
     @InjectModel('ContentFarming')
     private contentFarmingModel: Model<ContentFarming>,

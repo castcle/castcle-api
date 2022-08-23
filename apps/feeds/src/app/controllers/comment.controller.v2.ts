@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import {
   CommentServiceV2,
   ContentService,
@@ -28,7 +29,6 @@ import {
   PaginationQuery,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
@@ -41,7 +41,7 @@ import { isMongoId } from 'class-validator';
 
 @CastcleControllerV2({ path: 'contents' })
 export class CommentControllerV2 {
-  private logger = new CastLogger(CommentControllerV2.name);
+  private logger = new CastcleLogger(CommentControllerV2.name);
   constructor(
     private commentService: CommentServiceV2,
     private contentService: ContentService,

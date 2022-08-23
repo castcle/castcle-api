@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { RemoveLeadingZero } from '@castcle-api/utils/commons';
+import { RemoveLeadingZero } from '@castcle-api/common';
 import { Transform } from 'class-transformer';
 import {
   IsEmail,
