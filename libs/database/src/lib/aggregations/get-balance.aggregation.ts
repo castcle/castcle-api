@@ -22,7 +22,7 @@
  */
 
 import { Types } from 'mongoose';
-import { WalletType } from '../models';
+import { TransactionStatus, WalletType } from '../models';
 
 export class GetBalanceResponse {
   total: Types.Decimal128;
@@ -60,6 +60,7 @@ export const pipelineOfGetBalanceFromWalletType = (
           $match: {
             'to.user': new Types.ObjectId(userId),
             'to.type': walletType,
+            status: TransactionStatus.VERIFIED,
           },
         },
       ],
@@ -68,6 +69,7 @@ export const pipelineOfGetBalanceFromWalletType = (
           $match: {
             'from.user': new Types.ObjectId(userId),
             'from.type': walletType,
+            status: TransactionStatus.VERIFIED,
           },
         },
       ],
