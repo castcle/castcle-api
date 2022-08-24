@@ -1068,4 +1068,34 @@ export class AdsService {
       },
     );
   };
+
+  adsCancel = async (user: User, adsId: string) => {
+    const users = await this.userModel
+      .find({
+        ownerAccount: user.ownerAccount,
+        visibility: EntityVisibility.Publish,
+      })
+      .exec();
+
+    if (!users.length) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
+    const adsCampaign = await this.adsModel
+      .findOne({
+        owner: users.map((user) => user._id),
+        _id: adsId,
+      })
+      .exec();
+
+    if (adsCampaign?.boostStatus !== AdsBoostStatus.Unknown) {
+      this.logger.log('Ads campaign not found.');
+      throw new CastcleException('FORBIDDEN');
+    }
+
+    await this.adsModel.updateOne(
+      { _id: adsCampaign._id },
+      {
+        $set: { boostStatus: AdsBoostStatus.End },
+      },
+    );
+  };
 }

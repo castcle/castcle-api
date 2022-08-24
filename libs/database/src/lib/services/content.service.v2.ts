@@ -890,9 +890,9 @@ export class ContentServiceV2 {
       account.preferences.languages[0],
     );
 
-    return this.checkFarming(contentFarming)
-      ? this.updateContentFarming(contentFarming)
-      : this.createContentFarming(contentId, userId);
+    if (this.checkFarming(contentFarming)) {
+      return this.updateContentFarming(contentFarming);
+    } else return this.createContentFarming(contentId, userId);
   };
 
   unfarmByFarmingId = async (farmingId: string, userId: string) => {
@@ -2014,8 +2014,7 @@ export class ContentServiceV2 {
     });
 
     const relationship = relationships?.find(
-      (relationship) =>
-        String(relationship.followedUser) === String(content?.author?.id),
+      (relationship) => String(relationship.followedUser) === author.id,
     );
 
     const [lastActive] = await this.contentFarmingModel.find(
@@ -2027,19 +2026,26 @@ export class ContentServiceV2 {
       { sort: { _id: -1 }, limit: 1 },
     );
 
-    const totalContentFarming = await this.contentFarmingModel.countDocuments({
-      _id: { $lte: lastActive?._id },
-      user: user._id,
-      status: ContentFarmingStatus.Farming,
-    });
+    const [totalContentFarming, activeContentFarming] = await Promise.all([
+      this.contentFarmingModel.countDocuments({
+        _id: { $lte: lastActive?._id },
+        user: user._id,
+        status: ContentFarmingStatus.Farming,
+      }),
+      this.contentFarmingModel.countDocuments({
+        _id: { $lte: contentFarming?._id },
+        user: user._id,
+        status: ContentFarmingStatus.Farming,
+      }),
+    ]);
 
     const includesUsers = new Author({
-      id: user.id,
-      avatar: user.profile?.images?.avatar,
-      castcleId: user.displayId,
-      displayName: user.displayName,
-      type: user.type,
-      verified: user.verified,
+      id: author.id,
+      avatar: author.profile?.images?.avatar,
+      castcleId: author.displayId,
+      displayName: author.displayName,
+      type: author.type,
+      verified: author.verified,
     }).toIncludeUser({
       blocked: relationship?.blocking ?? false,
       followed: relationship?.following ?? false,
@@ -2051,7 +2057,9 @@ export class ContentServiceV2 {
         Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
         Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
         Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
-        totalContentFarming + 1,
+        contentFarming?.status === ContentFarmingStatus.Farming
+          ? activeContentFarming
+          : totalContentFarming + 1,
         content ? this.toCastPayload({ content, engagements }) : undefined,
       ),
       includes: new CastcleIncludes({
