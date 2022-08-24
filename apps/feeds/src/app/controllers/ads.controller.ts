@@ -166,22 +166,7 @@ export class AdsController {
 
     authorizer.requireActivation();
 
-    const adsCampaign = await this.adsService.verifyAdsApprove(
-      authorizer.user,
-      adsId,
-    );
-
-    if (adsCampaign.boostStatus !== AdsBoostStatus.Unknown) {
-      this.logger.log(
-        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`,
-      );
-      throw new CastcleException('AD_RUNNING_CAN_NOT_CANCEL');
-    }
-
-    await this.adsService.updateAdsBoostStatus(
-      adsCampaign._id,
-      AdsBoostStatus.End,
-    );
+    await this.adsService.adsCancel(authorizer.user, adsId);
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Feeds)
