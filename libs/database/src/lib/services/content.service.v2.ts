@@ -144,7 +144,15 @@ export class ContentServiceV2 {
             )
           : [],
       },
-      metrics: dto.metrics ?? {
+      metrics: {
+        ...dto.metrics,
+        farmCount:
+          dto.farming?.farmingContent?.reduce(
+            (farmCountTotal, { farmAmount }) =>
+              (farmCountTotal += Number(farmAmount)),
+            0,
+          ) | 0,
+      } ?? {
         likeCount: dto.content.engagements?.like?.count | 0,
         commentCount: dto.content.engagements?.comment?.count | 0,
         quoteCount: dto.content.engagements?.quote?.count | 0,
@@ -1205,7 +1213,9 @@ export class ContentServiceV2 {
         Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
         Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
         Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
-        totalContentFarming,
+        contentFarming.status === ContentFarmingStatus.Farmed
+          ? totalContentFarming + 1
+          : totalContentFarming,
         contentPayload,
       ),
       includes: new CastcleIncludes({
