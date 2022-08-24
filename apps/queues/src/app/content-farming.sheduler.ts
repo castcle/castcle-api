@@ -29,7 +29,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 export class ContentFarmingScheduler {
   constructor(private contentService: ContentServiceV2) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_10_MINUTES)
   async expireFarmedToken() {
     await this.contentService.expireAllFarmedToken();
   }
