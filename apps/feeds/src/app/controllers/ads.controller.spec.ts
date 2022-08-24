@@ -55,6 +55,7 @@ import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
@@ -82,6 +83,7 @@ describe('AdsController', () => {
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
         HttpModule,
+        JwtModule,
       ],
       controllers: [AdsController],
       providers: [
@@ -161,6 +163,11 @@ describe('AdsController', () => {
     );
   });
 
+  afterAll(async () => {
+    await app.close();
+    await mongod.stop();
+  });
+
   describe('create User Ads', () => {
     it('should return AdsResponse', async () => {
       const authorizer = new Authorizer(
@@ -223,9 +230,5 @@ describe('AdsController', () => {
         }),
       );
     });
-  });
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
   });
 });

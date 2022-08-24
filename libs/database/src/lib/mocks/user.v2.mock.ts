@@ -86,7 +86,7 @@ export class MockUserService {
     (account.credentials ??= []).push({
       _id: new Types.ObjectId(credential._id),
       deviceUUID: credential.deviceUUID,
-    });
+    } as any);
 
     return { account: await account.save(), credential };
   }

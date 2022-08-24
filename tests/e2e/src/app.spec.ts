@@ -16,6 +16,8 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model } from 'mongoose';
 import { testContentFarming } from './routes/content-farming.spec';
 import { testGetWalletBalance } from './routes/get-wallet-balance.spec';
+import { testGuestLogin } from './routes/guest-login.spec';
+import { testLoginWithEmail } from './routes/login-with-email.spec';
 import { testReviewTransaction } from './routes/review-transaction.spec';
 import { testSearchHashtag } from './routes/search-hashtag.spec';
 import { testSendTransaction } from './routes/send-transaction.spec';
@@ -67,6 +69,8 @@ describe('Castcle E2E Tests', () => {
     ]);
   });
 
+  testGuestLogin();
+  testLoginWithEmail();
   testReviewTransaction();
   testSendTransaction();
   testContentFarming();

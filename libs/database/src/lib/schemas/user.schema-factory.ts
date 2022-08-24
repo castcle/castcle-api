@@ -36,12 +36,12 @@ import {
   UserField,
   UserResponseDto,
 } from '../dtos';
-import { CastcleNumber, UserType } from '../models';
+import { UserType } from '../models';
 import { Account } from './account.schema';
 import { Relationship } from './relationship.schema';
 import { SocialSync } from './social-sync.schema';
 import { Transaction } from './transaction.schema';
-import { User, UserResponseOption, UserSchema } from './user.schema';
+import { User, UserSchema } from './user.schema';
 
 export const UserSchemaFactory = (
   relationshipModel: Model<Relationship>,
@@ -71,7 +71,7 @@ export const UserSchemaFactory = (
     linkSocial,
     syncSocial,
     casts,
-  }: UserResponseOption = {}) {
+  } = {}) {
     const self = await this.populate('ownerAccount');
     const response = {
       id: self._id,
@@ -277,11 +277,13 @@ export const UserSchemaFactory = (
     };
   };
 
-  UserSchema.methods.toOwnerResponse = async function (dto?: {
-    expansionFields?: UserField[];
-  }): Promise<OwnerResponse> {
-    const user = await this.populate('ownerAccount');
-    const ownerAccount = user.ownerAccount as Account;
+  UserSchema.methods.toOwnerResponse = async function (
+    this: User,
+    dto?,
+    account?: Account,
+  ): Promise<OwnerResponse> {
+    const user = account ? this : await this.populate('ownerAccount');
+    const ownerAccount = account || user.ownerAccount;
     const response: OwnerResponse = {
       ...this.toPublicResponse(),
       canUpdateCastcleId: this.canUpdateCastcleId(),
@@ -303,23 +305,31 @@ export const UserSchemaFactory = (
       );
     }
 
+    const $expansionFields = [];
     if (dto?.expansionFields.includes(UserField.SyncSocial)) {
-      response.syncSocial = {};
-      const socialSyncs = await socialSyncModel.find({ user: this._id });
-      socialSyncs.forEach((sync) => {
-        response.syncSocial[sync.provider] =
-          sync?.toSocialSyncPayload() || null;
-      });
+      const $socialSyncs = async () => {
+        const socialSyncs = await socialSyncModel.find({ user: this._id });
+        socialSyncs.forEach((sync) => {
+          (response.syncSocial ?? {})[sync.provider] =
+            sync?.toSocialSyncPayload() || null;
+        });
+      };
+      $expansionFields.push($socialSyncs());
     }
 
     if (dto?.expansionFields.includes(UserField.Wallet)) {
-      const [balance] = await transactionModel.aggregate<GetBalanceResponse>(
-        pipelineOfGetBalance(ownerAccount._id),
-      );
-      response.wallet = {
-        balance: CastcleNumber.from(balance?.total?.toString()).toNumber(),
+      const $balance = async () => {
+        const [balance] = await transactionModel.aggregate<GetBalanceResponse>(
+          pipelineOfGetBalance(this._id),
+        );
+        response.wallet = {
+          balance: Number(balance?.total),
+        };
       };
+      $expansionFields.push($balance());
     }
+
+    if ($expansionFields.length) await Promise.all($expansionFields);
 
     return response;
   };

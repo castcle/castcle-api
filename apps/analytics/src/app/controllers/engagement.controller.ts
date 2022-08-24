@@ -22,13 +22,14 @@
  */
 
 import { UxEngagementBody, UxEngagementService } from '@castcle-api/database';
-import { CastcleController } from '@castcle-api/utils/decorators';
-import { CastcleException } from '@castcle-api/utils/exception';
 import {
-  CredentialInterceptor,
-  CredentialRequest,
-} from '@castcle-api/utils/interceptors';
-import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
+  Auth,
+  Authorizer,
+  CastcleBasicAuth,
+  CastcleController,
+} from '@castcle-api/utils/decorators';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { Body, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiResponse } from '@nestjs/swagger';
 
 @CastcleController({ path: 'engagements', version: '1.0' })
@@ -37,14 +38,11 @@ export class EngagementController {
 
   @ApiBody({ type: UxEngagementBody })
   @ApiResponse({ status: 204 })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @HttpCode(204)
   @Post()
-  async track(@Body() body: UxEngagementBody, @Req() req: CredentialRequest) {
-    //check if they have the same id
-    const accountId = String(body.accountId);
-    if (accountId !== String(req.$credential.account._id))
-      throw new CastcleException('FORBIDDEN');
+  async track(@Body() body: UxEngagementBody, @Auth() authorizer: Authorizer) {
+    authorizer.requestAccessForAccount(body.accountId);
     const result = this.uxEngagementService.track(body);
     if (result) return '';
     else throw new CastcleException('FORBIDDEN');

@@ -45,6 +45,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DownloaderMock } from 'libs/utils/aws/src/lib/downloader.spec';
@@ -77,6 +78,7 @@ describe('PageController', () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        JwtModule,
         MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register({
           store: 'memory',

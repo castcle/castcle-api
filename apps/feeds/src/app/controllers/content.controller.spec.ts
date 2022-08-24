@@ -43,6 +43,7 @@ import {
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -73,6 +74,7 @@ describe('ContentController', () => {
         }),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
+        JwtModule,
       ],
       controllers: [ContentController],
       providers: [
@@ -497,17 +499,15 @@ describe('ContentController', () => {
         null,
       );
 
-      if (!userCredential.account.isGuest) {
-        relationUser = engagements.items.map((e) => {
-          return e.user.id;
-        });
+      relationUser = engagements.items.map((e) => {
+        return e.user.id;
+      });
 
-        relationUser = await service.getRelationshipData(
-          true,
-          relationUser,
-          userMock[0].user.id,
-        );
-      }
+      relationUser = await service.getRelationshipData(
+        true,
+        relationUser,
+        userMock[0].user.id,
+      );
 
       for await (const obj of engagements.items) {
         relationStatus = await relationUser.filter(

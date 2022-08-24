@@ -31,6 +31,7 @@ import {
   FacebookUserInfo,
 } from './facebook/facebook.message';
 import { GoogleClient } from './google/google.client';
+import { IpAPI } from './ip-api/client';
 import { Mailer } from './mailer/mailer';
 import { TelegramClient } from './telegram/telegram.client';
 import { TelegramUserInfo } from './telegram/telegram.message';
@@ -46,6 +47,7 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
   ],
   controllers: [],
   providers: [
+    IpAPI,
     FacebookClient,
     TelegramClient,
     TwitterClient,
@@ -56,6 +58,7 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
   ],
   exports: [
     HttpModule,
+    IpAPI,
     FacebookClient,
     TelegramClient,
     TwitterClient,
@@ -68,6 +71,7 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
 export class UtilsClientsModule {}
 
 export {
+  IpAPI,
   FacebookAccessToken,
   FacebookTokenData,
   FacebookClient,

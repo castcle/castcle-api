@@ -38,6 +38,7 @@ import {
 import { CastcleException } from '@castcle-api/utils/exception';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common/cache';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -113,6 +114,7 @@ describe('NotificationsController', () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        JwtModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),

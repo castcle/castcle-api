@@ -21,53 +21,16 @@
  * or have any questions.
  */
 
-import { Password, Token } from '@castcle-api/common';
+import { Password } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { Model } from 'mongoose';
-import { EntityVisibility } from '../dtos';
-import { AccountActivationType, UserType } from '../models';
-import { AccountSchema } from './account.schema';
-import { Credential } from './credential.schema';
-import { User } from './user.schema';
+import { JwtService } from '@nestjs/jwt';
+import { DateTime } from 'luxon';
+import { AccountRole } from '../models';
+import { Account, AccountSchema } from './account.schema';
 
-export const AccountSchemaFactory = (
-  credentialModel: Model<Credential>,
-  userModel: Model<User>,
-) => {
-  AccountSchema.pre('save', function (next) {
-    if (!this.visibility) this.visibility = EntityVisibility.Publish;
-
-    next();
-  });
-
-  AccountSchema.post('save', async function (doc, next) {
-    try {
-      if (doc.activateDate) {
-        await userModel.updateOne(
-          { ownerAccount: doc._id, type: UserType.PEOPLE },
-          { 'verified.email': true },
-        );
-      }
-
-      await credentialModel.updateMany(
-        { 'account._id': doc._id },
-        {
-          'account.isGuest': doc.isGuest,
-          'account.activateDate': doc.activateDate,
-          'account.visibility': doc.visibility,
-          'account.preferences': doc.preferences,
-          'account.email': doc.email,
-          'account.geolocation': doc.geolocation || null,
-        },
-      );
-    } catch (error) {
-      console.error(error);
-    }
-
-    next();
-  });
-
+export const AccountSchemaFactory = (jwtService: JwtService) => {
   AccountSchema.methods.changePassword = function (
+    this: Account,
     password: string,
     email?: string,
   ) {
@@ -84,25 +47,126 @@ export const AccountSchemaFactory = (
   };
 
   AccountSchema.methods.createActivation = function (
-    type: AccountActivationType,
+    this: Account,
+    type,
+    activationDate?,
   ) {
     const verifyTokenExpireDate = new Date(
       Date.now() + Environment.JWT_VERIFY_EXPIRES_IN * 1000,
     );
     const activation = {
+      activationDate,
       type,
       verifyTokenExpireDate,
-      verifyToken: Token.generateToken(
+      verifyToken: jwtService.sign(
         {
           id: this._id,
           verifyTokenExpiresTime: verifyTokenExpireDate.toISOString(),
         },
-        Environment.JWT_VERIFY_SECRET,
-        Environment.JWT_VERIFY_EXPIRES_IN,
+        {
+          secret: Environment.JWT_VERIFY_SECRET,
+          expiresIn: Environment.JWT_VERIFY_EXPIRES_IN,
+        },
       ),
     };
     (this.activations ||= []).push(activation);
     return activation;
+  };
+
+  const generateToken = async (account: Account) => {
+    const [accessTokenExpiration, refreshTokenExpiration] = [
+      DateTime.now().plus({ seconds: Environment.JWT_ACCESS_EXPIRES_IN }),
+      DateTime.now().plus({ seconds: Environment.JWT_REFRESH_EXPIRES_IN }),
+    ];
+    const [accessToken, refreshToken] = await Promise.all([
+      jwtService.signAsync(
+        account.isGuest
+          ? {
+              id: account.id,
+              preferredLanguage: account.preferences.languages,
+              role: AccountRole.Guest,
+              showAds: true,
+              accessTokenExpiresTime: accessTokenExpiration.toISO(),
+            }
+          : {
+              id: account.id,
+              preferredLanguage: account.preferences.languages,
+              role: AccountRole.Member,
+              showAds: true,
+              accessTokenExpiresTime: accessTokenExpiration.toISO(),
+            },
+        {
+          expiresIn: Environment.JWT_ACCESS_EXPIRES_IN,
+          secret: Environment.JWT_ACCESS_SECRET,
+        },
+      ),
+      jwtService.signAsync(
+        {
+          id: account.id,
+          accessTokenExpiresTime: refreshTokenExpiration.toISO(),
+        },
+        {
+          expiresIn: Environment.JWT_REFRESH_EXPIRES_IN,
+          secret: Environment.JWT_REFRESH_SECRET,
+        },
+      ),
+    ]);
+
+    return {
+      accessToken,
+      accessTokenExpiration: accessTokenExpiration.toJSDate(),
+      refreshToken,
+      refreshTokenExpiration: refreshTokenExpiration.toJSDate(),
+    };
+  };
+
+  AccountSchema.methods.generateToken = async function (
+    this: Account,
+    payload,
+  ) {
+    const token = await generateToken(this);
+    const credential = this.credentials.find(
+      (c) => c.deviceUUID === payload.deviceUUID,
+    );
+
+    if (credential) {
+      credential.device = payload.device;
+      credential.deviceUUID = payload.deviceUUID;
+      credential.platform = payload.platform;
+      credential.accessToken = token.accessToken;
+      credential.accessTokenExpiration = token.accessTokenExpiration;
+      credential.refreshToken = token.refreshToken;
+      credential.refreshTokenExpiration = token.refreshTokenExpiration;
+    } else {
+      this.credentials.push({ ...token, ...payload });
+    }
+    this.markModified('credentials');
+    await this.save();
+
+    return { accessToken: token.accessToken, refreshToken: token.refreshToken };
+  };
+
+  AccountSchema.methods.regenerateToken = async function (
+    this: Account,
+    filter,
+  ) {
+    const credential = this.credentials.find((c) =>
+      filter.deviceUUID
+        ? c.deviceUUID === filter.deviceUUID
+        : filter.accessToken
+        ? c.accessToken === filter.accessToken
+        : c.refreshToken === filter.refreshToken,
+    );
+
+    const token = await generateToken(this);
+    credential.accessToken = token.accessToken;
+    credential.accessTokenExpiration = token.accessTokenExpiration;
+    credential.refreshToken = token.refreshToken;
+    credential.refreshTokenExpiration = token.refreshTokenExpiration;
+    this.markModified('credentials');
+    await this.save();
+
+    return { accessToken: token.accessToken, refreshToken: token.refreshToken };
   };
 
   return AccountSchema;
