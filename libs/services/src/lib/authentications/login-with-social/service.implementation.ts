@@ -251,6 +251,12 @@ export class LoginWithSocialServiceImpl implements LoginWithSocialService {
             : null,
         },
       },
+      verified: {
+        email: dto.email ? true : false,
+        social: true,
+        mobile: false,
+        official: false,
+      },
     });
 
     const [token, userResponse] = await Promise.all([
