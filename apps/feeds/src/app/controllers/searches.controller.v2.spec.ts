@@ -46,6 +46,7 @@ import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
@@ -72,6 +73,7 @@ describe('SearchesControllerV2', () => {
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
         CacheModule.register(),
+        JwtModule,
       ],
       controllers: [SearchesControllerV2],
       providers: [
@@ -123,16 +125,18 @@ describe('SearchesControllerV2', () => {
         tag: slug,
         score: hScore,
         aggregator: {
-          _id: String(Types.ObjectId()),
+          _id: String(new Types.ObjectId()),
         },
         name: hName,
       };
       await hashtagService.create(newHashtag);
     };
 
-    for (let i = 0; i < 20; i++) {
-      await mockHashtag(`#castcle${i}`, `Castcle ${i}`, 90 - i);
-    }
+    await Promise.all(
+      Array.from({ length: 20 }, (_, i) =>
+        mockHashtag(`#castcle${i}`, `Castcle ${i}`, 90 - i),
+      ),
+    );
   });
 
   describe('#getTopTrends', () => {

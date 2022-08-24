@@ -64,10 +64,10 @@ describe('ClaimAirdropHandler', () => {
         CqrsModule,
         MongooseModule.forRoot(mongoServer.getUri()),
         MongooseModule.forFeature([
-          { name: Campaign.name, schema: CampaignSchema },
-          { name: Feed.name, schema: FeedItemV2Schema },
-          { name: Transaction.name, schema: TransactionSchema },
-          { name: User.name, schema: UserSchema },
+          { name: 'Campaign', schema: CampaignSchema },
+          { name: 'FeedItemV2', schema: FeedItemV2Schema },
+          { name: 'Transaction', schema: TransactionSchema },
+          { name: 'User', schema: UserSchema },
         ]),
       ],
       providers: [
@@ -80,10 +80,10 @@ describe('ClaimAirdropHandler', () => {
     }).compile();
 
     handler = moduleRef.get(ClaimAirdropHandler);
-    campaignModel = moduleRef.get(getModelToken(Campaign.name));
-    feedModel = moduleRef.get(getModelToken(Feed.name));
-    transactionModel = moduleRef.get(getModelToken(Transaction.name));
-    userModel = moduleRef.get(getModelToken(User.name));
+    campaignModel = moduleRef.get(getModelToken('Campaign'));
+    feedModel = moduleRef.get(getModelToken('FeedItemV2'));
+    transactionModel = moduleRef.get(getModelToken('Transaction'));
+    userModel = moduleRef.get(getModelToken('User'));
   });
 
   afterAll(() => {

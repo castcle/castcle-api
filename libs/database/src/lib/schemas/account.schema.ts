@@ -22,7 +22,8 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes, Types } from 'mongoose';
+import { Model, Schema as MongooseSchema, SchemaTypes, Types } from 'mongoose';
+import { EntityVisibility } from '../dtos';
 import {
   AcceptDatePDPA,
   AccountActivation,
@@ -30,19 +31,54 @@ import {
   AccountAuthentications,
   AccountCampaigns,
   AccountDevice,
+  GenerateTokenDto,
+  GeneratedToken,
 } from '../models';
-import { CastcleBase } from './base.schema';
+import { BaseSchema } from './base.schema';
 
-interface ICredential {
-  _id: any;
+@Schema({ id: false, _id: false, versionKey: false })
+class Credential {
+  @Prop()
+  accessToken: string;
+
+  @Prop()
+  accessTokenExpiration: Date;
+
+  @Prop()
+  refreshToken: string;
+
+  @Prop()
+  refreshTokenExpiration: Date;
+
+  @Prop()
   deviceUUID: string;
+
+  @Prop()
+  device: string;
+
+  @Prop()
+  platform: string;
+
+  @Prop()
+  firebaseNotificationToken?: string;
 }
 
+const CredentialSchema = SchemaFactory.createForClass(Credential);
+
+@Schema({ id: false, _id: false, versionKey: false })
+class Preferences {
+  @Prop({ default: [] })
+  languages: string[];
+}
+
+const PreferencesSchema = SchemaFactory.createForClass(Preferences);
+
 @Schema({ timestamps: true })
-export class AccountDocument extends CastcleBase {
-  @Prop({
-    index: true,
-  })
+export class AccountDocument extends BaseSchema {
+  @Prop({ type: String, default: EntityVisibility.Publish })
+  visibility: EntityVisibility;
+
+  @Prop({ index: true })
   email: string;
 
   @Prop()
@@ -54,10 +90,8 @@ export class AccountDocument extends CastcleBase {
   @Prop({ required: true })
   isGuest: boolean;
 
-  @Prop({ required: true, type: Object })
-  preferences: {
-    languages: string[];
-  };
+  @Prop({ type: PreferencesSchema, default: {} })
+  preferences: Preferences;
 
   @Prop({ type: Object })
   mobile: {
@@ -71,8 +105,8 @@ export class AccountDocument extends CastcleBase {
     continentCode: string;
   };
 
-  @Prop({ type: Array })
-  credentials: ICredential[];
+  @Prop({ type: [CredentialSchema], default: [] })
+  credentials: Credential[];
 
   @Prop({ type: Object })
   authentications: AccountAuthentications;
@@ -106,10 +140,29 @@ export class AccountDocument extends CastcleBase {
   seenContents?: string[];
 }
 
-export const AccountSchema = SchemaFactory.createForClass(AccountDocument);
-
-export class Account extends AccountDocument {
-  changePassword: (password: string, email?: string) => Promise<Account | null>;
-  verifyPassword: (password: string) => boolean;
-  createActivation: (type: AccountActivationType) => AccountActivation;
+export interface AccountMethods {
+  changePassword(password: string, email?: string): Promise<Account | null>;
+  createActivation(
+    type: AccountActivationType,
+    activationDate?: Date,
+  ): AccountActivation;
+  generateToken(payload: GenerateTokenDto): Promise<GeneratedToken>;
+  regenerateToken(filter: Partial<Credential>): Promise<GeneratedToken>;
+  verifyPassword(password: string): boolean;
 }
+
+export type AccountStaticMethods = Model<AccountDocument>;
+
+export type Account = AccountDocument & AccountMethods;
+
+export const AccountSchema = (
+  SchemaFactory.createForClass(AccountDocument) as MongooseSchema<
+    AccountDocument,
+    AccountStaticMethods,
+    AccountMethods
+  >
+)
+  .index({ isGuest: 1, 'credentials.deviceUUID': 1 })
+  .index({ email: 1 })
+  .index({ 'credentials.accessToken': 1 })
+  .index({ 'credentials.refreshToken': 1 });

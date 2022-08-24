@@ -22,7 +22,6 @@
  */
 
 import {
-  AccountRequirements,
   AuthenticationServiceV2,
   ChangePasswordDto,
   GetDisplayNameDto,
@@ -39,19 +38,25 @@ import {
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import {
+  ConnectWithSocialService,
+  GuestLoginService,
+  LoginWithEmailService,
+  LoginWithSocialService,
+  RefreshTokenService,
+  RegisterWithEmailService,
+} from '@castcle-api/services';
+import {
   Auth,
   Authorizer,
+  BearerToken,
   CastcleBasicAuth,
   CastcleControllerV2,
-  CastcleTrack,
   RequestMeta,
   RequestMetadata,
 } from '@castcle-api/utils/decorators';
 import {
   CredentialRequest,
   HeadersInterceptor,
-  TokenInterceptor,
-  TokenRequest,
 } from '@castcle-api/utils/interceptors';
 import {
   Body,
@@ -67,61 +72,87 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { FastifyReply } from 'fastify';
-import { getEmailVerificationHtml } from '../configs';
+import { getEmailVerificationHtml } from './configs';
 import {
   CheckEmailExistDto,
   CheckIdExistDto,
   CheckingResponseV2,
   GuestLoginDto,
   OtpResponse,
-} from '../dtos';
-import {
-  GuestInterceptor,
-  GuestRequest,
-} from '../interceptors/guest.interceptor';
+} from './dtos';
 
 @CastcleControllerV2({ path: 'authentications' })
 export class AuthenticationControllerV2 {
-  constructor(private authenticationService: AuthenticationServiceV2) {}
+  constructor(
+    private authenticationService: AuthenticationServiceV2,
+    private connectWithSocialService: ConnectWithSocialService,
+    private guestLoginService: GuestLoginService,
+    private loginWithEmailService: LoginWithEmailService,
+    private loginWithSocialService: LoginWithSocialService,
+    private refreshTokenService: RefreshTokenService,
+    private registerWithEmailService: RegisterWithEmailService,
+  ) {}
 
-  @CastcleBasicAuth()
+  @Post('guest')
+  guestLogin(
+    @Body() { deviceUUID }: GuestLoginDto,
+    @RequestMeta() { device, ip, language, platform }: RequestMetadata,
+  ) {
+    return this.guestLoginService.execute({
+      device,
+      deviceUUID,
+      ip,
+      preferLanguages: [language],
+      platform,
+    });
+  }
+
+  @Post('refresh-token')
+  async refreshToken(
+    @BearerToken() refreshToken: string,
+    @RequestMeta() { ip }: RequestMetadata,
+  ) {
+    return this.refreshTokenService.execute({ refreshToken, ip });
+  }
+
   @Post('register-with-email')
   async requestEmailOtp(
+    @BearerToken() guestAccessToken: string,
     @Body() dto: RegisterWithEmailDto,
     @RequestMeta() { ip, hostUrl }: RequestMetadata,
-    @Req() { $credential }: CredentialRequest,
   ) {
-    return this.authenticationService.registerWithEmail($credential, {
+    return this.registerWithEmailService.execute({
       ...dto,
+      guestAccessToken,
       hostUrl,
       ip,
     });
   }
 
   @Post('login-with-email')
-  @CastcleBasicAuth()
-  @CastcleTrack()
   loginWithEmail(
+    @BearerToken() guestAccessToken: string,
     @Body() { email, password }: LoginWithEmailDto,
-    @Req() { $credential }: CredentialRequest,
+    @RequestMeta() { ip }: RequestMetadata,
   ) {
-    return this.authenticationService.loginWithEmail(
-      $credential,
+    return this.loginWithEmailService.execute({
       email,
       password,
-    );
+      guestAccessToken,
+      ip,
+    });
   }
 
   @Post('login-with-social')
-  @CastcleBasicAuth()
-  @CastcleTrack()
   loginWithSocial(
+    @BearerToken() guestAccessToken: string,
     @Body() socialConnectDto: SocialConnectDto,
-    @Req() { $credential }: CredentialRequest,
-    @RequestMeta() { ip, userAgent }: RequestMetadata,
+    @RequestMeta() { hostUrl, ip, userAgent }: RequestMetadata,
   ) {
-    return this.authenticationService.loginWithSocial($credential, {
+    return this.loginWithSocialService.execute({
       ...socialConnectDto,
+      guestAccessToken,
+      hostUrl,
       ip,
       userAgent,
     });
@@ -129,23 +160,16 @@ export class AuthenticationControllerV2 {
 
   @Post('connect-with-social')
   @CastcleBasicAuth()
-  @CastcleTrack()
   connectWithSocial(
     @Auth() { account }: Authorizer,
+    @BearerToken() guestAccessToken: string,
     @Body() socialConnectDto: SocialConnectDto,
-    @Req() { $credential }: CredentialRequest,
   ) {
-    return this.authenticationService.connectWithSocial(
-      $credential,
+    return this.connectWithSocialService.execute({
+      ...socialConnectDto,
       account,
-      socialConnectDto,
-    );
-  }
-
-  @UseInterceptors(TokenInterceptor)
-  @Post('refresh-token')
-  async refreshToken(@Req() req: TokenRequest) {
-    return this.authenticationService.getRefreshToken(req.$token);
+      accessToken: guestAccessToken,
+    });
   }
 
   @UseInterceptors(HeadersInterceptor)
@@ -256,13 +280,15 @@ export class AuthenticationControllerV2 {
   )
   @Post('verify-otp/email')
   async verifyOtpByEmail(
+    @Auth() { account }: Authorizer,
+    @BearerToken() guestAccessToken: string,
     @Body() verifyOtpDto: VerifyOtpByEmailDto,
-    @Req() { $credential }: CredentialRequest,
   ) {
     const { otp, accessToken } =
       await this.authenticationService.verifyOtpByEmail({
         ...verifyOtpDto,
-        credential: $credential,
+        requestedBy: account,
+        guestAccessToken,
       });
 
     return {
@@ -310,26 +336,6 @@ export class AuthenticationControllerV2 {
       ...changePasswordDto,
       requestedBy: $credential.account,
     });
-  }
-
-  @CastcleTrack()
-  @UseInterceptors(GuestInterceptor)
-  @Post('guest')
-  async guestLogin(
-    @Req() req: GuestRequest,
-    @Body() { deviceUUID }: GuestLoginDto,
-  ) {
-    const requestOption: AccountRequirements = {
-      deviceUUID,
-      device: req.$device,
-      header: {
-        platform: req.$platform,
-      },
-      languagesPreferences: [req.$language],
-      geolocation: req.$geolocation || null,
-    };
-
-    return await this.authenticationService.guestLogin(requestOption);
   }
 
   @CastcleBasicAuth()

@@ -30,34 +30,31 @@ import {
   TransactionSchema,
   TransactionStatus,
   TransactionType,
-  User,
   UserSchema,
   WalletType,
 } from '@castcle-api/database';
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { getQueueToken } from '@nestjs/bull';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Job } from 'bull';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
 import { TransactionVerifier } from './transaction-verifier';
 
 describe('TransactionVerifier', () => {
   let verifier: TransactionVerifier;
   let moduleRef: TestingModule;
-  let mongoServer: MongoMemoryReplSet;
   let campaignModel: Model<Campaign>;
   let transactionModel: Model<Transaction>;
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryReplSet.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
-        MongooseModule.forRoot(mongoServer.getUri()),
+        CastcleMongooseModule,
         MongooseModule.forFeature([
-          { name: Campaign.name, schema: CampaignSchema },
-          { name: Transaction.name, schema: TransactionSchema },
-          { name: User.name, schema: UserSchema },
+          { name: 'Campaign', schema: CampaignSchema },
+          { name: 'Transaction', schema: TransactionSchema },
+          { name: 'User', schema: UserSchema },
         ]),
       ],
       providers: [
@@ -67,22 +64,19 @@ describe('TransactionVerifier', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
+    });
 
     verifier = moduleRef.get(TransactionVerifier);
-    campaignModel = moduleRef.get(getModelToken(Campaign.name));
-    transactionModel = moduleRef.get(getModelToken(Transaction.name));
+    campaignModel = moduleRef.getModel('Campaign');
+    transactionModel = moduleRef.getModel('Transaction');
   });
 
   afterAll(() => {
-    return Promise.all([moduleRef.close(), mongoServer.stop()]);
+    return moduleRef.close();
   });
 
   afterEach(() => {
-    return Promise.all([
-      campaignModel.deleteMany(),
-      transactionModel.deleteMany(),
-    ]);
+    return moduleRef.cleanDb();
   });
 
   it('should be defined', () => {

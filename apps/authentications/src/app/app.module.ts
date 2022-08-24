@@ -27,16 +27,18 @@ import {
   CastcleTracingModule,
 } from '@castcle-api/core';
 import { DatabaseModule } from '@castcle-api/database';
+import { CastcleServices } from '@castcle-api/services';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
+import { AuthenticationControllerV2 } from './app.controller.v2';
 import { AppService } from './app.service';
 import { AuthenticationController } from './controllers/app.controller';
-import { AuthenticationControllerV2 } from './controllers/authentications.controller.v2';
 
 @Module({
   imports: [
     CastcleHealthyModule.register({ pathPrefix: 'authentications' }),
+    CastcleServices,
     CastcleThrottlerModule,
     CastcleTracingModule.forRoot({ serviceName: 'authentications' }),
     DatabaseModule,

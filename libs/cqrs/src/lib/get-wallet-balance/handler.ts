@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Repository, User } from '@castcle-api/database';
+import { Repository, User, UserDocument } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
@@ -43,7 +43,7 @@ export class GetWalletBalanceHandler
   ): Promise<GetWalletBalanceResponse> {
     const [[walletBalance], user] = await Promise.all([
       this.repository.aggregateTransaction(command.user._id),
-      command.user instanceof User
+      command.user instanceof UserDocument
         ? command.user
         : this.userModel.findById(command.user),
     ]);

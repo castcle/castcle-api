@@ -530,8 +530,13 @@ export class AuthenticationServiceV2 {
       );
 
       (account.credentials ??= []).push({
-        _id: new Types.ObjectId(credential._id),
         deviceUUID: credential.deviceUUID,
+        accessToken,
+        accessTokenExpiration: accessTokenExpireDate,
+        refreshToken,
+        refreshTokenExpiration: refreshTokenExpireDate,
+        device: requestOption.device,
+        platform: requestOption.header.platform,
       });
 
       await account.save({ session });
@@ -823,9 +828,9 @@ export class AuthenticationServiceV2 {
     email,
     refCode,
     otp: otpCode,
-    credential,
-  }: VerifyOtpByEmailDto & { credential: Credential }) {
-    const requestedBy = credential.account;
+    requestedBy,
+    guestAccessToken,
+  }: VerifyOtpByEmailDto & { requestedBy: Account; guestAccessToken: string }) {
     if (objective !== OtpObjective.CHANGE_PASSWORD && !requestedBy.isGuest) {
       throw new CastcleException('INVALID_ACCESS_TOKEN');
     }
@@ -849,8 +854,14 @@ export class AuthenticationServiceV2 {
 
     if (objective !== OtpObjective.MERGE_ACCOUNT) return { otp };
 
-    await this.linkCredentialToAccount(credential, account);
-    const { accessToken } = await this.login(credential, account);
+    const credential = requestedBy.credentials.find(
+      (c) => c.accessToken === guestAccessToken,
+    );
+    const [{ accessToken }] = await Promise.all([
+      account.generateToken(credential),
+      requestedBy.remove(),
+    ]);
+
     return { otp, accessToken };
   }
 

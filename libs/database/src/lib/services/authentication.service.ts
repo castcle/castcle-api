@@ -184,9 +184,15 @@ export class AuthenticationService {
     //TODO !!! : how to reduct this
     if (!newAccount.credentials) newAccount.credentials = [];
     newAccount.credentials.push({
-      _id: new Types.ObjectId(credentialDocument._id),
       deviceUUID: credentialDocument.deviceUUID,
+      accessToken: accessTokenResult.accessToken,
+      accessTokenExpiration: accessTokenResult.accessTokenExpireDate,
+      refreshToken: refreshTokenResult.refreshToken,
+      refreshTokenExpiration: refreshTokenResult.refreshTokenExpireDate,
+      device: accountRequirements.device,
+      platform: accountRequirements.header.platform,
     });
+    newAccount.markModified('credentials');
     await newAccount.save();
     return { accountDocument, credentialDocument };
   }
@@ -231,8 +237,13 @@ export class AuthenticationService {
           {
             $push: {
               credentials: {
-                _id: new Types.ObjectId(credential._id),
                 deviceUUID: credential.deviceUUID,
+                accessToken: credential.accessToken,
+                accessTokenExpiration: credential.accessTokenExpireDate,
+                refreshToken: credential.refreshToken,
+                refreshTokenExpiration: credential.refreshTokenExpireDate,
+                device: credential.device,
+                platform: credential.platform,
               },
             },
           },
@@ -352,22 +363,36 @@ export class AuthenticationService {
     account.isGuest = false;
     account.activateDate = now;
 
-    this._accountModel
-      .updateOne(
-        {
-          _id: account._id,
-          'activations.verifyToken': accountActivation.verifyToken,
-        },
-        {
-          $set: {
-            'activations.$.activationDate': new Date(),
+    await Promise.all([
+      this._accountModel
+        .updateOne(
+          {
+            _id: account._id,
+            'activations.verifyToken': accountActivation.verifyToken,
           },
-        },
-      )
-      .exec();
+          {
+            $set: {
+              'activations.$.activationDate': new Date(),
+            },
+          },
+        )
+        .exec(),
+      this._userModel
+        .updateOne(
+          {
+            ownerAccount: account._id,
+            type: UserType.PEOPLE,
+          },
+          {
+            $set: {
+              'verified.email': true,
+            },
+          },
+        )
+        .exec(),
+    ]);
 
-    const savedAccount = await account.save();
-    return savedAccount;
+    return account.save();
   }
 
   async signupByEmail(account: Account, requirements: SignupRequirements) {

@@ -40,6 +40,7 @@ import {
 } from '@castcle-api/database';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -73,6 +74,7 @@ describe('CommentController', () => {
         }),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
+        JwtModule,
       ],
       controllers: [CommentController],
       providers: [
