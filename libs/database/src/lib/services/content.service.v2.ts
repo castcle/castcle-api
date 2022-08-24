@@ -727,8 +727,8 @@ export class ContentServiceV2 {
         farmAmount: farmAmount,
         startAt: new Date(),
       });
+      session.startTransaction();
       try {
-        session.startTransaction();
         await contentFarming.save();
         await this.tAccountService.transfer({
           from: {
@@ -758,7 +758,6 @@ export class ContentServiceV2 {
             },
           ],
         });
-
         await session.commitTransaction();
         return contentFarming;
       } catch (error) {
@@ -849,6 +848,9 @@ export class ContentServiceV2 {
         user: new Types.ObjectId(userId),
       },
       projection,
+      {
+        sort: { createdAt: -1 },
+      },
     );
 
   farm = async (contentId: string, userId: string, accountId: string) => {
@@ -873,7 +875,6 @@ export class ContentServiceV2 {
     const userOwner = await this.repository.findUser({
       _id: content.author.id,
     });
-
     await this.notificationService.notifyToUser(
       {
         source:
@@ -1027,8 +1028,8 @@ export class ContentServiceV2 {
     const session = await this.contentFarmingModel.startSession();
     contentFarming.status = ContentFarmingStatus.Farmed;
     contentFarming.endedAt = new Date();
-    await session.withTransaction(async () => {
-      await contentFarming.save();
+    try {
+      session.startTransaction();
       await this.contentModel.updateOne(
         { _id: contentFarming.content },
         {
@@ -1065,19 +1066,17 @@ export class ContentServiceV2 {
           },
         ],
       });
-    });
-    await session.endSession();
-    return contentFarming;
+      session.commitTransaction();
+      return contentFarming.save();
+    } catch (e) {
+      session.abortTransaction();
+      throw new CastcleException('INTERNAL_SERVER_ERROR');
+    }
   };
 
   expireAllFarmedToken = async () => {
-    const cutOffDate = new Date(
-      new Date().getTime() -
-        Environment.CONTENT_FARMING_COOLDOWN_HR * 60 * 1000,
-    );
     const expiresFarmings = await this.contentFarmingModel.find({
       status: ContentFarmingStatus.Farming,
-      startAt: { $lte: cutOffDate },
     });
     return Promise.all(
       expiresFarmings.map((cf) =>
