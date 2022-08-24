@@ -1083,8 +1083,13 @@ export class ContentServiceV2 {
   };
 
   expireAllFarmedToken = async () => {
+    const cutOffDate = new Date(
+      new Date().getTime() -
+        Environment.CONTENT_FARMING_COOLDOWN_HR * 60 * 1000,
+    );
     const expiresFarmings = await this.contentFarmingModel.find({
       status: ContentFarmingStatus.Farming,
+      startAt: { $lte: cutOffDate },
     });
     return Promise.all(
       expiresFarmings.map((cf) =>
