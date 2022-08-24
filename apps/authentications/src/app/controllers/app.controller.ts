@@ -159,7 +159,11 @@ export class AuthenticationController {
         );
         if (embedCredentialByDeviceUUID) {
           req.$credential = await this.authService._credentialModel
-            .findById(embedCredentialByDeviceUUID._id)
+            .findOne({
+              isGuest: false,
+              'account._id': account._id,
+              deviceUUID: embedCredentialByDeviceUUID.deviceUUID,
+            })
             .exec();
           req.$credential.account.geolocation = req['$geolocation'];
           req.$credential.markModified('account');
@@ -323,6 +327,7 @@ export class AuthenticationController {
       //TODO !!! Need to improve this performance
       //make new token isGuest = false
       req.$credential.account.isGuest = false;
+      req.$credential.markModified('account');
       const accessTokenPayload =
         await this.authService.getAccessTokenPayloadFromCredential(
           req.$credential,

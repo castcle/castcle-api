@@ -83,6 +83,7 @@ import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
@@ -125,6 +126,7 @@ describe('AppController', () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        JwtModule,
         MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register(),
         MongooseAsyncFeatures(),

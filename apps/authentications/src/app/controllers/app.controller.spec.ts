@@ -46,10 +46,12 @@ import {
   TwilioClient,
   TwitterClient,
 } from '@castcle-api/utils/clients';
+import { RequestMetadata } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
@@ -106,7 +108,7 @@ const createMockCredential = async (
           password: password,
         },
       },
-      {},
+      {} as RequestMetadata,
     );
   }
 
@@ -161,6 +163,7 @@ describe('AppController', () => {
     app = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
+        JwtModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
@@ -429,7 +432,7 @@ describe('AppController', () => {
             password: '2@HelloWorld',
           },
         },
-        {},
+        {} as RequestMetadata,
       );
 
       expect(tokens).toBeDefined();
@@ -470,7 +473,7 @@ describe('AppController', () => {
     const testId = 'registerId2';
     const registerEmail = 'sompop2.kulapalanont@gmail.com';
     const password = '2@HelloWorld';
-    const deviceUUID = 'sompop12345';
+    const deviceUUID = 'sompop123456789';
     const newDeviceUUID = 'sompop54321';
     it('should be able to login after register', async () => {
       const guestResult = await appController.guestLogin(
@@ -495,7 +498,7 @@ describe('AppController', () => {
             password: password,
           },
         },
-        {},
+        {} as RequestMetadata,
       );
       const currentUser = await userService.getUserFromCredential(
         credentialGuest,
@@ -688,7 +691,7 @@ describe('AppController', () => {
             password: password,
           },
         },
-        {},
+        {} as RequestMetadata,
       );
       const preAccountActivation =
         await service.getAccountActivationFromCredential(credentialGuest);
@@ -738,7 +741,7 @@ describe('AppController', () => {
               password: password,
             },
           },
-          {},
+          {} as RequestMetadata,
         );
         const preAccountActivationToken =
           await service.getAccountActivationFromCredential(credentialGuest);
@@ -751,7 +754,7 @@ describe('AppController', () => {
             $token: credentialGuest.accessToken,
           } as any,
           mockResponse,
-          {},
+          {} as RequestMetadata,
         );
         const postAccountActivationToken =
           await service.getAccountActivationFromCredential(credentialGuest);
@@ -829,7 +832,7 @@ describe('AppController', () => {
           email: 'testfb@gmail.com',
           authToken: '',
         },
-        { ip: '127.0.0.1', userAgent: 'castcle-app' },
+        { ip: '127.0.0.1', userAgent: 'castcle-app' } as RequestMetadata,
       );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
@@ -871,7 +874,7 @@ describe('AppController', () => {
           socialId: '109364223777',
           authToken: 'auth-token',
         },
-        { ip: '127.0.0.1', userAgent: 'castcle-app' },
+        { ip: '127.0.0.1', userAgent: 'castcle-app' } as RequestMetadata,
       );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223777',
@@ -900,7 +903,7 @@ describe('AppController', () => {
           email: 'testfb@gmail.com',
           authToken: '',
         },
-        { ip: '127.0.0.1', userAgent: 'castcle-app' },
+        { ip: '127.0.0.1', userAgent: 'castcle-app' } as RequestMetadata,
       );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
@@ -930,7 +933,7 @@ describe('AppController', () => {
             email: 'testfb@gmail.com',
             authToken: '',
           },
-          { ip: '127.0.0.1', userAgent: 'castcle-app' },
+          { ip: '127.0.0.1', userAgent: 'castcle-app' } as RequestMetadata,
         ),
       ).rejects.toEqual(new CastcleException('DUPLICATE_EMAIL'));
     });

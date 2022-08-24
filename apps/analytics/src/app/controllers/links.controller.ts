@@ -40,7 +40,10 @@ export class LinksController {
     @Query()
     { e: name, d: data, dest, src }: Record<string, string>,
   ) {
-    const analytic = { ...requestMetadata, name, data, dest, src } as Analytic;
+    const analytic = { ...requestMetadata, name, data, dest, src } as Omit<
+      Analytic,
+      'count'
+    >;
 
     this.logger.log(`#trackAndRedirect:${JSON.stringify(analytic, null, 2)}`);
     await this.analyticService.track(analytic);

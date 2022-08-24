@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import {
-  CredentialInterceptor,
+  AuthGuard,
   HttpCacheClearInterceptor,
   HttpCacheIndividualInterceptor,
   IpTrackerInterceptor,
@@ -29,6 +29,7 @@ import {
 import {
   CacheKey,
   CacheTTL,
+  UseGuards,
   UseInterceptors,
   applyDecorators,
 } from '@nestjs/common';
@@ -40,15 +41,12 @@ export function CastcleAuth(cacheConfig: { Name: string; Ttl: number }) {
     CacheTTL(cacheConfig.Ttl),
     UseInterceptors(HttpCacheIndividualInterceptor),
     ApiBearerAuth(),
-    UseInterceptors(CredentialInterceptor),
+    UseGuards(AuthGuard),
   );
 }
 
 export function CastcleBasicAuth() {
-  return applyDecorators(
-    ApiBearerAuth(),
-    UseInterceptors(CredentialInterceptor),
-  );
+  return applyDecorators(ApiBearerAuth(), UseGuards(AuthGuard));
 }
 
 export function CastcleClearCacheAuth(cacheConfig: {
@@ -58,7 +56,7 @@ export function CastcleClearCacheAuth(cacheConfig: {
   return applyDecorators(
     CacheKey(cacheConfig.Name),
     ApiBearerAuth(),
-    UseInterceptors(CredentialInterceptor),
+    UseGuards(AuthGuard),
     UseInterceptors(HttpCacheClearInterceptor),
   );
 }

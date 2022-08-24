@@ -28,6 +28,7 @@ import {
   UserService,
 } from '@castcle-api/database';
 import { CacheModule } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -51,6 +52,7 @@ describe('HashtagsController', () => {
           store: 'memory',
           ttl: 1000,
         }),
+        JwtModule,
       ],
       controllers: [HashtagsController],
       providers: [

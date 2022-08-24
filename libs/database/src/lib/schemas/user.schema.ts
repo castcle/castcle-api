@@ -22,9 +22,10 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
+import { Model, Schema as MongooseSchema, SchemaTypes } from 'mongoose';
 import {
   Author,
+  EntityVisibility,
   OwnerResponse,
   PageResponseDto,
   PublicUserResponse,
@@ -41,24 +42,22 @@ import {
 } from '../models';
 import { AccountAuthenId } from './account-authen-id.schema';
 import { Account } from './account.schema';
-import { CastcleBase } from './base.schema';
+import { BaseSchema } from './base.schema';
 import { SocialSync } from './social-sync.schema';
 
 @Schema({ timestamps: true })
-class UserDocument extends CastcleBase {
-  @Prop({
-    required: true,
-    type: SchemaTypes.ObjectId,
-    ref: 'Account',
-    index: true,
-  })
+export class UserDocument extends BaseSchema {
+  @Prop({ type: String, default: EntityVisibility.Publish })
+  visibility: EntityVisibility;
+
+  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'Account' })
   ownerAccount: Account;
 
   /** This is the same as castcleId */
   @Prop({ required: true })
   displayName: string;
 
-  @Prop({ required: true, index: true })
+  @Prop({ required: true })
   displayId: string;
 
   @Prop()
@@ -95,42 +94,54 @@ class UserDocument extends CastcleBase {
   reportedSubject?: string;
 }
 
-export type UserResponseOption = {
-  passwordNotSet?: boolean;
-  blocked?: boolean;
-  followed?: boolean;
-  balance?: number;
-  mobile?: { countryCode: string; number: string };
-  linkSocial?: AccountAuthenId[];
-  syncSocial?: SocialSync[];
-  casts?: number;
-};
-
-export class User extends UserDocument {
-  canUpdateCastcleId: () => boolean;
-  follow: (user: User) => Promise<void>;
-  unfollow: (user: User) => Promise<void>;
-  toSearchTopTrendResponse: () => SearchFollowsResponseDto;
-  toPublicResponse: (dto?: {
+export interface UserMethods {
+  canUpdateCastcleId(): boolean;
+  follow(user: User): Promise<void>;
+  unfollow(user: User): Promise<void>;
+  toSearchTopTrendResponse(): SearchFollowsResponseDto;
+  toPublicResponse(dto?: {
     blocked?: boolean;
     followed?: boolean;
-  }) => PublicUserResponse;
-  toOwnerResponse: (dto?: {
-    expansionFields?: UserField[];
-  }) => Promise<OwnerResponse>;
+  }): PublicUserResponse;
+  toOwnerResponse(
+    dto?: {
+      expansionFields?: UserField[];
+    },
+    account?: Account,
+  ): Promise<OwnerResponse>;
   /** @deprecated */
-  toAuthor: (user?: User | User) => Author;
+  toAuthor(user?: User | User): Author;
   /** @deprecated */
-  toUserResponse: (option?: UserResponseOption) => Promise<UserResponseDto>;
+  toUserResponse(option?: {
+    passwordNotSet?: boolean;
+    blocked?: boolean;
+    blocking?: boolean;
+    followed?: boolean;
+    balance?: number;
+    mobile?: { countryCode: string; number: string };
+    linkSocial?: AccountAuthenId[];
+    syncSocial?: SocialSync[];
+    casts?: number;
+  }): Promise<UserResponseDto>;
   /** @deprecated */
-  toPageResponse: (
+  toPageResponse(
     blocked?: boolean,
     followed?: boolean,
     syncSocial?: SocialSync,
     casts?: number,
-  ) => PageResponseDto;
+  ): PageResponseDto;
 }
 
-export const UserSchema = SchemaFactory.createForClass<UserDocument, User>(
-  UserDocument,
-);
+export type UserStaticMethods = Model<UserDocument>;
+
+export type User = UserDocument & UserMethods;
+
+export const UserSchema = (
+  SchemaFactory.createForClass(UserDocument) as MongooseSchema<
+    UserDocument,
+    UserStaticMethods,
+    UserMethods
+  >
+)
+  .index({ ownerAccount: 1 })
+  .index({ displayId: 1 });

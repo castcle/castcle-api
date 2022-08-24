@@ -21,4 +21,5 @@
  * or have any questions.
  */
 
+export * from './lib/auth.guard';
 export * from './lib/utils-interceptors.module';

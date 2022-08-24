@@ -65,7 +65,8 @@ import {
   WalletShortcutService,
   generateMockUsers,
 } from '@castcle-api/database';
-import { Environment } from '@castcle-api/environments';
+import { CastcleMongooseModule, Environment } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { Downloader } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
@@ -80,18 +81,15 @@ import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
+import { JwtModule } from '@nestjs/jwt';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { DownloaderMock } from 'libs/utils/aws/src/lib/downloader.spec';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { SuggestionService } from '../services/suggestion.service';
 import { UsersControllerV2 } from './users.controller.v2';
 
 describe('UsersControllerV2', () => {
-  let mongod: MongoMemoryServer;
-  let moduleRef: TestingModule;
+  let testingModule: TestingModule;
   let appController: UsersControllerV2;
   let service: UserServiceV2;
   let repository: Repository;
@@ -102,20 +100,9 @@ describe('UsersControllerV2', () => {
   let socialSyncService: SocialSyncServiceV2;
 
   beforeAll(async () => {
-    const DownloaderProvider = {
-      provide: Downloader,
-      useClass: DownloaderMock,
-    };
-
-    const FacebookClientProvider = {
-      provide: FacebookClient,
-      useClass: FacebookClientMock,
-    };
-
-    mongod = await MongoMemoryServer.create();
-    moduleRef = await Test.createTestingModule({
+    testingModule = await TestingModule.createWithDb({
       imports: [
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         CacheModule.register({
           store: 'memory',
           ttl: 1000,
@@ -123,6 +110,7 @@ describe('UsersControllerV2', () => {
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
         HttpModule,
+        JwtModule,
       ],
       controllers: [UsersControllerV2],
       providers: [
@@ -136,8 +124,14 @@ describe('UsersControllerV2', () => {
         CommentServiceV2,
         ContentService,
         ContentServiceV2,
-        DownloaderProvider,
-        FacebookClientProvider,
+        {
+          provide: Downloader,
+          useClass: DownloaderMock,
+        },
+        {
+          provide: FacebookClient,
+          useClass: FacebookClientMock,
+        },
         HashtagService,
         Mailer,
         NotificationService,
@@ -181,20 +175,20 @@ describe('UsersControllerV2', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
-    service = moduleRef.get(UserServiceV2);
-    repository = moduleRef.get(Repository);
-    userServiceV1 = moduleRef.get(UserService);
-    authService = moduleRef.get(AuthenticationService);
-    authServiceV2 = moduleRef.get(AuthenticationServiceV2);
-    socialSyncService = moduleRef.get(SocialSyncServiceV2);
-    contentService = moduleRef.get(ContentService);
-    appController = moduleRef.get(UsersControllerV2);
+    });
+
+    service = testingModule.get(UserServiceV2);
+    repository = testingModule.get(Repository);
+    userServiceV1 = testingModule.get(UserService);
+    authService = testingModule.get(AuthenticationService);
+    authServiceV2 = testingModule.get(AuthenticationServiceV2);
+    socialSyncService = testingModule.get(SocialSyncServiceV2);
+    contentService = testingModule.get(ContentService);
+    appController = testingModule.get(UsersControllerV2);
   });
 
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
+  afterAll(() => {
+    return testingModule.close();
   });
 
   it('should be defined', () => {
