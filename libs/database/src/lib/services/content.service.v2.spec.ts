@@ -450,6 +450,7 @@ describe('ContentServiceV2', () => {
         expect(currentBalance).toEqual(0);
         let start = 0;
         for (let i = 0; i < testContents.length - 1; i++) {
+          let contentFarming = await service.getContentFarming(testContents[i].id, mockFarmingUsers[1].user.id);
           const unfarmResult = await service.expireFarm(contentFarming);
           start += Number(unfarmResult.farmAmount);
           const recentBalance = await tAccountService.getAccountBalance(
