@@ -926,14 +926,7 @@ export class ContentServiceV2 {
       const session = await this.contentFarmingModel.startSession();
       await session.withTransaction(async () => {
         await contentFarming.save();
-        await this.contentModel.updateOne(
-          { _id: contentFarming.content },
-          {
-            $push: {
-              farming: contentFarming,
-            },
-          },
-        );
+        await this.contentModel.updateOne({ _id: contentFarming.content });
         await this.tAccountService.transfer({
           from: {
             type: WalletType.FARM_LOCKED,
@@ -984,14 +977,7 @@ export class ContentServiceV2 {
       const session = await this.contentFarmingModel.startSession();
       await session.withTransaction(async () => {
         await contentFarming.save();
-        await this.contentModel.updateOne(
-          { _id: contentFarming.content },
-          {
-            $push: {
-              farming: contentFarming,
-            },
-          },
-        );
+        await this.contentModel.updateOne({ _id: contentFarming.content });
         await this.tAccountService.transfer({
           from: {
             type: WalletType.FARM_LOCKED,
@@ -1037,14 +1023,7 @@ export class ContentServiceV2 {
     contentFarming.endedAt = new Date();
     try {
       session.startTransaction();
-      await this.contentModel.updateOne(
-        { _id: contentFarming.content },
-        {
-          $push: {
-            farming: contentFarming,
-          },
-        },
-      );
+      await this.contentModel.updateOne({ _id: contentFarming.content });
       await this.tAccountService.transfer({
         from: {
           type: WalletType.FARM_LOCKED,
