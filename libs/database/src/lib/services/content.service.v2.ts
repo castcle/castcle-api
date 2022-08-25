@@ -1029,10 +1029,9 @@ export class ContentServiceV2 {
   };
 
   //for system only
-  expireFarm = async (contentId: string, userId: string) => {
+  expireFarm = async (contentFarming: ContentFarming) => {
     //change status
     //move token from lock to personal
-    const contentFarming = await this.getContentFarming(contentId, userId);
     const session = await this.contentFarmingModel.startSession();
     contentFarming.status = ContentFarmingStatus.Farmed;
     contentFarming.endedAt = new Date();
@@ -1091,11 +1090,7 @@ export class ContentServiceV2 {
       status: ContentFarmingStatus.Farming,
       startAt: { $lte: cutOffDate },
     });
-    return Promise.all(
-      expiresFarmings.map((cf) =>
-        this.expireFarm(String(cf.content), String(cf.user)),
-      ),
-    );
+    return Promise.all(expiresFarmings.map((cf) => this.expireFarm(cf)));
   };
 
   getUndistributedContentFarmingCDF = async () => {
