@@ -53,8 +53,7 @@ export class AdsRequestDto {
   @ApiProperty()
   campaignName: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @ApiProperty()
   campaignMessage: string;
 
@@ -101,7 +100,7 @@ export class AdsRequestDto {
 export class AdsResponse {
   id: string;
   campaignName: string;
-  campaignMessage: string;
+  campaignMessage?: string;
   campaignCode: string;
   objective: string;
   dailyBudget: number;
@@ -155,8 +154,7 @@ export class AdsDto {
   @IsNotEmpty()
   campaignName: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   campaignMessage: string;
 
   @IsEnum(AdsObjective)

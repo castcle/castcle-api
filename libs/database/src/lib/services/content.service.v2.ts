@@ -144,7 +144,15 @@ export class ContentServiceV2 {
             )
           : [],
       },
-      metrics: dto.metrics ?? {
+      metrics: {
+        ...dto.metrics,
+        farmCount:
+          dto.farming?.farmingContent?.reduce(
+            (farmCountTotal, { farmAmount }) =>
+              (farmCountTotal += Number(farmAmount)),
+            0,
+          ) | 0,
+      } ?? {
         likeCount: dto.content.engagements?.like?.count | 0,
         commentCount: dto.content.engagements?.comment?.count | 0,
         quoteCount: dto.content.engagements?.quote?.count | 0,
@@ -727,8 +735,8 @@ export class ContentServiceV2 {
         farmAmount: farmAmount,
         startAt: new Date(),
       });
+      session.startTransaction();
       try {
-        session.startTransaction();
         await contentFarming.save();
         await this.tAccountService.transfer({
           from: {
@@ -758,7 +766,6 @@ export class ContentServiceV2 {
             },
           ],
         });
-
         await session.commitTransaction();
         return contentFarming;
       } catch (error) {
@@ -849,6 +856,9 @@ export class ContentServiceV2 {
         user: new Types.ObjectId(userId),
       },
       projection,
+      {
+        sort: { createdAt: -1 },
+      },
     );
 
   farm = async (contentId: string, userId: string, accountId: string) => {
@@ -873,7 +883,6 @@ export class ContentServiceV2 {
     const userOwner = await this.repository.findUser({
       _id: content.author.id,
     });
-
     await this.notificationService.notifyToUser(
       {
         source:
@@ -1027,8 +1036,8 @@ export class ContentServiceV2 {
     const session = await this.contentFarmingModel.startSession();
     contentFarming.status = ContentFarmingStatus.Farmed;
     contentFarming.endedAt = new Date();
-    await session.withTransaction(async () => {
-      await contentFarming.save();
+    try {
+      session.startTransaction();
       await this.contentModel.updateOne(
         { _id: contentFarming.content },
         {
@@ -1065,9 +1074,12 @@ export class ContentServiceV2 {
           },
         ],
       });
-    });
-    await session.endSession();
-    return contentFarming;
+      session.commitTransaction();
+      return contentFarming.save();
+    } catch (e) {
+      session.abortTransaction();
+      throw new CastcleException('INTERNAL_SERVER_ERROR');
+    }
   };
 
   expireAllFarmedToken = async () => {
@@ -1201,7 +1213,9 @@ export class ContentServiceV2 {
         Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
         Number(balance?.farm).toFixed(Environment.DECIMALS_FLOAT),
         Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
-        totalContentFarming,
+        contentFarming.status === ContentFarmingStatus.Farmed
+          ? totalContentFarming + 1
+          : totalContentFarming,
         contentPayload,
       ),
       includes: new CastcleIncludes({
@@ -1965,16 +1979,10 @@ export class ContentServiceV2 {
   };
 
   lookupFarming = async (contentId: string, user: User) => {
-    const contentFarming = await this.contentFarmingModel.findOne(
-      {
-        user: new Types.ObjectId(user.id),
-        content: new Types.ObjectId(contentId),
-      },
-      {
-        updatedAt: 0,
-        endedAt: 0,
-      },
-    );
+    const contentFarming = await this.getContentFarming(contentId, user._id, {
+      updatedAt: 0,
+      endedAt: 0,
+    });
 
     const [balance] = await this.repository.aggregateTransaction(user._id);
     if (
@@ -1983,8 +1991,6 @@ export class ContentServiceV2 {
     ) {
       contentFarming._id = null;
       contentFarming.createdAt = null;
-      if (contentFarming.status === ContentFarmingStatus.Farmed)
-        contentFarming.status = undefined;
     }
 
     const content = await this.repository.findContent({

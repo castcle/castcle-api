@@ -77,7 +77,9 @@ export class RegisterWithEmailServiceImpl implements RegisterWithEmailService {
       this.repository.findAccount({ email: dto.email }),
       this.repository.findUser({ _id: dto.castcleId }),
       this.ipAPI.getGeolocation(dto.ip),
-      this.repository.isEmailDisposable(dto.email),
+      Environment.EMAIL_DISPOSABLE
+        ? this.repository.isEmailDisposable(dto.email)
+        : false,
       this.getReferrer(dto.referral, dto.ip),
     ]);
 
