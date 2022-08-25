@@ -22,27 +22,23 @@
  */
 import {
   AnalyticService,
-  AuthenticationService,
   CommentServiceV2,
-  Content,
   ContentService,
   ContentType,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService,
   NotificationServiceV2,
   QueueName,
   SocialSyncServiceV2,
   User,
-  UserService,
   UserServiceV2,
-  generateMockUsers,
 } from '@castcle-api/database';
 import { CastcleMongooseModule } from '@castcle-api/environments';
 import { TestingModule } from '@castcle-api/testing';
 import { Downloader } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
+import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -53,12 +49,9 @@ import { CommentControllerV2 } from './comment.controller.v2';
 describe('CommentControllerV2', () => {
   let app: TestingModule;
   let commentController: CommentControllerV2;
-  let service: UserService;
-  let authService: AuthenticationService;
   let contentService: ContentService;
   let user: User;
-  let content: Content;
-  let credential;
+  let authorizer: Authorizer;
 
   beforeAll(async () => {
     app = await TestingModule.createWithDb({
@@ -73,15 +66,12 @@ describe('CommentControllerV2', () => {
       controllers: [CommentControllerV2],
       providers: [
         AnalyticService,
-        AuthenticationService,
         CommentServiceV2,
         ContentService,
         HashtagService,
         Mailer,
-        NotificationService,
         NotificationServiceV2,
         Repository,
-        UserService,
         UserServiceV2,
         { provide: SocialSyncServiceV2, useValue: {} },
         { provide: Downloader, useValue: {} },
@@ -103,29 +93,28 @@ describe('CommentControllerV2', () => {
         },
       ],
     });
-    service = app.get<UserService>(UserService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
+
     contentService = app.get<ContentService>(ContentService);
     commentController = app.get<CommentControllerV2>(CommentControllerV2);
-    const mocksUsers = await generateMockUsers(1, 0, {
-      userService: service,
-      accountService: authService,
-    });
-
-    user = mocksUsers[0].user;
-    credential = {
-      $credential: mocksUsers[0].credential,
-      $language: 'th',
-    } as any;
   });
 
   afterAll(() => {
     return app.close();
   });
 
+  beforeEach(async () => {
+    const created = await app.createUser();
+    authorizer = new Authorizer(created.account, created.user, 'uuid');
+    user = created.user;
+  });
+
+  afterEach(() => {
+    return app.cleanDb();
+  });
+
   describe('#getAllComment()', () => {
     it('should display all comments', async () => {
-      content = await contentService.createContentFromUser(user, {
+      const content = await contentService.createContentFromUser(user, {
         payload: { message: 'hi v2' },
         type: ContentType.Short,
         castcleId: user.displayId,
@@ -141,7 +130,7 @@ describe('CommentControllerV2', () => {
 
       const comments = await commentController.getAllComment(
         { contentId: content.id },
-        credential,
+        authorizer,
         { hasRelationshipExpansion: false },
       );
       expect(comments.payload.length).toEqual(2);
@@ -152,7 +141,7 @@ describe('CommentControllerV2', () => {
 
   describe('#getAllReplyComment()', () => {
     it('should display all reply comments', async () => {
-      content = await contentService.createContentFromUser(user, {
+      const content = await contentService.createContentFromUser(user, {
         payload: { message: 'hi reply v2' },
         type: ContentType.Short,
         castcleId: user.displayId,
@@ -173,7 +162,7 @@ describe('CommentControllerV2', () => {
       const replyComments = await commentController.getAllReplyComment(
         { contentId: content.id },
         { sourceCommentId: comment.id },
-        credential,
+        authorizer,
         { hasRelationshipExpansion: false },
       );
       expect(replyComments.payload.length).toEqual(1);

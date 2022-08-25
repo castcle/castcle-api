@@ -20,54 +20,41 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ShortPayload } from '../dtos';
 import { ContentType, QueueName } from '../models';
 import { Repository } from '../repositories';
-import { Account, Content, Credential, User } from '../schemas';
-import { AuthenticationService } from './authentication.service';
+import { Account, Content, User } from '../schemas';
 import { ContentService } from './content.service';
 import { DataService } from './data.service';
 import { HashtagService } from './hashtag.service';
 import { RankerService } from './ranker.service';
-import { UserService } from './user.service';
 
 describe('Ranker Service', () => {
-  let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: RankerService;
   let contentService: ContentService;
-  let userService: UserService;
-  let authService: AuthenticationService;
+  let account: Account;
   let user: User;
   let follower: User;
-  let followerAccount: Account;
   const contents: Content[] = [];
-  let result: {
-    accountDocument: Account;
-    credentialDocument: Credential;
-  };
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
         CacheModule.register(),
+        CastcleMongooseModule,
         HttpModule,
-        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
       ],
       providers: [
         ContentService,
-        UserService,
-        AuthenticationService,
         RankerService,
         Repository,
         HashtagService,
@@ -81,56 +68,19 @@ describe('Ranker Service', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
+    });
 
-    service = moduleRef.get<RankerService>(RankerService);
-    contentService = moduleRef.get<ContentService>(ContentService);
-    userService = moduleRef.get<UserService>(UserService);
-    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
-    result = await authService.createAccount({
-      deviceUUID: 'test12354',
-      languagesPreferences: ['th', 'th'],
-      header: {
-        platform: 'ios',
-      },
-      device: 'ifong',
-    });
-    //sign up to create actual account
-    await authService.signupByEmail(result.accountDocument, {
-      displayId: 'sp',
-      displayName: 'sp002',
-      email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567',
-    });
-    user = await userService.getUserFromCredential(result.credentialDocument);
-    const followerResult = await authService.createAccount({
-      deviceUUID: 'followerAbcde',
-      languagesPreferences: ['th', 'th'],
-      header: {
-        platform: 'ios',
-      },
-      device: 'ifong',
-    });
-    await authService.signupByEmail(followerResult.accountDocument, {
-      displayId: 'followerNa',
-      displayName: 'followerNa002',
-      email: 'sompop2.kulapalanont@gmail.com',
-      password: '2@Test12345678',
-    });
-    //let follower follow user
-    follower = await userService.getUserFromCredential(
-      followerResult.credentialDocument,
-    );
-    await userService.follow(follower, user);
-    followerAccount = await authService.getAccountFromEmail(
-      'sompop2.kulapalanont@gmail.com',
-    );
-    console.debug(followerAccount);
+    service = moduleRef.get(RankerService);
+    contentService = moduleRef.get(ContentService);
+    const [user1, user2] = await moduleRef.createUsers(2);
+    account = user1.account;
+    user = user1.user;
+    follower = user2.user;
+    await follower.follow(user);
   });
 
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   describe('#getAndcreateFeedItemByCreateTime()', () => {
@@ -176,7 +126,6 @@ describe('Ranker Service', () => {
         castcleId: user.displayId,
       });
       const contentIds = contents.map((item) => item.id);
-      console.log('contentIds', contentIds);
       await service._defaultContentModel.insertMany(
         contentIds.map((id, index) => ({
           content: id,
@@ -199,7 +148,7 @@ describe('Ranker Service', () => {
           maxResults: 5,
           hasRelationshipExpansion: false,
         },
-        result.accountDocument,
+        account,
       );
 
       expect(guestFeeds.payload).toHaveLength(5);

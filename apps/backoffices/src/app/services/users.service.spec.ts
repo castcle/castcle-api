@@ -1,42 +1,34 @@
-import {
-  DatabaseModule,
-  MockUserDetail,
-  MockUserService,
-} from '@castcle-api/database';
+import { DatabaseModule } from '@castcle-api/database';
 import { CastcleBackofficeMongooseModule } from '@castcle-api/environments';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { TestingModule } from '@castcle-api/testing';
+import { CreatedUser } from 'libs/testing/src/lib/testing.dto';
+import { UserQuery } from '../models/users.dto';
 import { BackOfficeMongooseForFeatures } from '../schemas';
 import { UserBackofficeService } from './users.service';
 
 describe('UserBackofficeService', () => {
   let service: UserBackofficeService;
-  let mongod: MongoMemoryReplSet;
   let moduleRef: TestingModule;
-  let generateUser: MockUserService;
-  let mocksUsers: MockUserDetail[];
+  let mocksUsers: CreatedUser[];
 
   beforeAll(async () => {
-    mongod = await MongoMemoryReplSet.create();
-    global.mongoUri = mongod.getUri();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
         CastcleBackofficeMongooseModule,
         DatabaseModule,
         BackOfficeMongooseForFeatures,
       ],
-      providers: [UserBackofficeService, MockUserService],
-    }).compile();
+      providers: [UserBackofficeService],
+    });
 
     service = moduleRef.get(UserBackofficeService);
-    generateUser = moduleRef.get<MockUserService>(MockUserService);
-
-    mocksUsers = await generateUser.generateMockUsers(5);
+    mocksUsers = await Promise.all(
+      Array.from({ length: 5 }, () => moduleRef.createUser()),
+    );
   });
 
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   it('should be defined', () => {
@@ -53,7 +45,7 @@ describe('UserBackofficeService', () => {
         maxResults: 5,
         keyword: '',
         page: 0,
-      });
+      } as UserQuery);
       expect(users.totalUsers).toEqual(5);
       expect(users.users).toHaveLength(5);
     });
@@ -63,7 +55,7 @@ describe('UserBackofficeService', () => {
         maxResults: 2,
         keyword: '',
         page: 0,
-      });
+      } as UserQuery);
       expect(users.users).toHaveLength(2);
     });
   });

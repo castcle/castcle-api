@@ -50,7 +50,6 @@ import {
   Account,
   Content,
   ContentDocument,
-  Credential,
   DefaultContent,
   Engagement,
   FeedItem,
@@ -62,7 +61,6 @@ import {
 } from '../schemas';
 import { createCastcleFilter, createCastcleMeta } from '../utils/common';
 import { DataService } from './data.service';
-import { UserService } from './user.service';
 
 @Injectable()
 export class RankerService {
@@ -79,7 +77,6 @@ export class RankerService {
     public relationshipModel: Model<Relationship>,
     @InjectModel('User') public userModel: Model<User>,
     @InjectModel('Account') public _accountModel: Model<Account>,
-    private userService: UserService,
     @InjectModel('DefaultContent')
     public _defaultContentModel: Model<DefaultContent>,
     @InjectModel('Engagement')
@@ -88,16 +85,10 @@ export class RankerService {
     private repository: Repository,
   ) {}
 
-  /**
-   *
-   * @param contentId
-   * @param {string} userId
-   * @returns
-   */
   getAllEngagement = async (contentIds: any[], viewerAccount: Account) => {
-    const viewer = await this.userService.getUserFromAccountId(
-      viewerAccount._id,
-    );
+    const viewer = await this.repository.findUser({
+      accountId: viewerAccount._id,
+    });
 
     return this._engagementModel
       .find({
@@ -107,7 +98,7 @@ export class RankerService {
             $id: id,
           })),
         },
-        user: viewer.user.id,
+        user: viewer._id,
         visibility: EntityVisibility.Publish,
       })
       .exec();
@@ -246,7 +237,7 @@ export class RankerService {
         .filter((feedItem) => feedItem.content.originalPost)
         .map((feedItem) => new Author(feedItem.content.originalPost.author)),
     );
-    includes.users = await this.userService.getIncludesUsers(
+    includes.users = await this.repository.getIncludesUsers(
       viewer,
       authors,
       query.hasRelationshipExpansion,
@@ -393,7 +384,7 @@ export class RankerService {
       ...feeds.map((feed) => new Author(feed.content.author)),
     ];
 
-    const includesUsers = await this.userService.getIncludesUsers(
+    const includesUsers = await this.repository.getIncludesUsers(
       viewer,
       authors,
       query.hasRelationshipExpansion,
@@ -454,11 +445,7 @@ export class RankerService {
    * @param feedItemId
    * @returns
    */
-  seenFeedItem = async (
-    account: Account,
-    feedItemId: string,
-    credential: Credential,
-  ) => {
+  seenFeedItem = async (account: Account, feedItemId: string, uuid: string) => {
     this._feedItemModel
       .updateOne(
         {
@@ -470,7 +457,7 @@ export class RankerService {
         },
         {
           seenAt: new Date(),
-          seenCredential: credential._id,
+          seenUUID: uuid,
         },
       )
       .exec();

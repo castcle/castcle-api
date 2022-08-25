@@ -1,5 +1,5 @@
 import { ResponseDto } from '@castcle-api/database';
-import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import {
   Body,
   Get,
@@ -14,7 +14,7 @@ import { CredentialGuard } from '../guards/credential.guard';
 import {
   PermissionGuard,
   RequiredPermissions,
-} from '../guards/permisson.guard';
+} from '../guards/permission.guard';
 import { HeaderBackofficeInterceptor } from '../interceptors/header-backoffice.interceptor';
 import { Permission } from '../models/authentication.enum';
 import {
@@ -24,7 +24,7 @@ import {
 } from '../models/campaign.dto';
 import { CampaignBackofficeService } from '../services/campaign.service';
 
-@CastcleControllerV2({ path: 'backoffices' })
+@CastcleController({ path: 'v2/backoffices' })
 export class CampaignController {
   constructor(private campaignService: CampaignBackofficeService) {}
 

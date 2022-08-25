@@ -22,14 +22,14 @@
  */
 
 import { AdsService } from '@castcle-api/database';
-import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import { Body, Get, Param, Post, Query } from '@nestjs/common';
 import { BackofficeAuth } from '../decorators';
-import { RequiredPermissions } from '../guards/permisson.guard';
+import { RequiredPermissions } from '../guards/permission.guard';
 import { GetAdParam, GetAdsDto, ManageAdDto } from '../models/ads.dto';
 import { Permission } from '../models/authentication.enum';
 
-@CastcleControllerV2({ path: 'backoffices/ads' })
+@CastcleController({ path: 'v2/backoffices/ads' })
 export class AdsController {
   constructor(private adsService: AdsService) {}
 

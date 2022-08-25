@@ -31,21 +31,13 @@ import { CastcleCacheModule } from '@castcle-api/environments';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { Module } from '@nestjs/common';
-import { AdsController } from './controllers/ads.controller';
-import { CommentController } from './controllers/comment.controller';
+import { AdsControllerV2 } from './controllers/ads.controller.v2';
 import { CommentControllerV2 } from './controllers/comment.controller.v2';
-import { ContentController } from './controllers/content.controller';
 import { ContentControllerV2 } from './controllers/content.controller.v2';
-import { CountryController } from './controllers/country.controller';
-import { FarmingsController } from './controllers/farmings.controller';
-import { FeedsController } from './controllers/feeds.controller';
+import { FarmingsControllerV2 } from './controllers/farmings.controller.v2';
 import { FeedsControllerV2 } from './controllers/feeds.controller.v2';
-import { HashtagsController } from './controllers/hashtags.controller';
-import { LanguagesController } from './controllers/languages.controller';
 import { MetaDataControllerV2 } from './controllers/metadatas.controller.v2';
-import { SearchesController } from './controllers/searches.controller';
 import { SearchesControllerV2 } from './controllers/searches.controller.v2';
-import { AppService, SuggestionService } from './services';
 
 @Module({
   imports: [
@@ -58,21 +50,14 @@ import { AppService, SuggestionService } from './services';
     UtilsPipesModule,
   ],
   controllers: [
-    AdsController,
-    CommentController,
+    AdsControllerV2,
     CommentControllerV2,
-    ContentController,
     ContentControllerV2,
-    CountryController,
-    FarmingsController,
-    FeedsController,
+    FarmingsControllerV2,
     FeedsControllerV2,
-    HashtagsController,
-    LanguagesController,
     MetaDataControllerV2,
-    SearchesController,
     SearchesControllerV2,
   ],
-  providers: [AppService, SuggestionService],
+  providers: [],
 })
 export class AppModule {}

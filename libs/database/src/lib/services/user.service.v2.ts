@@ -50,6 +50,7 @@ import {
 } from '../aggregations';
 import {
   CastcleQueryOptions,
+  CastcleQueueAction,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
   GetFollowQuery,
@@ -67,6 +68,7 @@ import {
   SortDirection,
   SyncSocialDtoV2,
   UpdateMobileDto,
+  UpdateModelUserDto,
   UserField,
   UserResponseDto,
 } from '../dtos';
@@ -78,6 +80,7 @@ import {
   ReportingMessage,
   ReportingStatus,
   ReportingType,
+  UserMessage,
   UserType,
 } from '../models';
 import { Repository } from '../repositories';
@@ -98,6 +101,8 @@ export class UserServiceV2 {
     private userModel: Model<User>,
     @InjectQueue(QueueName.REPORTING)
     private reportingQueue: Queue<ReportingMessage>,
+    @InjectQueue(QueueName.USER)
+    private userQueue: Queue<UserMessage>,
     private analyticService: AnalyticService,
     private download: Downloader,
     private mailerService: Mailer,
@@ -944,5 +949,69 @@ export class UserServiceV2 {
     const pageResponse = await this.getPublicUser(user, page.id);
 
     return { ...pageResponse, socialSyncs: true };
+  }
+
+  async updateUser(
+    user: User,
+    { images, links, contact, ...updateUserDto }: UpdateModelUserDto,
+  ) {
+    if (!user.profile) user.profile = {};
+    if (updateUserDto.castcleId && updateUserDto.castcleId !== user.displayId) {
+      user.displayIdUpdatedAt = new Date();
+      user.displayId = updateUserDto.castcleId;
+    }
+    if (updateUserDto.displayName) user.displayName = updateUserDto.displayName;
+
+    if (
+      updateUserDto.overview !== undefined &&
+      updateUserDto.overview !== null
+    ) {
+      user.profile.overview = updateUserDto.overview;
+    }
+
+    if (updateUserDto.dob) user.profile.birthdate = new Date(updateUserDto.dob);
+
+    if (images) {
+      if (!user.profile.images) user.profile.images = {};
+      if (images.avatar) user.profile.images.avatar = images.avatar;
+      if (images.cover) user.profile.images.cover = images.cover;
+    }
+
+    if (links) {
+      if (!user.profile.socials) user.profile.socials = {};
+      const socialNetworks = ['facebook', 'medium', 'twitter', 'youtube'];
+      socialNetworks.forEach((social) => {
+        if (links[social]) user.profile.socials[social] = links[social];
+        if (links.website)
+          user.profile.websites = [
+            {
+              website: links.website,
+              detail: links.website,
+            },
+          ];
+      });
+    }
+    if (!user.contact) user.contact = {};
+    if (contact?.countryCode) user.contact.countryCode = contact?.countryCode;
+    if (contact?.email) user.contact.email = contact?.email;
+    if (contact?.phone) user.contact.phone = contact?.phone;
+    user.set(updateUserDto);
+    user.markModified('profile');
+    user.markModified('contact');
+    console.debug('saving dto', updateUserDto);
+    console.debug('saving website', user.profile.websites);
+    console.debug('saving user', user);
+
+    await this.userQueue.add(
+      {
+        id: user._id,
+        action: CastcleQueueAction.UpdateProfile,
+      },
+      {
+        removeOnComplete: true,
+      },
+    );
+
+    return user.save();
   }
 }

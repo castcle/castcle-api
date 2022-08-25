@@ -21,30 +21,55 @@
  * or have any questions.
  */
 
-import { UxEngagementBody, UxEngagementService } from '@castcle-api/database';
-import {
-  Auth,
-  Authorizer,
-  CastcleBasicAuth,
-  CastcleController,
-} from '@castcle-api/utils/decorators';
-import { CastcleException } from '@castcle-api/utils/exception';
-import { Body, HttpCode, Post } from '@nestjs/common';
-import { ApiBody, ApiResponse } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional } from 'class-validator';
 
-@CastcleController({ path: 'engagements', version: '1.0' })
-export class EngagementController {
-  constructor(private uxEngagementService: UxEngagementService) {}
+export class EngagementDto {
+  @ApiProperty()
+  @IsOptional()
+  platform: string;
 
-  @ApiBody({ type: UxEngagementBody })
-  @ApiResponse({ status: 204 })
-  @CastcleBasicAuth()
-  @HttpCode(204)
-  @Post()
-  async track(@Body() body: UxEngagementBody, @Auth() authorizer: Authorizer) {
-    authorizer.requestAccessForAccount(body.accountId);
-    const result = this.uxEngagementService.track(body);
-    if (result) return '';
-    else throw new CastcleException('FORBIDDEN');
-  }
+  @ApiProperty()
+  @IsOptional()
+  client: string;
+
+  @ApiProperty()
+  @IsOptional()
+  accountId: string;
+
+  @ApiProperty()
+  @IsOptional()
+  uxSessionId: string;
+
+  @ApiProperty()
+  @IsOptional()
+  screenId: string;
+
+  @ApiProperty()
+  @IsOptional()
+  screenInstance: any;
+
+  @ApiProperty()
+  @IsOptional()
+  feedItemId: string;
+
+  @ApiProperty()
+  @IsOptional()
+  target: string;
+
+  @ApiProperty()
+  @IsOptional()
+  targetId: string;
+
+  @ApiProperty()
+  @IsOptional()
+  eventType: string;
+
+  @ApiProperty()
+  @IsOptional()
+  eventData: any;
+
+  @ApiProperty()
+  @IsOptional()
+  timestamp: string;
 }

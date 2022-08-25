@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import {
   AdsBidType,
   AdsBoostStatus,
@@ -28,27 +29,23 @@ import {
   AdsService,
   AdsStatus,
   AnalyticService,
-  AuthenticationService,
   CampaignService,
   ContentService,
   ContentServiceV2,
   ContentType,
   DataService,
   HashtagService,
-  MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService,
   NotificationServiceV2,
   QueueName,
   SocialSyncServiceV2,
   TAccountService,
-  Transaction,
-  UserService,
+  User,
   UserServiceV2,
-  generateMockUsers,
-  mockDeposit,
 } from '@castcle-api/database';
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { Downloader } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
@@ -56,47 +53,36 @@ import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Model } from 'mongoose';
-import { AdsController } from './ads.controller';
+import { AdsControllerV2 } from './ads.controller.v2';
 
 describe('AdsController', () => {
-  let mongod: MongoMemoryServer;
   let app: TestingModule;
-  let appController: AdsController;
-  let mocksUsers: MockUserDetail[];
-  let userServiceV1: UserService;
-  let authService: AuthenticationService;
-  let transactionModel: Model<Transaction>;
+  let appController: AdsControllerV2;
   let contentService: ContentServiceV2;
+  let authorizer: Authorizer;
   let contentPayload: any;
+  let page: User;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    app = await TestingModule.createWithDb({
       imports: [
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         CacheModule.register(),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
         HttpModule,
         JwtModule,
       ],
-      controllers: [AdsController],
+      controllers: [AdsControllerV2],
       providers: [
         AnalyticService,
-        AuthenticationService,
         ContentService,
         ContentServiceV2,
         HashtagService,
-        NotificationService,
         NotificationServiceV2,
         Repository,
         TAccountService,
-        UserService,
         UserServiceV2,
         { provide: SocialSyncServiceV2, useValue: {} },
         { provide: Downloader, useValue: {} },
@@ -114,7 +100,6 @@ describe('AdsController', () => {
         AdsService,
         { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },
-        { provide: NotificationService, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -136,45 +121,35 @@ describe('AdsController', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
-
-    appController = app.get(AdsController);
-    userServiceV1 = app.get<UserService>(UserService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
-    contentService = app.get<ContentServiceV2>(ContentServiceV2);
-    transactionModel = app.get(getModelToken('Transaction'));
-
-    mocksUsers = await generateMockUsers(1, 1, {
-      userService: userServiceV1,
-      accountService: authService,
     });
 
-    await mockDeposit(mocksUsers[0].user, 9999, transactionModel);
-    await mockDeposit(mocksUsers[0].pages[0], 9999, transactionModel);
+    appController = app.get(AdsControllerV2);
+    contentService = app.get(ContentServiceV2);
+
+    const { account, user, pages } = await app.createUser({ pageSize: 1 });
+    authorizer = new Authorizer(account, user, 'uuid');
+    page = pages[0];
+
+    await app.deposit(user._id, 9999);
+    await app.deposit(pages[0]._id, 9999);
     contentPayload = await contentService.createContent(
       {
-        castcleId: mocksUsers[0].user.displayId,
+        castcleId: user.displayId,
         payload: {
           message: 'yeah',
         },
         type: ContentType.Short,
       },
-      mocksUsers[0].user,
+      user,
     );
   });
 
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
+  afterAll(() => {
+    return app.close();
   });
 
   describe('create User Ads', () => {
     it('should return AdsResponse', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
       const result = await appController.createUserAds(authorizer, {
         campaignMessage: 'test u',
         campaignName: 'test u',
@@ -183,7 +158,7 @@ describe('AdsController', () => {
         duration: 2,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.TOKEN_WALLET,
-        castcleId: mocksUsers[0].pages[0].displayId,
+        castcleId: page.displayId,
         dailyBidValue: 1,
       });
       expect(result).toMatchObject({
@@ -199,14 +174,9 @@ describe('AdsController', () => {
       });
     });
   });
+
   describe('create Content Ads', () => {
     it('should return AdsResponse when promote content', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
-
       const result = await appController.createCastAds(authorizer, {
         campaignMessage: 'test k',
         campaignName: 'test k',

@@ -20,69 +20,22 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional } from 'class-validator';
 
-export class UxEngagementBody {
-  @ApiProperty()
-  @IsOptional()
-  platform: string;
+import { GetChianDto, GetSizeDto, UserServiceV2 } from '@castcle-api/database';
+import { CastcleController } from '@castcle-api/utils/decorators';
+import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
+import { Get, Param, Query, UseInterceptors } from '@nestjs/common';
 
-  @ApiProperty()
-  @IsOptional()
-  client: string;
+@CastcleController({ path: 'v2/qr-codes' })
+export class QRCodeControllerV2 {
+  constructor(private userServiceV2: UserServiceV2) {}
 
-  @ApiProperty()
-  @IsOptional()
-  accountId: string;
-
-  @ApiProperty()
-  @IsOptional()
-  uxSessionId: string;
-
-  @ApiProperty()
-  @IsOptional()
-  screenId: string;
-
-  @ApiProperty()
-  @IsOptional()
-  screenInstance: any;
-
-  @ApiProperty()
-  @IsOptional()
-  feedItemId: string;
-
-  @ApiProperty()
-  @IsOptional()
-  target: string;
-
-  @ApiProperty()
-  @IsOptional()
-  targetId: string;
-
-  @ApiProperty()
-  @IsOptional()
-  eventType: string;
-
-  @ApiProperty()
-  @IsOptional()
-  eventData: any;
-
-  @ApiProperty()
-  @IsOptional()
-  timestamp: string;
-}
-
-export class UxEngagementDto {
-  platform: string;
-  client: string;
-  account: any; //will be accountId
-  screenId: string;
-  screenInstance: any;
-  feedItemId: string;
-  target: string;
-  targetId: string;
-  eventType: string;
-  eventData: any;
-  timestamp: Date;
+  @UseInterceptors(HttpCacheSharedInterceptor)
+  @Get(':chainId/:userId')
+  async createQRCode(
+    @Param() { chainId, userId }: GetChianDto,
+    @Query() { size }: GetSizeDto,
+  ) {
+    return this.userServiceV2.createQRCode(chainId, size, userId);
+  }
 }

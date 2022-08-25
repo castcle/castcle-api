@@ -22,7 +22,7 @@
  */
 
 import { ReportingIllegal } from '@castcle-api/database';
-import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import {
   Body,
   CacheInterceptor,
@@ -36,13 +36,13 @@ import {
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 import { BackofficeAuth } from '../decorators';
-import { RequiredPermissions } from '../guards/permisson.guard';
+import { RequiredPermissions } from '../guards/permission.guard';
 import { Permission } from '../models/authentication.enum';
 import { GetReportingQuery, UpdateIllegal } from '../models/reporting.dto';
 import { Staff } from '../schemas/staff.schema';
 import { ReportingService } from '../services/reporting.service';
 
-@CastcleControllerV2({ path: 'backoffices' })
+@CastcleController({ path: 'v2/backoffices' })
 export class ReportingController {
   constructor(private reportingService: ReportingService) {}
 

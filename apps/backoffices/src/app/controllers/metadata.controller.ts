@@ -22,14 +22,14 @@
  */
 
 import { ResponseDto } from '@castcle-api/database';
-import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import { Get } from '@nestjs/common';
 import { BackofficeAuth } from '../decorators';
-import { RequiredPermissions } from '../guards/permisson.guard';
+import { RequiredPermissions } from '../guards/permission.guard';
 import { Permission } from '../models/authentication.enum';
 import { MetadataBackofficeService } from '../services/metadata.service';
 
-@CastcleControllerV2({ path: 'backoffices/metadatas' })
+@CastcleController({ path: 'v2/backoffices/metadatas' })
 export class MetaDataController {
   constructor(private metadataService: MetadataBackofficeService) {}
 

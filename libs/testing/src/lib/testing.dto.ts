@@ -21,21 +21,10 @@
  * or have any questions.
  */
 
-import { GetChianDto, GetSizeDto, UserServiceV2 } from '@castcle-api/database';
-import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
-import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
-import { Get, Param, Query, UseInterceptors } from '@nestjs/common';
-
-@CastcleControllerV2({ path: 'qr-codes' })
-export class QRCodeControllerV2 {
-  constructor(private userServiceV2: UserServiceV2) {}
-
-  @UseInterceptors(HttpCacheSharedInterceptor)
-  @Get(':chainId/:userId')
-  async createQRCode(
-    @Param() { chainId, userId }: GetChianDto,
-    @Query() { size }: GetSizeDto,
-  ) {
-    return this.userServiceV2.createQRCode(chainId, size, userId);
-  }
-}
+export type CreatedUser = {
+  account: any;
+  user: any;
+  pages: any[];
+  accessToken: string;
+  refreshToken: string;
+};

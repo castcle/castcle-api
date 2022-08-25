@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Account, Credential, User } from '@castcle-api/database';
+import { Account, User } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { ExecutionContext, createParamDecorator } from '@nestjs/common';
 
@@ -29,7 +29,7 @@ export class Authorizer {
   constructor(
     public account: Account,
     public user: User,
-    public credential: Credential,
+    public uuid: string,
   ) {}
 
   /**
@@ -74,12 +74,12 @@ export class Authorizer {
 export const Auth = createParamDecorator(
   async (_: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    const [account, credential, user] = await Promise.all([
+    const [account, user, uuid] = await Promise.all([
       request.$account,
-      request.$credential,
       request.$user,
+      request.$uuid,
     ]);
 
-    return new Authorizer(account, user, credential);
+    return new Authorizer(account, user, uuid);
   },
 );

@@ -20,12 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { CreatedUser } from 'libs/testing/src/lib/testing.dto';
 import { Model, Types } from 'mongoose';
 import {
   ContentService,
@@ -37,7 +37,6 @@ import {
   TAccountService,
 } from '../database.module';
 import { AdsQuery, AdsRequestDto, ShortPayload } from '../dtos';
-import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import {
   AdsBidType,
   AdsBoostStatus,
@@ -60,17 +59,12 @@ import {
   cAccount,
 } from '../schemas';
 import { AdsService } from './ads.service';
-import { AuthenticationService } from './authentication.service';
-import { UserService } from './user.service';
 
 describe('AdsService', () => {
-  let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: AdsService;
-  let authService: AuthenticationService;
-  let userService: UserService;
   let contentService: ContentService;
-  let mocks: MockUserDetail[];
+  let mocks: CreatedUser[];
   let adsCampaignModel: Model<AdsCampaign>;
   let cAccountModel: Model<cAccount>;
   let transactionModel: Model<Transaction>;
@@ -79,19 +73,16 @@ describe('AdsService', () => {
   let tAccountService: TAccountService;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
         CacheModule.register(),
+        CastcleMongooseModule,
         HttpModule,
-        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
       ],
       providers: [
         AdsService,
-        AuthenticationService,
-        UserService,
         ContentService,
         TAccountService,
         HashtagService,
@@ -100,10 +91,7 @@ describe('AdsService', () => {
         {
           provide: DataService,
           useValue: {
-            personalizeContents: async (
-              accountId: string,
-              contentIds: string[],
-            ) => ({
+            personalizeContents: (_: string, contentIds: string[]) => ({
               [contentIds[0]]: 4,
             }),
           },
@@ -125,32 +113,30 @@ describe('AdsService', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
-    service = moduleRef.get<AdsService>(AdsService);
-    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
-    userService = moduleRef.get<UserService>(UserService);
-    contentService = moduleRef.get<ContentService>(ContentService);
-    dataService = moduleRef.get<DataService>(DataService);
-    tAccountService = moduleRef.get(TAccountService);
-    transactionModel = moduleRef.get(getModelToken('Transaction'));
-    cAccountModel = moduleRef.get(getModelToken('cAccount'));
-    adsCampaignModel = moduleRef.get(getModelToken('AdsCampaign'));
-
-    mocks = await generateMockUsers(2, 1, {
-      accountService: authService,
-      userService: userService,
     });
+
+    service = moduleRef.get(AdsService);
+    contentService = moduleRef.get(ContentService);
+    dataService = moduleRef.get(DataService);
+    tAccountService = moduleRef.get(TAccountService);
+    transactionModel = moduleRef.getModel('Transaction');
+    cAccountModel = moduleRef.getModel('cAccount');
+    adsCampaignModel = moduleRef.getModel('AdsCampaign');
+
+    mocks = await Promise.all([
+      moduleRef.createUser({ pageSize: 1 }),
+      moduleRef.createUser(),
+    ]);
+
     promoteContent = await contentService.createContentFromUser(mocks[0].user, {
       castcleId: mocks[0].user.id,
-      payload: {
-        message: 'this is prmote short',
-      } as ShortPayload,
+      payload: { message: 'this is promote short' } as ShortPayload,
       type: ContentType.Short,
     });
   });
 
   afterAll(() => {
-    return Promise.all([moduleRef.close(), mongod.stop()]);
+    return moduleRef.close();
   });
 
   describe('#createAds', () => {
@@ -499,11 +485,8 @@ describe('AdsService', () => {
       mockRelevanceScores.forEach((item, index) => {
         mockObj[adsContents[index].id] = item;
       });
-      console.log('///////////////// MOCK SCORE///////////');
       jest.spyOn(dataService, 'personalizeContents').mockResolvedValue(mockObj);
-      console.log(
-        await dataService.personalizeContents(mocks[1].account.id, []),
-      );
+      await dataService.personalizeContents(mocks[1].account.id, []);
     });
     describe('getAds', () => {
       it('should return bidding price of CPM(cost per thousand) as expect in google doc', async () => {

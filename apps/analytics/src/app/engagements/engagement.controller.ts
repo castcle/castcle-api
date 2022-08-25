@@ -21,35 +21,31 @@
  * or have any questions.
  */
 
-import { Model } from 'mongoose';
-import { ShortPayload } from '../dtos';
-import { ContentType } from '../models';
-import { Content, User } from '../schemas';
+import {
+  Auth,
+  Authorizer,
+  CastcleBasicAuth,
+  CastcleController,
+} from '@castcle-api/utils/decorators';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { Body, HttpCode, Post } from '@nestjs/common';
+import { ApiBody, ApiResponse } from '@nestjs/swagger';
+import { EngagementDto } from './engagement.dto';
+import { EngagementService } from './engagement.service';
 
-type MockContentOption = {
-  amount?: number;
-  type?: ContentType;
-};
+@CastcleController({ path: 'engagements' })
+export class EngagementController {
+  constructor(private engagementService: EngagementService) {}
 
-export const mockContents = async (
-  user: User,
-  contentModel: Model<Content>,
-  option?: MockContentOption,
-) => {
-  const amount = option.amount ? option.amount : 1;
-  const type = option.type ? option.type : ContentType.Short;
-  const contents: Content[] = [];
-  for (let i = 0; i < amount; i++) {
-    const payload: ShortPayload = {
-      message: 'this is short ' + i,
-    };
-    const content = new contentModel({
-      type,
-      author: user.toAuthor(),
-      payload,
-      revisionCount: 1,
-    });
-    contents.push(await content.save());
+  @ApiBody({ type: EngagementDto })
+  @ApiResponse({ status: 204 })
+  @CastcleBasicAuth()
+  @HttpCode(204)
+  @Post()
+  async track(@Body() body: EngagementDto, @Auth() authorizer: Authorizer) {
+    authorizer.requestAccessForAccount(body.accountId);
+    const result = this.engagementService.track(body);
+    if (result) return '';
+    else throw new CastcleException('FORBIDDEN');
   }
-  return contents;
-};
+}
