@@ -33,12 +33,12 @@ import {
   Authorizer,
   CastcleAuth,
   CastcleBasicAuth,
-  CastcleControllerV2,
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import { Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { FeedParam } from '../dtos';
 
-@CastcleControllerV2({ path: 'feeds' })
+@CastcleController({ path: 'v2/feeds' })
 export class FeedsControllerV2 {
   constructor(
     private contentServiceV2: ContentServiceV2,
@@ -71,10 +71,10 @@ export class FeedsControllerV2 {
   @Post(':id/seen')
   @HttpCode(HttpStatus.NO_CONTENT)
   async seenFeed(
-    @Auth() { account, credential }: Authorizer,
+    @Auth() { account, uuid }: Authorizer,
     @Param() { id }: FeedParam,
   ) {
-    await this.suggestionServiceV2.seenV2(account, id, credential);
+    await this.suggestionServiceV2.seen(account, id, uuid);
   }
 
   @CastcleBasicAuth()

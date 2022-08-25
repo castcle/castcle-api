@@ -21,9 +21,9 @@
  * or have any questions.
  */
 import {
+  Account,
   AdsService,
   AnalyticService,
-  AuthenticationService,
   CampaignService,
   ContentService,
   ContentServiceV2,
@@ -31,19 +31,16 @@ import {
   DataService,
   HashtagService,
   KeywordType,
-  MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService,
   NotificationServiceV2,
   QueueName,
   RankerService,
   SocialSyncServiceV2,
   SuggestionServiceV2,
   TAccountService,
-  UserService,
+  User,
   UserServiceV2,
-  generateMockUsers,
 } from '@castcle-api/database';
 import { CastcleMongooseModule } from '@castcle-api/environments';
 import { TestingModule } from '@castcle-api/testing';
@@ -60,10 +57,10 @@ import { FeedsControllerV2 } from './feeds.controller.v2';
 describe('FeedsControllerV2', () => {
   let app: TestingModule;
   let controller: FeedsControllerV2;
-  let authService: AuthenticationService;
-  let userService: UserService;
   let contentServiceV2: ContentServiceV2;
-  let mocksUsers: MockUserDetail[];
+  let repository: Repository;
+  let account: Account;
+  let user: User;
 
   beforeAll(async () => {
     app = await TestingModule.createWithDb({
@@ -78,7 +75,6 @@ describe('FeedsControllerV2', () => {
       controllers: [FeedsControllerV2],
       providers: [
         AdsService,
-        AuthenticationService,
         ContentService,
         ContentServiceV2,
         DataService,
@@ -86,14 +82,12 @@ describe('FeedsControllerV2', () => {
         RankerService,
         Repository,
         SuggestionServiceV2,
-        UserService,
         UserServiceV2,
         { provide: SocialSyncServiceV2, useValue: {} },
         { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },
-        { provide: NotificationService, useValue: {} },
         { provide: NotificationServiceV2, useValue: {} },
         { provide: TAccountService, useValue: {} },
         {
@@ -115,16 +109,13 @@ describe('FeedsControllerV2', () => {
       ],
     });
 
-    authService = app.get(AuthenticationService);
-    userService = app.get(UserService);
     contentServiceV2 = app.get(ContentServiceV2);
+    controller = app.get(FeedsControllerV2);
+    repository = app.get(Repository);
 
-    controller = app.get<FeedsControllerV2>(FeedsControllerV2);
-
-    mocksUsers = await generateMockUsers(20, 0, {
-      userService: userService,
-      accountService: authService,
-    });
+    const createdUser = await app.createUser({ castcleId: 'castcle' });
+    account = createdUser.account;
+    user = createdUser.user;
 
     await Promise.all(
       Array.from({ length: 20 }, (_, index) =>
@@ -134,9 +125,9 @@ describe('FeedsControllerV2', () => {
               message: `hello content ${index}`,
             },
             type: ContentType.Short,
-            castcleId: mocksUsers[0].user.displayId,
+            castcleId: user.displayId,
           },
-          mocksUsers[0].user,
+          user,
         ),
       ),
     );
@@ -148,11 +139,7 @@ describe('FeedsControllerV2', () => {
 
   describe('#getSearchRecent', () => {
     it('should get all recent search', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
+      const authorizer = new Authorizer(account, user, 'uuid');
       const getSearchRecent = await controller.getSearchRecent(authorizer, {
         keyword: {
           type: KeywordType.Word,
@@ -166,11 +153,7 @@ describe('FeedsControllerV2', () => {
     });
 
     it('should recent search is empty', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
+      const authorizer = new Authorizer(account, user, 'uuid');
       const getSearchRecent = await controller.getSearchRecent(authorizer, {
         keyword: {
           type: KeywordType.Mention,
@@ -186,7 +169,7 @@ describe('FeedsControllerV2', () => {
 
   describe('#getSearchTrends()', () => {
     beforeAll(async () => {
-      const contents = await (contentServiceV2 as any).repository.findContents(
+      const contents = await repository.findContents(
         {
           keyword: {
             type: KeywordType.Word,
@@ -210,11 +193,7 @@ describe('FeedsControllerV2', () => {
         .mockResolvedValueOnce(contentsObj);
     });
     it('should get cast is exists.', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
+      const authorizer = new Authorizer(account, user, 'uuid');
       const getSearchTrends = await controller.getSearchTrends(authorizer, {
         keyword: {
           type: KeywordType.Mention,

@@ -45,7 +45,7 @@ import {
   Authorizer,
   CastcleAuth,
   CastcleBasicAuth,
-  CastcleControllerV2,
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import { HttpCacheIndividualInterceptor } from '@castcle-api/utils/interceptors';
 import {
@@ -63,8 +63,8 @@ import {
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { WalletHistoryQueryDto } from '../dtos/wallet.dto';
 
-@CastcleControllerV2({ path: 'wallets' })
-export class WalletController {
+@CastcleController({ path: 'v2/wallets' })
+export class WalletControllerV2 {
   constructor(
     private commandBus: CommandBus,
     private queryBus: QueryBus,

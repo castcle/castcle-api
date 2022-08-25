@@ -62,8 +62,6 @@ import {
 } from '../utils/common';
 import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
-import { UserService } from './user.service';
-import { UserServiceV2 } from './user.service.v2';
 
 @Injectable()
 export class CommentServiceV2 {
@@ -80,8 +78,6 @@ export class CommentServiceV2 {
     private hashtagService: HashtagService,
     private notificationServiceV2: NotificationServiceV2,
     private repository: Repository,
-    private userService: UserService,
-    private userServiceV2: UserServiceV2,
   ) {}
 
   private removeEngagementComment = async (comment: Comment) => {
@@ -553,9 +549,10 @@ export class CommentServiceV2 {
     )
       return;
 
-    const userOwner = await this.userService.getByIdOrCastcleId(
-      comment.author._id,
-    );
+    const userOwner = await this.repository.findUser({
+      _id: content.author.id,
+    });
+    if (!userOwner) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
     const notificationData: CreateNotification = {
       source:
         userOwner.type === UserType.PEOPLE
@@ -635,8 +632,10 @@ export class CommentServiceV2 {
       message: commentDto.message,
     });
 
-    const userOwner = await this.userServiceV2.getUser(content.author.id);
-
+    const userOwner = await this.repository.findUser({
+      _id: content.author.id,
+    });
+    if (!userOwner) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
     await this.notificationServiceV2.notifyToUser(
       {
         source:

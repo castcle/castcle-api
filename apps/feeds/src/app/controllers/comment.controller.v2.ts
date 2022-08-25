@@ -33,13 +33,13 @@ import {
   Auth,
   Authorizer,
   CastcleAuth,
-  CastcleControllerV2,
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Get, Param, Query } from '@nestjs/common';
 import { isMongoId } from 'class-validator';
 
-@CastcleControllerV2({ path: 'contents' })
+@CastcleController({ path: 'v2/contents' })
 export class CommentControllerV2 {
   private logger = new CastcleLogger(CommentControllerV2.name);
   constructor(

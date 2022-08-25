@@ -37,7 +37,7 @@ import {
   CastcleAuth,
   CastcleBasicAuth,
   CastcleClearCacheAuth,
-  CastcleControllerV2,
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import {
   Body,
@@ -51,7 +51,7 @@ import {
 } from '@nestjs/common';
 import { SaveContentPipe } from '../pipes/save-content.pipe';
 
-@CastcleControllerV2({ path: 'contents' })
+@CastcleController({ path: 'v2/contents' })
 export class ContentControllerV2 {
   private logger = new CastcleLogger(ContentControllerV2.name);
 

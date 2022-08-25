@@ -54,16 +54,14 @@ import {
   pipelineOfGetWalletBalance,
 } from '../aggregations';
 import {
-  AccessTokenPayload,
+  Author,
   BlogPayload,
   CastcleQueryOptions,
   CreateContentDto,
-  CreateCredentialDto,
   EntityVisibility,
   GetCastDto,
   NotificationSource,
   NotificationType,
-  RefreshTokenPayload,
   ShortPayload,
   SortDirection,
   Url,
@@ -91,16 +89,11 @@ import {
 } from '../models';
 import {
   Account,
-  AccountDeviceV1,
-  AccountActivationModel as ActivationModel,
   AdsCampaign,
   AdsPlacement,
-  AccountAuthenId as AuthenId,
   CAccountNature,
   Comment,
   Content,
-  Credential,
-  CredentialModel,
   Engagement,
   FeedItem,
   Hashtag,
@@ -110,7 +103,6 @@ import {
   Otp,
   OtpModel,
   Queue,
-  AccountReferral as Referral,
   Relationship,
   Reporting,
   Revision,
@@ -262,21 +254,12 @@ export class Repository {
   private castcleEmailDomain: EmailDomainDisposable;
 
   constructor(
-    /** @deprecated */
-    @InjectModel('AccountActivation') private activationModel: ActivationModel,
-    /** @deprecated */
-    @InjectModel('AccountAuthenId') private authenIdModel: Model<AuthenId>,
-    /** @deprecated */
-    @InjectModel('AccountDevice') private deviceModel: Model<AccountDeviceV1>,
-    /** @deprecated */
-    @InjectModel('AccountReferral') private referralModel: Model<Referral>,
     @InjectModel('Account') private accountModel: Model<Account>,
     @InjectModel('AdsCampaign') private adsCampaignModel: Model<AdsCampaign>,
     @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
     @InjectModel('cAccount') private caccountModel: Model<cAccount>,
     @InjectModel('Comment') private commentModel: Model<Comment>,
     @InjectModel('Content') private contentModel: Model<Content>,
-    @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
     @InjectModel('FeedItemV2') private feedItemV2Model: Model<FeedItemV2>,
@@ -677,12 +660,6 @@ export class Repository {
       .exec();
   }
 
-  updateCredentials(
-    filter: FilterQuery<Credential>,
-    updateQuery?: UpdateQuery<Credential>,
-  ) {
-    return this.credentialModel.updateMany(filter, updateQuery);
-  }
   async createAccount(
     accountRequirements: AnyKeys<Account>,
     queryOptions?: SaveOptions,
@@ -1046,10 +1023,6 @@ export class Repository {
     ]);
   }
 
-  findCredential(filter: FilterQuery<Credential>) {
-    return this.credentialModel.findOne(filter);
-  }
-
   createNotification(notify: AnyKeys<Notification>) {
     return new this.notificationModel(notify).save();
   }
@@ -1142,21 +1115,6 @@ export class Repository {
     );
   }
 
-  async createCredential(
-    credential: CreateCredentialDto,
-    queryOptions?: SaveOptions,
-  ) {
-    return new this.credentialModel(credential).save(queryOptions);
-  }
-
-  generateAccessToken(payload: AccessTokenPayload) {
-    return this.credentialModel.generateAccessToken(payload);
-  }
-
-  generateRefreshToken(payload: RefreshTokenPayload) {
-    return this.credentialModel.generateRefreshToken(payload);
-  }
-
   createOtp(createOtpDto: {
     accountId: string;
     objective: OtpObjective;
@@ -1234,11 +1192,7 @@ export class Repository {
     return this.feedItemV2Model.updateOne(filter, feedItem, queryOptions);
   }
 
-  async seenFeedItem(
-    account: Account,
-    feedItemId: string,
-    credential: Credential,
-  ) {
+  async seenFeedItem(account: Account, feedItemId: string, uuid: string) {
     return this.feedItemV2Model
       .updateOne(
         {
@@ -1250,7 +1204,7 @@ export class Repository {
         },
         {
           seenAt: new Date(),
-          seenCredential: credential._id,
+          seenUUID: uuid,
         },
       )
       .exec();
@@ -1431,22 +1385,6 @@ export class Repository {
       following: true,
     });
 
-    const $v1Delete = [
-      this.activationModel.deleteMany({ account: account._id }),
-      this.authenIdModel.deleteMany({ account: account._id }),
-      this.credentialModel.deleteMany({ account: account._id }),
-      this.deviceModel.deleteMany({ account: account._id }),
-      this.referralModel.updateMany(
-        {
-          $or: [
-            { referrerAccount: account._id },
-            { referringAccount: account._id },
-          ],
-        },
-        { $set: { visibility: EntityVisibility.Deleted } },
-      ),
-    ];
-
     const $hardDelete = [
       this.commentModel.deleteMany({ 'author._id': { $in: userIds } }),
       this.notificationModel.deleteMany({ account: account._id }),
@@ -1502,7 +1440,7 @@ export class Repository {
       }),
     ];
 
-    await Promise.all([...$v1Delete, ...$hardDelete, ...$softDelete]);
+    await Promise.all([...$hardDelete, ...$softDelete]);
 
     if (account.referralBy) {
       await this.accountModel.updateOne(
@@ -1850,5 +1788,51 @@ export class Repository {
       hashtagQuery = hashtagQuery.sort(sortOrder);
     }
     return hashtagQuery.exec();
+  };
+
+  getIncludesUsers = async (
+    viewerAccount: Account,
+    authors: Author[],
+    hasRelationshipExpansion = false,
+  ) => {
+    const viewer = await this.userModel.findOne({
+      ownerAccount: viewerAccount._id,
+    });
+
+    const authorIds = authors.map(({ id }) => id as any);
+    const users = await this.userModel.find({ _id: { $in: authorIds } });
+    const relationships = hasRelationshipExpansion
+      ? await this.relationshipModel.find({
+          $or: [
+            { user: viewer?._id, followedUser: { $in: authorIds } },
+            { user: { $in: authorIds }, followedUser: viewer?._id },
+          ],
+          visibility: EntityVisibility.Publish,
+        })
+      : [];
+
+    return users.map((user) => {
+      const author = {
+        id: user._id,
+        avatar: user.profile?.images?.avatar || null,
+        castcleId: user.displayId,
+        displayName: user.displayName,
+        type: user.type as 'people' | 'page',
+        verified: user.verified,
+      };
+
+      if (!hasRelationshipExpansion) return new Author(author).toIncludeUser();
+
+      const getterRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(followedUser) === String(author.id) &&
+          String(user) === String(viewer?.id),
+      );
+
+      const blocked = Boolean(getterRelationship?.blocking);
+      const followed = Boolean(getterRelationship?.following);
+
+      return new Author(author).toIncludeUser({ blocked, followed });
+    });
   };
 }

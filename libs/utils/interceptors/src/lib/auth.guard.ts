@@ -36,7 +36,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FastifyRequest } from 'fastify';
 import { Model, Types } from 'mongoose';
 
-type AuthRequest = FastifyRequest & { $account: Account; $user?: User };
+type AuthRequest = FastifyRequest & {
+  $account: Account;
+  $user?: User;
+  $uuid: string;
+};
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -75,6 +79,9 @@ export class AuthGuard implements CanActivate {
 
       request.$account = account;
       request.$user = user;
+      request.$uuid = account.credentials.find(
+        (c) => c.accessToken === token,
+      )?.deviceUUID;
 
       return true;
     } catch (err) {

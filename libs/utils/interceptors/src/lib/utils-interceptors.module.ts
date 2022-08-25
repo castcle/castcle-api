@@ -31,14 +31,9 @@ import {
   HttpCacheSharedWithQueryInterceptor,
 } from './cache/http.cache.shared.interceptor';
 import {
-  CredentialInterceptor,
-  CredentialRequest,
-} from './credential/credential.interceptor';
-import {
   HeadersInterceptor,
   HeadersRequest,
 } from './headers/headers.interceptor';
-import { IpTrackerInterceptor } from './ip-tracker/ip-tracker.interceptor';
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 import { getLanguageFromRequest, getTokenFromRequest } from './util';
 
@@ -54,14 +49,11 @@ export {
   HeadersInterceptor,
   HeadersRequest,
   TokenInterceptor,
-  CredentialInterceptor,
-  CredentialRequest,
   TokenRequest,
   HttpCacheIndividualInterceptor,
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor,
   HttpCacheClearInterceptor,
-  IpTrackerInterceptor,
   getLanguageFromRequest,
   getTokenFromRequest,
 };

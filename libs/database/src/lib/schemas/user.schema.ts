@@ -27,11 +27,9 @@ import {
   Author,
   EntityVisibility,
   OwnerResponse,
-  PageResponseDto,
   PublicUserResponse,
   SearchFollowsResponseDto,
   UserField,
-  UserResponseDto,
 } from '../dtos';
 import {
   OwnerVerification,
@@ -40,10 +38,8 @@ import {
   UserProfile,
   UserType,
 } from '../models';
-import { AccountAuthenId } from './account-authen-id.schema';
 import { Account } from './account.schema';
 import { BaseSchema } from './base.schema';
-import { SocialSync } from './social-sync.schema';
 
 @Schema({ timestamps: true })
 export class UserDocument extends BaseSchema {
@@ -104,32 +100,10 @@ export interface UserMethods {
     followed?: boolean;
   }): PublicUserResponse;
   toOwnerResponse(
-    dto?: {
-      expansionFields?: UserField[];
-    },
+    dto?: { expansionFields?: UserField[] },
     account?: Account,
   ): Promise<OwnerResponse>;
-  /** @deprecated */
   toAuthor(user?: User | User): Author;
-  /** @deprecated */
-  toUserResponse(option?: {
-    passwordNotSet?: boolean;
-    blocked?: boolean;
-    blocking?: boolean;
-    followed?: boolean;
-    balance?: number;
-    mobile?: { countryCode: string; number: string };
-    linkSocial?: AccountAuthenId[];
-    syncSocial?: SocialSync[];
-    casts?: number;
-  }): Promise<UserResponseDto>;
-  /** @deprecated */
-  toPageResponse(
-    blocked?: boolean,
-    followed?: boolean,
-    syncSocial?: SocialSync,
-    casts?: number,
-  ): PageResponseDto;
 }
 
 export type UserStaticMethods = Model<UserDocument>;

@@ -20,29 +20,31 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastcleLogger } from '@castcle-api/common';
-import { MetadataServiceV2 } from '@castcle-api/database';
-import { CacheKeyName } from '@castcle-api/environments';
-import { CastcleController } from '@castcle-api/utils/decorators';
-import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
-import { CacheKey, CacheTTL, Get, UseInterceptors } from '@nestjs/common';
 
-@CastcleController({ path: 'metadata', version: '1.0' })
-export class LanguagesController {
-  constructor(private metadataService: MetadataServiceV2) {}
+import { UxEngagement } from '@castcle-api/database';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { EngagementDto } from './engagement.dto';
 
-  private logger = new CastcleLogger(LanguagesController.name);
+@Injectable()
+export class EngagementService {
+  constructor(
+    @InjectModel('UxEngagement')
+    private uxEngagementModel: Model<UxEngagement>,
+  ) {}
 
-  @UseInterceptors(HttpCacheSharedInterceptor)
-  @CacheKey(CacheKeyName.LanguagesGet.Name)
-  @CacheTTL(CacheKeyName.LanguagesGet.Ttl)
-  @Get('languages')
-  async getAllLanguage() {
-    this.logger.log('Start get all language');
-    const result = await this.metadataService.getAllLanguage();
-    this.logger.log('Success get all language');
-    return {
-      payload: result.map(({ payload }) => payload),
-    };
+  /**
+   * track data from info to UxEngagement collection by convert it to UxEngagementDto
+   * convert timestamp to Date time
+   * @param {UxEngagementBody} info
+   * @returns return EngagementUx Document if could save
+   */
+  track(info: EngagementDto) {
+    return new this.uxEngagementModel({
+      ...info,
+      account: new Types.ObjectId(info.accountId),
+      timestamp: new Date(Number(info.timestamp)),
+    }).save();
   }
 }

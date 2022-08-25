@@ -21,10 +21,6 @@
  * or have any questions.
  */
 
-export * from './account-activation.schema';
-export * from './account-authen-id.schema';
-export * from './account-device.schema';
-export * from './account-referral.schema';
 export * from './account.schema-factory';
 export * from './account.schema';
 export * from './ads-campaign.schema';
@@ -42,7 +38,6 @@ export * from './comment.schema';
 export * from './content-farming.schema';
 export * from './content.schema-factory';
 export * from './content.schema';
-export * from './credential.schema';
 export * from './data-statistic.schema';
 export * from './default-content.schema';
 export * from './ds-content-reach.schema';

@@ -30,14 +30,11 @@ import {
   Author,
   EntityVisibility,
   OwnerResponse,
-  PageResponseDto,
   PublicUserResponse,
   SearchFollowsResponseDto,
   UserField,
-  UserResponseDto,
 } from '../dtos';
 import { UserType } from '../models';
-import { Account } from './account.schema';
 import { Relationship } from './relationship.schema';
 import { SocialSync } from './social-sync.schema';
 import { Transaction } from './transaction.schema';
@@ -61,136 +58,6 @@ export const UserSchemaFactory = (
       };
     next();
   });
-
-  UserSchema.methods.toUserResponse = async function ({
-    passwordNotSet,
-    blocked,
-    followed,
-    balance,
-    mobile,
-    linkSocial,
-    syncSocial,
-    casts,
-  } = {}) {
-    const self = await this.populate('ownerAccount');
-    const response = {
-      id: self._id,
-      castcleId: self.displayId,
-      displayName: self.displayName,
-      type: self.type,
-      dob: self.profile?.birthdate || null,
-      followers: { count: self.followerCount },
-      following: { count: self.followedCount },
-      images: {
-        avatar: self.profile?.images?.avatar
-          ? new Image(self.profile.images.avatar).toSignUrls()
-          : Configs.DefaultAvatarImages,
-        cover: self.profile?.images?.cover
-          ? new Image(self.profile.images.cover).toSignUrls()
-          : Configs.DefaultAvatarCovers,
-      },
-      overview: self.profile?.overview || null,
-      links: {
-        ...self.profile?.socials,
-        website: self.profile?.websites?.[0]?.website,
-      },
-      verified: self.verified,
-      followed: followed,
-      canUpdateCastcleId: self.canUpdateCastcleId(),
-      contact: self.contact,
-    } as UserResponseDto;
-    response.email = self.ownerAccount?.email ?? null;
-    response.blocked = blocked;
-    response.passwordNotSet = passwordNotSet;
-    response.wallet = {
-      balance: balance,
-    };
-    response.mobile = mobile;
-    if (linkSocial) {
-      response.linkSocial = Object.assign(
-        {},
-        ...linkSocial.map((social) => {
-          return {
-            [social.type]: {
-              socialId: social.socialId,
-              displayName: social.displayName,
-            },
-          };
-        }),
-      );
-
-      response.linkSocial.facebook = response.linkSocial.facebook ?? null;
-      response.linkSocial.twitter = response.linkSocial.twitter ?? null;
-      response.linkSocial.google = response.linkSocial.google ?? null;
-      response.linkSocial.apple = response.linkSocial.apple ?? null;
-    }
-
-    response.syncSocial = syncSocial?.map((social) => {
-      return {
-        id: social.id,
-        provider: social.provider,
-        socialId: social.socialId,
-        userName: social.userName,
-        displayName: social.displayName,
-        avatar: social.avatar,
-        active: social.active,
-        autoPost: social.autoPost,
-      };
-    });
-    response.casts = casts;
-    return response;
-  };
-
-  UserSchema.methods.toPageResponse = function (
-    blocked?: boolean,
-    followed?: boolean,
-    syncSocial?: SocialSync,
-    casts?: number,
-  ) {
-    return {
-      id: this._id,
-      castcleId: this.displayId,
-      displayName: this.displayName,
-      type: this.type,
-      images: {
-        avatar: this.profile?.images?.avatar
-          ? new Image(this.profile.images.avatar).toSignUrls()
-          : Configs.DefaultAvatarImages,
-        cover: this.profile?.images?.cover
-          ? new Image(this.profile.images.cover).toSignUrls()
-          : Configs.DefaultAvatarCovers,
-      },
-      followers: { count: this.followerCount },
-      following: { count: this.followedCount },
-      overview: this.profile?.overview || null,
-      links: {
-        facebook: this.profile?.socials?.facebook || null,
-        medium: this.profile?.socials?.medium || null,
-        twitter: this.profile?.socials?.twitter || null,
-        youtube: this.profile?.socials?.youtube || null,
-        website: this.profile?.websites?.[0]?.website || null,
-      },
-      verified: { official: this.verified.official },
-      blocked,
-      followed,
-      updatedAt: this.updatedAt.toISOString(),
-      createdAt: this.createdAt.toISOString(),
-      syncSocial: syncSocial
-        ? {
-            id: syncSocial.id,
-            provider: syncSocial.provider,
-            socialId: syncSocial.socialId,
-            userName: syncSocial.userName,
-            displayName: syncSocial.displayName,
-            avatar: syncSocial.avatar,
-            active: syncSocial.active,
-            autoPost: syncSocial.autoPost,
-          }
-        : undefined,
-      casts: casts,
-      canUpdateCastcleId: this.canUpdateCastcleId(),
-    } as PageResponseDto;
-  };
 
   UserSchema.methods.toSearchTopTrendResponse = function () {
     return {
@@ -229,22 +96,19 @@ export const UserSchemaFactory = (
   };
 
   UserSchema.methods.toAuthor = function () {
-    return {
-      id: this._id,
+    return new Author({
       avatar: this.profile?.images?.avatar
         ? new Image(this.profile.images.avatar).toSignUrls()
         : Configs.DefaultAvatarImages,
       castcleId: this.displayId,
       displayName: this.displayName,
+      id: this._id,
       type: this.type,
       verified: this.verified,
-    } as Author;
+    });
   };
 
-  UserSchema.methods.toPublicResponse = function (dto?: {
-    followed?: boolean;
-    blocked?: boolean;
-  }): PublicUserResponse {
+  UserSchema.methods.toPublicResponse = function (dto?): PublicUserResponse {
     return {
       id: this.id,
       castcleId: this.displayId,
@@ -280,7 +144,7 @@ export const UserSchemaFactory = (
   UserSchema.methods.toOwnerResponse = async function (
     this: User,
     dto?,
-    account?: Account,
+    account?,
   ): Promise<OwnerResponse> {
     const user = account ? this : await this.populate('ownerAccount');
     const ownerAccount = account || user.ownerAccount;
@@ -334,7 +198,7 @@ export const UserSchemaFactory = (
     return response;
   };
 
-  UserSchema.methods.follow = async function (followedUser: User) {
+  UserSchema.methods.follow = async function (followedUser) {
     const session = await relationshipModel.startSession();
     await session.withTransaction(async () => {
       ///TODO !!! Might have to change if relationship is embed
@@ -372,7 +236,7 @@ export const UserSchemaFactory = (
     });
   };
 
-  UserSchema.methods.unfollow = async function (followedUser: User) {
+  UserSchema.methods.unfollow = async function (followedUser) {
     const session = await relationshipModel.startSession();
 
     await session.withTransaction(async () => {

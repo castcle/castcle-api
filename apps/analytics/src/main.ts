@@ -22,9 +22,8 @@
  */
 
 import { Documentation, jsonParser } from '@castcle-api/common';
-import { Configs } from '@castcle-api/environments';
 import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
-import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -45,10 +44,6 @@ async function bootstrap() {
   app.useGlobalFilters(new CastcleExceptionFilter());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.enableCors();
-  app.enableVersioning({
-    type: VersioningType.HEADER,
-    header: Configs.RequiredHeaders.AcceptVersion.name,
-  });
 
   await app.listen(port, '0.0.0.0');
   Logger.log(`🚀 Application is running on: ${await app.getUrl()}/`);

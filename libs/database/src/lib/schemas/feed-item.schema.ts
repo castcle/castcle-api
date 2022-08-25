@@ -27,7 +27,6 @@ import { FeedAggregator, FeedAnalytics } from '../models';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
-import { Credential } from './credential.schema';
 
 @Schema({ timestamps: true })
 export class FeedItem extends CastcleBase {
@@ -58,8 +57,8 @@ export class FeedItem extends CastcleBase {
   @Prop({ type: Object })
   analytics?: FeedAnalytics;
 
-  @Prop({ type: SchemaTypes.ObjectId, ref: 'Credential' })
-  seenCredential?: Credential;
+  @Prop()
+  seenUUID?: string;
 }
 
 export const FeedItemSchema = SchemaFactory.createForClass(FeedItem);

@@ -50,14 +50,11 @@ import {
   Authorizer,
   BearerToken,
   CastcleBasicAuth,
-  CastcleControllerV2,
+  CastcleController,
   RequestMeta,
   RequestMetadata,
 } from '@castcle-api/utils/decorators';
-import {
-  CredentialRequest,
-  HeadersInterceptor,
-} from '@castcle-api/utils/interceptors';
+import { HeadersInterceptor } from '@castcle-api/utils/interceptors';
 import {
   Body,
   Delete,
@@ -66,22 +63,21 @@ import {
   HttpStatus,
   Post,
   Query,
-  Req,
   Response,
   UseInterceptors,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { FastifyReply } from 'fastify';
-import { getEmailVerificationHtml } from './configs';
 import {
   CheckEmailExistDto,
   CheckIdExistDto,
   CheckingResponseV2,
   GuestLoginDto,
   OtpResponse,
-} from './dtos';
+} from './app.dto';
+import { getEmailVerificationHtml } from './app.html-template';
 
-@CastcleControllerV2({ path: 'authentications' })
+@CastcleController({ path: 'v2/authentications' })
 export class AuthenticationControllerV2 {
   constructor(
     private authenticationService: AuthenticationServiceV2,
@@ -205,15 +201,15 @@ export class AuthenticationControllerV2 {
   )
   @Post('request-otp/email')
   async requestOtpByEmail(
+    @Auth() { account }: Authorizer,
     @Body() requestOtpDto: RequestOtpByEmailDto,
-    @Req() { $credential }: CredentialRequest,
     @RequestMeta() requestMetadata: RequestMetadata,
   ) {
     const { refCode, expireDate } =
       await this.authenticationService.requestOtpByEmail({
         ...requestOtpDto,
         ...requestMetadata,
-        requestedBy: $credential.account,
+        requestedBy: account,
       });
 
     return {
@@ -230,15 +226,15 @@ export class AuthenticationControllerV2 {
   )
   @Post('request-otp/mobile')
   async requestOtpByMobile(
+    @Auth() { account }: Authorizer,
     @Body() requestOtpDto: RequestOtpByMobileDto,
-    @Req() { $credential }: CredentialRequest,
     @RequestMeta() requestMetadata: RequestMetadata,
   ) {
     const { refCode, expireDate } =
       await this.authenticationService.requestOtpByMobile({
         ...requestOtpDto,
         ...requestMetadata,
-        requestedBy: $credential.account,
+        requestedBy: account,
       });
 
     return {
@@ -306,12 +302,12 @@ export class AuthenticationControllerV2 {
   )
   @Post('verify-otp/mobile')
   async verifyOtpByMobile(
+    @Auth() { account }: Authorizer,
     @Body() verifyOtpDto: VerifyOtpByMobileDto,
-    @Req() { $credential }: CredentialRequest,
   ) {
     const otp = await this.authenticationService.verifyOtpByMobile({
       ...verifyOtpDto,
-      requestedBy: $credential.account,
+      requestedBy: account,
     });
 
     return {
@@ -329,12 +325,12 @@ export class AuthenticationControllerV2 {
   @Post('change-password')
   @HttpCode(HttpStatus.NO_CONTENT)
   async changePassword(
+    @Auth() { account }: Authorizer,
     @Body() changePasswordDto: ChangePasswordDto,
-    @Req() { $credential }: CredentialRequest,
   ) {
     return this.authenticationService.changePassword({
       ...changePasswordDto,
-      requestedBy: $credential.account,
+      requestedBy: account,
     });
   }
 
