@@ -1979,16 +1979,10 @@ export class ContentServiceV2 {
   };
 
   lookupFarming = async (contentId: string, user: User) => {
-    const contentFarming = await this.contentFarmingModel.findOne(
-      {
-        user: new Types.ObjectId(user.id),
-        content: new Types.ObjectId(contentId),
-      },
-      {
-        updatedAt: 0,
-        endedAt: 0,
-      },
-    );
+    const contentFarming = await this.getContentFarming(contentId, user._id, {
+      updatedAt: 0,
+      endedAt: 0,
+    });
 
     const [balance] = await this.repository.aggregateTransaction(user._id);
     if (
@@ -1997,8 +1991,6 @@ export class ContentServiceV2 {
     ) {
       contentFarming._id = null;
       contentFarming.createdAt = null;
-      if (contentFarming.status === ContentFarmingStatus.Farmed)
-        contentFarming.status = undefined;
     }
 
     const content = await this.repository.findContent({
