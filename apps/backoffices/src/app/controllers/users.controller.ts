@@ -22,15 +22,15 @@
  * or have any questions.
  */
 
-import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import { Get, Query } from '@nestjs/common';
 import { BackofficeAuth } from '../decorators';
-import { RequiredPermissions } from '../guards/permisson.guard';
+import { RequiredPermissions } from '../guards/permission.guard';
 import { Permission } from '../models/authentication.enum';
 import { UserQuery } from '../models/users.dto';
 import { UserBackofficeService } from '../services/users.service';
 
-@CastcleControllerV2({ path: 'backoffices/users' })
+@CastcleController({ path: 'v2/backoffices/users' })
 export class UsersController {
   constructor(private userService: UserBackofficeService) {}
 

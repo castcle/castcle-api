@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { CastcleMongooseModule } from '@castcle-api/environments';
-import { TestingModule } from '@castcle-api/testing';
+import { CreatedUser, TestingModule } from '@castcle-api/testing';
 import { Downloader } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
@@ -40,7 +40,6 @@ import {
   CampaignService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService,
   SocialSyncServiceV2,
   UserServiceV2,
 } from '../database.module';
@@ -50,8 +49,6 @@ import {
   NotificationSource,
   NotificationType,
 } from '../dtos/notification.dto';
-import { MockUserService } from '../mocks';
-import { MockUserDetail } from '../mocks/user.mocks';
 import { ContentType, QueueName } from '../models';
 import { Comment, Content, Notification } from '../schemas';
 import { ContentService } from './content.service';
@@ -64,8 +61,7 @@ describe('NotificationServiceV2', () => {
   let comment: Comment;
   let content: Content;
   let contentService: ContentService;
-  let generateUser: MockUserService;
-  let mocksUsers: MockUserDetail[];
+  let mocksUsers: CreatedUser[];
   let notification: Notification[];
   let repository: Repository;
 
@@ -82,8 +78,6 @@ describe('NotificationServiceV2', () => {
         AuthenticationServiceV2,
         ContentService,
         HashtagService,
-        MockUserService,
-        NotificationService,
         NotificationServiceV2,
         Repository,
         UserServiceV2,
@@ -122,7 +116,6 @@ describe('NotificationServiceV2', () => {
     contentService = moduleRef.get(ContentService);
     service = moduleRef.get(NotificationServiceV2);
     repository = moduleRef.get(Repository);
-    generateUser = moduleRef.get(MockUserService);
   });
 
   afterAll(() => {
@@ -131,7 +124,7 @@ describe('NotificationServiceV2', () => {
 
   beforeEach(async () => {
     await moduleRef.cleanDb();
-    mocksUsers = await generateUser.generateMockUsers(3);
+    mocksUsers = await moduleRef.createUsers(3);
 
     const user = mocksUsers[0].user;
     content = await contentService.createContentFromUser(user, {
@@ -199,7 +192,9 @@ describe('NotificationServiceV2', () => {
         mocksUsers[0].user,
       );
 
-      expect(newMessage).toEqual('people-1 commented on your cast.');
+      expect(newMessage).toEqual(
+        `${mocksUsers[1].user.displayId} commented on your cast.`,
+      );
     });
 
     it('generate message by type notification and language thai.', async () => {
@@ -216,7 +211,9 @@ describe('NotificationServiceV2', () => {
         mocksUsers[0].user,
       );
 
-      expect(newMessage).toEqual('people-1 แสดงความคิดเห็นบน cast ของคุณ');
+      expect(newMessage).toEqual(
+        `${mocksUsers[1].user.displayId} แสดงความคิดเห็นบน cast ของคุณ`,
+      );
     });
   });
 
@@ -348,7 +345,9 @@ describe('NotificationServiceV2', () => {
         'en',
       );
       expect(message).toBeDefined();
-      expect(message).toEqual('people-1 started following you.');
+      expect(message).toEqual(
+        `${mocksUsers[1].user.displayId} started following you.`,
+      );
     });
 
     it('should generate message notification by language thai is correct.', async () => {
@@ -364,7 +363,7 @@ describe('NotificationServiceV2', () => {
       );
 
       expect(message).toBeDefined();
-      expect(message).toEqual('people-1 ได้ติดตามคุณ');
+      expect(message).toEqual(`${mocksUsers[1].user.displayId} ได้ติดตามคุณ`);
     });
   });
 
@@ -381,9 +380,13 @@ describe('NotificationServiceV2', () => {
 
       notifyResp.forEach((item) => {
         if (item.type === NotificationType.Comment) {
-          expect(item.message).toEqual('people-1 commented on your cast.');
+          expect(item.message).toEqual(
+            `${mocksUsers[1].user.displayId} commented on your cast.`,
+          );
         } else {
-          expect(item.message).toEqual('people-1 started following you.');
+          expect(item.message).toEqual(
+            `${mocksUsers[1].user.displayId} started following you.`,
+          );
         }
       });
     });
@@ -401,10 +404,12 @@ describe('NotificationServiceV2', () => {
       notifyResp.forEach((item) => {
         if (item.type === NotificationType.Comment) {
           expect(item.message).toEqual(
-            'people-1 แสดงความคิดเห็นบน cast ของคุณ',
+            `${mocksUsers[1].user.displayId} แสดงความคิดเห็นบน cast ของคุณ`,
           );
         } else {
-          expect(item.message).toEqual('people-1 ได้ติดตามคุณ');
+          expect(item.message).toEqual(
+            `${mocksUsers[1].user.displayId} ได้ติดตามคุณ`,
+          );
         }
       });
     });

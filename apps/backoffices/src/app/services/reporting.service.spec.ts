@@ -34,8 +34,6 @@ import {
   HashtagService,
   Metadata,
   MetadataType,
-  MockUserDetail,
-  MockUserService,
   NotificationServiceV2,
   QueueName,
   ReportingIllegal,
@@ -48,6 +46,7 @@ import {
   UserServiceV2,
 } from '@castcle-api/database';
 import { CastcleBackofficeMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { Downloader } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
@@ -59,10 +58,7 @@ import {
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { Model } from 'mongoose';
+import { CreatedUser } from 'libs/testing/src/lib/testing.dto';
 import { StaffRole } from '../models/authentication.enum';
 import { BackOfficeMongooseForFeatures } from '../schemas';
 import { Staff } from '../schemas/staff.schema';
@@ -78,23 +74,19 @@ class StaffMockData {
   role: string;
   accessToken?: string;
 }
+
 describe('ReportingService', () => {
   let authService: AuthenticationService;
   let contentService: ContentServiceV2;
-  let generateUser: MockUserService;
-  let mocksUsers: MockUserDetail[];
+  let mocksUsers: CreatedUser[];
   let moduleRef: TestingModule;
-  let mongod: MongoMemoryReplSet;
   let service: ReportingService;
   let staffData: StaffMockData;
   let userService: UserServiceV2;
   let repository: Repository;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryReplSet.create();
-    global.mongoUri = mongod.getUri();
-
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
         CastcleBackofficeMongooseModule,
         DatabaseModule,
@@ -107,7 +99,6 @@ describe('ReportingService', () => {
         AuthenticationServiceV2,
         ContentServiceV2,
         HashtagService,
-        MockUserService,
         NotificationServiceV2,
         ReportingService,
         Repository,
@@ -147,20 +138,15 @@ describe('ReportingService', () => {
           },
         },
       ],
-    }).compile();
+    });
 
     service = moduleRef.get<ReportingService>(ReportingService);
     authService = moduleRef.get<AuthenticationService>(AuthenticationService);
     contentService = moduleRef.get<ContentServiceV2>(ContentServiceV2);
-    generateUser = moduleRef.get<MockUserService>(MockUserService);
     userService = moduleRef.get<UserServiceV2>(UserServiceV2);
     repository = moduleRef.get<Repository>(Repository);
 
-    const metadataModel = moduleRef.get<Model<Metadata<ReportingSubject>>>(
-      getModelToken('Metadata'),
-    );
-
-    await new metadataModel({
+    await new (moduleRef.getModel<Metadata<ReportingSubject>>('Metadata'))({
       type: MetadataType.REPORTING_SUBJECT,
       payload: {
         slug: 'spam',
@@ -185,7 +171,9 @@ describe('ReportingService', () => {
 
     staffData = { ...staffPayload, accessToken };
 
-    mocksUsers = await generateUser.generateMockUsers(7);
+    mocksUsers = await Promise.all(
+      Array.from({ length: 7 }, () => moduleRef.createUser()),
+    );
 
     const response = await contentService.createContent(
       {
@@ -207,8 +195,8 @@ describe('ReportingService', () => {
     });
   });
 
-  afterAll(async () => {
-    await Promise.all([moduleRef.close(), mongod.stop()]);
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   describe('getReporting', () => {

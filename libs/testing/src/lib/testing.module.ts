@@ -25,7 +25,9 @@ import { Abstract, ModuleMetadata, Type } from '@nestjs/common';
 import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
 import { TestingModule as NestTestingModule, Test } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
+import { nanoid } from 'nanoid';
+import { CreatedUser } from './testing.dto';
 
 export class TestingModule {
   constructor(
@@ -86,36 +88,82 @@ export class TestingModule {
     };
   }
 
-  async createUser(name: string, email = Date.now().toString()) {
+  async createUsers(count: number) {
+    return Promise.all(Array.from({ length: count }, () => this.createUser()));
+  }
+
+  async createUser(dto?: {
+    castcleId?: string;
+    pageSize?: number;
+    referrer?: Types.ObjectId;
+  }): Promise<CreatedUser> {
+    const castcleId = dto?.castcleId || `user-${nanoid()}`;
     const accountModel = this.getModel('Account');
     const userModel = this.getModel('User');
     const account = new accountModel({
       isGuest: false,
       visibility: 'publish',
       'preferences.languages': ['en'],
-      email: `${email}@castcle.com`,
+      email: `${castcleId}@castcle.com`,
+      activateDate: new Date(),
+      credentials: [
+        {
+          device: 'Castcle',
+          deviceUUID: castcleId,
+          platform: 'CastcleOS',
+        },
+      ],
+      referralBy: dto?.referrer,
     });
-    const [token, user] = await Promise.all([
-      account.regenerate({
-        device: 'Castcle',
-        deviceUUID: Date.now().toString(),
-        platform: 'CastcleOS',
-      }),
+    const [token, user, ...pages] = await Promise.all([
+      account.regenerateToken({ deviceUUID: castcleId }),
       new userModel({
         type: 'people',
         visibility: 'publish',
         ownerAccount: account._id,
-        displayId: name,
-        displayName: name,
-        email: `${email}@castcle.com`,
+        displayId: castcleId,
+        displayName: castcleId,
+        email: `${castcleId}@castcle.com`,
       }).save(),
+      ...(dto?.pageSize
+        ? Array.from({ length: dto.pageSize }, () =>
+            new userModel({
+              type: 'page',
+              visibility: 'publish',
+              ownerAccount: account._id,
+              displayId: `page-${nanoid()}`,
+              displayName: `page-${nanoid()}`,
+              email: `${castcleId}@castcle.com`,
+            }).save(),
+          )
+        : []),
     ]);
 
     return {
-      account: { _id: account._id },
-      user: { _id: user._id },
+      account,
+      user,
+      pages,
       accessToken: token.accessToken,
       refreshToken: token.refreshToken,
     };
+  }
+
+  deposit(userId: Types.ObjectId, amount: number) {
+    const txModel = this.getModel('Transaction');
+    return new txModel({
+      from: {
+        type: 'external.deposit',
+        value: amount,
+      },
+      to: [
+        {
+          user: userId,
+          type: 'personal',
+          value: amount,
+        },
+      ],
+      type: 'deposit',
+      status: 'verified',
+    }).save();
   }
 }

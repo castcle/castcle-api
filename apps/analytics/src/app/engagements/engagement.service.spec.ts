@@ -21,88 +21,43 @@
  * or have any questions.
  */
 
-import { getQueueToken } from '@nestjs/bull';
-import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  UserService,
-} from '../database.module';
-import { QueueName } from '../models';
-import { Account, Credential } from '../schemas';
-import { AuthenticationService } from './authentication.service';
-import { ContentService } from './content.service';
-import { HashtagService } from './hashtag.service';
-import { UxEngagementService } from './uxengagement.service';
+} from '@castcle-api/database';
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
+import { Types } from 'mongoose';
+import { EngagementService } from './engagement.service';
 
-describe('UxEngagement Service', () => {
-  let mongod: MongoMemoryServer;
+describe('Engagement Service', () => {
   let moduleRef: TestingModule;
-  let service: UxEngagementService;
-  let authService: AuthenticationService;
-  let result: {
-    accountDocument: Account;
-    credentialDocument: Credential;
-  };
+  let service: EngagementService;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
-        CacheModule.register(),
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
       ],
-      providers: [
-        UxEngagementService,
-        AuthenticationService,
-        ContentService,
-        HashtagService,
-        UserService,
-        {
-          provide: getQueueToken(QueueName.CONTENT),
-          useValue: { add: jest.fn() },
-        },
-        {
-          provide: getQueueToken(QueueName.USER),
-          useValue: { add: jest.fn() },
-        },
-      ],
-    }).compile();
-    service = moduleRef.get<UxEngagementService>(UxEngagementService);
-    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
-    result = await authService.createAccount({
-      deviceUUID: 'test12354',
-      languagesPreferences: ['th', 'th'],
-      header: {
-        platform: 'ios',
-      },
-      device: 'ifong',
+      providers: [EngagementService],
     });
-    //sign up to create actual account
-    await authService.signupByEmail(result.accountDocument, {
-      displayId: 'sp',
-      displayName: 'sp002',
-      email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567',
-    });
+
+    service = moduleRef.get(EngagementService);
   });
 
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   describe('#track()', () => {
     it('should return UxEngagement when track is complete', async () => {
+      const accountId = new Types.ObjectId();
       const now = new Date();
       const body = {
         platform: 'android',
-        accountId: result.accountDocument._id as unknown as string,
+        accountId: accountId.toString(),
         client: 'android1234',
         eventData: { test: 'hi' },
         eventType: 'test',
@@ -117,7 +72,7 @@ describe('UxEngagement Service', () => {
       const uxTrackResult = await service.track(body);
       expect(uxTrackResult).toBeDefined();
       expect(uxTrackResult.platform).toEqual(body.platform);
-      expect(uxTrackResult.account).toEqual(result.accountDocument._id);
+      expect(uxTrackResult.account).toEqual(accountId);
       expect(uxTrackResult.client).toEqual(body.client);
       expect(uxTrackResult.eventData).toEqual(body.eventData);
       expect(uxTrackResult.eventType).toEqual(body.eventType);
@@ -125,7 +80,6 @@ describe('UxEngagement Service', () => {
       expect(uxTrackResult.screenInstance).toEqual(body.screenInstance);
       expect(uxTrackResult.target).toEqual(body.target);
       expect(uxTrackResult.targetId).toEqual(body.targetId);
-      //expect(uxTrackResult.timestamp).toEqual(now); so prebuilt could pass
     });
   });
 });

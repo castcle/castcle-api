@@ -26,12 +26,12 @@ import {
   Auth,
   Authorizer,
   CastcleAuth,
-  CastcleControllerV2,
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import { Get, Query } from '@nestjs/common';
 
-@CastcleControllerV2({ path: 'farmings' })
-export class FarmingsController {
+@CastcleController({ path: 'v2/farmings' })
+export class FarmingsControllerV2 {
   constructor(private contentService: ContentServiceV2) {}
 
   @CastcleAuth(CacheKeyName.Users)

@@ -64,18 +64,19 @@ import {
   UpdateEmailDto,
   UpdateMobileDto,
   UpdateUserDtoV2,
-  UserService,
   UserServiceV2,
   UserType,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
+import { Image } from '@castcle-api/utils/aws';
 import {
   Auth,
   Authorizer,
+  BearerToken,
   CastcleAuth,
   CastcleBasicAuth,
   CastcleClearCacheAuth,
-  CastcleControllerV2,
+  CastcleController,
   RequestMeta,
   RequestMetadata,
 } from '@castcle-api/utils/decorators';
@@ -93,15 +94,13 @@ import {
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { DeleteUserDto, TargetCastcleDto } from '../dtos';
-import { SuggestionService } from '../services/suggestion.service';
 
-@CastcleControllerV2({ path: 'users' })
+@CastcleController({ path: 'v2/users' })
 export class UsersControllerV2 {
   private logger = new CastcleLogger(UsersControllerV2.name);
 
   constructor(
     /** @deprecated */ private contentService: ContentService,
-    /** @deprecated */ private userServiceV1: UserService,
     private campaignService: CampaignService,
     private commandBus: CommandBus,
     private commentService: CommentServiceV2,
@@ -109,8 +108,7 @@ export class UsersControllerV2 {
     private notificationServiceV2: NotificationServiceV2,
     private rankerService: RankerService,
     private socialSyncService: SocialSyncServiceV2,
-    private suggestionService: SuggestionService,
-    private suggestionServiceV2: SuggestionServiceV2,
+    private suggestionService: SuggestionServiceV2,
     private userService: UserServiceV2,
   ) {}
 
@@ -227,12 +225,16 @@ export class UsersControllerV2 {
         throw new CastcleException('USER_ID_IS_EXIST');
     }
 
-    const prepareUser = await this.userServiceV1.uploadUserInfo(
-      body,
+    const images = await Image.uploadUserImages(
+      body.images,
       authorizer.account._id,
     );
 
-    const updatedUser = await this.userServiceV1.updateUser(user, prepareUser);
+    const updatedUser = await this.userService.updateUser(user, {
+      ...body,
+      images,
+    });
+
     return updatedUser.toOwnerResponse();
   }
 
@@ -461,7 +463,7 @@ export class UsersControllerV2 {
     await this.suggestionService.seen(
       authorizer.account,
       feedItem._id,
-      authorizer.credential,
+      authorizer.uuid,
     );
   }
   @CastcleClearCacheAuth(CacheKeyName.Contents)
@@ -527,7 +529,7 @@ export class UsersControllerV2 {
     await this.suggestionService.seen(
       authorizer.account,
       feedItem._id,
-      authorizer.credential,
+      authorizer.uuid,
     );
   }
 
@@ -614,7 +616,7 @@ export class UsersControllerV2 {
       await this.suggestionService.seen(
         authorizer.account,
         feedItem._id,
-        authorizer.credential,
+        authorizer.uuid,
       );
     }
 
@@ -690,7 +692,7 @@ export class UsersControllerV2 {
       await this.suggestionService.seen(
         authorizer.account,
         feedItem._id,
-        authorizer.credential,
+        authorizer.uuid,
       );
     }
 
@@ -741,13 +743,10 @@ export class UsersControllerV2 {
   @Get('me/suggestion-follow')
   async suggestToFollow(
     @Auth() authorizer: Authorizer,
+    @BearerToken() accessToken: string,
     @Query() query: PaginationQuery,
   ) {
-    return this.suggestionServiceV2.suggest(
-      authorizer.user,
-      authorizer.credential.accessToken,
-      query,
-    );
+    return this.suggestionService.suggest(authorizer.user, accessToken, query);
   }
 
   @CastcleBasicAuth()

@@ -38,7 +38,7 @@ import {
   Authorizer,
   CastcleAuth,
   CastcleClearCacheAuth,
-  CastcleControllerV2,
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
@@ -52,14 +52,14 @@ import {
   Query,
 } from '@nestjs/common';
 
-@CastcleControllerV2({ path: 'ads' })
-export class AdsController {
+@CastcleController({ path: 'v2/ads' })
+export class AdsControllerV2 {
   constructor(
     private adsService: AdsService,
     private userService: UserServiceV2,
     private contentService: ContentServiceV2,
   ) {}
-  private logger = new CastcleLogger(AdsController.name);
+  private logger = new CastcleLogger(AdsControllerV2.name);
 
   @CastcleClearCacheAuth(CacheKeyName.Feeds)
   @Delete(':adsId')

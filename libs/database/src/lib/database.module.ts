@@ -41,10 +41,6 @@ import {
 import { QueueName } from './models';
 import { Repository } from './repositories';
 import {
-  AccountActivationSchema,
-  AccountAuthenIdSchema,
-  AccountDeviceSchema,
-  AccountReferralSchema,
   AccountSchemaFactory,
   AdsCampaignSchema,
   AdsPlacementSchema,
@@ -54,7 +50,6 @@ import {
   CommentSchemaFactory,
   ContentFarmingSchema,
   ContentSchemaFactory,
-  CredentialSchema,
   DefaultContentSchema,
   DsContentReachSchema,
   EngagementSchemaFactory,
@@ -78,7 +73,6 @@ import {
 import { FeedItemV2Schema } from './schemas/feed-item-v2.schema';
 import { AdsService } from './services/ads.service';
 import { AnalyticService } from './services/analytic.service';
-import { AuthenticationService } from './services/authentication.service';
 import { AuthenticationServiceV2 } from './services/authentication.service.v2';
 import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
@@ -88,18 +82,14 @@ import { ContentServiceV2 } from './services/content.service.v2';
 import { DataService } from './services/data.service';
 import { HashtagService } from './services/hashtag.service';
 import { MetadataServiceV2 } from './services/metadata.service.v2';
-import { NotificationService } from './services/notification.service';
 import { NotificationServiceV2 } from './services/notification.service.v2';
 import { RankerService } from './services/ranker.service';
-import { SearchService } from './services/search.service';
 import { SearchServiceV2 } from './services/search.service.v2';
 import { SocialSyncService } from './services/social-sync.service';
 import { SocialSyncServiceV2 } from './services/social-sync.service.v2';
 import { SuggestionServiceV2 } from './services/suggestion.service.v2';
 import { TAccountService } from './services/taccount.service';
-import { UserService } from './services/user.service';
 import { UserServiceV2 } from './services/user.service.v2';
-import { UxEngagementService } from './services/uxengagement.service';
 import { WalletShortcutService } from './services/wallet-shortcut.service';
 import {
   createCastcleMeta,
@@ -108,10 +98,6 @@ import {
 } from './utils/common';
 
 const modelDefinitions: ModelDefinition[] = [
-  { name: 'AccountActivation', schema: AccountActivationSchema },
-  { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
-  { name: 'AccountDevice', schema: AccountDeviceSchema },
-  { name: 'AccountReferral', schema: AccountReferralSchema },
   { name: 'AdsCampaign', schema: AdsCampaignSchema },
   { name: 'AdsPlacement', schema: AdsPlacementSchema },
   { name: 'Analytic', schema: AnalyticSchema },
@@ -133,7 +119,6 @@ const modelDefinitions: ModelDefinition[] = [
 ];
 
 const asyncModelDefinitions: AsyncModelFactory[] = [
-  { name: 'Credential', useFactory: () => CredentialSchema },
   { name: 'FeedItem', useFactory: () => FeedItemSchema },
   { name: 'FeedItemV2', useFactory: () => FeedItemV2Schema },
   { name: 'Relationship', useFactory: () => RelationshipSchema },
@@ -209,7 +194,6 @@ export const MongooseAsyncFeatures = () =>
   providers: [
     AdsService,
     AnalyticService,
-    AuthenticationService,
     AuthenticationServiceV2,
     CampaignService,
     CommentService,
@@ -220,25 +204,20 @@ export const MongooseAsyncFeatures = () =>
     Downloader,
     HashtagService,
     MetadataServiceV2,
-    NotificationService,
     NotificationServiceV2,
     RankerService,
     Repository,
-    SearchService,
     SearchServiceV2,
     SocialSyncService,
     SocialSyncServiceV2,
     SuggestionServiceV2,
     TAccountService,
-    UserService,
     UserServiceV2,
-    UxEngagementService,
     WalletShortcutService,
   ],
   exports: [
     AdsService,
     AnalyticService,
-    AuthenticationService,
     AuthenticationServiceV2,
     BullModule,
     CampaignService,
@@ -251,20 +230,16 @@ export const MongooseAsyncFeatures = () =>
     HashtagService,
     MetadataServiceV2,
     MongooseModule,
-    NotificationService,
     NotificationServiceV2,
     RankerService,
     Repository,
-    SearchService,
     SearchServiceV2,
     SocialSyncService,
     SocialSyncServiceV2,
     SuggestionServiceV2,
     TAccountService,
-    UserService,
     UserServiceV2,
     UtilsClientsModule,
-    UxEngagementService,
     WalletShortcutService,
   ],
 })
@@ -273,7 +248,6 @@ export class DatabaseModule {}
 export {
   AdsService,
   AnalyticService,
-  AuthenticationService,
   AuthenticationServiceV2,
   CampaignService,
   CommentService,
@@ -286,18 +260,14 @@ export {
   getSocialPrefix,
   HashtagService,
   MetadataServiceV2,
-  NotificationService,
   NotificationServiceV2,
   RankerService,
   Repository,
-  SearchService,
   SearchServiceV2,
   SocialSyncService,
   SocialSyncServiceV2,
   SuggestionServiceV2,
   TAccountService,
-  UserService,
   UserServiceV2,
-  UxEngagementService,
   WalletShortcutService,
 };

@@ -1,43 +1,57 @@
+/*
+ * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 3 only, as
+ * published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+ * version 3 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 3 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Castcle, 22 Phet Kasem 47/2 Alley, Bang Khae, Bangkok,
+ * Thailand 10160, or visit www.castcle.com if you need additional information
+ * or have any questions.
+ */
+
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, QueueName } from '../models';
 import { Comment, Content, User } from '../schemas';
-import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
-import { UserService } from './user.service';
 
 describe('CommentService', () => {
-  let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: CommentService;
-  let authService: AuthenticationService;
   let contentService: ContentService;
-  let userService: UserService;
   let comment: Comment;
   let content: Content;
   let user: User;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
         CacheModule.register(),
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
       ],
       providers: [
-        AuthenticationService,
         CommentService,
         ContentService,
         HashtagService,
-        UserService,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -47,28 +61,12 @@ describe('CommentService', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
+    });
 
-    authService = moduleRef.get(AuthenticationService);
     contentService = moduleRef.get(ContentService);
     service = moduleRef.get(CommentService);
-    userService = moduleRef.get(UserService);
 
-    const result = await authService.createAccount({
-      deviceUUID: 'test-uuid',
-      languagesPreferences: ['th', 'th'],
-      header: { platform: 'ios' },
-      device: 'test',
-    });
-
-    await authService.signupByEmail(result.accountDocument, {
-      displayId: 'sp',
-      displayName: 'sp002',
-      email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567',
-    });
-
-    user = await userService.getUserFromCredential(result.credentialDocument);
+    user = (await moduleRef.createUser()).user;
     content = await contentService.createContentFromUser(user, {
       payload: { message: 'hi' },
       type: ContentType.Short,
@@ -80,9 +78,8 @@ describe('CommentService', () => {
     });
   });
 
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   describe('#convertCommentToCommentResponse', () => {

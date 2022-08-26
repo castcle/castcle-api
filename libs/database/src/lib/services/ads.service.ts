@@ -668,7 +668,7 @@ export class AdsService {
     );
   };
 
-  seenAds = async (adsPlacementId: string, seenByCredentialId: string) => {
+  seenAds = async (adsPlacementId: string, uuid: string) => {
     const adsPlacement = await this.adsPlacementModel.findById(adsPlacementId);
     const session = await this.adsPlacementModel.startSession();
     let tx;
@@ -676,9 +676,7 @@ export class AdsService {
       try {
         if (adsPlacement && !adsPlacement.seenAt) {
           adsPlacement.seenAt = new Date();
-          adsPlacement.seenCredential = new Types.ObjectId(
-            seenByCredentialId,
-          ) as any;
+          adsPlacement.seenUUID = uuid;
           const adsCampaign = await this.adsModel.findById(
             adsPlacement.campaign,
           );

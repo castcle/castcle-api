@@ -32,8 +32,6 @@ import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
 import { AuthenticationControllerV2 } from './app.controller.v2';
-import { AppService } from './app.service';
-import { AuthenticationController } from './controllers/app.controller';
 
 @Module({
   imports: [
@@ -45,7 +43,7 @@ import { AuthenticationController } from './controllers/app.controller';
     UtilsClientsModule,
     UtilsAwsModule,
   ],
-  controllers: [AuthenticationController, AuthenticationControllerV2],
-  providers: [AppService],
+  controllers: [AuthenticationControllerV2],
+  providers: [],
 })
 export class AppModule {}

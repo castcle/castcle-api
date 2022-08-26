@@ -58,12 +58,9 @@ import {
   UserType,
 } from '../models';
 import {
-  Account,
   Comment,
   Content,
   Engagement,
-  FeedItem,
-  GuestFeedItem,
   Relationship,
   Revision,
   User,
@@ -91,25 +88,17 @@ export class ContentService {
   });
 
   constructor(
-    @InjectModel('Account')
-    public _accountModel: Model<Account>,
-    @InjectModel('Credential')
-    public _credentialModel: Model<Credential>,
     @InjectModel('User')
-    public _userModel: Model<User>,
+    private _userModel: Model<User>,
     @InjectModel('Content')
-    public _contentModel: Model<Content>,
+    private _contentModel: Model<Content>,
     @InjectModel('Revision')
-    public _revisionModel: Model<Revision>,
+    private _revisionModel: Model<Revision>,
     @InjectModel('Engagement')
-    public _engagementModel: Model<Engagement>,
+    private _engagementModel: Model<Engagement>,
     @InjectModel('Comment')
-    public _commentModel: Model<Comment>,
-    @InjectModel('FeedItem')
-    public _feedItemModel: Model<FeedItem>,
-    public hashtagService: HashtagService,
-    @InjectModel('GuestFeedItem')
-    public _guestFeedItemModel: Model<GuestFeedItem>,
+    private _commentModel: Model<Comment>,
+    private hashtagService: HashtagService,
     @InjectModel('Relationship')
     private relationshipModel: Model<Relationship>,
     @InjectQueue(QueueName.CONTENT)

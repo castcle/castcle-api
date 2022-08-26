@@ -32,12 +32,12 @@ import {
   Auth,
   Authorizer,
   CastcleAuth,
-  CastcleControllerV2,
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import { Get, Query } from '@nestjs/common';
 import { KeywordHashtagPipe } from '../pipes/keyword.hashtag.pipe';
 
-@CastcleControllerV2({ path: 'searches' })
+@CastcleController({ path: 'v2/searches' })
 export class SearchesControllerV2 {
   constructor(private searchServiceV2: SearchServiceV2) {}
 

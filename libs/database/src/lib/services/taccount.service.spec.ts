@@ -21,6 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { CreatedUser, TestingModule } from '@castcle-api/testing';
 import {
   FacebookClient,
   GoogleClient,
@@ -30,9 +32,6 @@ import {
 } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
 import {
   AnalyticService,
@@ -41,7 +40,6 @@ import {
   MongooseForFeatures,
   TAccountService,
 } from '../database.module';
-import { MockUserDetail, MockUserService, mockSend } from '../mocks';
 import {
   KeywordType,
   QueueName,
@@ -56,9 +54,7 @@ import { cAccount } from '../schemas/c-account.schema';
 
 describe('TAccount Service', () => {
   let moduleRef: TestingModule;
-  let mongod: MongoMemoryReplSet;
   let service: TAccountService;
-  let generateUser: MockUserService;
   let transactionModel: Model<Transaction>;
   let cAccountModel: Model<cAccount>;
   const CHART_OF_ACCOUNT = {
@@ -85,20 +81,15 @@ describe('TAccount Service', () => {
   const mintValue = 1000;
 
   beforeAll(async () => {
-    //create tAccounts for mint, airdrop, referral
-    //create tAccounts for claim
-    //create transactions
-    mongod = await MongoMemoryReplSet.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
+        CastcleMongooseModule,
         HttpModule,
-        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
       ],
       providers: [
         AuthenticationServiceV2,
-        MockUserService,
         Repository,
         TAccountService,
         { provide: AnalyticService, useValue: {} },
@@ -116,12 +107,11 @@ describe('TAccount Service', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
+    });
 
     service = moduleRef.get(TAccountService);
-    generateUser = moduleRef.get(MockUserService);
-    transactionModel = moduleRef.get(getModelToken('Transaction'));
-    cAccountModel = moduleRef.get(getModelToken('cAccount'));
+    transactionModel = moduleRef.getModel('Transaction');
+    cAccountModel = moduleRef.getModel('cAccount');
 
     // create cAccount for mint
     const cAccounts = await cAccountModel.create([
@@ -186,7 +176,7 @@ describe('TAccount Service', () => {
     transactions.push(
       ...(await transactionModel.create([
         {
-          from: { type: WalletType.CASTCLE_MINT_CONTRACT, value: mintValue },
+          from: { type: WalletType.EXTERNAL_DEPOSIT, value: mintValue },
           to: [{ type: WalletType.CASTCLE_AIRDROP, value: mintValue }],
           ledgers: [
             {
@@ -204,7 +194,7 @@ describe('TAccount Service', () => {
           ],
         },
         {
-          from: { type: WalletType.CASTCLE_MINT_CONTRACT, value: mintValue },
+          from: { type: WalletType.EXTERNAL_DEPOSIT, value: mintValue },
           to: [{ type: WalletType.CASTCLE_AIRDROP, value: mintValue }],
           ledgers: [
             {
@@ -225,9 +215,8 @@ describe('TAccount Service', () => {
     );
   });
 
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   describe('getLedgers()', () => {
@@ -273,7 +262,7 @@ describe('TAccount Service', () => {
       await transactionModel.create([
         {
           from: {
-            type: WalletType.CASTCLE_MINT_CONTRACT,
+            type: WalletType.EXTERNAL_DEPOSIT,
             value: depositValue,
             user: userId,
           } as MicroTransaction,
@@ -301,7 +290,7 @@ describe('TAccount Service', () => {
         },
         {
           from: {
-            type: WalletType.CASTCLE_MINT_CONTRACT,
+            type: WalletType.EXTERNAL_DEPOSIT,
             value: sendValue,
           } as MicroTransaction,
           to: [
@@ -374,18 +363,27 @@ describe('TAccount Service', () => {
   });
 
   describe('getAllWalletRecent()', () => {
-    let mocksUsers: MockUserDetail[];
+    let mocksUsers: CreatedUser[];
 
     beforeAll(async () => {
-      mocksUsers = await generateUser.generateMockUsers(2);
-
-      await mockSend(
-        mocksUsers[0].user,
-        mocksUsers[1].user,
-        100,
-        transactionModel,
-      );
+      mocksUsers = await moduleRef.createUsers(2);
+      await transactionModel.create({
+        from: {
+          user: mocksUsers[0].user._id,
+          value: 100,
+          type: WalletType.PERSONAL,
+        },
+        to: [
+          {
+            user: mocksUsers[1].user._id,
+            value: 100,
+            type: WalletType.PERSONAL,
+          },
+        ],
+        type: TransactionType.SEND,
+      });
     });
+
     it('should get wallet recent list', async () => {
       const walletRecent = await service.getAllWalletRecent(
         mocksUsers[0].user._id,
@@ -403,7 +401,7 @@ describe('TAccount Service', () => {
       const walletRecent = await service.getAllWalletRecent(
         mocksUsers[0].user._id,
         {
-          input: 'people_1',
+          input: mocksUsers[1].user.displayId,
           type: KeywordType.Word,
         },
       );

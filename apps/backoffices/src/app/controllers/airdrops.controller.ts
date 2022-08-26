@@ -22,16 +22,16 @@
  */
 
 import { ClaimAirdropCommand } from '@castcle-api/cqrs';
-import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import { Body, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { Types } from 'mongoose';
 import { BackofficeAuth } from '../decorators';
-import { RequiredPermissions } from '../guards/permisson.guard';
+import { RequiredPermissions } from '../guards/permission.guard';
 import { ClaimAirdropDto } from '../models/airdrop.dto';
 import { Permission } from '../models/authentication.enum';
 
-@CastcleControllerV2({ path: 'backoffices/airdrop' })
+@CastcleController({ path: 'v2/backoffices/airdrop' })
 export class AirdropsController {
   constructor(private commandBus: CommandBus) {}
 

@@ -1,4 +1,4 @@
-import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import { HeadersInterceptor } from '@castcle-api/utils/interceptors';
 import {
   Body,
@@ -15,7 +15,7 @@ import {
 import { FastifyRequest } from 'fastify';
 import { BackofficeAuth } from '../decorators';
 import { CredentialGuard } from '../guards/credential.guard';
-import { RequiredPermissions } from '../guards/permisson.guard';
+import { RequiredPermissions } from '../guards/permission.guard';
 import { HeaderBackofficeInterceptor } from '../interceptors/header-backoffice.interceptor';
 import {
   ChangePasswordDto,
@@ -27,7 +27,7 @@ import { Permission } from '../models/authentication.enum';
 import { Staff } from '../schemas/staff.schema';
 import { AuthenticationService } from '../services/authentication.service';
 
-@CastcleControllerV2({ path: 'backoffices' })
+@CastcleController({ path: 'v2/backoffices' })
 export class AuthenticationController {
   constructor(private authService: AuthenticationService) {}
 
