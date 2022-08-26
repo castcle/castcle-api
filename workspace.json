@@ -15,7 +15,6 @@
     "environments": "libs/environments",
     "feeds": "apps/feeds",
     "queues": "apps/queues",
-    "services": "libs/services",
     "testing": "libs/testing",
     "users": "apps/users",
     "utils-aws": "libs/utils/aws",
