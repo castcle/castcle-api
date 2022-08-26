@@ -44,7 +44,7 @@ export class LoginWithEmailServiceImpl implements LoginWithEmailService {
   ) {}
 
   async execute(dto: LoginWithEmailDto) {
-    const { account, guest, user, pages } = await this.getAccounts(dto);
+    const { account, guest } = await this.getAccounts(dto);
 
     if (!guest) {
       throw new CastcleException('INVALID_ACCESS_TOKEN');
@@ -55,9 +55,6 @@ export class LoginWithEmailServiceImpl implements LoginWithEmailService {
     if (!account.verifyPassword(dto.password)) {
       throw new CastcleException('INVALID_EMAIL_OR_PASSWORD');
     }
-    if (user?.visibility !== EntityVisibility.Publish) {
-      throw new CastcleException('ACCOUNT_DISABLED');
-    }
 
     const guestCredential = guest?.credentials.find(
       ({ accessToken }) => accessToken === dto.guestAccessToken,
@@ -67,44 +64,21 @@ export class LoginWithEmailServiceImpl implements LoginWithEmailService {
       throw new CastcleException('INVALID_ACCESS_TOKEN');
     }
 
-    const [token, userResponse, pageResponses] = await Promise.all([
+    const [token, { profile, pages }] = await Promise.all([
       account.generateToken({
         device: guestCredential.device,
         deviceUUID: guestCredential.deviceUUID,
         platform: guestCredential.platform,
       }),
-      user.toOwnerResponse(
-        {
-          expansionFields: [
-            UserField.LinkSocial,
-            UserField.SyncSocial,
-            UserField.Wallet,
-          ],
-        },
-        account,
-      ),
-      Promise.all(
-        pages.map((page) =>
-          page.toOwnerResponse(
-            {
-              expansionFields: [
-                UserField.LinkSocial,
-                UserField.SyncSocial,
-                UserField.Wallet,
-              ],
-            },
-            account,
-          ),
-        ),
-      ),
+      this.getUserResponses(account),
       guest.remove(),
     ]);
 
     return {
       accessToken: token.accessToken,
       refreshToken: token.refreshToken,
-      profile: userResponse,
-      pages: pageResponses,
+      profile,
+      pages,
     };
   }
 
@@ -123,29 +97,63 @@ export class LoginWithEmailServiceImpl implements LoginWithEmailService {
       }),
       this.ipAPI.getGeolocation(dto.ip),
     ]);
-    const users =
-      account && guest
-        ? await this.userModel.find(
-            {
-              ownerAccount: account._id,
-              visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
-            },
-            {},
-            { sort: { updatedAt: -1 } },
-          )
-        : [];
-    const user = users.find((user) => user.type === UserType.PEOPLE);
-    const pages = users.filter(
-      (user) =>
-        user.type === UserType.PAGE &&
-        user.visibility === EntityVisibility.Publish,
-    );
 
     return {
       account: geolocation ? account?.set({ geolocation }) : account,
       guest,
-      pages,
-      user,
+    };
+  }
+
+  private async getUserResponses(account: Account) {
+    const userAndPages = !account.isGuest
+      ? await this.userModel.find(
+          {
+            ownerAccount: account._id,
+            $or: [
+              {
+                type: UserType.PEOPLE,
+                visibility: [
+                  EntityVisibility.Publish,
+                  EntityVisibility.Illegal,
+                ],
+              },
+              {
+                type: UserType.PAGE,
+                visibility: EntityVisibility.Publish,
+              },
+            ],
+          },
+          {},
+          { sort: { updatedAt: -1 } },
+        )
+      : [];
+
+    const indexOfUser = userAndPages.findIndex(
+      ({ type }) => type === UserType.PEOPLE,
+    );
+
+    if (userAndPages[indexOfUser]?.visibility !== EntityVisibility.Publish) {
+      throw new CastcleException('ACCOUNT_DISABLED');
+    }
+
+    const responses = await Promise.all(
+      userAndPages.map((userOrPage) =>
+        userOrPage.toOwnerResponse(
+          {
+            expansionFields: [
+              UserField.LinkSocial,
+              UserField.SyncSocial,
+              UserField.Wallet,
+            ],
+          },
+          account,
+        ),
+      ),
+    );
+
+    return {
+      profile: responses[indexOfUser],
+      pages: responses.filter(({ type }) => type === UserType.PAGE),
     };
   }
 }
