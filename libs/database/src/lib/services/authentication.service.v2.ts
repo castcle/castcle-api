@@ -25,14 +25,15 @@ import { CastcleLogger, Token } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
 import {
   GoogleClient,
-  Mailer,
   TwilioChannel,
   TwilioClient,
   TwilioErrorMessage,
   TwilioStatus,
 } from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
+import { Queue } from 'bull';
 import { DateTime } from 'luxon';
 import {
   ChangePasswordDto,
@@ -47,6 +48,8 @@ import {
   AccountActivationType,
   OtpObjective,
   OtpTemplateMessage,
+  QueueName,
+  VerifyEmailMessage,
 } from '../models';
 import { Repository } from '../repositories';
 import { Account } from '../schemas';
@@ -58,8 +61,9 @@ export class AuthenticationServiceV2 {
   constructor(
     private googleClient: GoogleClient,
     private twilioClient: TwilioClient,
-    private mailer: Mailer,
     private repository: Repository,
+    @InjectQueue(QueueName.VERIFY_EMAIL)
+    private emailVerifier: Queue<VerifyEmailMessage>,
   ) {}
 
   /**
@@ -586,10 +590,14 @@ export class AuthenticationServiceV2 {
 
     account.markModified('activations');
     await account.save();
-    await this.mailer.sendRegistrationEmail(
-      hostUrl,
-      account.email,
-      activation.verifyToken,
+
+    await this.emailVerifier.add(
+      {
+        hostUrl: hostUrl,
+        toEmail: account.email,
+        accountId: account.id,
+      },
+      { removeOnComplete: true },
     );
   }
 
