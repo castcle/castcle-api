@@ -24,7 +24,6 @@ import {
   AuthGuard,
   HttpCacheClearInterceptor,
   HttpCacheIndividualInterceptor,
-  IpTrackerInterceptor,
 } from '@castcle-api/utils/interceptors';
 import {
   CacheKey,
@@ -59,8 +58,4 @@ export function CastcleClearCacheAuth(cacheConfig: {
     UseGuards(AuthGuard),
     UseInterceptors(HttpCacheClearInterceptor),
   );
-}
-
-export function CastcleTrack() {
-  return applyDecorators(UseInterceptors(IpTrackerInterceptor));
 }

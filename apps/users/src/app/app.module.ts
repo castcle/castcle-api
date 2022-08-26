@@ -33,15 +33,11 @@ import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
-import { NotificationsController } from './controllers/notifications.controller';
 import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
-import { PagesController } from './controllers/pages.controller';
 import { PagesControllerV2 } from './controllers/pages.controller.v2';
-import { QRCodeControllerV2 } from './controllers/qrcodes.controller.v2';
-import { UsersController } from './controllers/users.controller';
+import { QRCodeControllerV2 } from './controllers/qr-codes.controller.v2';
 import { UsersControllerV2 } from './controllers/users.controller.v2';
-import { WalletController } from './controllers/wallet.controller';
-import { SuggestionService } from './services/suggestion.service';
+import { WalletControllerV2 } from './controllers/wallet.controller.v2';
 
 @Module({
   imports: [
@@ -56,15 +52,12 @@ import { SuggestionService } from './services/suggestion.service';
     UtilsInterceptorsModule,
   ],
   controllers: [
-    NotificationsController,
     NotificationsControllerV2,
-    PagesController,
     PagesControllerV2,
     QRCodeControllerV2,
-    UsersController,
     UsersControllerV2,
-    WalletController,
+    WalletControllerV2,
   ],
-  providers: [SuggestionService],
+  providers: [],
 })
 export class AppModule {}

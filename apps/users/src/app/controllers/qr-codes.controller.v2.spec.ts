@@ -22,46 +22,35 @@
  */
 import {
   AnalyticService,
-  AuthenticationService,
   CampaignService,
   ContentService,
   HashtagService,
-  MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService,
   NotificationServiceV2,
   QRCodeImageSize,
   QueueName,
   SocialSyncServiceV2,
-  UserService,
   UserServiceV2,
-  generateMockUsers,
 } from '@castcle-api/database';
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { Downloader } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { QRCodeControllerV2 } from './qrcodes.controller.v2';
+import { QRCodeControllerV2 } from './qr-codes.controller.v2';
 
 describe('QRCodeControllerV2', () => {
-  let mongod: MongoMemoryServer;
   let app: TestingModule;
   let appController: QRCodeControllerV2;
-  let userServiceV1: UserService;
-  let authService: AuthenticationService;
-  let mocksUsers: MockUserDetail[];
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    app = await TestingModule.createWithDb({
       imports: [
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         CacheModule.register(),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
@@ -70,18 +59,15 @@ describe('QRCodeControllerV2', () => {
       controllers: [QRCodeControllerV2],
       providers: [
         AnalyticService,
-        AuthenticationService,
         ContentService,
         NotificationServiceV2,
         Repository,
-        UserService,
         UserServiceV2,
         { provide: SocialSyncServiceV2, useValue: {} },
         { provide: Downloader, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: HashtagService, useValue: {} },
         { provide: Mailer, useValue: {} },
-        { provide: NotificationService, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -99,25 +85,23 @@ describe('QRCodeControllerV2', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
+    });
 
     appController = app.get(QRCodeControllerV2);
-    userServiceV1 = app.get<UserService>(UserService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
+  });
 
-    mocksUsers = await generateMockUsers(1, 0, {
-      userService: userServiceV1,
-      accountService: authService,
-    });
+  afterAll(() => {
+    return app.close();
   });
 
   describe('createQRCode', () => {
     it('should return QRCodeResponseDto', async () => {
+      const mock = await app.createUser();
       const createQRCode = await appController.createQRCode(
         {
           chainId: 'test',
-          userId: mocksUsers[0].user._id,
-          isMe: mocksUsers[0].user._id,
+          userId: mock.user._id,
+          isMe: mock.user._id,
         },
         {
           size: QRCodeImageSize.Thumbnail,
@@ -126,9 +110,5 @@ describe('QRCodeControllerV2', () => {
 
       expect(createQRCode.payload).toMatch(/base64/g);
     });
-  });
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
   });
 });

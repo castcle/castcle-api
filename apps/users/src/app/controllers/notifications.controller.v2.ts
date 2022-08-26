@@ -34,7 +34,7 @@ import {
   Authorizer,
   CastcleAuth,
   CastcleBasicAuth,
-  CastcleControllerV2,
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import {
   Delete,
@@ -46,7 +46,7 @@ import {
   Query,
 } from '@nestjs/common';
 
-@CastcleControllerV2({ path: 'notifications' })
+@CastcleController({ path: 'v2/notifications' })
 export class NotificationsControllerV2 {
   constructor(private notificationService: NotificationServiceV2) {}
 

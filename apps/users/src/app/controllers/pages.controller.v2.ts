@@ -32,7 +32,7 @@ import {
   Authorizer,
   CastcleBasicAuth,
   CastcleClearCacheAuth,
-  CastcleControllerV2,
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import {
   Body,
@@ -44,7 +44,7 @@ import {
 } from '@nestjs/common';
 import { DeleteUserDto, GetPageParam } from '../dtos';
 
-@CastcleControllerV2({ path: 'pages' })
+@CastcleController({ path: 'v2/pages' })
 export class PagesControllerV2 {
   constructor(private userServiceV2: UserServiceV2) {}
 

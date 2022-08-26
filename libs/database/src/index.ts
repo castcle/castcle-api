@@ -24,7 +24,6 @@
 export * from './lib/aggregations/get-balance.aggregation';
 export * from './lib/database.module';
 export * from './lib/dtos';
-export * from './lib/mocks';
 export * from './lib/models';
 export * from './lib/schemas';
 export * from './lib/utils/validates';

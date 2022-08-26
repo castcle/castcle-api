@@ -20,6 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { CreatedUser, TestingModule } from '@castcle-api/testing';
 import { Downloader } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
@@ -31,9 +33,6 @@ import {
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Types } from 'mongoose';
 import {
   AnalyticService,
@@ -45,7 +44,6 @@ import {
   UserServiceV2,
 } from '../database.module';
 import { CreateHashtag } from '../dtos/hashtag.dto';
-import { MockUserDetail, MockUserService } from '../mocks';
 import { ExcludeType, KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
 import { CampaignService } from './campaign.service';
@@ -54,27 +52,23 @@ import { SearchServiceV2 } from './search.service.v2';
 
 describe('SearchServiceV2', () => {
   let moduleRef: TestingModule;
-  let mongod: MongoMemoryServer;
-  let generateUser: MockUserService;
   let hashtagService: HashtagService;
-  let mocksUsers: MockUserDetail[];
+  let mocksUsers: CreatedUser[];
   let service: SearchServiceV2;
   let userServiceV2: UserServiceV2;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
         CacheModule.register(),
+        CastcleMongooseModule,
         HttpModule,
-        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
       ],
       providers: [
         AuthenticationServiceV2,
         HashtagService,
-        MockUserService,
         NotificationServiceV2,
         Repository,
         SearchServiceV2,
@@ -93,6 +87,10 @@ describe('SearchServiceV2', () => {
           useValue: { add: jest.fn() },
         },
         {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
+        {
           provide: getQueueToken(QueueName.REPORTING),
           useValue: { add: jest.fn() },
         },
@@ -101,9 +99,8 @@ describe('SearchServiceV2', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
+    });
 
-    generateUser = moduleRef.get(MockUserService);
     hashtagService = moduleRef.get<HashtagService>(HashtagService);
     service = moduleRef.get<SearchServiceV2>(SearchServiceV2);
     userServiceV2 = moduleRef.get(UserServiceV2);
@@ -113,7 +110,7 @@ describe('SearchServiceV2', () => {
         tag: slug,
         score: hScore,
         aggregator: {
-          _id: String(Types.ObjectId()),
+          _id: String(new Types.ObjectId()),
         },
         name: hName,
       };
@@ -131,7 +128,11 @@ describe('SearchServiceV2', () => {
         ),
     );
 
-    mocksUsers = await generateUser.generateMockUsers(5);
+    mocksUsers = await moduleRef.createUsers(5);
+  });
+
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   describe('#getTopTrends', () => {
@@ -178,14 +179,14 @@ describe('SearchServiceV2', () => {
           limit: 5,
           keyword: {
             type: KeywordType.Mention,
-            input: 'p',
+            input: 'user-',
           },
         },
         mocksUsers[0].user,
       );
 
       expect(getByKeyword.keyword).toContainEqual({
-        text: 'p',
+        text: 'user-',
         isTrending: true,
       });
       expect(getByKeyword.hashtags).toHaveLength(0);
@@ -222,7 +223,7 @@ describe('SearchServiceV2', () => {
         {
           keyword: {
             type: KeywordType.Mention,
-            input: 'p',
+            input: 'user-',
           },
           hasRelationshipExpansion: false,
         },
@@ -255,7 +256,7 @@ describe('SearchServiceV2', () => {
         {
           keyword: {
             type: KeywordType.Word,
-            input: 'people-2',
+            input: mocksUsers[2].user.displayId,
           },
           hasRelationshipExpansion: false,
         },
@@ -279,10 +280,5 @@ describe('SearchServiceV2', () => {
 
       expect(getSearchByKeyword.payload).toHaveLength(0);
     });
-  });
-
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
   });
 });

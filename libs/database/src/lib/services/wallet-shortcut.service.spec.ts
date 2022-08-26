@@ -21,50 +21,39 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
+import { CastcleMongooseModule, Environment } from '@castcle-api/environments';
+import { CreatedUser, TestingModule } from '@castcle-api/testing';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
-  AuthenticationService,
   ContentService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   TAccountService,
-  UserService,
   WalletShortcutService,
 } from '../database.module';
-import { MockUserDetail, generateMockUsers } from '../mocks';
 import { QueueName } from '../models';
 
 describe('WalletShortcutService', () => {
-  let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: WalletShortcutService;
-  let userServiceV1: UserService;
-  let authServiceV1: AuthenticationService;
-  let mocksUsers: MockUserDetail[];
+  let mocksUsers: CreatedUser[];
   let shortcutId: string;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         CacheModule.register(),
         MongooseForFeatures(),
         MongooseAsyncFeatures(),
         HttpModule,
       ],
       providers: [
-        AuthenticationService,
         WalletShortcutService,
         Repository,
-        UserService,
         TAccountService,
         { provide: ContentService, useValue: {} },
         {
@@ -76,22 +65,15 @@ describe('WalletShortcutService', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
-
-    service = moduleRef.get<WalletShortcutService>(WalletShortcutService);
-    userServiceV1 = moduleRef.get<UserService>(UserService);
-    authServiceV1 = moduleRef.get<AuthenticationService>(AuthenticationService);
-
-    mocksUsers = await generateMockUsers(2, 0, {
-      userService: userServiceV1,
-      accountService: authServiceV1,
     });
 
+    service = moduleRef.get(WalletShortcutService);
+    mocksUsers = await moduleRef.createUsers(2);
     Environment.CHAIN_INTERNAL = 'castcle';
   });
 
-  afterAll(async () => {
-    await Promise.all([moduleRef?.close(), mongod.stop()]);
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   describe('createWalletShortcut', () => {
