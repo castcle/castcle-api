@@ -21,7 +21,13 @@
  * or have any questions.
  */
 
-import { Account, EntityVisibility } from '@castcle-api/database';
+import {
+  Account,
+  EntityVisibility,
+  User,
+  UserField,
+  UserType,
+} from '@castcle-api/database';
 import { IpAPI } from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
@@ -33,15 +39,23 @@ import { RefreshTokenDto, RefreshTokenService } from './service.abstract';
 export class RefreshTokenServiceImpl implements RefreshTokenService {
   constructor(
     @InjectModel('Account') private accountModel: Model<Account>,
+    @InjectModel('User') private userModel: Model<User>,
     private ipAPI: IpAPI,
   ) {}
 
   async execute(dto: RefreshTokenDto) {
     const account = await this.getAccount(dto);
+    const [token, { profile, pages }] = await Promise.all([
+      account.regenerateToken({ refreshToken: dto.refreshToken }),
+      this.getUserResponses(account),
+    ]);
 
-    return account.regenerateToken({
-      refreshToken: dto.refreshToken,
-    });
+    return {
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken,
+      profile,
+      pages,
+    };
   }
 
   private async getAccount(dto: RefreshTokenDto) {
@@ -57,5 +71,58 @@ export class RefreshTokenServiceImpl implements RefreshTokenService {
     if (!account) throw new CastcleException('INVALID_REFRESH_TOKEN');
 
     return geolocation ? account.set({ geolocation }) : account;
+  }
+
+  private async getUserResponses(account: Account) {
+    const userAndPages = !account.isGuest
+      ? await this.userModel.find(
+          {
+            ownerAccount: account._id,
+            $or: [
+              {
+                type: UserType.PEOPLE,
+                visibility: [
+                  EntityVisibility.Publish,
+                  EntityVisibility.Illegal,
+                ],
+              },
+              {
+                type: UserType.PAGE,
+                visibility: EntityVisibility.Publish,
+              },
+            ],
+          },
+          {},
+          { sort: { updatedAt: -1 } },
+        )
+      : [];
+
+    const indexOfUser = userAndPages.findIndex(
+      ({ type }) => type === UserType.PEOPLE,
+    );
+
+    if (userAndPages[indexOfUser]?.visibility !== EntityVisibility.Publish) {
+      throw new CastcleException('ACCOUNT_DISABLED');
+    }
+
+    const responses = await Promise.all(
+      userAndPages.map((userOrPage) =>
+        userOrPage.toOwnerResponse(
+          {
+            expansionFields: [
+              UserField.LinkSocial,
+              UserField.SyncSocial,
+              UserField.Wallet,
+            ],
+          },
+          account,
+        ),
+      ),
+    );
+
+    return {
+      profile: responses[indexOfUser],
+      pages: responses.filter(({ type }) => type === UserType.PAGE),
+    };
   }
 }
