@@ -21,9 +21,11 @@
  * or have any questions.
  */
 
+import { getQueueToken } from '@nestjs/bull';
 import { Abstract, ModuleMetadata, Type } from '@nestjs/common';
 import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
 import { TestingModule as NestTestingModule, Test } from '@nestjs/testing';
+import { Queue } from 'bull';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
 import { nanoid } from 'nanoid';
@@ -68,18 +70,26 @@ export class TestingModule {
     return this.moduleRef.get<any, Model<T>>(getModelToken(typeOrToken));
   }
 
+  getQueue<T = any>(typeOrToken: string): Queue<T> {
+    return this.moduleRef.get<any, Queue<T>>(getQueueToken(typeOrToken));
+  }
+
   async createGuest() {
+    const deviceUUID = nanoid();
     const accountModel = this.getModel('Account');
     const account = new accountModel({
       isGuest: true,
       visibility: 'publish',
       'preferences.languages': ['en'],
+      credentials: [
+        {
+          device: 'Castcle',
+          deviceUUID,
+          platform: 'CastcleOS',
+        },
+      ],
     });
-    const token = await account.regenerate({
-      device: 'Castcle',
-      deviceUUID: Date.now().toString(),
-      platform: 'CastcleOS',
-    });
+    const token = await account.regenerateToken({ deviceUUID });
 
     return {
       _id: account._id,

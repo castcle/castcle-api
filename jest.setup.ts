@@ -32,6 +32,12 @@ jest.mock('libs/common/src/lib/logger', () => ({
   })),
 }));
 
+jest.mock('libs/utils/clients/src/lib/ip-api/client', () => ({
+  IpAPI: jest.fn(() => ({
+    getGeolocation: jest.fn(),
+  })),
+}));
+
 jest.mock('link-preview-js', () => ({
   getLinkPreview: jest.fn().mockReturnValue({}),
 }));
