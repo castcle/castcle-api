@@ -22,7 +22,6 @@
  */
 
 import { CastcleHealthyModule, CastcleTracingModule } from '@castcle-api/core';
-import { CastcleCqrs } from '@castcle-api/cqrs';
 import { DatabaseModule } from '@castcle-api/database';
 import {
   CastcleBackofficeMongooseModule,
@@ -39,6 +38,7 @@ import { MetaDataController } from './controllers/metadata.controller';
 import { ReportingController } from './controllers/reporting.controller';
 import { UsersController } from './controllers/users.controller';
 import { BackOfficeMongooseForFeatures } from './schemas';
+import { AirdropService } from './services/airdrop.service';
 import { AuthenticationService } from './services/authentication.service';
 import { CampaignBackofficeService } from './services/campaign.service';
 import { MetadataBackofficeService } from './services/metadata.service';
@@ -50,7 +50,6 @@ import { UserBackofficeService } from './services/users.service';
     BackOfficeMongooseForFeatures,
     CastcleBackofficeMongooseModule,
     CastcleBullModule,
-    CastcleCqrs,
     CastcleCacheModule,
     CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
     CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
@@ -66,6 +65,7 @@ import { UserBackofficeService } from './services/users.service';
     UsersController,
   ],
   providers: [
+    AirdropService,
     AuthenticationService,
     CampaignBackofficeService,
     Mailer,
