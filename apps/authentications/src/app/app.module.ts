@@ -27,16 +27,26 @@ import {
   CastcleTracingModule,
 } from '@castcle-api/core';
 import { DatabaseModule } from '@castcle-api/database';
-import { CastcleServices } from '@castcle-api/services';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
-import { AuthenticationControllerV2 } from './app.controller.v2';
+import { AuthenticationControllerV2 } from './authentications/app.controller.v2';
+import { ConnectWithSocialService } from './authentications/services/connect-with-social/service.abstract';
+import { ConnectWithSocialServiceImpl } from './authentications/services/connect-with-social/service.implementation';
+import { GuestLoginService } from './authentications/services/guest-login/service.abstract';
+import { GuestLoginServiceImpl } from './authentications/services/guest-login/service.implementation';
+import { LoginWithEmailService } from './authentications/services/login-with-email/service.abstract';
+import { LoginWithEmailServiceImpl } from './authentications/services/login-with-email/service.implementation';
+import { LoginWithSocialService } from './authentications/services/login-with-social/service.abstract';
+import { LoginWithSocialServiceImpl } from './authentications/services/login-with-social/service.implementation';
+import { RefreshTokenService } from './authentications/services/refresh-token/service.abstract';
+import { RefreshTokenServiceImpl } from './authentications/services/refresh-token/service.implementation';
+import { RegisterWithEmailService } from './authentications/services/register-with-email/service.abstract';
+import { RegisterWithEmailServiceImpl } from './authentications/services/register-with-email/service.implementation';
 
 @Module({
   imports: [
     CastcleHealthyModule.register({ pathPrefix: 'authentications' }),
-    CastcleServices,
     CastcleThrottlerModule,
     CastcleTracingModule.forRoot({ serviceName: 'authentications' }),
     DatabaseModule,
@@ -44,6 +54,31 @@ import { AuthenticationControllerV2 } from './app.controller.v2';
     UtilsAwsModule,
   ],
   controllers: [AuthenticationControllerV2],
-  providers: [],
+  providers: [
+    {
+      provide: ConnectWithSocialService,
+      useClass: ConnectWithSocialServiceImpl,
+    },
+    {
+      provide: GuestLoginService,
+      useClass: GuestLoginServiceImpl,
+    },
+    {
+      provide: LoginWithEmailService,
+      useClass: LoginWithEmailServiceImpl,
+    },
+    {
+      provide: LoginWithSocialService,
+      useClass: LoginWithSocialServiceImpl,
+    },
+    {
+      provide: RefreshTokenService,
+      useClass: RefreshTokenServiceImpl,
+    },
+    {
+      provide: RegisterWithEmailService,
+      useClass: RegisterWithEmailServiceImpl,
+    },
+  ],
 })
 export class AppModule {}

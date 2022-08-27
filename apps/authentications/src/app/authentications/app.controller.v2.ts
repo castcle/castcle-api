@@ -38,14 +38,6 @@ import {
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import {
-  ConnectWithSocialService,
-  GuestLoginService,
-  LoginWithEmailService,
-  LoginWithSocialService,
-  RefreshTokenService,
-  RegisterWithEmailService,
-} from '@castcle-api/services';
-import {
   Auth,
   Authorizer,
   BearerToken,
@@ -76,6 +68,12 @@ import {
   OtpResponse,
 } from './app.dto';
 import { getEmailVerificationHtml } from './app.html-template';
+import { ConnectWithSocialService } from './services/connect-with-social/service.abstract';
+import { GuestLoginService } from './services/guest-login/service.abstract';
+import { LoginWithEmailService } from './services/login-with-email/service.abstract';
+import { LoginWithSocialService } from './services/login-with-social/service.abstract';
+import { RefreshTokenService } from './services/refresh-token/service.abstract';
+import { RegisterWithEmailService } from './services/register-with-email/service.abstract';
 
 @CastcleController({ path: 'v2/authentications' })
 export class AuthenticationControllerV2 {

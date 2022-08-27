@@ -24,7 +24,6 @@
 import { Password } from '@castcle-api/common';
 import {
   Account,
-  AccountActivationType,
   Analytic,
   EntityVisibility,
   EventName,
@@ -101,7 +100,6 @@ export class RegisterWithEmailServiceImpl implements RegisterWithEmailService {
     account.email = dto.email;
     account.password = Password.hash(dto.password);
     account.referralBy = referrer?._id;
-    account.createActivation(AccountActivationType.EMAIL);
 
     if (geolocation) {
       account.geolocation = geolocation;
