@@ -132,16 +132,17 @@ export class RegisterWithEmailServiceImpl implements RegisterWithEmailService {
         { ip: dto.ip, registered: { $exists: false } },
         { registered: { account: account._id } },
       ),
-      this.emailVerifier.add(
-        {
-          hostUrl: dto.hostUrl,
-          toEmail: dto.email,
-          accountId: account.id,
-        },
-        { removeOnComplete: true },
-      ),
       referrer?.update({ $inc: { referralCount: 1 } }),
     ]);
+
+    await this.emailVerifier.add(
+      {
+        hostUrl: dto.hostUrl,
+        toEmail: dto.email,
+        accountId: account.id,
+      },
+      { removeOnComplete: true },
+    );
 
     return {
       accessToken: token.accessToken,
