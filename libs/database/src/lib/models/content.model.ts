@@ -21,77 +21,63 @@
  * or have any questions.
  */
 
-import { TransformStringToArrayOfStrings } from '@castcle-api/common';
+import { CastcleImage } from '@castcle-api/utils/aws';
 import {
-  GetContentPayload,
-  PaginationQuery,
-  ReportingStatus,
-  ReportingType,
-  User,
-} from '@castcle-api/database';
-import {
-  IsEnum,
-  IsMongoId,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+  BlogPayload,
+  EntityVisibility,
+  ImagePayload,
+  Link,
+  Metrics,
+  Participates,
+  ReferencedCast,
+  ShortPayload,
+} from '../dtos';
+import { ContentType } from './content.enum';
 
-export class GetReportingQuery extends PaginationQuery {
-  @IsOptional()
-  @IsEnum(ReportingType, { each: true })
-  @TransformStringToArrayOfStrings()
-  type?: string[];
-
-  @IsOptional()
-  @IsEnum(ReportingStatus, { each: true })
-  @TransformStringToArrayOfStrings()
-  status?: string[];
+export class GetParticipatesPayload {
+  liked: boolean;
+  recasted: boolean;
+  quoted: boolean;
+  commented: boolean;
+  farmed: boolean;
 }
 
-class ReportingPayload {
-  payloadId: string;
-  reportBy: string[];
-  status: string;
-  type: string;
-  user: string;
+export class GetContentPayload {
+  _id: string;
+  contentId: string;
+  authorId: string;
+  payload: ShortPayload | BlogPayload | ImagePayload;
+  type: ContentType;
+  visibility: EntityVisibility;
+  metrics: Metrics;
+  originalPost?: GetContentPayload;
+  reportedStatus?: string;
+  reportedSubject?: string;
+  isQuote?: boolean;
+  isRecast?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-class ReportedBy {
+export class PublicContentResponse {
   id: string;
+  authorId: string;
+  type: ContentType;
   message: string;
-  user: User;
-  subject: {
-    slug: string;
-    name: string;
+  photo: {
+    cover?: CastcleImage;
+    contents: CastcleImage[];
   };
-  payload: GetContentPayload | User;
-  type: string;
+  link: Link[];
+  referencedCasts?: ReferencedCast;
+  metrics: Metrics;
+  participate: Participates;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export class GetReportingResponse {
-  reportings: ReportingPayload[];
-  reportedBy: ReportedBy[];
-}
-
-export class UpdateIllegal {
-  @IsMongoId()
-  @IsNotEmpty()
-  id: string;
-
-  @IsEnum(ReportingType)
-  @IsNotEmpty()
-  type: string;
-
-  @IsOptional()
-  @IsString()
-  subjectByAdmin?: string;
-
-  @IsOptional()
-  @IsString()
-  messageByAdmin?: string;
+export class OwnerContentResponse extends PublicContentResponse {
+  reportedStatus?: string;
+  reportedSubject?: string;
+  visibility?: EntityVisibility;
 }

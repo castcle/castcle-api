@@ -23,6 +23,8 @@
 
 import { Environment } from '@castcle-api/environments';
 import { DBRef } from 'mongodb';
+import { PipelineStage, Types } from 'mongoose';
+import { EntityVisibility } from '../dtos';
 import { AdsAuctionAggregateDto } from '../dtos/ads.dto';
 import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
 
@@ -67,6 +69,12 @@ export type GetAdsPriceResponse = {
   price: number;
   ads: any[]; //objectId
   adsRef: DBRef[]; //dbRefs
+};
+
+export type GetAdsCampaignQuery = {
+  excludeAds?: Types.ObjectId[];
+  boostStatus?: AdsBoostStatus;
+  status?: AdsStatus;
 };
 
 export const pipe2AdsAuctionPrice = () => {
@@ -120,3 +128,142 @@ export const pipe2AvailableAdsCampaign = () => [
 ];
 
 export const pipe2AdsAuctionAggregate = mockPipe2AdsAuctionAggregate; //will change once proof aggregate
+
+export const pipelineGetAdsCampaigns = ({
+  excludeAds,
+  ...filters
+}: GetAdsCampaignQuery): PipelineStage[] => [
+  {
+    $addFields: {
+      budgetLeft: {
+        $subtract: ['$detail.dailyBudget', '$statistics.dailySpent'],
+      },
+    },
+  },
+  {
+    $match: {
+      _id: { $nin: excludeAds },
+      $expr: {
+        $gt: ['$budgetLeft', 0],
+      },
+      ...filters,
+    },
+  },
+  {
+    $facet: {
+      userAd: [
+        {
+          $sort: {
+            createdAt: 1,
+          },
+        },
+        {
+          $match: {
+            'adsRef.$ref': 'user',
+          },
+        },
+        { $limit: 1 },
+        {
+          $project: {
+            adsRef: '$adsRef',
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            let: {
+              userId: '$adsRef.$id',
+              visibility: EntityVisibility.Publish,
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$_id', '$$userId'] },
+                      { $eq: ['$visibility', '$$visibility'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'payload',
+          },
+        },
+        {
+          $unwind: {
+            path: '$payload',
+          },
+        },
+      ],
+      contentAd: [
+        {
+          $sort: {
+            createdAt: 1,
+          },
+        },
+        {
+          $match: {
+            'adsRef.$ref': 'content',
+          },
+        },
+        { $limit: 1 },
+        {
+          $project: {
+            adsRef: '$adsRef',
+          },
+        },
+        {
+          $lookup: {
+            from: 'contents',
+            let: {
+              contentId: '$adsRef.$id',
+              visibility: EntityVisibility.Publish,
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$_id', '$$contentId'] },
+                      { $eq: ['$visibility', '$$visibility'] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: {
+                  contentId: '$_id',
+                  authorId: '$author.id',
+                  payload: '$payload',
+                  type: '$type',
+                  visibility: '$visibility',
+                  metrics: {
+                    likeCount: '$engagements.like.count',
+                    commentCount: '$engagements.comment.count',
+                    recastCount: '$engagements.recast.count',
+                    quoteCount: '$engagements.quote.count',
+                    farmCount: { $ifNull: ['$engagements.farm.count', 0] },
+                  },
+                  originalPost: '$originalPost',
+                  reportedStatus: '$reportedStatus',
+                  reportedSubject: '$reportedSubject',
+                  isQuote: '$isQuote',
+                  isRecast: '$isRecast',
+                  createdAt: '$createdAt',
+                  updatedAt: '$updatedAt',
+                },
+              },
+            ],
+            as: 'payload',
+          },
+        },
+        {
+          $unwind: {
+            path: '$payload',
+          },
+        },
+      ],
+    },
+  },
+];

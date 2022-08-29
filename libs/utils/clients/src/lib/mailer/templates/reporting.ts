@@ -36,7 +36,7 @@ export type ContentReport = {
   link?: any[];
   message?: string;
   photo?: any;
-  updatedAt: string;
+  updatedAt: Date;
 };
 
 export type Reporting = {

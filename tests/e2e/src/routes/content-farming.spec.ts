@@ -131,7 +131,7 @@ export const testContentFarming = () => {
         .send({})
         .expect(({ body }) => {
           expect(body.id).toEqual(contentFarming.id);
-          expect(body.content.id).toEqual(content.id);
+          expect(String(body.content.id)).toEqual(String(content.id));
           expect(body.authorId).not.toEqual(user.profile.id);
         })
         .expect(200);
@@ -251,7 +251,7 @@ export const testContentFarming = () => {
         .expect(({ body }) => {
           expect(body.id).toEqual(contentFarming.id);
           expect(body.createdAt).toEqual(contentFarming.createdAt);
-          expect(body.content.id).toEqual(content.id);
+          expect(String(body.content.id)).toEqual(String(content.id));
         })
         .expect(200);
     });
@@ -297,7 +297,7 @@ export const testContentFarming = () => {
         .expect(({ body }) => {
           expect(body.id).toBeNull();
           expect(body.createdAt).toBeNull();
-          expect(body.content.id).toEqual(content.id);
+          expect(String(body.content.id)).toEqual(String(content.id));
         })
         .expect(200);
     });
@@ -365,7 +365,9 @@ export const testContentFarming = () => {
         .expect(({ body }) => {
           expect(body.payload).toHaveLength(1);
           expect(body.payload[0].id).toEqual(contentFarming.id);
-          expect(body.payload[0].content.id).toEqual(content.id);
+          expect(String(body.payload[0].content.id)).toEqual(
+            String(content.id),
+          );
         })
         .expect(200);
     });
@@ -490,7 +492,9 @@ export const testContentFarming = () => {
         .expect(({ body }) => {
           expect(body.payload).toHaveLength(1);
           expect(body.payload[0].id).toEqual(contentFarming.id);
-          expect(body.payload[0].content.id).toEqual(content.id);
+          expect(String(body.payload[0].content.id)).toEqual(
+            String(content.id),
+          );
         })
         .expect(200);
     });

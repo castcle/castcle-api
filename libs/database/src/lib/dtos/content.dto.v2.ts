@@ -25,7 +25,6 @@ import {
   TransformSortStringToSortObject,
   TransformStringToArrayOfStrings,
 } from '@castcle-api/common';
-import { CastcleImage } from '@castcle-api/utils/aws';
 import {
   IsEnum,
   IsMongoId,
@@ -35,38 +34,14 @@ import {
   IsString,
 } from 'class-validator';
 import { ContentType, UserType } from '../models';
-import { Content, Engagement } from '../schemas';
 import {
-  Author,
   BlogPayload,
   ImagePayload,
-  Link,
-  Metrics,
   Participates,
-  ReferencedCast,
   ShortPayload,
 } from './content.dto';
 import { PaginationQuery } from './pagination.dto';
 import { GetUserParam } from './user.dto';
-
-export class CastPayload {
-  id: string;
-  authorId: string;
-  type: string;
-  message: string;
-  photo: {
-    cover?: CastcleImage;
-    contents: CastcleImage[];
-  };
-  link: Link[];
-  referencedCasts?: ReferencedCast;
-  metrics: Metrics;
-  participate: Participates;
-  reportedStatus?: string;
-  reportedSubject?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export class ResponseParticipate {
   user: {
@@ -76,18 +51,6 @@ export class ResponseParticipate {
     type: UserType;
   };
   participate: Participates;
-}
-
-export class GetCastDto {
-  contents: Content[];
-  calledContents?: Content[];
-  newContents?: Content[];
-  casts?: Content[];
-  authors?: Author[];
-  engagements?: Engagement[];
-  metrics?: Metrics[];
-  engagementsOriginal?: Engagement[];
-  metricsOriginal?: Metrics[];
 }
 
 export class GetContentDto {

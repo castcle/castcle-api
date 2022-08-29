@@ -49,8 +49,13 @@ import { lastValueFrom, map } from 'rxjs';
 import {
   GetAvailableIdResponse,
   WalletBalance,
-  pipelineGetContents,
+  pipelineGetAdsCampaigns,
+  pipelineGetContentsV2,
+  pipelineGetFarmAmount,
+  pipelineGetFeedDefaults,
   pipelineOfGetAvailableId,
+  pipelineOfGetParticipate,
+  pipelineOfGetParticipates,
   pipelineOfGetWalletBalance,
 } from '../aggregations';
 import {
@@ -59,9 +64,9 @@ import {
   CastcleQueryOptions,
   CreateContentDto,
   EntityVisibility,
-  GetCastDto,
   NotificationSource,
   NotificationType,
+  Participates,
   ShortPayload,
   SortDirection,
   Url,
@@ -70,12 +75,16 @@ import {
 import {
   AdsBoostStatus,
   AdsPaymentMethod,
+  AdsStatus,
   CAccountNo,
   CastcleIdMetadata,
   CommentType,
+  ContentFarmingStatus,
   ContentType,
   Country,
   EmailDomainDisposable,
+  GetContentPayload,
+  GetFarmingCountPayload,
   KeywordType,
   Language,
   MetadataType,
@@ -94,6 +103,8 @@ import {
   CAccountNature,
   Comment,
   Content,
+  ContentFarming,
+  DefaultContent,
   Engagement,
   FeedItem,
   Hashtag,
@@ -248,6 +259,22 @@ type CommentQuery = {
   type?: CommentType;
 };
 
+type ParticipateQuery = {
+  targetRef: DBRef | DBRef[];
+  userId?: string;
+};
+
+type AdsCampaignQuery = {
+  excludeAds?: Types.ObjectId[];
+  boostStatus?: AdsBoostStatus;
+  status?: AdsStatus;
+};
+
+type GetFarmAmountQuery = {
+  contentId?: Types.ObjectId[];
+  status?: ContentFarmingStatus;
+};
+
 @Injectable()
 export class Repository {
   private castcleIdMetadata: CastcleIdMetadata;
@@ -260,6 +287,10 @@ export class Repository {
     @InjectModel('cAccount') private caccountModel: Model<cAccount>,
     @InjectModel('Comment') private commentModel: Model<Comment>,
     @InjectModel('Content') private contentModel: Model<Content>,
+    @InjectModel('ContentFarming')
+    private contentFarmingModel: Model<ContentFarming>,
+    @InjectModel('DefaultContent')
+    private defaultContentModel: Model<DefaultContent>,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
     @InjectModel('FeedItemV2') private feedItemV2Model: Model<FeedItemV2>,
@@ -959,14 +990,44 @@ export class Repository {
       .exec();
   }
 
-  aggregationContent({ maxResults, sortBy, ...filter }: ContentQuery) {
-    return this.contentModel.aggregate<GetCastDto>(
-      pipelineGetContents({
+  aggregationContentsV2({ maxResults, sortBy, ...filter }: ContentQuery) {
+    return this.contentModel.aggregate<GetContentPayload>(
+      pipelineGetContentsV2({
         maxResults,
         sortBy,
         viewer: filter.viewer,
-        filter: this.getContentQuery(filter),
+        filters: this.getContentQuery(filter),
       }),
+    );
+  }
+
+  aggregationParticipates(filters: ParticipateQuery) {
+    return this.engagementModel.aggregate<Participates>(
+      pipelineOfGetParticipates(filters),
+    );
+  }
+
+  aggregationParticipate(filters: ParticipateQuery) {
+    return this.engagementModel.aggregate<Participates>(
+      pipelineOfGetParticipate(filters),
+    );
+  }
+
+  aggregationAdsCampaigns(filters: AdsCampaignQuery) {
+    return this.adsCampaignModel.aggregate<any>(
+      pipelineGetAdsCampaigns(filters),
+    );
+  }
+
+  aggregationFeedDefault() {
+    return this.defaultContentModel.aggregate<GetContentPayload>(
+      pipelineGetFeedDefaults(),
+    );
+  }
+
+  aggregationGetFarmAmount(filters: GetFarmAmountQuery) {
+    return this.contentFarmingModel.aggregate<GetFarmingCountPayload>(
+      pipelineGetFarmAmount(filters),
     );
   }
 
@@ -1215,35 +1276,26 @@ export class Repository {
     queryOptions?: QueryOptions,
   ) => this.feedItemV2Model.find(filter, queryOptions);
 
-  async saveFeedItemFromContents(
-    contents: GetCastDto,
-    viewerAccountId: string,
-  ) {
-    const calledFeeds = await this.feedItemV2Model.find({
-      content: {
-        $in: contents.contents.map((c) => c._id),
-      },
-    });
-    await this.feedItemV2Model.updateMany(
-      {
-        content: {
-          $in: contents.calledContents.map((c) => c._id),
+  async saveFeedItemFromContents(feedItems: AnyKeys<any>[]) {
+    const [newFeeds] = await Promise.all([
+      this.feedItemV2Model.create(
+        feedItems.filter(({ wasNew }) => wasNew).map(({ newFeed }) => newFeed),
+      ),
+      this.feedItemV2Model.updateMany(
+        {
+          content: {
+            $in: feedItems
+              .filter(({ wasNew }) => !wasNew)
+              .map(({ newFeed }) => newFeed.content),
+          },
         },
-      },
-      {
-        calledAt: new Date(),
-      },
-    );
-    return this.feedItemV2Model
-      .create(
-        contents.newContents.map((c) => ({
-          viewer: viewerAccountId,
-          content: c._id,
-          author: c.author.id,
+        {
           calledAt: new Date(),
-        })),
-      )
-      .then((items) => calledFeeds.concat(items));
+        },
+      ),
+    ]);
+
+    return newFeeds;
   }
 
   findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {
