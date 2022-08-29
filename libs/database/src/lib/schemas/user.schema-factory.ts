@@ -173,9 +173,11 @@ export const UserSchemaFactory = (
     if (dto?.expansionFields.includes(UserField.SyncSocial)) {
       const $socialSyncs = async () => {
         const socialSyncs = await socialSyncModel.find({ user: this._id });
-        socialSyncs.forEach((sync) => {
-          (response.syncSocial ?? {})[sync.provider] =
-            sync?.toSocialSyncPayload() || null;
+        socialSyncs?.forEach((sync) => {
+          response.syncSocial = {
+            ...response.syncSocial,
+            [sync.provider]: sync.toSocialSyncPayload() || null,
+          };
         });
       };
       $expansionFields.push($socialSyncs());
