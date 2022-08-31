@@ -21,29 +21,15 @@
  * or have any questions.
  */
 
-import { CastcleTracingModule } from '@castcle-api/core';
-import { DatabaseModule } from '@castcle-api/database';
-import { CastcleBullModule } from '@castcle-api/environments';
-import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { AdminScheduler } from './admin-action.scheduler';
-import { ContentFarmingScheduler } from './content-farming.sheduler';
-import { ContentReachScheduler } from './schedulers/content-reach/scheduler';
-import { TransactionVerifier } from './transaction-verifier/transaction-verifier';
+import { Account, User } from '@castcle-api/database';
+import { UpdateMobileDto } from '../../dto';
 
-@Module({
-  imports: [
-    CastcleBullModule,
-    CastcleTracingModule.forRoot({ serviceName: 'queues' }),
-    DatabaseModule,
-    ScheduleModule.forRoot(),
-  ],
-  controllers: [],
-  providers: [
-    AdminScheduler,
-    ContentReachScheduler,
-    ContentFarmingScheduler,
-    TransactionVerifier,
-  ],
-})
-export class AppModule {}
+export type UpdateMobileServiceDto = UpdateMobileDto & {
+  account: Account;
+  user: User;
+  ip?: string;
+};
+
+export abstract class UpdateMobileService {
+  abstract execute(dto: UpdateMobileServiceDto): Promise<void>;
+}

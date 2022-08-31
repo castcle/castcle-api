@@ -33,7 +33,6 @@ import {
 } from '../aggregations';
 import { CampaignField } from '../dtos';
 import {
-  CampaignStatus,
   CampaignType,
   ClaimAirdropPayload,
   QueueStatus,
@@ -65,13 +64,6 @@ export class CampaignService {
     });
 
     return queues.map((queue) => ({ data: { queueId: queue.id } }));
-  }
-
-  getContentReachCampaigns() {
-    return this.campaignModel.find({
-      type: CampaignType.CONTENT_REACH,
-      status: { $ne: CampaignStatus.COMPLETED },
-    });
   }
 
   getCampaign(type: CampaignType) {

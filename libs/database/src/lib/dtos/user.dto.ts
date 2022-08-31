@@ -20,7 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { RemoveLeadingZero } from '@castcle-api/common';
 import { CastcleImage } from '@castcle-api/utils/aws';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform, Type } from 'class-transformer';
@@ -29,7 +28,6 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
-  IsMobilePhone,
   IsMongoId,
   IsNotEmpty,
   IsObject,
@@ -39,7 +37,6 @@ import {
 } from 'class-validator';
 import {
   AuthenticationProvider,
-  OtpObjective,
   OwnerVerification,
   PublicVerification,
   SocialProvider,
@@ -499,21 +496,6 @@ export class TargetIdParam extends GetUserParam {
   @IsString()
   @IsNotEmpty()
   targetCastcleId: string;
-}
-
-export class UpdateMobileDto {
-  @IsEnum([OtpObjective.VERIFY_MOBILE])
-  objective: OtpObjective;
-
-  @IsString()
-  refCode: string;
-
-  @IsString()
-  countryCode: string;
-
-  @IsMobilePhone()
-  @RemoveLeadingZero()
-  mobileNumber: string;
 }
 
 export class PublicUserResponse {
