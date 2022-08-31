@@ -28,4 +28,5 @@ export enum EngagementType {
   Comment = 'comment',
   Report = 'report',
   Seen = 'seen',
+  Farm = 'farm',
 }

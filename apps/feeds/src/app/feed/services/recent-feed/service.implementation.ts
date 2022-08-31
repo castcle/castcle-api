@@ -81,17 +81,19 @@ export class RecentFeedServiceImpl implements RecentFeedService {
           .splice(0, 2)
           .map(({ user }) => new Types.ObjectId(user)),
       }),
-      suggestContents.map(({ content, author, calledAt }) => {
-        return {
-          newFeed: {
-            viewer: account.isGuest ? account._id : requestedBy._id,
-            content: new Types.ObjectId(content),
-            author: new Types.ObjectId(author),
-            calledAt: new Date(),
-          },
-          wasNew: !calledAt,
-        };
-      }),
+      suggestContents
+        .filter(({ author }) => !author.includes('No_author'))
+        .map(({ content, author, calledAt }) => {
+          return {
+            newFeed: {
+              viewer: account.isGuest ? account._id : requestedBy._id,
+              content: new Types.ObjectId(content),
+              author: new Types.ObjectId(author),
+              calledAt: new Date(),
+            },
+            wasNew: !calledAt,
+          };
+        }),
     ]);
 
     this.logger.log(`#defaultContents:${defaultContents.length}`);
