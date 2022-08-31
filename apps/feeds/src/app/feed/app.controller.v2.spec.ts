@@ -52,7 +52,9 @@ import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { Repository } from 'libs/database/src/lib/repositories';
-import { FeedsControllerV2 } from './feeds.controller.v2';
+import { FeedsControllerV2 } from './app.controller.v2';
+import { RecentFeedService } from './services/recent-feed/service.abstract';
+import { RecentFeedServiceImpl } from './services/recent-feed/service.implementation';
 
 describe('FeedsControllerV2', () => {
   let app: TestingModule;
@@ -83,6 +85,7 @@ describe('FeedsControllerV2', () => {
         Repository,
         SuggestionServiceV2,
         UserServiceV2,
+        { provide: RecentFeedService, useClass: RecentFeedServiceImpl },
         { provide: SocialSyncServiceV2, useValue: {} },
         { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },

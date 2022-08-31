@@ -21,8 +21,9 @@
  * or have any questions.
  */
 
-import { ContentPayloadDto } from '../dtos';
-import { FeedAggregatorName, FeedAnalyticSource } from './feed.enum';
+import { ContentPayloadDto, PublicUserResponse } from '../dtos';
+import { PublicContentResponse } from './content.model';
+import { FeedAggregatorName, FeedAnalyticSource, FeedType } from './feed.enum';
 
 export class FeedAggregator {
   name?: FeedAggregatorName;
@@ -62,4 +63,30 @@ export interface FeedItemPayload {
   payload: ContentPayloadDto;
   createdAt: string;
   updatedAt: string;
+}
+
+export class RecentFeedPayload<T = PublicContentResponse | PublicUserResponse> {
+  id: string;
+  feature = {
+    slug: 'feed',
+    key: 'feature.feed',
+    name: 'Feed',
+  };
+  circle = {
+    id: 'for-you',
+    key: 'circle.forYou',
+    name: 'For You',
+    slug: 'forYou',
+  };
+  aggregator = {
+    type: 'createTime',
+  };
+  type: FeedType;
+  payload: T;
+
+  constructor(payload: T, feedType: FeedType, id?: string) {
+    this.id = id ?? 'default';
+    this.type = feedType;
+    this.payload = payload;
+  }
 }

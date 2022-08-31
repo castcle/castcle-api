@@ -35,7 +35,7 @@ export class AdsPlacement extends CastcleBase {
   @Prop({ required: true, type: Object })
   cost: AdsCost;
 
-  @Prop({ required: true, type: Object })
+  @Prop({ required: true, type: Object, index: true })
   campaign: AdsPlacementCampaign;
 
   @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'User' })
@@ -49,6 +49,9 @@ export class AdsPlacement extends CastcleBase {
 
   @Prop()
   seenUUID?: string;
+
+  @Prop()
+  isGuest?: string;
 }
 
 export const AdsPlacementSchema = SchemaFactory.createForClass(AdsPlacement);

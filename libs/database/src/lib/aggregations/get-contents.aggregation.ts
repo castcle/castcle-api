@@ -21,21 +21,27 @@
  * or have any questions.
  */
 
-import { PipelineStage } from 'mongoose';
+import { PipelineStage, Types } from 'mongoose';
 import { DEFAULT_CONTENT_QUERY_OPTIONS, EntityVisibility } from '../dtos';
-import { EngagementType } from '../models';
+import { ContentFarmingStatus, EngagementType } from '../models';
 import { User } from '../schemas';
 
 type GetContentFilter = {
   [key: string]: string;
 };
 
-type GetContentsQuery = {
-  filter?: GetContentFilter;
+class GetContentsQuery {
+  filters?: GetContentFilter;
   maxResults?: number;
   viewer?: User;
   sortBy?: Record<string, 1 | -1>;
-};
+  calledAt?: boolean;
+}
+
+class GetFarmAmountQuery {
+  contentId?: Types.ObjectId[];
+  status?: ContentFarmingStatus;
+}
 
 export const pipelineGetContents = (
   query: GetContentsQuery,
@@ -47,7 +53,7 @@ export const pipelineGetContents = (
       },
     },
     {
-      $match: query.filter,
+      $match: query.filters,
     },
     {
       $limit: query.maxResults || DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
@@ -359,3 +365,92 @@ export const pipelineGetContents = (
     },
   ];
 };
+
+export const projectionContent = () => ({
+  _id: '$_id',
+  contentId: '$_id',
+  authorId: '$author.id',
+  payload: '$payload',
+  type: '$type',
+  visibility: '$visibility',
+  metrics: {
+    likeCount: '$engagements.like.count',
+    commentCount: '$engagements.comment.count',
+    recastCount: '$engagements.recast.count',
+    quoteCount: '$engagements.quote.count',
+    farmCount: { $ifNull: ['$engagements.farm.count', 0] },
+  },
+  originalPost: {
+    $cond: [
+      {
+        $ne: [{ $ifNull: ['$originalPost', null] }, null],
+      },
+      {
+        _id: '$originalPost._id',
+        contentId: '$originalPost._id',
+        authorId: '$originalPost.author.id',
+        payload: '$originalPost.payload',
+        type: '$originalPost.type',
+        visibility: '$originalPost.visibility',
+        metrics: {
+          likeCount: '$originalPost.engagements.like.count',
+          commentCount: '$originalPost.engagements.comment.count',
+          recastCount: '$originalPost.engagements.recast.count',
+          quoteCount: '$originalPost.engagements.quote.count',
+          farmCount: '$originalPost.engagements.farm.count',
+        },
+        createdAt: '$originalPost.createdAt',
+        updatedAt: '$originalPost.updatedAt',
+      },
+      null,
+    ],
+  },
+  reportedStatus: '$reportedStatus',
+  reportedSubject: '$reportedSubject',
+  isQuote: '$isQuote',
+  isRecast: '$isRecast',
+  createdAt: '$createdAt',
+  updatedAt: '$updatedAt',
+});
+
+export const pipelineGetContentsV2 = ({
+  sortBy,
+  filters,
+  maxResults,
+}: GetContentsQuery): PipelineStage[] => [
+  {
+    $sort: sortBy ?? {
+      createdAt: -1,
+    },
+  },
+  {
+    $match: filters,
+  },
+  {
+    $limit: maxResults ?? DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
+  },
+  {
+    $project: projectionContent(),
+  },
+];
+
+export const pipelineGetFarmAmount = (
+  filters: GetFarmAmountQuery,
+): PipelineStage[] => [
+  {
+    $match: filters,
+  },
+  {
+    $group: {
+      _id: '$content',
+      farmAmount: { $sum: '$farmAmount' },
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      contentId: '$_id',
+      farmAmount: '$farmAmount',
+    },
+  },
+];

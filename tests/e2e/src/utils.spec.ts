@@ -22,10 +22,10 @@
  */
 
 import {
-  CastPayload,
   ContentServiceV2,
   ContentType,
   OwnerResponse,
+  PublicContentResponse,
   Transaction,
   TransactionStatus,
   TransactionType,
@@ -98,7 +98,7 @@ export const createContent = async (userId: string) => {
       user,
     );
 
-  return contentPayload as CastPayload;
+  return contentPayload as PublicContentResponse;
 };
 
 export const topUp = async (userId: string, amount: number) => {
