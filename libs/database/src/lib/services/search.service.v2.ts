@@ -24,6 +24,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ByKeywordResponseDto,
   CastcleQueryOptions,
+  DEFAULT_QUERY_OPTIONS,
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
   GetByQuery,
   GetKeywordQuery,
@@ -152,7 +153,7 @@ export class SearchServiceV2 {
     const users = await this.repository.getPublicUsers({
       requestedBy: viewer,
       filter: {
-        excludeRelationship: blocking,
+        excludeRelationship: [...blocking, viewer._id],
         _id: following,
         ...query,
       },
@@ -160,7 +161,22 @@ export class SearchServiceV2 {
       queryOptions: { sort: { followCount: -1 } },
     });
 
-    return ResponseDto.ok({ payload: users });
+    if (users.length) return ResponseDto.ok({ payload: users });
+
+    const usersMore = await this.repository.getPublicUsers({
+      requestedBy: viewer,
+      filter: {
+        excludeRelationship: blocking,
+        ...query,
+      },
+      expansionFields: userFields,
+      queryOptions: {
+        sort: { followCount: -1 },
+        limit: DEFAULT_QUERY_OPTIONS.limit,
+      },
+    });
+
+    return ResponseDto.ok({ payload: usersMore });
   }
 
   async getSearchByKeyword(
@@ -174,7 +190,7 @@ export class SearchServiceV2 {
 
     const users = await this.repository.getPublicUsers({
       requestedBy: viewer,
-      filter: { excludeRelationship: blocking, ...query },
+      filter: { excludeRelationship: [...blocking, viewer._id], ...query },
       expansionFields: userFields,
     });
 

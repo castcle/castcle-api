@@ -223,7 +223,7 @@ export class Image {
     cover?: CastcleImage;
   }> {
     const [avatar, cover] = await Promise.all([
-      imagesToUpload.avatar
+      imagesToUpload?.avatar
         ? Image.upload(imagesToUpload.avatar, {
             filename: `avatar-${accountId}`,
             addTime: true,
@@ -231,7 +231,7 @@ export class Image {
             subpath: `account_${accountId}`,
           })
         : null,
-      imagesToUpload.cover
+      imagesToUpload?.cover
         ? Image.upload(imagesToUpload.cover, {
             filename: `cover-${accountId}`,
             addTime: true,
