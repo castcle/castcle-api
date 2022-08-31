@@ -749,7 +749,7 @@ export class UsersControllerV2 {
     return this.suggestionService.suggest(authorizer.user, accessToken, query);
   }
 
-  @CastcleBasicAuth()
+  @CastcleAuth(CacheKeyName.Users)
   @Get(':userId/contents')
   async getContents(
     @Auth() authorizer: Authorizer,

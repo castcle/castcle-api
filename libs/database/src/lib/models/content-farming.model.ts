@@ -22,19 +22,23 @@
  */
 
 import { Environment } from '@castcle-api/environments';
-import { CastPayload } from '../dtos';
 import { ContentFarming } from '../schemas';
 import { ContentFarmingStatus } from './content-farming.enum';
+import { PublicContentResponse } from './content.model';
 
 export type ContentFarmingCDF = {
   contentId: string;
   contentFarmings: ContentFarming[];
 };
 
+export class GetFarmingCountPayload {
+  contentId: string;
+  farmAmount: number;
+}
 export class ContentFarmingResponse {
   id: string;
   number: number;
-  content?: CastPayload;
+  content?: PublicContentResponse;
   balance: {
     farmed: string;
     available: string;
@@ -52,7 +56,7 @@ export class ContentFarmingResponse {
     farmBalance: string,
     availableBalance: string,
     farmNo: number,
-    contentPayload?: CastPayload,
+    contentPayload?: PublicContentResponse,
   ) {
     this.id = contentFarming?.id ?? null;
     this.number = farmNo;

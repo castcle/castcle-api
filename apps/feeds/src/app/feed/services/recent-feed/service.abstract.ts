@@ -21,17 +21,19 @@
  * or have any questions.
  */
 
-export * from './ads.aggregation';
-export * from './estimate-content-reaches.aggregation';
-export * from './get-available-id.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-contents.aggregation';
-export * from './get-feed-contents.aggregation';
-export * from './get-reporting.aggregation';
-export * from './get-users-relation.aggregation';
-export * from './get-wallet-balance.aggregation';
-export * from './get-wallet-history.aggregation';
-export * from './get-wallet-recent.aggregation';
-export * from './notification.aggregation';
-export * from './get-participate-content.aggregation';
+import {
+  Account,
+  GetRecentFeedQuery,
+  ResponseDto,
+  User,
+} from '@castcle-api/database';
+
+export interface RecentFeedDto {
+  query: GetRecentFeedQuery;
+  account: Account;
+  requestedBy: User;
+}
+
+export abstract class RecentFeedService {
+  abstract execute(dto: RecentFeedDto): Promise<ResponseDto>;
+}

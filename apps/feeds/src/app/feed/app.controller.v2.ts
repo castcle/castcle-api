@@ -23,7 +23,7 @@
 
 import {
   ContentServiceV2,
-  FeedQuery,
+  GetRecentFeedQuery,
   GetSearchQuery,
   SuggestionServiceV2,
 } from '@castcle-api/database';
@@ -37,12 +37,14 @@ import {
 } from '@castcle-api/utils/decorators';
 import { Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { FeedParam } from '../dtos';
+import { RecentFeedService } from './services/recent-feed/service.abstract';
 
 @CastcleController({ path: 'v2/feeds' })
 export class FeedsControllerV2 {
   constructor(
     private contentServiceV2: ContentServiceV2,
     private suggestionServiceV2: SuggestionServiceV2,
+    private recentFeedService: RecentFeedService,
   ) {}
 
   @CastcleAuth(CacheKeyName.Feeds)
@@ -93,8 +95,12 @@ export class FeedsControllerV2 {
   @Get('recent/forYou')
   async getRecentFeeds(
     @Auth() { account, user }: Authorizer,
-    @Query() query: FeedQuery,
+    @Query() query: GetRecentFeedQuery,
   ) {
-    return this.contentServiceV2.generateFeeds(query, account._id, user);
+    return this.recentFeedService.execute({
+      query,
+      account,
+      requestedBy: user,
+    });
   }
 }

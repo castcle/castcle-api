@@ -24,6 +24,7 @@
 import { FilterQuery, PipelineStage, Types } from 'mongoose';
 import { EntityVisibility } from '../dtos';
 import { Content, DefaultContent, FeedItem, GuestFeedItem } from '../schemas';
+import { projectionContent } from './get-contents.aggregation';
 
 export class GetFeedContentsResponse {
   _id: Types.ObjectId;
@@ -143,6 +144,7 @@ export const pipelineOfGetGuestFeedContents = ({
     },
   ];
 };
+
 export const pipelineOfGetFeedContents = (
   params: GetFeedContentsParams,
 ): PipelineStage[] => {
@@ -369,3 +371,37 @@ export const pipelineOfGetFeedContents = (
     },
   ];
 };
+
+export const pipelineGetFeedDefaults = (): PipelineStage[] => [
+  { $sort: { index: 1 } },
+  {
+    $lookup: {
+      from: 'contents',
+      let: { contentId: '$content', visibility: EntityVisibility.Publish },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ['$_id', '$$contentId'] },
+                { $eq: ['$visibility', '$$visibility'] },
+              ],
+            },
+          },
+        },
+        {
+          $project: projectionContent(),
+        },
+      ],
+      as: 'content',
+    },
+  },
+  {
+    $unwind: {
+      path: '$content',
+    },
+  },
+  {
+    $replaceRoot: { newRoot: '$content' },
+  },
+];

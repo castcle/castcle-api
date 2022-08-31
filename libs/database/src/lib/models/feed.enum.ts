@@ -45,3 +45,10 @@ export enum ExcludeType {
   Hashtags = 'hashtags',
   Users = 'users',
 }
+
+export enum FeedType {
+  CONTENT = 'content',
+  FOLLOW_SUGGESTION = 'suggestion',
+  ADS_CONTENT = 'ads-content',
+  ADS_PAGE = 'ads-page',
+}
