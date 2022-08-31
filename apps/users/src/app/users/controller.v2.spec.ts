@@ -83,7 +83,9 @@ import { Repository } from 'libs/database/src/lib/repositories';
 import { CreatedUser } from 'libs/testing/src/lib/testing.dto';
 import { DownloaderMock } from 'libs/utils/aws/src/lib/downloader.spec';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
-import { UsersControllerV2 } from './users.controller.v2';
+import { UsersControllerV2 } from './controller.v2';
+import { UpdateMobileService } from './services/update-mobile/service.abstract';
+import { UpdateMobileServiceImpl } from './services/update-mobile/service.implementation';
 
 describe('UsersControllerV2', () => {
   let testingModule: TestingModule;
@@ -110,6 +112,7 @@ describe('UsersControllerV2', () => {
       ],
       controllers: [UsersControllerV2],
       providers: [
+        { provide: UpdateMobileService, useClass: UpdateMobileServiceImpl },
         { provide: DataService, useValue: {} },
         { provide: CommandBus, useValue: {} },
         AdsService,

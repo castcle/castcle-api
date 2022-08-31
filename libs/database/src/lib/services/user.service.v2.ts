@@ -67,7 +67,6 @@ import {
   SocialPageDto,
   SortDirection,
   SyncSocialDtoV2,
-  UpdateMobileDto,
   UpdateModelUserDto,
   UserField,
   UserResponseDto,
@@ -474,48 +473,6 @@ export class UserServiceV2 {
         {
           removeOnComplete: true,
         },
-      ),
-    ]);
-  }
-
-  async updateMobile(
-    account: Account,
-    { objective, refCode, countryCode, mobileNumber }: UpdateMobileDto,
-    ip: string,
-  ) {
-    if (account.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
-
-    const otp = await this.repository.findOtp({
-      objective,
-      receiver: countryCode + mobileNumber,
-    });
-
-    if (!otp?.isVerify) {
-      throw new CastcleException('INVALID_REF_CODE');
-    }
-    if (!otp.isValid()) {
-      await otp.updateOne({ isVerify: false, retry: 0 });
-      throw new CastcleException('EXPIRED_OTP');
-    }
-    if (otp.refCode !== refCode) {
-      await otp.failedToVerify().save();
-      throw otp.exceededMaxRetries()
-        ? new CastcleException('OTP_USAGE_LIMIT_EXCEEDED')
-        : new CastcleException('INVALID_REF_CODE');
-    }
-
-    await Promise.all([
-      otp.markCompleted().save(),
-      account.set({ mobile: { countryCode, number: mobileNumber } }).save(),
-      this.userModel.updateMany(
-        { ownerAccount: account._id },
-        { 'verified.mobile': true },
-      ),
-      this.analyticService.trackMobileVerification(
-        ip,
-        account.id,
-        countryCode,
-        mobileNumber,
       ),
     ]);
   }

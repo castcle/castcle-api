@@ -194,16 +194,3 @@ export const pipelineOfEstimateContentReach = (
     },
   },
 ];
-
-export const pipelineOfDistributeCampaignReward = (claimCount = 1) => [
-  {
-    $set: {
-      rewardBalance: {
-        $subtract: [
-          { $toDecimal: '$rewardBalance' },
-          { $multiply: [{ $toDecimal: '$rewardsPerClaim' }, claimCount] },
-        ],
-      },
-    },
-  },
-];
