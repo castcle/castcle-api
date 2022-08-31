@@ -44,6 +44,7 @@ const engagementNameMap = {
   quote: 'quoteCast',
   recast: 'recasted',
   seen: 'seen',
+  farm: 'farm',
 };
 
 type ContentEngagement =
@@ -280,12 +281,14 @@ export const ContentSchemaFactory = (
   ContentSchema.pre('save', function (next) {
     this.revisionCount = this.revisionCount ? this.revisionCount + 1 : 1;
     if (!this.visibility) this.visibility = EntityVisibility.Publish;
+
     if (!this.engagements) {
       this.engagements = {
         like: { count: 0, refs: [] },
         comment: { count: 0, refs: [] },
         recast: { count: 0, refs: [] },
         quote: { count: 0, refs: [] },
+        farm: { count: 0, refs: [] },
       };
     }
 
