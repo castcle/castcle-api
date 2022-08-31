@@ -119,7 +119,55 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
           $project: {
             id: '$_id',
             message: 1,
-            payload: 1,
+            payload: {
+              _id: '$payload._id',
+              contentId: '$payload._id',
+              authorId: '$payload.author.id',
+              payload: '$payload.payload',
+              type: '$payload.type',
+              visibility: '$vpayload.isibility',
+              metrics: {
+                likeCount: '$payload.engagements.like.count',
+                commentCount: '$payload.engagements.comment.count',
+                recastCount: '$payload.engagements.recast.count',
+                quoteCount: '$payload.engagements.quote.count',
+                farmCount: { $ifNull: ['$payload.engagements.farm.count', 0] },
+              },
+              originalPost: {
+                $cond: [
+                  {
+                    $ne: [{ $ifNull: ['$payload.originalPost', null] }, null],
+                  },
+                  {
+                    _id: '$payload.originalPost._id',
+                    contentId: '$payload.originalPost._id',
+                    authorId: '$payload.originalPost.author.id',
+                    payload: '$payload.originalPost.payload',
+                    type: '$payload.originalPost.type',
+                    visibility: '$payload.originalPost.visibility',
+                    metrics: {
+                      likeCount: '$payload.originalPost.engagements.like.count',
+                      commentCount:
+                        '$payload.originalPost.engagements.comment.count',
+                      recastCount:
+                        '$payload.originalPost.engagements.recast.count',
+                      quoteCount:
+                        '$payload.originalPost.engagements.quote.count',
+                      farmCount: '$payload.originalPost.engagements.farm.count',
+                    },
+                    createdAt: '$payload.originalPost.createdAt',
+                    updatedAt: '$payload.originalPost.updatedAt',
+                  },
+                  null,
+                ],
+              },
+              reportedStatus: '$payload.reportedStatus',
+              reportedSubject: '$payload.reportedSubject',
+              isQuote: '$payload.isQuote',
+              isRecast: '$payload.isRecast',
+              createdAt: '$payload.createdAt',
+              updatedAt: '$payload.updatedAt',
+            },
             createdAt: 1,
             updatedAt: 1,
             type: 1,

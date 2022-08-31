@@ -41,3 +41,8 @@ export class GetSearchQuery extends PaginationQuery {
   @TransformStringToEnum(SearchType)
   contentType?: SearchType;
 }
+
+export class GetRecentFeedQuery extends PaginationQuery {
+  @IsOptional()
+  nextToken?: string;
+}

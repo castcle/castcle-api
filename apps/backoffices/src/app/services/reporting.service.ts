@@ -26,6 +26,7 @@ import {
   Content,
   ContentServiceV2,
   EntityVisibility,
+  GetContentPayload,
   Meta,
   NotificationServiceV2,
   NotificationSource,
@@ -114,6 +115,7 @@ export class ReportingService {
     const reportUserIds = reportedBy.map(({ user }) => user);
     const payloadIds = reportedBy.map(({ payload }) => payload._id);
 
+    console.log(reportedBy, payloadIds);
     const users = await this.repository.findUsers({
       _id: [...userIds, ...reportUserIds, ...payloadIds],
       visibility: [
@@ -123,18 +125,20 @@ export class ReportingService {
       ],
     });
 
-    const contents = await this.repository.findContents({
+    const contents = await this.repository.aggregationContentsV2({
       _id: [...payloadIds],
+      maxResults: 999,
       visibility: [
         EntityVisibility.Publish,
         EntityVisibility.Illegal,
         EntityVisibility.Deleted,
       ],
     });
+
     return Promise.all(
       reportings.map(async (reporting) => {
         const content = contents.find(
-          (content) => content.id === String(reporting.payloadId),
+          (content) => String(content._id) === String(reporting.payloadId),
         );
 
         const user = users.find((user) => user.id === String(reporting.user));
@@ -149,7 +153,7 @@ export class ReportingService {
           },
           content: content
             ? {
-                ...this.contentService.toCastPayload({ content }),
+                ...this.contentService.toContentPublishPayload(content),
                 visibility: content?.visibility,
               }
             : undefined,
@@ -178,9 +182,9 @@ export class ReportingService {
                 reporting.type === ReportingType.USER
                   ? reportedUser?.toPublicResponse()
                   : payloadReportBy?.payload
-                  ? this.contentService.toCastPayload({
-                      content: payloadReportBy.payload as Content,
-                    })
+                  ? this.contentService.toContentOwnerPayload(
+                      payloadReportBy.payload as GetContentPayload,
+                    )
                   : undefined,
               createdAt: payloadReportBy?.createdAt,
               updatedAt: payloadReportBy?.updatedAt,

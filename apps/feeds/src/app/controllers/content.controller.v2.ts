@@ -62,14 +62,14 @@ export class ContentControllerV2 {
   getContent(
     @Param() { contentId }: GetContentDto,
     @Auth() authorizer: Authorizer,
-    @Query() { hasRelationshipExpansion }: PaginationQuery,
+    @Query() { userFields }: PaginationQuery,
   ) {
     this.logger.log(`Get casts from content : ${contentId}`);
 
     return this.contentServiceV2.getContent(
       contentId,
       authorizer.user,
-      hasRelationshipExpansion,
+      userFields,
     );
   }
 

@@ -29,10 +29,12 @@ export class Meta {
   newestId?: string;
   resultCount: number;
   resultTotal?: number;
+  nextToken?: number;
 
   static fromDocuments = (
     documents: { _id?: string; id?: string }[],
     resultTotal?: number,
+    nextToken?: number,
   ): Meta => {
     return {
       oldestId: documents[documents.length - 1]?.id
@@ -41,6 +43,7 @@ export class Meta {
       newestId: documents[0]?.id ? documents[0]?.id : documents[0]?._id,
       resultCount: documents.length,
       resultTotal,
+      nextToken: nextToken,
     };
   };
 }

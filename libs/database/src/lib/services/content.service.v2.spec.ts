@@ -34,7 +34,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import {
   AnalyticService,
   AuthenticationServiceV2,
@@ -46,9 +46,7 @@ import {
   UserServiceV2,
 } from '../database.module';
 import {
-  ContentPayloadItem,
   EntityVisibility,
-  FeedItemResponse,
   NotificationType,
   ResponseDto,
   ShortPayload,
@@ -63,14 +61,12 @@ import {
   ReportingIllegal,
   ReportingStatus,
   ReportingSubject,
-  SuggestContentItem,
   WalletType,
 } from '../models';
 import { Repository } from '../repositories';
 import {
   Content,
   ContentFarming,
-  FeedItem,
   Metadata,
   Transaction,
   User,
@@ -87,7 +83,6 @@ describe('ContentServiceV2', () => {
   let tAccountService: TAccountService;
   let content: ResponseDto;
   let mocksUsers: CreatedUser[];
-  let dataService: DataService;
   let transactionModel: Model<Transaction>;
 
   beforeAll(async () => {
@@ -147,7 +142,6 @@ describe('ContentServiceV2', () => {
     repository = moduleRef.get(Repository);
     service = moduleRef.get(ContentServiceV2);
     tAccountService = moduleRef.get(TAccountService);
-    dataService = moduleRef.get<DataService>(DataService);
     transactionModel = moduleRef.getModel('Transaction');
 
     mocksUsers = await Promise.all(
@@ -179,45 +173,6 @@ describe('ContentServiceV2', () => {
 
   afterAll(() => {
     return moduleRef.close();
-  });
-
-  describe('#toContentsResponses()', () => {
-    it('should get casts is exists.', async () => {
-      const [bundleContents] = await (
-        service as any
-      ).repository.aggregationContent({
-        viewer: mocksUsers[2].user,
-        _id: content.payload.id,
-        maxResults: 25,
-      });
-      const contentResp = await (service as any).toContentsResponses(
-        bundleContents,
-      );
-
-      expect(contentResp.payload).toHaveLength(1);
-    });
-  });
-
-  describe('#toContentResponse()', () => {
-    it('should get cast is exists.', async () => {
-      const [bundleContents] = await (
-        service as any
-      ).repository.aggregationContent({
-        viewer: mocksUsers[2].user,
-        _id: content.payload.id,
-        maxResults: 25,
-      });
-      const contentResp = await (service as any).toContentResponse(
-        bundleContents,
-      );
-
-      expect(String(contentResp.payload.id)).toEqual(
-        String(content.payload.id),
-      );
-      expect(contentResp.payload.message).toEqual(
-        (content.payload as ShortPayload).message,
-      );
-    });
   });
 
   describe('#likeCast()', () => {
@@ -590,6 +545,7 @@ describe('ContentServiceV2', () => {
       });
     });
   });
+
   describe('farmingActive', () => {
     let content: Content;
     beforeAll(async () => {
@@ -665,7 +621,7 @@ describe('ContentServiceV2', () => {
       );
 
       const recast = await service.getRecastPipeline(
-        newRecast.recastContent.id,
+        newRecast.recastContent._id,
         mocksUsers[3].user,
       );
 
@@ -673,8 +629,9 @@ describe('ContentServiceV2', () => {
       expect(String(recast.payload.id)).toEqual(
         String(newRecast.recastContent.id),
       );
-      expect(recast.payload.referencedCasts.id).toEqual(
-        newRecast.recastContent.originalPost._id,
+
+      expect(String(recast.payload.referencedCasts.id)).toEqual(
+        String(newRecast.recastContent.originalPost._id),
       );
     });
   });
@@ -697,8 +654,9 @@ describe('ContentServiceV2', () => {
       expect(String(recast.payload.id)).toEqual(
         String(newQuote.quoteContent.id),
       );
-      expect(recast.payload.referencedCasts.id).toEqual(
-        newQuote.quoteContent.originalPost._id,
+
+      expect(String(recast.payload.referencedCasts.id)).toEqual(
+        String(newQuote.quoteContent.originalPost._id),
       );
     });
   });
@@ -708,7 +666,7 @@ describe('ContentServiceV2', () => {
       const contentResp = await service.getContent(
         content.payload.id,
         mocksUsers[1].user,
-        false,
+        [],
       );
 
       expect(String(contentResp.payload.id)).toEqual(
@@ -910,136 +868,7 @@ describe('ContentServiceV2', () => {
       expect(getSearchTrends.payload).toHaveLength(25);
     });
   });
-  describe('getRecentFeeds', () => {
-    const mockContents = [];
-    let mockPayload = [];
-    beforeAll(async () => {
-      for (let i = 0; i < mocksUsers.length; i++)
-        mockContents[i] = await service.createContent(
-          {
-            castcleId: mocksUsers[i].user.displayId,
-            type: ContentType.Short,
-            payload: {
-              message: 'Hello world!',
-              photo: {
-                contents: [],
-              },
-              link: [
-                {
-                  type: 'other',
-                  url: 'https://castcle.com',
-                },
-              ],
-            },
-          },
-          mocksUsers[i].user,
-        );
-      mockPayload = mockContents.map(
-        (c, index) =>
-          ({
-            aggregator: {
-              name: 'default',
-            },
-            score: mocksUsers.length - index, //score sort from max to min
-            content: c.payload.id,
-          } as SuggestContentItem),
-      );
-      jest
-        .spyOn(dataService, 'suggestContents')
-        .mockResolvedValue({ payload: mockPayload });
-    });
-    it('should return recent content', async () => {
-      const response = await service.getRecentContents(
-        { maxResults: 20 } as any,
-        mocksUsers[0].account.id,
-        mocksUsers[0].user,
-      );
-      expect(response.contents.map((c) => String(c._id))).toEqual(
-        mockPayload.reverse().map((k) => k.content),
-      );
-    });
 
-    describe('toFeedResponse()', () => {
-      it('should return feedResponse', async () => {
-        const response = await service.getRecentContents(
-          { maxResults: 20 } as any,
-          mocksUsers[0].account.id,
-          mocksUsers[0].user,
-        );
-        const mockFeedItems = response.contents.map(
-          (c) =>
-            ({
-              id: new Types.ObjectId(),
-              content: c._id,
-              viewer: mocksUsers[0].account._id,
-              author: new Types.ObjectId(c.author.id),
-            } as FeedItem),
-        );
-        const feedResponse = await service.toFeedResponse(
-          response,
-          mockFeedItems,
-          mocksUsers[0].user,
-          true,
-        );
-
-        expect(
-          feedResponse.payload.map((p) =>
-            String((p.payload as ContentPayloadItem).id),
-          ),
-        ).toEqual(mockFeedItems.map((f) => String(f.content)));
-      });
-    });
-
-    describe('generateFeeds()', () => {
-      let feedResponse: FeedItemResponse;
-      it('should save recent feed in feedItems', async () => {
-        feedResponse = await service.generateFeeds(
-          { maxResults: 20 } as any,
-          mocksUsers[0].account.id,
-          mocksUsers[0].user,
-        );
-        const response = await service.getRecentContents(
-          { maxResults: 20 } as any,
-          mocksUsers[0].account.id,
-          mocksUsers[0].user,
-        );
-        const mockFeedItems = response.contents.map(
-          (c) =>
-            ({
-              id: new Types.ObjectId(),
-              content: c._id,
-              viewer: mocksUsers[0].account._id,
-              author: new Types.ObjectId(c.author.id),
-            } as FeedItem),
-        );
-
-        expect(
-          feedResponse.payload.map((p) =>
-            String((p.payload as ContentPayloadItem).id),
-          ),
-        ).toEqual(mockFeedItems.map((f) => String(f.content)));
-        //expect to have those id in db
-        const feedIds = feedResponse.payload.map((p) => p.id);
-        const dbFeeds = await repository.findFeedItems({
-          _id: {
-            $in: feedIds,
-          },
-        });
-        for (let i = 0; i < dbFeeds.length; i++) {
-          expect(feedIds).toContain(dbFeeds[i].id);
-        }
-      });
-      describe('#offViewFeeds', () => {
-        it('should off view feed return success', async () => {
-          const offView = await service.offViewFeedItem(
-            mocksUsers[0].account.id,
-            feedResponse.payload[0].id,
-          );
-          expect(offView.matchedCount).toEqual(1);
-        });
-      });
-    });
-  });
   describe('reportContent', () => {
     let reportContent: Content;
     beforeAll(async () => {
@@ -1215,7 +1044,7 @@ describe('ContentServiceV2', () => {
       expect(contentFarming.id).not.toBeNull();
       expect(contentFarming.createdAt).not.toBeNull();
       expect(contentFarming.number).toEqual(1);
-      expect(contentFarming.content.id).toEqual(content.id);
+      expect(String(contentFarming.content.id)).toEqual(String(content.id));
       expect(contentFarming.status).toEqual(ContentFarmingStatus.Farming);
     });
 
@@ -1235,7 +1064,9 @@ describe('ContentServiceV2', () => {
       expect(contentFarmingEnded.id).toBeNull();
       expect(contentFarmingEnded.createdAt).toBeNull();
       expect(contentFarmingEnded.number).toEqual(1);
-      expect(contentFarmingEnded.content.id).toEqual(content.id);
+      expect(String(contentFarmingEnded.content.id)).toEqual(
+        String(content.id),
+      );
       expect(contentFarmingEnded.status).toEqual(
         ContentFarmingStatus.Available,
       );

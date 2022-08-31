@@ -53,9 +53,11 @@ export class Metrics {
   commentCount: number;
   quoteCount: number;
   recastCount: number;
+  farmCount: number;
 }
 
 export class Participates {
+  _id?: string;
   liked: boolean;
   commented: boolean;
   quoted: boolean;
