@@ -683,30 +683,34 @@ export class ContentServiceV2 {
   };
 
   createContentFarming = async (contentId: string, userId: string) => {
-    const balance = await this.tAccountService.getAccountBalance(
-      userId,
-      WalletType.PERSONAL,
+    const [balance] = await this.repository.aggregateTransaction(
+      new Types.ObjectId(userId),
     );
-    const lockBalance = await this.tAccountService.getAccountBalance(
-      userId,
-      WalletType.FARM_LOCKED,
-    );
-
-    if (balance >= (lockBalance + balance) * 0.05) {
-      const farmAmount = new Types.Decimal128(
-        ((lockBalance + balance) * 0.05).toString(),
-      );
-
-      console.log(balance);
-
+    const farmAmount = Number(balance.total) * 0.05;
+    if (Number(balance.total) >= farmAmount) {
       const session = await this.contentFarmingModel.startSession();
       const contentFarming = await new this.contentFarmingModel({
         content: new Types.ObjectId(contentId),
         user: new Types.ObjectId(userId),
         status: ContentFarmingStatus.Farming,
-        farmAmount: farmAmount,
+        farmAmount: new Types.Decimal128(farmAmount.toString()),
         startAt: new Date(),
       });
+
+      const user = await this.repository.findUser({ _id: userId });
+
+      await this.repository.createEngagement({
+        type: EngagementType.Farm,
+        user: user._id,
+        account: user.ownerAccount,
+        targetRef: {
+          $ref: 'content',
+          $id: new Types.ObjectId(contentId),
+        },
+        itemId: contentFarming._id,
+        visibility: EntityVisibility.Publish,
+      });
+
       session.startTransaction();
       try {
         await contentFarming.save();
@@ -714,13 +718,13 @@ export class ContentServiceV2 {
           from: {
             type: WalletType.PERSONAL,
             user: new Types.ObjectId(userId),
-            value: farmAmount,
+            value: new Types.Decimal128(farmAmount.toString()),
           },
           to: [
             {
               type: WalletType.FARM_LOCKED,
               user: new Types.ObjectId(userId),
-              value: farmAmount,
+              value: new Types.Decimal128(farmAmount.toString()),
             },
           ],
           type: TransactionType.FARMING,
@@ -729,11 +733,11 @@ export class ContentServiceV2 {
             {
               debit: {
                 cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
-                value: farmAmount,
+                value: new Types.Decimal128(farmAmount.toString()),
               },
               credit: {
                 cAccountNo: CAccountNo.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
-                value: farmAmount,
+                value: new Types.Decimal128(farmAmount.toString()),
               },
             },
           ],
@@ -753,33 +757,26 @@ export class ContentServiceV2 {
   updateContentFarming = async (contentFarming: ContentFarming) => {
     contentFarming.status = ContentFarmingStatus.Farming;
     contentFarming.startAt = new Date();
-    const balance = await this.tAccountService.getAccountBalance(
-      String(contentFarming.user),
-      WalletType.PERSONAL,
+    const [balance] = await this.repository.aggregateTransaction(
+      new Types.ObjectId(contentFarming.user),
     );
-    const lockBalance = await this.tAccountService.getAccountBalance(
-      String(contentFarming.user),
-      WalletType.FARM_LOCKED,
-    );
-    if (balance >= (lockBalance + balance) * 0.05) {
-      const farmAmount = new Types.Decimal128(
-        ((lockBalance + balance) * 0.05).toString(),
-      );
+    const farmAmount = Number(balance.total) * 0.05;
+    if (Number(balance.total) >= farmAmount) {
       const session = await this.contentFarmingModel.startSession();
-      contentFarming.farmAmount = farmAmount;
+      contentFarming.farmAmount = new Types.Decimal128(farmAmount.toString());
       await session.withTransaction(async () => {
         await contentFarming.save();
         await this.tAccountService.transfer({
           from: {
             type: WalletType.PERSONAL,
             user: contentFarming.user,
-            value: farmAmount,
+            value: new Types.Decimal128(farmAmount.toString()),
           },
           to: [
             {
               type: WalletType.FARM_LOCKED,
               user: contentFarming.user,
-              value: farmAmount,
+              value: new Types.Decimal128(farmAmount.toString()),
             },
           ],
           type: TransactionType.FARMING,
@@ -788,11 +785,11 @@ export class ContentServiceV2 {
             {
               debit: {
                 cAccountNo: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
-                value: farmAmount,
+                value: new Types.Decimal128(farmAmount.toString()),
               },
               credit: {
                 cAccountNo: CAccountNo.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
-                value: farmAmount,
+                value: new Types.Decimal128(farmAmount.toString()),
               },
             },
           ],
@@ -845,6 +842,8 @@ export class ContentServiceV2 {
           status: ContentFarmingStatus.Farming,
         }),
       ]);
+
+    if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
     if (totalContentFarming >= Environment.FARMING_LIMIT)
       throw new CastcleException('CONTENT_FARMING_LIMIT');
@@ -1134,17 +1133,24 @@ export class ContentServiceV2 {
     contentFarming: ContentFarming,
     userId: string,
   ) => {
-    const [[balance], [content]] = await Promise.all([
+    const [[balance], [content], [participate]] = await Promise.all([
       this.repository.aggregateTransaction(new Types.ObjectId(userId)),
       this.repository.aggregationContentsV2({
         _id: contentFarming.content as any,
+      }),
+      this.repository.aggregationParticipate({
+        targetRef: new DBRef(
+          'content',
+          new Types.ObjectId(contentFarming.content),
+        ),
+        userId: new Types.ObjectId(userId) as any,
       }),
     ]);
 
     if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
 
     const contentPayload = contentFarming.content
-      ? this.toContentPublishPayload(content)
+      ? this.toContentPublishPayload(content, participate)
       : undefined;
 
     const user = await this.repository.findUser({
@@ -1775,7 +1781,12 @@ export class ContentServiceV2 {
       _id: targetContent._id,
     });
 
-    const payload = this.toContentPublishPayload(content);
+    const [participate] = await this.repository.aggregationParticipate({
+      targetRef: new DBRef('content', new Types.ObjectId(targetContent._id)),
+      userId: requestedBy._id,
+    });
+
+    const payload = this.toContentPublishPayload(content, participate);
 
     const reportingSubject = await this.repository.findReportingSubject({
       type: MetadataType.REPORTING_SUBJECT,
@@ -1895,8 +1906,12 @@ export class ContentServiceV2 {
       _id: content._id,
       visibility: [EntityVisibility.Illegal, EntityVisibility.Publish],
     });
+    const [participate] = await this.repository.aggregationParticipate({
+      targetRef: new DBRef('content', new Types.ObjectId(content._id)),
+      userId: requestedBy._id,
+    });
 
-    const payload = this.toContentPublishPayload(newContent);
+    const payload = this.toContentPublishPayload(newContent, participate);
 
     const reportingSubject = await this.repository.findReportingSubject({
       type: MetadataType.REPORTING_SUBJECT,
@@ -2050,6 +2065,7 @@ export class ContentServiceV2 {
         targetRef: contentFarmings.map(
           ({ content }) => new DBRef('content', new Types.ObjectId(content)),
         ),
+        userId: viewer._id,
       }),
     ]);
 
@@ -2146,6 +2162,7 @@ export class ContentServiceV2 {
         targetRef: contentFarmings.map(
           ({ content }) => new DBRef('content', new Types.ObjectId(content)),
         ),
+        userId: viewer._id,
       }),
     ]);
 
