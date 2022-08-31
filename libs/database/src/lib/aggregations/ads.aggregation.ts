@@ -27,6 +27,7 @@ import { PipelineStage, Types } from 'mongoose';
 import { EntityVisibility } from '../dtos';
 import { AdsAuctionAggregateDto } from '../dtos/ads.dto';
 import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
+import { projectionContent } from './get-contents.aggregation';
 
 export const mockPipe2AdsAuctionAggregate = () => {
   const temp: AdsAuctionAggregateDto = {
@@ -232,27 +233,7 @@ export const pipelineGetAdsCampaigns = ({
                 },
               },
               {
-                $project: {
-                  contentId: '$_id',
-                  authorId: '$author.id',
-                  payload: '$payload',
-                  type: '$type',
-                  visibility: '$visibility',
-                  metrics: {
-                    likeCount: '$engagements.like.count',
-                    commentCount: '$engagements.comment.count',
-                    recastCount: '$engagements.recast.count',
-                    quoteCount: '$engagements.quote.count',
-                    farmCount: { $ifNull: ['$engagements.farm.count', 0] },
-                  },
-                  originalPost: '$originalPost',
-                  reportedStatus: '$reportedStatus',
-                  reportedSubject: '$reportedSubject',
-                  isQuote: '$isQuote',
-                  isRecast: '$isRecast',
-                  createdAt: '$createdAt',
-                  updatedAt: '$updatedAt',
-                },
+                $project: projectionContent(),
               },
             ],
             as: 'payload',
