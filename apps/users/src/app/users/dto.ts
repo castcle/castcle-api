@@ -21,32 +21,21 @@
  * or have any questions.
  */
 
-import { CastcleLogger } from '@castcle-api/common';
-import { ClaimAirdropCommand } from '@castcle-api/cqrs';
-import { CampaignService } from '@castcle-api/database';
-import { Injectable } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { RemoveLeadingZero } from '@castcle-api/common';
+import { OtpObjective } from '@castcle-api/database';
+import { IsEnum, IsMobilePhone, IsString } from 'class-validator';
 
-@Injectable()
-export class CampaignScheduler {
-  logger = new CastcleLogger(CampaignScheduler.name);
+export class UpdateMobileDto {
+  @IsEnum([OtpObjective.VERIFY_MOBILE])
+  objective: OtpObjective;
 
-  constructor(
-    private campaignService: CampaignService,
-    private commandBus: CommandBus,
-  ) {}
+  @IsString()
+  refCode: string;
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async claimContentReachRewards() {
-    const campaigns = await this.campaignService.getContentReachCampaigns();
+  @IsString()
+  countryCode: string;
 
-    for (const campaign of campaigns) {
-      try {
-        await this.commandBus.execute(new ClaimAirdropCommand(campaign));
-      } catch (e) {
-        this.logger.error(e);
-      }
-    }
-  }
+  @IsMobilePhone()
+  @RemoveLeadingZero()
+  mobileNumber: string;
 }

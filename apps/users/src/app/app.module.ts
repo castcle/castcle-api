@@ -36,8 +36,10 @@ import { Module } from '@nestjs/common';
 import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
 import { PagesControllerV2 } from './controllers/pages.controller.v2';
 import { QRCodeControllerV2 } from './controllers/qr-codes.controller.v2';
-import { UsersControllerV2 } from './controllers/users.controller.v2';
 import { WalletControllerV2 } from './controllers/wallet.controller.v2';
+import { UsersControllerV2 } from './users/controller.v2';
+import { UpdateMobileService } from './users/services/update-mobile/service.abstract';
+import { UpdateMobileServiceImpl } from './users/services/update-mobile/service.implementation';
 
 @Module({
   imports: [
@@ -58,6 +60,11 @@ import { WalletControllerV2 } from './controllers/wallet.controller.v2';
     UsersControllerV2,
     WalletControllerV2,
   ],
-  providers: [],
+  providers: [
+    {
+      provide: UpdateMobileService,
+      useClass: UpdateMobileServiceImpl,
+    },
+  ],
 })
 export class AppModule {}
