@@ -21,32 +21,23 @@
  * or have any questions.
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { TestingModule } from '@castcle-api/testing';
 import { AppModule } from './app.module';
-import { CampaignScheduler } from './campaign.scheduler';
 
 describe('App Module', () => {
-  let mongoServer: MongoMemoryReplSet;
   let moduleRef: TestingModule;
-  let campaignScheduler: CampaignScheduler;
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryReplSet.create();
-    global.mongoUri = mongoServer.getUri();
-
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [AppModule],
-    }).compile();
-
-    campaignScheduler = moduleRef.get(CampaignScheduler);
+    });
   });
 
-  afterAll(async () => {
-    await Promise.all([mongoServer.stop(), moduleRef.close()]);
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   it('should be defined', () => {
-    expect(campaignScheduler).toBeDefined();
+    expect(moduleRef).toBeDefined();
   });
 });

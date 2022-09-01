@@ -24,8 +24,6 @@
 import { DatabaseModule } from '@castcle-api/database';
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { ClaimAirdropCommand } from './lib/claim-airdrop/command';
-import { ClaimAirdropHandler } from './lib/claim-airdrop/handler';
 import { GetWalletBalanceHandler } from './lib/get-wallet-balance/handler';
 import {
   GetWalletBalanceQuery,
@@ -40,7 +38,6 @@ import { SendTransactionHandler } from './lib/send-transaction/handler';
   imports: [CqrsModule, DatabaseModule],
   controllers: [],
   providers: [
-    ClaimAirdropHandler,
     GetWalletBalanceHandler,
     ReviewTransactionHandler,
     SendTransactionHandler,
@@ -51,7 +48,6 @@ class CastcleCqrs {}
 
 export {
   CastcleCqrs,
-  ClaimAirdropCommand,
   GetWalletBalanceQuery,
   GetWalletBalanceResponse,
   ReviewTransactionQuery,
