@@ -184,7 +184,6 @@ export class UsersControllerV2 {
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Users)
-  @CastcleBasicAuth()
   @Put(':userId')
   async updateMyData(
     @Auth() authorizer: Authorizer,
@@ -220,7 +219,7 @@ export class UsersControllerV2 {
     return updatedUser.toOwnerResponse();
   }
 
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.Comments)
   @Post(':userId/comments')
   async createComment(
     @Auth() authorizer: Authorizer,
@@ -242,7 +241,7 @@ export class UsersControllerV2 {
     return payload;
   }
 
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.Comments)
   @Put(':userId/comments/:sourceCommentId')
   async updateComment(
     @Auth() authorizer: Authorizer,
@@ -275,7 +274,7 @@ export class UsersControllerV2 {
     );
   }
 
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.Comments)
   @Delete(':userId/comments/:sourceCommentId')
   async deleteComment(
     @Auth() authorizer: Authorizer,
@@ -291,7 +290,7 @@ export class UsersControllerV2 {
     await this.commentService.deleteComment(comment);
   }
 
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.Comments)
   @Post(':userId/comments/:sourceCommentId/reply')
   async replyComment(
     @Auth() authorizer: Authorizer,
@@ -344,7 +343,7 @@ export class UsersControllerV2 {
     );
   }
 
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.Comments)
   @Put(':userId/comments/:sourceCommentId/reply/:replyCommentId')
   async updateReplyComment(
     @Auth() authorizer: Authorizer,
@@ -388,7 +387,7 @@ export class UsersControllerV2 {
     );
   }
 
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.Comments)
   @Delete(':userId/comments/:sourceCommentId/reply/:replyCommentId')
   async deleteReplyComment(
     @Auth() authorizer: Authorizer,
@@ -464,7 +463,6 @@ export class UsersControllerV2 {
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Comments)
-  @CastcleBasicAuth()
   @Post(':userId/likes-comments')
   async likeCommentCast(
     @Auth() authorizer: Authorizer,
