@@ -36,12 +36,13 @@ import {
   VerifyOtpByEmailDto,
   VerifyOtpByMobileDto,
 } from '@castcle-api/database';
-import { Environment } from '@castcle-api/environments';
+import { CacheKeyName, Environment } from '@castcle-api/environments';
 import {
   Auth,
   Authorizer,
   BearerToken,
   CastcleBasicAuth,
+  CastcleClearCacheAuth,
   CastcleController,
   RequestMeta,
   RequestMetadata,
@@ -342,6 +343,7 @@ export class AuthenticationControllerV2 {
     return this.authenticationService.requestVerificationLink(account, hostUrl);
   }
 
+  @CastcleClearCacheAuth(CacheKeyName.Users)
   @Get('verify/email')
   async verifyEmail(
     @Query() { code }: Record<string, string>,
