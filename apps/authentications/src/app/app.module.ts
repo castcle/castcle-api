@@ -27,6 +27,7 @@ import {
   CastcleTracingModule,
 } from '@castcle-api/core';
 import { DatabaseModule } from '@castcle-api/database';
+import { CastcleCacheModule } from '@castcle-api/environments';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
@@ -46,6 +47,7 @@ import { RegisterWithEmailServiceImpl } from './authentications/services/registe
 
 @Module({
   imports: [
+    CastcleCacheModule,
     CastcleHealthyModule.register({ pathPrefix: 'authentications' }),
     CastcleThrottlerModule,
     CastcleTracingModule.forRoot({ serviceName: 'authentications' }),
