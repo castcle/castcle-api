@@ -21,35 +21,20 @@
  * or have any questions.
  */
 
-import { DatabaseModule } from '@castcle-api/database';
-import { Module } from '@nestjs/common';
-import { CqrsModule } from '@nestjs/cqrs';
-import { GetWalletBalanceHandler } from './lib/get-wallet-balance/handler';
-import {
-  GetWalletBalanceQuery,
-  GetWalletBalanceResponse,
-} from './lib/get-wallet-balance/query';
-import { ReviewTransactionHandler } from './lib/review-transaction/handler';
-import { ReviewTransactionQuery } from './lib/review-transaction/query';
-import { SendTransactionCommand } from './lib/send-transaction/command';
-import { SendTransactionHandler } from './lib/send-transaction/handler';
+import { Network, User } from '@castcle-api/database';
+import { Types } from 'mongoose';
 
-@Module({
-  imports: [CqrsModule, DatabaseModule],
-  controllers: [],
-  providers: [
-    GetWalletBalanceHandler,
-    ReviewTransactionHandler,
-    SendTransactionHandler,
-  ],
-  exports: [CqrsModule],
-})
-class CastcleCqrs {}
+export class ReviewTransactionArg {
+  chainId: string;
+  address: string;
+  amount: number;
+  requestedBy: Types.ObjectId | User;
+}
 
-export {
-  CastcleCqrs,
-  GetWalletBalanceQuery,
-  GetWalletBalanceResponse,
-  ReviewTransactionQuery,
-  SendTransactionCommand,
-};
+export abstract class ReviewTransactionService {
+  abstract exec(arg: ReviewTransactionArg): Promise<{
+    network: Network;
+    isInternalNetwork: boolean;
+    receiver?: User;
+  }>;
+}
