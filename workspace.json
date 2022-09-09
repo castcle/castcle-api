@@ -9,7 +9,6 @@
     "backoffices": "apps/backoffices",
     "common": "libs/common",
     "core": "libs/core",
-    "cqrs": "libs/cqrs",
     "database": "libs/database",
     "e2e": "tests/e2e",
     "environments": "libs/environments",

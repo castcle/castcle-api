@@ -24,33 +24,33 @@
 import { Repository, User, UserDocument } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { GetWalletBalanceQuery, GetWalletBalanceResponse } from './query';
+import {
+  GetWalletBalanceArg,
+  GetWalletBalanceResponse,
+  GetWalletBalanceService,
+} from './service.abstract';
 
-@QueryHandler(GetWalletBalanceQuery)
-export class GetWalletBalanceHandler
-  implements IQueryHandler<GetWalletBalanceQuery>
-{
+@Injectable()
+export class GetWalletBalanceServiceImpl implements GetWalletBalanceService {
   constructor(
     @InjectModel('User') private userModel: Model<User>,
     private repository: Repository,
   ) {}
 
-  async execute(
-    command: GetWalletBalanceQuery,
-  ): Promise<GetWalletBalanceResponse> {
+  async exec(arg: GetWalletBalanceArg): Promise<GetWalletBalanceResponse> {
     const [[walletBalance], user] = await Promise.all([
-      this.repository.aggregateTransaction(command.user._id),
-      command.user instanceof UserDocument
-        ? command.user
-        : this.userModel.findById(command.user),
+      this.repository.aggregateTransaction(arg.user._id),
+      arg.user instanceof UserDocument
+        ? arg.user
+        : this.userModel.findById(arg.user),
     ]);
 
     if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
-    return new GetWalletBalanceResponse({
+    return {
       id: user._id,
       displayName: user.displayName,
       castcleId: user.displayId,
@@ -64,6 +64,6 @@ export class GetWalletBalanceHandler
       totalBalance: Number(walletBalance?.total).toFixed(
         Environment.DECIMALS_FLOAT,
       ),
-    });
+    };
   }
 }

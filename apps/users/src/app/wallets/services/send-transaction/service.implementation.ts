@@ -31,33 +31,27 @@ import {
 } from '@castcle-api/database';
 import { TwilioChannel } from '@castcle-api/utils/clients';
 import { InjectQueue } from '@nestjs/bull';
-import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
 import { Model, Types } from 'mongoose';
-import { ReviewTransactionQuery } from '../review-transaction/query';
-import { SendTransactionCommand } from './command';
+import { ReviewTransactionService } from '../review-transaction/service.abstract';
+import { SendTransactionArg, SendTransactionService } from './service.abstract';
 
-@CommandHandler(SendTransactionCommand)
-export class SendTransactionHandler
-  implements ICommandHandler<SendTransactionCommand>
-{
+@Injectable()
+export class SendTransactionServiceImpl implements SendTransactionService {
   constructor(
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectQueue(QueueName.NEW_TRANSACTION) private txQueue: Queue<Transaction>,
     private authService: AuthenticationServiceV2,
-    private queryBus: QueryBus,
+    private reviewTransactionService: ReviewTransactionService,
   ) {}
 
-  async execute({
-    transaction,
-    verification,
-    requestedBy,
-  }: SendTransactionCommand) {
-    const { isInternalNetwork } = await this.queryBus.execute<
-      ReviewTransactionQuery,
-      { isInternalNetwork: boolean }
-    >(new ReviewTransactionQuery({ ...transaction, requestedBy }));
+  async exec({ transaction, verification, requestedBy }: SendTransactionArg) {
+    const { isInternalNetwork } = await this.reviewTransactionService.exec({
+      ...transaction,
+      requestedBy,
+    });
 
     await this.authService.verifyOtp({
       channel: TwilioChannel.EMAIL,

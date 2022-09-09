@@ -21,19 +21,19 @@
  * or have any questions.
  */
 
-import { User } from '@castcle-api/database';
+import {
+  TransactionDto,
+  User,
+  VerifyTransactionDto,
+} from '@castcle-api/database';
 import { Types } from 'mongoose';
 
-export class ReviewTransactionQuery {
-  chainId: string;
-  address: string;
-  amount: number;
+export class SendTransactionArg {
+  verification: VerifyTransactionDto;
+  transaction: TransactionDto;
   requestedBy: Types.ObjectId | User;
+}
 
-  constructor(dto: ReviewTransactionQuery) {
-    this.chainId = dto.chainId;
-    this.address = dto.address;
-    this.amount = dto.amount;
-    this.requestedBy = dto.requestedBy;
-  }
+export abstract class SendTransactionService {
+  abstract exec(arg: SendTransactionArg): Promise<void>;
 }
