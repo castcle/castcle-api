@@ -26,7 +26,6 @@ import {
   CastcleThrottlerModule,
   CastcleTracingModule,
 } from '@castcle-api/core';
-import { CastcleCqrs } from '@castcle-api/cqrs';
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleCacheModule } from '@castcle-api/environments';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
@@ -36,15 +35,20 @@ import { Module } from '@nestjs/common';
 import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
 import { PagesControllerV2 } from './controllers/pages.controller.v2';
 import { QRCodeControllerV2 } from './controllers/qr-codes.controller.v2';
-import { WalletControllerV2 } from './controllers/wallet.controller.v2';
 import { UsersControllerV2 } from './users/controller.v2';
 import { UpdateMobileService } from './users/services/update-mobile/service.abstract';
 import { UpdateMobileServiceImpl } from './users/services/update-mobile/service.implementation';
+import { WalletControllerV2 } from './wallets/controller.v2';
+import { GetWalletBalanceService } from './wallets/services/get-wallet-balance/service.abstract';
+import { GetWalletBalanceServiceImpl } from './wallets/services/get-wallet-balance/service.implementation';
+import { ReviewTransactionService } from './wallets/services/review-transaction/service.abstract';
+import { ReviewTransactionServiceImpl } from './wallets/services/review-transaction/service.implementation';
+import { SendTransactionService } from './wallets/services/send-transaction/service.abstract';
+import { SendTransactionServiceImpl } from './wallets/services/send-transaction/service.implementation';
 
 @Module({
   imports: [
     CastcleCacheModule,
-    CastcleCqrs,
     CastcleHealthyModule.register({ pathPrefix: 'users' }),
     CastcleThrottlerModule,
     CastcleTracingModule.forRoot({ serviceName: 'users' }),
@@ -61,6 +65,18 @@ import { UpdateMobileServiceImpl } from './users/services/update-mobile/service.
     WalletControllerV2,
   ],
   providers: [
+    {
+      provide: GetWalletBalanceService,
+      useClass: GetWalletBalanceServiceImpl,
+    },
+    {
+      provide: ReviewTransactionService,
+      useClass: ReviewTransactionServiceImpl,
+    },
+    {
+      provide: SendTransactionService,
+      useClass: SendTransactionServiceImpl,
+    },
     {
       provide: UpdateMobileService,
       useClass: UpdateMobileServiceImpl,

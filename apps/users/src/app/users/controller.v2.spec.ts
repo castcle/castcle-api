@@ -77,7 +77,6 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
 import { JwtModule } from '@nestjs/jwt';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { CreatedUser } from 'libs/testing/src/lib/testing.dto';
@@ -114,7 +113,6 @@ describe('UsersControllerV2', () => {
       providers: [
         { provide: UpdateMobileService, useClass: UpdateMobileServiceImpl },
         { provide: DataService, useValue: {} },
-        { provide: CommandBus, useValue: {} },
         AdsService,
         AnalyticService,
         AuthenticationServiceV2,
