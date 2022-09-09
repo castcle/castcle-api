@@ -21,12 +21,6 @@
  * or have any questions.
  */
 import {
-  GetWalletBalanceQuery,
-  GetWalletBalanceResponse,
-  ReviewTransactionQuery,
-  SendTransactionCommand,
-} from '@castcle-api/cqrs';
-import {
   GetAccountParam,
   GetKeywordQuery,
   GetShortcutParam,
@@ -60,14 +54,17 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { WalletHistoryQueryDto } from '../dtos/wallet.dto';
+import { GetWalletBalanceService } from './services/get-wallet-balance/service.abstract';
+import { ReviewTransactionService } from './services/review-transaction/service.abstract';
+import { SendTransactionService } from './services/send-transaction/service.abstract';
 
 @CastcleController({ path: 'v2/wallets' })
 export class WalletControllerV2 {
   constructor(
-    private commandBus: CommandBus,
-    private queryBus: QueryBus,
+    private getWalletBalanceService: GetWalletBalanceService,
+    private reviewTransactionService: ReviewTransactionService,
+    private sendTransactionService: SendTransactionService,
     private tAccountService: TAccountService,
     private userService: UserServiceV2,
     private walletShortcutService: WalletShortcutService,
@@ -84,10 +81,7 @@ export class WalletControllerV2 {
       : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.queryBus.execute<
-      GetWalletBalanceQuery,
-      GetWalletBalanceResponse
-    >(new GetWalletBalanceQuery(user));
+    return this.getWalletBalanceService.exec({ user });
   }
 
   @CastcleAuth(CacheKeyName.Users)
@@ -118,9 +112,10 @@ export class WalletControllerV2 {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    await this.queryBus.execute(
-      new ReviewTransactionQuery({ ...transaction, requestedBy: user }),
-    );
+    await this.reviewTransactionService.exec({
+      ...transaction,
+      requestedBy: user,
+    });
   }
 
   @CastcleBasicAuth()
@@ -137,9 +132,7 @@ export class WalletControllerV2 {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    await this.commandBus.execute(
-      new SendTransactionCommand({ ...dto, requestedBy: user }),
-    );
+    await this.sendTransactionService.exec({ ...dto, requestedBy: user });
   }
 
   @CastcleBasicAuth()

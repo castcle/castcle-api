@@ -28,26 +28,22 @@ import {
   Repository,
 } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ReviewTransactionQuery } from './query';
+import {
+  ReviewTransactionArg,
+  ReviewTransactionService,
+} from './service.abstract';
 
-@QueryHandler(ReviewTransactionQuery)
-export class ReviewTransactionHandler
-  implements IQueryHandler<ReviewTransactionQuery>
-{
+@Injectable()
+export class ReviewTransactionServiceImpl implements ReviewTransactionService {
   constructor(
     @InjectModel('Network') private networkModel: Model<Network>,
     private repository: Repository,
   ) {}
 
-  async execute({
-    chainId,
-    address,
-    amount,
-    requestedBy,
-  }: ReviewTransactionQuery) {
+  async exec({ chainId, address, amount, requestedBy }: ReviewTransactionArg) {
     const [network, [balance]] = await Promise.all([
       this.networkModel.findOne({ chainId }),
       this.repository.aggregateTransaction(requestedBy._id),
