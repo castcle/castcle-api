@@ -171,7 +171,7 @@ export class UsersControllerV2 {
     return this.userService.getUserByKeyword(query, authorizer.user);
   }
 
-  @CastcleAuth(CacheKeyName.Users)
+  @CastcleBasicAuth()
   @Get(':userId')
   async getUser(
     @Auth() authorizer: Authorizer,
