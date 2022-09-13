@@ -255,7 +255,7 @@ export class ContentServiceV2 {
         userId
           ? this.repository.aggregationParticipates({
               targetRef: [...originalPostRef, ...contentRef],
-              userId,
+              userId: new Types.ObjectId(userId) as any,
             })
           : [],
         this.repository.findRelationships({
@@ -1323,7 +1323,7 @@ export class ContentServiceV2 {
     const { payloadContents, includeUsers, includeCasts } =
       await this.convertContentToResponses(
         contents,
-        targetUser.id,
+        requestedBy?.id,
         query.userFields,
         String(targetUser.ownerAccount) === String(requestedBy?.ownerAccount),
       );

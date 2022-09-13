@@ -171,7 +171,7 @@ export class UsersControllerV2 {
     return this.userService.getUserByKeyword(query, authorizer.user);
   }
 
-  @CastcleAuth(CacheKeyName.Users)
+  @CastcleBasicAuth()
   @Get(':userId')
   async getUser(
     @Auth() authorizer: Authorizer,
@@ -783,8 +783,8 @@ export class UsersControllerV2 {
     return ResponseDto.ok({ payload: users, meta });
   }
 
+  @CastcleClearCacheAuth(CacheKeyName.Users)
   @Post(':userId/reporting/user')
-  @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   async reportUser(
     @Auth() authorizer: Authorizer,
@@ -798,8 +798,8 @@ export class UsersControllerV2 {
     await this.userService.reportUser(user, body);
   }
 
+  @CastcleClearCacheAuth(CacheKeyName.Users)
   @Post(':userId/reporting/content')
-  @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   async reportContent(
     @Auth() authorizer: Authorizer,

@@ -113,7 +113,7 @@ export class RegisterWithEmailServiceImpl implements RegisterWithEmailService {
       displayId: dto.castcleId,
       displayName: dto.displayName,
       type: UserType.PEOPLE,
-      email: dto.email,
+      email: dto.email.toLowerCase(),
     });
 
     const [token, userResponse] = await Promise.all([
