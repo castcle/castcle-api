@@ -871,7 +871,7 @@ export class Repository {
     user: UpdateQuery<User>,
     option?: QueryOptions,
   ) {
-    return this.userModel.updateOne(filter as any, user, option);
+    return this.userModel.updateOne(this.getUserQuery(filter), user, option);
   }
 
   updateUsers(
