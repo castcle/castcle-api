@@ -39,7 +39,7 @@ class GetContentsQuery {
 }
 
 class GetFarmAmountQuery {
-  contentId?: Types.ObjectId[];
+  content?: Types.ObjectId[];
   status?: ContentFarmingStatus;
 }
 
@@ -434,11 +434,15 @@ export const pipelineGetContentsV2 = ({
   },
 ];
 
-export const pipelineGetFarmAmount = (
-  filters: GetFarmAmountQuery,
-): PipelineStage[] => [
+export const pipelineGetFarmAmount = ({
+  content,
+  ...filters
+}: GetFarmAmountQuery): PipelineStage[] => [
   {
-    $match: filters,
+    $match: {
+      ...filters,
+      content: { $in: content },
+    },
   },
   {
     $group: {

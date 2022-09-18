@@ -55,7 +55,7 @@ export const pipelineOfGetParticipate = ({
       reported: [{ $match: { type: 'report' } }, { $limit: 1 }],
       quoted: [{ $match: { type: 'quote' } }, { $limit: 1 }],
       commented: [{ $match: { type: 'comment' } }, { $limit: 1 }],
-      farmed: [{ $match: { type: 'farm' } }, { $limit: 1 }],
+      farming: [{ $match: { type: 'farm' } }, { $limit: 1 }],
     },
   },
   {
@@ -67,7 +67,7 @@ export const pipelineOfGetParticipate = ({
         $cond: [{ $gt: ['$commented', 0] }, true, false],
       },
       reported: { $cond: [{ $gt: ['$reported', 0] }, true, false] },
-      farmed: { $cond: [{ $gt: ['$farmed', 0] }, true, false] },
+      farming: { $cond: [{ $gt: ['$farming', 0] }, true, false] },
     },
   },
 ];
@@ -100,7 +100,7 @@ export const pipelineOfGetParticipates = ({
       reported: { $sum: { $cond: [{ $eq: ['$type', 'report'] }, 1, 0] } },
       quoted: { $sum: { $cond: [{ $eq: ['$type', 'quote'] }, 1, 0] } },
       commented: { $sum: { $cond: [{ $eq: ['$type', 'comment'] }, 1, 0] } },
-      farmed: { $sum: { $cond: [{ $eq: ['$type', 'farm'] }, 1, 0] } },
+      farming: { $sum: { $cond: [{ $eq: ['$type', 'farm'] }, 1, 0] } },
     },
   },
   {
@@ -112,7 +112,7 @@ export const pipelineOfGetParticipates = ({
         $cond: [{ $gt: ['$commented', 0] }, true, false],
       },
       reported: { $cond: [{ $gt: ['$reported', 0] }, true, false] },
-      farmed: { $cond: [{ $gt: ['$farmed', 0] }, true, false] },
+      farming: { $cond: [{ $gt: ['$farming', 0] }, true, false] },
     },
   },
 ];
