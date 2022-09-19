@@ -22,7 +22,6 @@
  */
 import {
   AnalyticService,
-  CampaignService,
   ContentService,
   HashtagService,
   MongooseAsyncFeatures,
@@ -65,7 +64,6 @@ describe('QRCodeControllerV2', () => {
         UserServiceV2,
         { provide: SocialSyncServiceV2, useValue: {} },
         { provide: Downloader, useValue: {} },
-        { provide: CampaignService, useValue: {} },
         { provide: HashtagService, useValue: {} },
         { provide: Mailer, useValue: {} },
         {

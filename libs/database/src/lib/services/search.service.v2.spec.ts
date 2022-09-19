@@ -46,7 +46,6 @@ import {
 import { CreateHashtag } from '../dtos/hashtag.dto';
 import { ExcludeType, KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
-import { CampaignService } from './campaign.service';
 import { HashtagService } from './hashtag.service';
 import { SearchServiceV2 } from './search.service.v2';
 
@@ -76,7 +75,6 @@ describe('SearchServiceV2', () => {
         { provide: SocialSyncServiceV2, useValue: {} },
         { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
-        { provide: CampaignService, useValue: {} },
         { provide: FacebookClient, useValue: {} },
         { provide: GoogleClient, useValue: {} },
         { provide: Mailer, useValue: {} },
