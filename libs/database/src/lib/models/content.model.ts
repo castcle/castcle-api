@@ -39,7 +39,7 @@ export class GetParticipatesPayload {
   recasted: boolean;
   quoted: boolean;
   commented: boolean;
-  farmed: boolean;
+  farming: boolean;
 }
 
 export class GetContentPayload {

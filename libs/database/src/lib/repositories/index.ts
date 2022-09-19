@@ -271,7 +271,7 @@ type AdsCampaignQuery = {
 };
 
 type GetFarmAmountQuery = {
-  contentId?: Types.ObjectId[];
+  content?: Types.ObjectId[];
   status?: ContentFarmingStatus;
 };
 
