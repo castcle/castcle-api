@@ -41,7 +41,7 @@ import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { Repository } from 'libs/database/src/lib/repositories';
-import { QRCodeControllerV2 } from './qr-codes.controller.v2';
+import { QRCodeControllerV2 } from './controller.v2';
 
 describe('QRCodeControllerV2', () => {
   let app: TestingModule;
