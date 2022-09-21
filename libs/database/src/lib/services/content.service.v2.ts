@@ -308,8 +308,9 @@ export class ContentServiceV2 {
       }),
       authors.map((author) => {
         const relationship = relationships?.find(
-          ({ id }) => id === String(userId),
+          ({ user }) => String(user) === String(userId),
         );
+
         return new Author({
           id: author.id,
           avatar: author.profile?.images?.avatar,
@@ -318,7 +319,7 @@ export class ContentServiceV2 {
           type: author.type,
           verified: author.verified,
         }).toIncludeUser(
-          userFields?.includes(UserField.Relationships) && userId
+          userFields?.includes(UserField.Relationships) || userId
             ? {
                 blocked: relationship?.blocking ?? false,
                 followed: relationship?.following ?? false,
