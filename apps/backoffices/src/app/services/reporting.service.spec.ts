@@ -25,7 +25,6 @@ import { Token } from '@castcle-api/common';
 import {
   AnalyticService,
   AuthenticationServiceV2,
-  CampaignService,
   ContentServiceV2,
   ContentType,
   DataService,
@@ -106,7 +105,6 @@ describe('ReportingService', () => {
         { provide: SocialSyncServiceV2, useValue: {} },
         { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
-        { provide: CampaignService, useValue: {} },
         { provide: DataService, useValue: {} },
         { provide: TAccountService, useValue: {} },
         { provide: FacebookClient, useValue: {} },

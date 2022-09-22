@@ -20,7 +20,6 @@
     "utils-clients": "libs/utils/clients",
     "utils-decorators": "libs/utils/decorators",
     "utils-exception": "libs/utils/exception",
-    "utils-interceptors": "libs/utils/interceptors",
-    "utils-pipes": "libs/utils/pipes"
+    "utils-interceptors": "libs/utils/interceptors"
   }
 }

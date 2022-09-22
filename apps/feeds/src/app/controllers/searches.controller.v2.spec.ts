@@ -24,7 +24,6 @@
 import {
   Account,
   AnalyticService,
-  CampaignService,
   ContentService,
   ExcludeType,
   HashtagService,
@@ -81,7 +80,6 @@ describe('SearchesControllerV2', () => {
         { provide: SocialSyncServiceV2, useValue: {} },
         { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
-        { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
