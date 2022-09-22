@@ -74,7 +74,6 @@ import { FeedItemV2Schema } from './schemas/feed-item-v2.schema';
 import { AdsService } from './services/ads.service';
 import { AnalyticService } from './services/analytic.service';
 import { AuthenticationServiceV2 } from './services/authentication.service.v2';
-import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
 import { CommentServiceV2 } from './services/comment.service.v2';
 import { ContentService } from './services/content.service';
@@ -195,7 +194,6 @@ export const MongooseAsyncFeatures = () =>
     AdsService,
     AnalyticService,
     AuthenticationServiceV2,
-    CampaignService,
     CommentService,
     CommentServiceV2,
     ContentService,
@@ -220,7 +218,6 @@ export const MongooseAsyncFeatures = () =>
     AnalyticService,
     AuthenticationServiceV2,
     BullModule,
-    CampaignService,
     CommentService,
     CommentServiceV2,
     ContentService,
@@ -249,7 +246,6 @@ export {
   AdsService,
   AnalyticService,
   AuthenticationServiceV2,
-  CampaignService,
   CommentService,
   CommentServiceV2,
   ContentService,

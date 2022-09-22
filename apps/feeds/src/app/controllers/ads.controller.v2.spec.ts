@@ -29,7 +29,6 @@ import {
   AdsService,
   AdsStatus,
   AnalyticService,
-  CampaignService,
   ContentService,
   ContentServiceV2,
   ContentType,
@@ -98,7 +97,6 @@ describe('AdsController', () => {
           },
         },
         AdsService,
-        { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),

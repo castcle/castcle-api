@@ -145,13 +145,13 @@ export class ContentServiceV2 {
         ),
       },
       metrics: { ...content.metrics, farmCount: farmingCount || 0 },
-      participate: participate ?? {
-        liked: false,
-        commented: false,
-        quoted: false,
-        recasted: false,
-        reported: false,
-        farmed: false,
+      participate: {
+        liked: participate?.liked ?? false,
+        commented: participate?.commented ?? false,
+        quoted: participate?.quoted ?? false,
+        recasted: participate?.recasted ?? false,
+        reported: participate?.reported ?? false,
+        farming: participate?.farming ?? false,
       },
       referencedCasts:
         content.isRecast || content.isQuote
@@ -192,13 +192,13 @@ export class ContentServiceV2 {
         ),
       },
       metrics: { ...content.metrics, farmCount: farmingCount || 0 },
-      participate: participate ?? {
-        liked: false,
-        commented: false,
-        quoted: false,
-        recasted: false,
-        reported: false,
-        farmed: false,
+      participate: {
+        liked: participate?.liked ?? false,
+        commented: participate?.commented ?? false,
+        quoted: participate?.quoted ?? false,
+        recasted: participate?.recasted ?? false,
+        reported: participate?.reported ?? false,
+        farming: participate?.farming ?? false,
       },
       referencedCasts:
         content.isRecast || content.isQuote
@@ -263,7 +263,7 @@ export class ContentServiceV2 {
           followedUser: [...originalAuthorIds, ...authorIds],
         }),
         this.repository.aggregationGetFarmAmount({
-          contentId: [
+          content: [
             ...contents.map((content) => new Types.ObjectId(content._id)),
             ...contents.map(
               ({ originalPost }) => new Types.ObjectId(originalPost?._id),
@@ -308,8 +308,9 @@ export class ContentServiceV2 {
       }),
       authors.map((author) => {
         const relationship = relationships?.find(
-          ({ id }) => id === String(userId),
+          ({ user }) => String(user) === String(userId),
         );
+
         return new Author({
           id: author.id,
           avatar: author.profile?.images?.avatar,
@@ -318,7 +319,7 @@ export class ContentServiceV2 {
           type: author.type,
           verified: author.verified,
         }).toIncludeUser(
-          userFields?.includes(UserField.Relationships) && userId
+          userFields?.includes(UserField.Relationships) || userId
             ? {
                 blocked: relationship?.blocking ?? false,
                 followed: relationship?.following ?? false,
