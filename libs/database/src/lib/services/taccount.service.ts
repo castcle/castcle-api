@@ -210,9 +210,7 @@ export class TAccountService {
       types.push(
         TransactionType.AIRDROP,
         TransactionType.DEPOSIT,
-        TransactionType.RECEIVE,
         TransactionType.REFERRAL,
-        TransactionType.SEND,
         TransactionType.SOCIAL,
         TransactionType.WITHDRAW,
       );
