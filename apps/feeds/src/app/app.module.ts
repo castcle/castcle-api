@@ -29,7 +29,6 @@ import {
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleCacheModule } from '@castcle-api/environments';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { Module } from '@nestjs/common';
 import { AdsControllerV2 } from './controllers/ads.controller.v2';
 import { CommentControllerV2 } from './controllers/comment.controller.v2';
@@ -49,7 +48,6 @@ import { RecentFeedServiceImpl } from './feed/services/recent-feed/service.imple
     CastcleTracingModule.forRoot({ serviceName: 'feeds' }),
     DatabaseModule,
     UtilsInterceptorsModule,
-    UtilsPipesModule,
   ],
   controllers: [
     AdsControllerV2,

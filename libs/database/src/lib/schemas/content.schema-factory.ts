@@ -183,7 +183,7 @@ export const toUnsignedContentPayloadItem = (
       quoted: engage.some(({ type }) => type === EngagementType.Quote),
       recasted: engage.some(({ type }) => type === EngagementType.Recast),
       reported: engage?.some(({ type }) => type === EngagementType.Report),
-      farmed: isUserFarming,
+      farming: isUserFarming,
     },
 
     createdAt: isString(content.createdAt)

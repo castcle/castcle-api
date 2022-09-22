@@ -37,7 +37,6 @@ import { Repository } from 'libs/database/src/lib/repositories';
 import {
   AnalyticService,
   AuthenticationServiceV2,
-  CampaignService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   SocialSyncServiceV2,
@@ -84,7 +83,6 @@ describe('NotificationServiceV2', () => {
         { provide: SocialSyncServiceV2, useValue: {} },
         { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
-        { provide: CampaignService, useValue: {} },
         { provide: FacebookClient, useValue: {} },
         { provide: GoogleClient, useValue: {} },
         { provide: Mailer, useValue: {} },

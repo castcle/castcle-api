@@ -37,9 +37,3 @@ export enum QueueStatus {
   FAILED = 'failed',
   WAITING = 'waiting',
 }
-
-export enum QueueTopic {
-  CLAIM_AIRDROP = 'claim-airdrop',
-  DISTRIBUTE_SOCIAL_REWARD = 'distribute-social-reward',
-  UPDATE_CONTENT_FARMING = 'update-content-farming',
-}

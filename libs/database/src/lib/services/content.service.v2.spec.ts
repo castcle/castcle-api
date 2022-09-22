@@ -71,7 +71,6 @@ import {
   Transaction,
   User,
 } from '../schemas';
-import { CampaignService } from './campaign.service';
 import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
 import { TAccountService } from './taccount.service';
@@ -106,7 +105,6 @@ describe('ContentServiceV2', () => {
         { provide: SocialSyncServiceV2, useValue: {} },
         { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
-        { provide: CampaignService, useValue: {} },
         { provide: FacebookClient, useValue: {} },
         { provide: GoogleClient, useValue: {} },
         { provide: Mailer, useValue: { generateHTMLReport: jest.fn() } },

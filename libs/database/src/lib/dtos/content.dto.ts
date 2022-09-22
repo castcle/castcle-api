@@ -63,7 +63,7 @@ export class Participates {
   quoted: boolean;
   recasted: boolean;
   reported: boolean;
-  farmed?: boolean;
+  farming?: boolean;
 }
 
 export class Url {
