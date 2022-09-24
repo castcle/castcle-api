@@ -23,17 +23,14 @@
 
 import { CastcleLogger } from '@castcle-api/common';
 import {
-  QueueName,
+  InjectQueue,
+  Processor,
   Transaction,
   TransactionStatus,
   TransactionType,
+  WalletType,
 } from '@castcle-api/database';
-import {
-  InjectQueue,
-  OnQueueCompleted,
-  Process,
-  Processor,
-} from '@nestjs/bull';
+import { OnQueueCompleted, Process } from '@nestjs/bull';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Job, Queue } from 'bull';
@@ -42,9 +39,9 @@ import {
   TransactionVerification,
   pipelineOfAirdropTransactionVerification,
   pipelineOfTransactionVerification,
-} from './verification.aggregation';
+} from './aggregation';
 
-@Processor(QueueName.NEW_TRANSACTION)
+@Processor('new-transaction')
 export class TransactionVerifier {
   private logger = new CastcleLogger(TransactionVerifier.name);
   private Error = {
@@ -54,21 +51,35 @@ export class TransactionVerifier {
   };
 
   constructor(
-    @InjectModel(Transaction.name) private txModel: Model<Transaction>,
-    @InjectQueue(QueueName.NEW_TRANSACTION) private txQueue: Queue<Transaction>,
+    @InjectModel('Transaction') private txModel: Model<Transaction>,
+    @InjectQueue('new-transaction') private txQueue: Queue<Transaction>,
+    @InjectQueue('external-withdrawal') private withdrawer: Queue<Transaction>,
   ) {}
+
+  @OnQueueCompleted()
+  onVerificationCompleted({ id, data, returnvalue }: Job<Transaction>) {
+    this.logger.log(
+      JSON.stringify({
+        transactionId: data._id,
+        status: returnvalue.status,
+        failureMessage: returnvalue.failureMessage,
+      }),
+      `${id}:onVerificationCompleted`,
+    );
+  }
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async addPendingTransactions() {
+    const ctx = 'addPendingTransactions';
     const jobCounts = await this.txQueue.getJobCounts();
-    this.logger.log(`remaining job(s): ${JSON.stringify(jobCounts)}`);
+    this.logger.log(`remaining jobs: ${JSON.stringify(jobCounts)}`, ctx);
     if (jobCounts.waiting) return;
 
     const filter = { status: TransactionStatus.PENDING };
     const transactions = await this.txModel.find(filter).limit(5);
     const jobs = transactions.map((tx) => ({ data: tx }));
     await this.txQueue.addBulk(jobs);
-    this.logger.log(`add new pending transactions: ${jobs.length} job(s)`);
+    this.logger.log(`add new pending transactions: ${jobs.length} jobs`, ctx);
   }
 
   @Process()
@@ -79,7 +90,10 @@ export class TransactionVerifier {
         : pipelineOfTransactionVerification(tx),
     );
 
-    this.logger.log(JSON.stringify(validation), `${id}:validationResult`);
+    this.logger.log(
+      JSON.stringify({ transactionId: tx._id, ...validation }),
+      `${id}:validationResult`,
+    );
 
     if (!validation.isValidWalletType) {
       return this.markTransactionFailed(tx._id, this.Error.INVALID_WALLET_TYPE);
@@ -90,23 +104,22 @@ export class TransactionVerifier {
     if (!validation.isEnoughBalance) {
       return this.markTransactionFailed(tx._id, this.Error.INSUFFICIENT_FUNDS);
     }
+    if (tx.to.some(({ type }) => type === WalletType.EXTERNAL_WITHDRAW)) {
+      return this.markTransactionWithdrawing(tx._id);
+    }
 
     return this.markTransactionVerified(tx._id);
   }
 
-  @OnQueueCompleted()
-  onVerificationComplete({ id, data, returnvalue }: Job<Transaction>) {
-    this.logger.log(
-      JSON.stringify({
-        transactionId: data._id,
-        status: returnvalue.status,
-        failureMessage: returnvalue.failureMessage,
-      }),
-      `${id}:onVerificationComplete`,
+  private markTransactionFailed(id: Types.ObjectId, failureMessage: string) {
+    return this.txModel.findByIdAndUpdate(
+      id,
+      { status: TransactionStatus.FAILED, failureMessage },
+      { new: true },
     );
   }
 
-  private async markTransactionVerified(id: Types.ObjectId) {
+  private markTransactionVerified(id: Types.ObjectId) {
     return this.txModel.findByIdAndUpdate(
       id,
       { status: TransactionStatus.VERIFIED },
@@ -114,14 +127,15 @@ export class TransactionVerifier {
     );
   }
 
-  private async markTransactionFailed(
-    id: Types.ObjectId,
-    failureMessage: string,
-  ) {
-    return this.txModel.findByIdAndUpdate(
+  private async markTransactionWithdrawing(id: Types.ObjectId) {
+    const tx = await this.txModel.findByIdAndUpdate(
       id,
-      { status: TransactionStatus.FAILED, failureMessage },
+      { status: TransactionStatus.WITHDRAWING },
       { new: true },
     );
+
+    await this.withdrawer.add(tx, { removeOnComplete: true });
+
+    return tx;
   }
 }

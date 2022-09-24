@@ -41,7 +41,9 @@ import {
   ],
   exports: [BullModule],
 })
-export class CastcleBullModule {}
+export class CastcleBullModule {
+  static registerQueue = BullModule.registerQueue;
+}
 
 @Module({
   imports: [
