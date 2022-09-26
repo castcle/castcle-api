@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { RemoveLeadingZero } from '@castcle-api/common';
+import { IsBigNumber, RemoveLeadingZero } from '@castcle-api/common';
 import { CastcleImage } from '@castcle-api/utils/aws';
 import { Type } from 'class-transformer';
 import {
@@ -34,7 +34,6 @@ import {
   IsNotEmptyObject,
   IsNumber,
   IsOptional,
-  IsPositive,
   IsString,
   ValidateNested,
 } from 'class-validator';
@@ -109,9 +108,8 @@ export class TransactionDto {
   @IsNotEmpty()
   memo?: string;
 
-  @IsNumber({ allowInfinity: false, allowNaN: false })
-  @IsPositive()
-  amount: number;
+  @IsBigNumber({ allowZero: false, type: 'positive' })
+  amount: string;
 
   @IsOptional()
   @IsString()

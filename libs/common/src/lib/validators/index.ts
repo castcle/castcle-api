@@ -21,15 +21,4 @@
  * or have any questions.
  */
 
-export * from './lib/validators';
-export * from './lib/datetime';
-export * from './lib/documentation';
-export * from './lib/localization';
-export * from './lib/logger';
-export * from './lib/name';
-export * from './lib/parser';
-export * from './lib/password';
-export * from './lib/qr-code';
-export * from './lib/regexp';
-export * from './lib/token';
-export * from './lib/transformers';
+export * from './big-number.validator';

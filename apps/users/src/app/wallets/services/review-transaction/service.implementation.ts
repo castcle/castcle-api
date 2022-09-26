@@ -30,6 +30,7 @@ import {
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { BigNumber } from 'bignumber.js';
 import { Model } from 'mongoose';
 import {
   ReviewTransactionArg,
@@ -44,9 +45,12 @@ export class ReviewTransactionServiceImpl implements ReviewTransactionService {
   ) {}
 
   async exec({ chainId, address, amount, requestedBy }: ReviewTransactionArg) {
-    const [network, [balance]] = await Promise.all([
-      this.networkModel.findOne({ chainId }),
+    const [[balance], network] = await Promise.all([
       this.repository.aggregateTransaction(requestedBy._id),
+      this.networkModel.findOne({
+        chainId,
+        type: { $in: [NetworkType.EXTERNAL, NetworkType.INTERNAL] },
+      }),
     ]);
 
     if (!network) {
@@ -55,11 +59,28 @@ export class ReviewTransactionServiceImpl implements ReviewTransactionService {
     if (network.visibility !== EntityVisibility.Publish) {
       throw new CastcleException('NETWORK_TEMPORARILY_DISABLED');
     }
-    if (amount > Number(balance.personal)) {
+    if (!network.chainId) {
+      throw new CastcleException('NETWORK_TEMPORARILY_DISABLED');
+    }
+
+    const isExternalNetwork = network.type !== NetworkType.INTERNAL;
+    if (isExternalNetwork && !network.tokenAddress) {
+      throw new CastcleException('NETWORK_TEMPORARILY_DISABLED');
+    }
+
+    const total = BigNumber(amount);
+    const feeBN = BigNumber(network.fee);
+    const hasFee = feeBN.isGreaterThan(0);
+    const fee = hasFee ? feeBN : BigNumber(0);
+    const received = hasFee ? total.minus(fee) : total;
+    if (!received.isGreaterThan(0)) {
+      throw new CastcleException('RECEIVED_AMOUNT_GT_ZERO');
+    }
+    if (total.isGreaterThan(balance.available.toString())) {
       throw new CastcleException('NOT_ENOUGH_BALANCE');
     }
-    if (network.type !== NetworkType.INTERNAL) {
-      return { network, isInternalNetwork: false };
+    if (isExternalNetwork) {
+      return { network, amount: { total, received, fee } };
     }
 
     const receiver = await this.repository.findUser({ _id: address });
@@ -70,6 +91,6 @@ export class ReviewTransactionServiceImpl implements ReviewTransactionService {
       throw new CastcleException('PAYMENT_TO_OWN_WALLET');
     }
 
-    return { network, receiver, isInternalNetwork: true };
+    return { network, amount: { total, received, fee }, receiver };
   }
 }

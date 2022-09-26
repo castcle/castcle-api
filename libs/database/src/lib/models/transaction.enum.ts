@@ -32,6 +32,7 @@ export enum TransactionFilter {
 export enum TransactionStatus {
   FAILED = 'failed',
   PENDING = 'pending',
+  WITHDRAWING = 'withdrawing',
   VERIFIED = 'verified',
 }
 
@@ -56,6 +57,7 @@ export enum WalletType {
   CASTCLE_SOCIAL = 'castcle.social',
   EXTERNAL_DEPOSIT = 'external.deposit',
   EXTERNAL_WITHDRAW = 'external.withdraw',
+  FEE = 'fee',
 
   // User Wallet Type
   ADS = 'ads',

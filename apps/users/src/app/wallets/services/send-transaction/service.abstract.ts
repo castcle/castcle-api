@@ -22,10 +22,12 @@
  */
 
 import {
+  Network,
   TransactionDto,
   User,
   VerifyTransactionDto,
 } from '@castcle-api/database';
+import BigNumber from 'bignumber.js';
 import { Types } from 'mongoose';
 
 export class SendTransactionArg {
@@ -35,5 +37,12 @@ export class SendTransactionArg {
 }
 
 export abstract class SendTransactionService {
-  abstract exec(arg: SendTransactionArg): Promise<void>;
+  abstract exec(arg: SendTransactionArg): Promise<{
+    amount: {
+      total: BigNumber;
+      received: BigNumber;
+      fee: BigNumber;
+    };
+    network: Network;
+  }>;
 }

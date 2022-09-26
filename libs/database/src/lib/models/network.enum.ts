@@ -22,7 +22,6 @@
  */
 
 export enum NetworkType {
+  EXTERNAL = 'external',
   INTERNAL = 'internal',
-  MAINNET = 'mainnet',
-  TESTNET = 'testnet',
 }

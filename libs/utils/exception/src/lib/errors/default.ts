@@ -476,10 +476,14 @@ export const DefaultErrors = {
     code: '8015',
     message: `The ads is running, can't be deleted.`,
   },
-
   AD_RUNNING_CAN_NOT_CANCEL: {
     statusCode: '400',
     code: '8016',
     message: `The ads is running, can't be cancel.`,
+  },
+  RECEIVED_AMOUNT_GT_ZERO: {
+    statusCode: '400',
+    code: '8017',
+    message: `Received amount should be greater than zero`,
   },
 };
