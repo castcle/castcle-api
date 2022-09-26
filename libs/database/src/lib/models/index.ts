@@ -49,6 +49,7 @@ export * from './number.model';
 export * from './otp.enum';
 export * from './otp.model';
 export * from './queue.enum';
+export * from './queue.model';
 export * from './reporting.enum';
 export * from './reporting.message';
 export * from './reporting.model';

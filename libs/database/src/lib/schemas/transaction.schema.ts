@@ -21,116 +21,45 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes, Types } from 'mongoose';
-import { TransactionStatus, TransactionType, WalletType } from '../models';
-import { CastcleBase } from './base.schema';
+import { SchemaFactory } from '@nestjs/mongoose';
+import { Model, Schema } from 'mongoose';
+import { TransactionStatus, WalletType } from '../models';
+import { ExternalWithdraw, TransactionDocument } from './transaction.document';
 
-export class AirdropTransactionData {
-  campaign: Types.ObjectId;
-  mobileCountryCode?: string;
-  mobileNumber?: string;
+export type TransactionStaticMethods = Model<TransactionDocument>;
+
+export interface TransactionMethods {
+  hasExternalWithdrawal(): boolean;
+  getExternalWithdrawals(): ExternalWithdraw[];
+  markFailed(failureMessage: string): this;
+  markVerified(): this;
 }
 
-export class ExternalTransactionData {
-  address: string;
-  chainId: string;
-  memo: string;
-  note: string;
-}
+export type Transaction = TransactionDocument & TransactionMethods;
 
-export type TransactionData = AirdropTransactionData | ExternalTransactionData;
+export const TransactionSchema = SchemaFactory.createForClass(
+  TransactionDocument,
+) as Schema<TransactionDocument, TransactionStaticMethods, TransactionMethods>;
 
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-class TransactionDataEntity
-  implements
-    Required<AirdropTransactionData>,
-    Required<ExternalTransactionData>
-{
-  @Prop({ index: true, ref: 'Campaign', type: SchemaTypes.ObjectId })
-  campaign: Types.ObjectId;
+TransactionSchema.methods.hasExternalWithdrawal = function (this: Transaction) {
+  return this.to.some(({ type }) => type === WalletType.EXTERNAL_WITHDRAW);
+};
 
-  @Prop()
-  mobileCountryCode: string;
+TransactionSchema.methods.getExternalWithdrawals = function (
+  this: Transaction,
+) {
+  return this.to.filter(
+    ({ type }) => type === WalletType.EXTERNAL_WITHDRAW,
+  ) as ExternalWithdraw[];
+};
 
-  @Prop()
-  mobileNumber: string;
+TransactionSchema.methods.markFailed = function (
+  this: Transaction,
+  failureMessage: string,
+) {
+  return this.set({ status: TransactionStatus.FAILED, failureMessage });
+};
 
-  @Prop()
-  address: string;
-
-  @Prop()
-  chainId: string;
-
-  @Prop()
-  memo: string;
-
-  @Prop()
-  note: string;
-}
-
-const TransactionDataSchema = SchemaFactory.createForClass(
-  TransactionDataEntity,
-);
-
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class MicroTransaction {
-  @Prop({ index: true, ref: 'User', type: SchemaTypes.ObjectId })
-  user?: Types.ObjectId;
-
-  @Prop({ type: String })
-  type: WalletType;
-
-  @Prop({ type: SchemaTypes.Decimal128 })
-  value: Types.Decimal128;
-}
-
-const MicroTransactionSchema = SchemaFactory.createForClass(MicroTransaction);
-
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-class TItem {
-  @Prop({ index: true })
-  cAccountNo: string;
-
-  @Prop({ type: SchemaTypes.Decimal128 })
-  value: Types.Decimal128 | number;
-}
-
-const TItemSchema = SchemaFactory.createForClass(TItem);
-
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class TLedger {
-  @Prop({ type: TItemSchema })
-  debit: TItem;
-
-  @Prop({ type: TItemSchema })
-  credit: TItem;
-}
-
-const TLedgerSchema = SchemaFactory.createForClass(TLedger);
-
-@Schema({ timestamps: true })
-export class Transaction extends CastcleBase {
-  @Prop({ type: MicroTransactionSchema, index: true })
-  from: MicroTransaction;
-
-  @Prop({ type: [MicroTransactionSchema], index: true })
-  to: MicroTransaction[];
-
-  @Prop({ type: String })
-  type: TransactionType;
-
-  @Prop({ type: String, default: TransactionStatus.PENDING })
-  status: TransactionStatus;
-
-  @Prop()
-  failureMessage?: string;
-
-  @Prop({ type: TransactionDataSchema })
-  data?: TransactionData;
-
-  @Prop({ type: [TLedgerSchema] })
-  ledgers?: TLedger[];
-}
-
-export const TransactionSchema = SchemaFactory.createForClass(Transaction);
+TransactionSchema.methods.markVerified = function (this: Transaction) {
+  return this.set({ status: TransactionStatus.VERIFIED });
+};

@@ -81,8 +81,7 @@ export const testReviewTransaction = () =>
               'transaction.chainId must be a string',
               'transaction.address should not be empty',
               'transaction.address must be a string',
-              'transaction.amount must be a positive number',
-              'transaction.amount must be a number conforming to the specified constraints',
+              'transaction.amount should be number string',
             ].sort(),
           );
         })
@@ -197,7 +196,7 @@ export const testReviewTransaction = () =>
           transaction: {
             chainId: 'internal',
             address: user.profile.id,
-            amount: 1,
+            amount: '1',
           },
         })
         .expect(({ body }) => {
@@ -245,7 +244,7 @@ export const testReviewTransaction = () =>
         .expect(400);
     });
 
-    it('should return NO_CONTENT when internal transaction has been reviewed successfully', async () => {
+    it('should return CREATED when internal transaction has been reviewed successfully', async () => {
       const user = await registerUser();
       const receiver = await registerUser();
 
@@ -277,20 +276,24 @@ export const testReviewTransaction = () =>
         })
         .expect(({ body }) => {
           expect(body.message).toBeUndefined();
+          expect(body.amount.total).toEqual('1.00000000');
+          expect(body.amount.received).toEqual('1.00000000');
+          expect(body.amount.fee).toEqual('0.00000000');
         })
-        .expect(204);
+        .expect(201);
     });
 
-    it('should return NO_CONTENT when external transaction has been reviewed successfully', async () => {
+    it('should return CREATED when external transaction has been reviewed successfully', async () => {
       const user = await registerUser();
       const receiver = await registerUser();
 
       await Promise.all([
         app().get(getModelToken('Network')).create({
           name: 'Castcle Mainnet',
-          type: NetworkType.MAINNET,
-          rpc: 'castcle.com',
+          type: NetworkType.EXTERNAL,
+          fee: '0.5',
           chainId: 'castcle',
+          tokenAddress: '0xCONTRACT_TOKEN_ADDRESS',
           visibility: EntityVisibility.Publish,
         }),
         topUp(user.profile.id, 1),
@@ -313,7 +316,12 @@ export const testReviewTransaction = () =>
         })
         .expect(({ body }) => {
           expect(body.message).toBeUndefined();
+          expect(body.network._id).toBeDefined();
+          expect(body.network.type).toEqual(NetworkType.EXTERNAL);
+          expect(body.amount.total).toEqual('1.00000000');
+          expect(body.amount.received).toEqual('0.50000000');
+          expect(body.amount.fee).toEqual('0.50000000');
         })
-        .expect(204);
+        .expect(201);
     });
   });

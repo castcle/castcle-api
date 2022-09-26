@@ -23,14 +23,14 @@
 
 import {
   AuthenticationServiceV2,
+  InjectQueue,
+  NetworkType,
   OtpObjective,
-  QueueName,
   Transaction,
   TransactionType,
   WalletType,
 } from '@castcle-api/database';
 import { TwilioChannel } from '@castcle-api/utils/clients';
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
@@ -42,13 +42,13 @@ import { SendTransactionArg, SendTransactionService } from './service.abstract';
 export class SendTransactionServiceImpl implements SendTransactionService {
   constructor(
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
-    @InjectQueue(QueueName.NEW_TRANSACTION) private txQueue: Queue<Transaction>,
+    @InjectQueue('new-transaction') private txQueue: Queue<Transaction>,
     private authService: AuthenticationServiceV2,
     private reviewTransactionService: ReviewTransactionService,
   ) {}
 
   async exec({ transaction, verification, requestedBy }: SendTransactionArg) {
-    const { isInternalNetwork } = await this.reviewTransactionService.exec({
+    const { network, amount } = await this.reviewTransactionService.exec({
       ...transaction,
       requestedBy,
     });
@@ -70,34 +70,43 @@ export class SendTransactionServiceImpl implements SendTransactionService {
       otp: verification.mobile.otp,
     });
 
-    const value = Types.Decimal128.fromString(String(transaction.amount));
+    const isInternalNetwork = network.type === NetworkType.INTERNAL;
     const tx = await new this.transactionModel({
       from: {
         user: requestedBy._id,
         type: WalletType.PERSONAL,
-        value,
+        value: Types.Decimal128.fromString(amount.total.toString()),
       },
       to: [
         isInternalNetwork
           ? {
               user: new Types.ObjectId(transaction.address),
               type: WalletType.PERSONAL,
-              value,
+              value: Types.Decimal128.fromString(amount.received.toString()),
             }
           : {
+              address: transaction.address,
+              chainId: network.chainId,
+              tokenAddress: network.tokenAddress,
+              memo: transaction.memo,
               type: WalletType.EXTERNAL_WITHDRAW,
-              value,
+              value: Types.Decimal128.fromString(amount.received.toString()),
             },
+        ...(amount.fee.isGreaterThan(0)
+          ? [
+              {
+                type: WalletType.FEE,
+                value: Types.Decimal128.fromString(amount.fee.toString()),
+              },
+            ]
+          : []),
       ],
-      type: TransactionType.SEND,
-      data: {
-        address: transaction.address,
-        chainId: transaction.chainId,
-        memo: transaction.memo,
-        note: transaction.note,
-      },
+      type: isInternalNetwork ? TransactionType.SEND : TransactionType.WITHDRAW,
+      data: { note: transaction.note },
     }).save();
 
     await this.txQueue.add(tx, { removeOnComplete: true });
+
+    return { amount, network };
   }
 }

@@ -28,12 +28,14 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminScheduler } from './admin-action.scheduler';
 import { ContentFarmingScheduler } from './content-farming.sheduler';
+import { ExternalWithdrawer } from './external-withdrawal/processor';
 import { ContentReachScheduler } from './schedulers/content-reach/scheduler';
-import { TransactionVerifier } from './transaction-verifier/transaction-verifier';
+import { TransactionVerifier } from './transaction-verifier/processor';
 
 @Module({
   imports: [
     CastcleBullModule,
+    CastcleBullModule.registerQueue({ name: 'external-withdrawal' }),
     CastcleTracingModule.forRoot({ serviceName: 'queues' }),
     DatabaseModule,
     ScheduleModule.forRoot(),
@@ -43,6 +45,7 @@ import { TransactionVerifier } from './transaction-verifier/transaction-verifier
     AdminScheduler,
     ContentReachScheduler,
     ContentFarmingScheduler,
+    ExternalWithdrawer,
     TransactionVerifier,
   ],
 })

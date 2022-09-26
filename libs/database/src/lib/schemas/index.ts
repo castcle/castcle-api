@@ -59,6 +59,7 @@ export * from './relationship.schema';
 export * from './reporting.schema';
 export * from './revision.schema';
 export * from './social-sync.schema';
+export * from './transaction.document';
 export * from './transaction.schema';
 export * from './user.schema-factory';
 export * from './user.schema';
