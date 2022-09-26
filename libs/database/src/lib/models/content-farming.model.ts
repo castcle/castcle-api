@@ -57,6 +57,7 @@ export class ContentFarmingResponse {
     availableBalance: string,
     farmNo: number,
     contentPayload?: PublicContentResponse,
+    farmingBalance?: string,
   ) {
     this.id = contentFarming?.id ?? null;
     this.number = farmNo;
@@ -64,13 +65,12 @@ export class ContentFarmingResponse {
     this.balance = {
       available: availableBalance,
       total: totalBalance,
-      farming: Number(
-        Number(totalBalance) * Environment.DISTRIBUTE_FARMING,
-      ).toFixed(Environment.DECIMALS_FLOAT),
-      farmed:
-        contentFarming?.status === ContentFarmingStatus.Farming
-          ? farmBalance
-          : Number(0).toFixed(Environment.DECIMALS_FLOAT),
+      farming: farmingBalance
+        ? farmingBalance
+        : Number(Number(totalBalance) * Environment.DISTRIBUTE_FARMING).toFixed(
+            Environment.DECIMALS_FLOAT,
+          ),
+      farmed: farmBalance,
     };
     this.status = contentFarming?.status
       ? contentFarming?.status === ContentFarmingStatus.Farmed && farmNo

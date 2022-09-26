@@ -704,7 +704,7 @@ export class UsersControllerV2 {
   }
 
   @Delete(':userId/following/:targetCastcleId')
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.Users)
   @HttpCode(HttpStatus.NO_CONTENT)
   async unfollow(
     @Auth() authorizer: Authorizer,
