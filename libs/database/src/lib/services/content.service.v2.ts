@@ -308,7 +308,7 @@ export class ContentServiceV2 {
       }),
       authors.map((author) => {
         const relationship = relationships?.find(
-          ({ user }) => String(user) === String(userId),
+          ({ followedUser }) => String(followedUser) === String(author.id),
         );
 
         return new Author({
@@ -1985,7 +1985,7 @@ export class ContentServiceV2 {
     });
 
     const relationship = relationships?.find(
-      (relationship) => String(relationship.followedUser) === author.id,
+      (relationship) => String(relationship.followedUser) === String(author.id),
     );
 
     const [lastActive] = await this.contentFarmingModel.find(
@@ -2078,6 +2078,17 @@ export class ContentServiceV2 {
       userId: viewer._id,
       followedUser: contents.map(({ authorId }) => authorId),
     });
+    const [farmsAmount] = await Promise.all([
+      this.repository.aggregationGetFarmAmount({
+        content: [
+          ...contents.map((content) => new Types.ObjectId(content._id)),
+          ...contents.map(
+            ({ originalPost }) => new Types.ObjectId(originalPost?._id),
+          ),
+        ],
+        status: ContentFarmingStatus.Farming,
+      }),
+    ]);
 
     const farmingPayload = await Promise.all(
       contentFarmings.map(async (contentFarming, index) => {
@@ -2089,6 +2100,12 @@ export class ContentServiceV2 {
           ({ _id }) => String(_id) === String(contentFarming.content),
         );
 
+        const farmAmount = Number(
+          farmsAmount.find(
+            (farm) => String(farm.contentId) === String(content._id),
+          )?.farmAmount,
+        );
+
         return new ContentFarmingResponse(
           contentFarming,
           Number(balance?.total).toFixed(Environment.DECIMALS_FLOAT),
@@ -2096,15 +2113,16 @@ export class ContentServiceV2 {
           Number(balance?.available).toFixed(Environment.DECIMALS_FLOAT),
           totalContentFarming - index,
           content
-            ? this.toContentPublishPayload(content, participate)
+            ? this.toContentPublishPayload(content, participate, farmAmount)
             : undefined,
+          Number(farmAmount).toFixed(Environment.DECIMALS_FLOAT),
         );
       }),
     );
 
     const includesUsers = users.map((user) => {
       const relationship = relationships?.find(
-        (relationship) => String(relationship.user) === String(viewer.id),
+        (relationship) => String(relationship.followedUser) === String(user.id),
       );
 
       return new Author({
@@ -2176,6 +2194,11 @@ export class ContentServiceV2 {
       followedUser: contents.map(({ authorId }) => authorId),
     });
 
+    const farmsAmount = await this.repository.aggregationGetFarmAmount({
+      content: contents.map((content) => new Types.ObjectId(content._id)),
+      status: ContentFarmingStatus.Farming,
+    });
+
     const farmingPayload = await Promise.all(
       contentFarmings.map(async (contentFarming) => {
         const content = contents.find(
@@ -2184,6 +2207,12 @@ export class ContentServiceV2 {
 
         const participate = participates.find(
           ({ _id }) => String(_id) === String(contentFarming.content),
+        );
+
+        const farmAmount = Number(
+          farmsAmount.find(
+            (farm) => String(farm.contentId) === String(content._id),
+          )?.farmAmount,
         );
 
         return new ContentFarmingResponse(
@@ -2195,12 +2224,13 @@ export class ContentServiceV2 {
           content
             ? this.toContentPublishPayload(content, participate)
             : undefined,
+          Number(farmAmount).toFixed(Environment.DECIMALS_FLOAT),
         );
       }),
     );
     const includesUsers = users.map((user) => {
       const relationship = relationships?.find(
-        (relationship) => String(relationship.user) === String(viewer.id),
+        (relationship) => String(relationship.followedUser) === String(user.id),
       );
 
       return new Author({
