@@ -22,19 +22,24 @@
  */
 
 import { Network, User } from '@castcle-api/database';
+import BigNumber from 'bignumber.js';
 import { Types } from 'mongoose';
 
 export class ReviewTransactionArg {
   chainId: string;
   address: string;
-  amount: number;
+  amount: string;
   requestedBy: Types.ObjectId | User;
 }
 
 export abstract class ReviewTransactionService {
   abstract exec(arg: ReviewTransactionArg): Promise<{
+    amount: {
+      total: BigNumber;
+      received: BigNumber;
+      fee: BigNumber;
+    };
     network: Network;
-    isInternalNetwork: boolean;
     receiver?: User;
   }>;
 }

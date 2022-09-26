@@ -26,6 +26,7 @@ import {
   Transaction,
   TransactionStatus,
   UserWalletTypes,
+  WalletType,
 } from '@castcle-api/database';
 import { PipelineStage, Types } from 'mongoose';
 
@@ -89,15 +90,29 @@ export const pipelineOfAirdropTransactionVerification = (
                     then: {
                       $cond: {
                         if: {
-                          $in: ['$$this.type', UserWalletTypes],
+                          $eq: ['$$this.type', WalletType.EXTERNAL_WITHDRAW],
                         },
                         then: {
                           $and: [
                             '$$value',
-                            { $eq: [{ $type: '$$this.user' }, 'objectId'] },
+                            { $eq: [{ $type: '$$this.address' }, 'string'] },
+                            { $eq: [{ $type: '$$this.chainId' }, 'string'] },
                           ],
                         },
-                        else: '$$value',
+                        else: {
+                          $cond: {
+                            if: {
+                              $in: ['$$this.type', UserWalletTypes],
+                            },
+                            then: {
+                              $and: [
+                                '$$value',
+                                { $eq: [{ $type: '$$this.user' }, 'objectId'] },
+                              ],
+                            },
+                            else: '$$value',
+                          },
+                        },
                       },
                     },
                     else: '$$value',

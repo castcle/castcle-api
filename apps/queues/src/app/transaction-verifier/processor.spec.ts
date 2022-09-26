@@ -39,7 +39,7 @@ import { getQueueToken } from '@nestjs/bull';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Job } from 'bull';
 import { Model, Types } from 'mongoose';
-import { TransactionVerifier } from './transaction-verifier';
+import { TransactionVerifier } from './processor';
 
 describe('TransactionVerifier', () => {
   let verifier: TransactionVerifier;
@@ -61,6 +61,10 @@ describe('TransactionVerifier', () => {
         TransactionVerifier,
         {
           provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken('external-withdrawal'),
           useValue: { add: jest.fn() },
         },
       ],

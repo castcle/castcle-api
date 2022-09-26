@@ -33,7 +33,7 @@ import {
   UserServiceV2,
   WalletShortcutService,
 } from '@castcle-api/database';
-import { CacheKeyName } from '@castcle-api/environments';
+import { CacheKeyName, Environment } from '@castcle-api/environments';
 import {
   Auth,
   Authorizer,
@@ -100,7 +100,6 @@ export class WalletControllerV2 {
 
   @CastcleBasicAuth()
   @Post(':userId/send/review')
-  @HttpCode(HttpStatus.NO_CONTENT)
   async reviewTransaction(
     @Auth() authorizer: Authorizer,
     @Body() { transaction }: ReviewTransactionDto,
@@ -112,15 +111,23 @@ export class WalletControllerV2 {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    await this.reviewTransactionService.exec({
+    const { amount, network } = await this.reviewTransactionService.exec({
       ...transaction,
       requestedBy: user,
     });
+
+    return {
+      amount: {
+        total: amount.total.toFixed(Environment.DECIMALS_FLOAT),
+        fee: amount.fee.toFixed(Environment.DECIMALS_FLOAT),
+        received: amount.received.toFixed(Environment.DECIMALS_FLOAT),
+      },
+      network,
+    };
   }
 
   @CastcleBasicAuth()
   @Post(':userId/send/confirm')
-  @HttpCode(HttpStatus.NO_CONTENT)
   async sendTransaction(
     @Auth() authorizer: Authorizer,
     @Body() dto: SendTransactionDto,
@@ -132,7 +139,19 @@ export class WalletControllerV2 {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    await this.sendTransactionService.exec({ ...dto, requestedBy: user });
+    const { amount, network } = await this.sendTransactionService.exec({
+      ...dto,
+      requestedBy: user,
+    });
+
+    return {
+      amount: {
+        total: amount.total.toFixed(Environment.DECIMALS_FLOAT),
+        fee: amount.fee.toFixed(Environment.DECIMALS_FLOAT),
+        received: amount.received.toFixed(Environment.DECIMALS_FLOAT),
+      },
+      network,
+    };
   }
 
   @CastcleBasicAuth()
