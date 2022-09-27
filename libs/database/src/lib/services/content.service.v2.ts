@@ -276,21 +276,29 @@ export class ContentServiceV2 {
     this.logger.log('#convertContentToResponses:payload');
 
     const [payloadContents, includeCasts, includeUsers] = [
-      contents.map((content) => {
-        const participate = userId
-          ? participates.find(({ _id }) => String(_id) === String(content._id))
-          : undefined;
+      contents
+        .filter((content) =>
+          authors.find(
+            (author) => String(author.id) === String(content.authorId),
+          ),
+        )
+        .map((content) => {
+          const participate = userId
+            ? participates.find(
+                ({ _id }) => String(_id) === String(content._id),
+              )
+            : undefined;
 
-        const farmAmount = Number(
-          farmsAmount.find(
-            (farm) => String(farm.contentId) === String(content._id),
-          )?.farmAmount,
-        );
+          const farmAmount = Number(
+            farmsAmount.find(
+              (farm) => String(farm.contentId) === String(content._id),
+            )?.farmAmount,
+          );
 
-        return isOwner
-          ? this.toContentOwnerPayload(content, participate, farmAmount)
-          : this.toContentPublishPayload(content, participate, farmAmount);
-      }),
+          return isOwner
+            ? this.toContentOwnerPayload(content, participate, farmAmount)
+            : this.toContentPublishPayload(content, participate, farmAmount);
+        }),
       casts?.map((cast) => {
         const participate = userId
           ? participates?.find(({ _id }) => String(_id) === String(userId))
