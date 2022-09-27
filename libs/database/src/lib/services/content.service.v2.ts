@@ -863,6 +863,9 @@ export class ContentServiceV2 {
     const userOwner = await this.repository.findUser({
       _id: content.author.id,
     });
+
+    const checkFarming = this.checkFarming(contentFarming);
+
     await this.notificationService.notifyToUser(
       {
         source:
@@ -879,7 +882,7 @@ export class ContentServiceV2 {
       account.preferences.languages[0],
     );
 
-    if (this.checkFarming(contentFarming)) {
+    if (checkFarming) {
       return this.updateContentFarming(contentFarming);
     } else return this.createContentFarming(contentId, userId);
   };
