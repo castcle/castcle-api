@@ -145,7 +145,7 @@ export class UsersControllerV2 {
     return this.userService.updateEmail(account, user, email, hostUrl);
   }
 
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @Post(':userId/sync-social')
   async syncSocial(
     @Auth() authorizer: Authorizer,
