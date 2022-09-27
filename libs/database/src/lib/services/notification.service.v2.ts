@@ -27,6 +27,7 @@ import { CastcleImage } from '@castcle-api/utils/aws';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
+import { Types } from 'mongoose';
 import { pipelineNotificationBadge } from '../aggregations';
 import {
   AndroidMessagePriority,
@@ -219,7 +220,7 @@ export class NotificationServiceV2 {
     requestedBy: User,
     language: string,
   ) => {
-    const userSort = [];
+    const userSort: User[] = [];
 
     if (
       [
@@ -239,22 +240,24 @@ export class NotificationServiceV2 {
       const users = await this.repository.findUsers({
         _id: reverseUserIds,
       });
+      const emptyUser: Types.ObjectId[] = [];
 
       users.forEach((user) => {
         const index = reverseUserIds.indexOf(user._id);
         if (index > -1) {
           userSort[index] = user;
-          reverseUserIds.splice(index, 1);
+        } else {
+          emptyUser.push(user._id);
         }
       });
 
       this.#logger.log('Check user not exists.');
 
-      if (reverseUserIds.length) {
+      if (emptyUser.length) {
         await this.repository.updateNotification(
           { _id: notify._id },
           {
-            $pull: { sourceUserId: { $in: reverseUserIds } },
+            $pull: { sourceUserId: { $in: emptyUser } },
           },
         );
         this.#logger.log('Check user empty at notification.');
@@ -264,11 +267,20 @@ export class NotificationServiceV2 {
 
         if (notifyUserEmpty && !notifyUserEmpty?.sourceUserId?.length) {
           await notifyUserEmpty.remove();
-          return;
+          return {
+            message: '',
+            user: undefined,
+            haveUser: 0,
+          };
         }
       }
 
-      if (!userSort.length) return;
+      if (!userSort.length)
+        return {
+          message: '',
+          user: undefined,
+          haveUser: 0,
+        };
     }
 
     const displayNames = userSort.map((user) => user.displayName);
@@ -404,7 +416,7 @@ export class NotificationServiceV2 {
         ...{ account: account._id },
       },
       {
-        sort: { createdAt: -1, updatedAt: -1 },
+        sort: { updatedAt: -1 },
         limit: maxResults,
       },
     );
@@ -473,20 +485,22 @@ export class NotificationServiceV2 {
           language,
         );
 
-        return this.toNotificationResponse(
-          notify,
-          message,
-          this.checkNotificationTypePage(
-            notify.type,
-            notify.commentRef
-              ? NotificationRef.Comment
-              : notify.contentRef
-              ? NotificationRef.Content
-              : undefined,
-          ),
-          user,
-          haveUser,
-        );
+        if (message) {
+          return this.toNotificationResponse(
+            notify,
+            message,
+            this.checkNotificationTypePage(
+              notify.type,
+              notify.commentRef
+                ? NotificationRef.Comment
+                : notify.contentRef
+                ? NotificationRef.Content
+                : undefined,
+            ),
+            user,
+            haveUser,
+          );
+        }
       }),
     );
 
