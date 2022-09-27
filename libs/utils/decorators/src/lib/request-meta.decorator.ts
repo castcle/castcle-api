@@ -83,7 +83,9 @@ export const RequestMeta = createParamDecorator(
 ) as (property?: keyof RequestMetadata) => ParameterDecorator;
 
 const getSource = (req: FastifyRequest): string | undefined => {
-  const header = req.headers['api-metadata'];
+  const header = req.headers['api-metadata']
+    ? req.headers['api-metadata']
+    : req.headers['API-Metadata'];
   const metadata = Array.isArray(header) ? header : header?.split(',');
   const sourceQuery = metadata?.find((meta) => meta.split('=')[0] === 'src');
   const source = sourceQuery?.split('=')[1];
