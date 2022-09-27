@@ -194,6 +194,8 @@ export class UsersControllerV2 {
       ? authorizer.user
       : await this.userService.getUser(userId);
 
+    if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     if (body.castcleId) {
