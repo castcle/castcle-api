@@ -32,6 +32,9 @@ import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
+import { NetworksController } from './networks/controller';
+import { GetNetworksService } from './networks/services/get-networks/service.abstract';
+import { GetNetworksServiceImpl } from './networks/services/get-networks/service.impl';
 import { NotificationsControllerV2 } from './notifications/controller.v2';
 import { PagesControllerV2 } from './pages/controller.v2';
 import { QRCodeControllerV2 } from './qr-codes/controller.v2';
@@ -58,6 +61,7 @@ import { SendTransactionServiceImpl } from './wallets/services/send-transaction/
     UtilsInterceptorsModule,
   ],
   controllers: [
+    NetworksController,
     NotificationsControllerV2,
     PagesControllerV2,
     QRCodeControllerV2,
@@ -65,6 +69,10 @@ import { SendTransactionServiceImpl } from './wallets/services/send-transaction/
     WalletControllerV2,
   ],
   providers: [
+    {
+      provide: GetNetworksService,
+      useClass: GetNetworksServiceImpl,
+    },
     {
       provide: GetWalletBalanceService,
       useClass: GetWalletBalanceServiceImpl,
