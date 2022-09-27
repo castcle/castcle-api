@@ -118,6 +118,11 @@ export class NotificationConsumer {
       sort: { createdAt: -1 },
     });
 
+    if (createNotification.sourceUserId)
+      notify.sourceUserId = [
+        new Types.ObjectId(createNotification.sourceUserId),
+      ];
+
     this.logger.log('Get devices by account.');
 
     const account = await this.repository.findAccount({
