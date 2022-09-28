@@ -21,16 +21,8 @@
  * or have any questions.
  */
 
-/**
- * This is hardcode configureation
- */
 export const Configs = {
   RequiredHeaders: {
-    AcceptVersion: {
-      name: 'Accept-Version',
-      description: 'Version of api',
-      example: '1.0',
-    },
     AcceptLanguage: {
       name: 'Accept-Language',
       description: 'Expected language response',
@@ -81,6 +73,6 @@ export const Configs = {
   },
   AssetsPath: {
     SuggestWords: 'metadata/suggestion-words.json',
+    DomainEmailDisposables: 'metadata/email-domain-disposables.json',
   },
-  DefaultLanguage: 'en',
 };

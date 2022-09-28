@@ -22,8 +22,12 @@
  */
 
 import { Environment } from '@castcle-api/environments';
+import { DBRef } from 'mongodb';
+import { PipelineStage, Types } from 'mongoose';
+import { EntityVisibility } from '../dtos';
 import { AdsAuctionAggregateDto } from '../dtos/ads.dto';
 import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
+import { projectionContent } from './get-contents.aggregation';
 
 export const mockPipe2AdsAuctionAggregate = () => {
   const temp: AdsAuctionAggregateDto = {
@@ -65,7 +69,13 @@ export type GetAdsPriceResponse = {
   total: number;
   price: number;
   ads: any[]; //objectId
-  adsRef: any[]; //dbRefs
+  adsRef: DBRef[]; //dbRefs
+};
+
+export type GetAdsCampaignQuery = {
+  excludeAds?: Types.ObjectId[];
+  boostStatus?: AdsBoostStatus;
+  status?: AdsStatus;
 };
 
 export const pipe2AdsAuctionPrice = () => {
@@ -99,7 +109,7 @@ export const pipe2AdsAuctionPrice = () => {
   ];
 };
 
-export const pipe2AvaialableAdsCampaign = () => [
+export const pipe2AvailableAdsCampaign = () => [
   {
     $addFields: {
       budgetLeft: {
@@ -119,3 +129,122 @@ export const pipe2AvaialableAdsCampaign = () => [
 ];
 
 export const pipe2AdsAuctionAggregate = mockPipe2AdsAuctionAggregate; //will change once proof aggregate
+
+export const pipelineGetAdsCampaigns = ({
+  excludeAds,
+  ...filters
+}: GetAdsCampaignQuery): PipelineStage[] => [
+  {
+    $addFields: {
+      budgetLeft: {
+        $subtract: ['$detail.dailyBudget', '$statistics.dailySpent'],
+      },
+    },
+  },
+  {
+    $match: {
+      _id: { $nin: excludeAds },
+      $expr: {
+        $gt: ['$budgetLeft', 0],
+      },
+      ...filters,
+    },
+  },
+  {
+    $facet: {
+      userAd: [
+        {
+          $sort: {
+            createdAt: 1,
+          },
+        },
+        {
+          $match: {
+            'adsRef.$ref': 'user',
+          },
+        },
+        { $limit: 1 },
+        {
+          $project: {
+            adsRef: '$adsRef',
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            let: {
+              userId: '$adsRef.$id',
+              visibility: EntityVisibility.Publish,
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$_id', '$$userId'] },
+                      { $eq: ['$visibility', '$$visibility'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'payload',
+          },
+        },
+        {
+          $unwind: {
+            path: '$payload',
+          },
+        },
+      ],
+      contentAd: [
+        {
+          $sort: {
+            createdAt: 1,
+          },
+        },
+        {
+          $match: {
+            'adsRef.$ref': 'content',
+          },
+        },
+        { $limit: 1 },
+        {
+          $project: {
+            adsRef: '$adsRef',
+          },
+        },
+        {
+          $lookup: {
+            from: 'contents',
+            let: {
+              contentId: '$adsRef.$id',
+              visibility: EntityVisibility.Publish,
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$_id', '$$contentId'] },
+                      { $eq: ['$visibility', '$$visibility'] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: projectionContent(),
+              },
+            ],
+            as: 'payload',
+          },
+        },
+        {
+          $unwind: {
+            path: '$payload',
+          },
+        },
+      ],
+    },
+  },
+];

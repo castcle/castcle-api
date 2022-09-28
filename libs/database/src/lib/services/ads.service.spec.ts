@@ -20,12 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { CreatedUser } from 'libs/testing/src/lib/testing.dto';
 import { Model, Types } from 'mongoose';
 import {
   ContentService,
@@ -33,10 +33,10 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  NotificationServiceV2,
   TAccountService,
 } from '../database.module';
 import { AdsQuery, AdsRequestDto, ShortPayload } from '../dtos';
-import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import {
   AdsBidType,
   AdsBoostStatus,
@@ -45,7 +45,7 @@ import {
   AdsPaymentMethod,
   AdsSocialReward,
   AdsStatus,
-  CACCOUNT_NO,
+  CAccountNo,
   ContentType,
   QueueName,
   WalletType,
@@ -54,52 +54,44 @@ import { Repository } from '../repositories';
 import {
   AdsCampaign,
   AdsPlacement,
-  CAccount,
   Content,
   Transaction,
+  cAccount,
 } from '../schemas';
 import { AdsService } from './ads.service';
-import { AuthenticationService } from './authentication.service';
-import { UserService } from './user.service';
 
 describe('AdsService', () => {
-  let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: AdsService;
-  let authService: AuthenticationService;
-  let userService: UserService;
   let contentService: ContentService;
-  let mocks: MockUserDetail[];
-  let cAccountModel: Model<CAccount>;
+  let mocks: CreatedUser[];
+  let adsCampaignModel: Model<AdsCampaign>;
+  let cAccountModel: Model<cAccount>;
   let transactionModel: Model<Transaction>;
   let promoteContent: Content;
   let dataService: DataService;
+  let tAccountService: TAccountService;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
         CacheModule.register(),
+        CastcleMongooseModule,
         HttpModule,
-        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
       ],
       providers: [
         AdsService,
-        AuthenticationService,
-        UserService,
         ContentService,
         TAccountService,
         HashtagService,
         Repository,
+        NotificationServiceV2,
         {
           provide: DataService,
           useValue: {
-            personalizeContents: async (
-              accountId: string,
-              contentIds: string[],
-            ) => ({
+            personalizeContents: (_: string, contentIds: string[]) => ({
               [contentIds[0]]: 4,
             }),
           },
@@ -109,41 +101,49 @@ describe('AdsService', () => {
           useValue: { add: jest.fn() },
         },
         {
+          provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.NOTIFICATION),
+          useValue: { add: jest.fn() },
+        },
+        {
           provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
-    service = moduleRef.get<AdsService>(AdsService);
-    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
-    userService = moduleRef.get<UserService>(UserService);
-    contentService = moduleRef.get<ContentService>(ContentService);
-    dataService = moduleRef.get<DataService>(DataService);
-    transactionModel = moduleRef.get(getModelToken('Transaction'));
-    cAccountModel = moduleRef.get(getModelToken('CAccount'));
-
-    mocks = await generateMockUsers(2, 1, {
-      accountService: authService,
-      userService: userService,
     });
+
+    service = moduleRef.get(AdsService);
+    contentService = moduleRef.get(ContentService);
+    dataService = moduleRef.get(DataService);
+    tAccountService = moduleRef.get(TAccountService);
+    transactionModel = moduleRef.getModel('Transaction');
+    cAccountModel = moduleRef.getModel('cAccount');
+    adsCampaignModel = moduleRef.getModel('AdsCampaign');
+
+    mocks = await Promise.all([
+      moduleRef.createUser({ pageSize: 1 }),
+      moduleRef.createUser(),
+    ]);
+
     promoteContent = await contentService.createContentFromUser(mocks[0].user, {
       castcleId: mocks[0].user.id,
-      payload: {
-        message: 'this is prmote short',
-      } as ShortPayload,
+      payload: { message: 'this is promote short' } as ShortPayload,
       type: ContentType.Short,
     });
   });
 
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
+  afterAll(() => {
+    return moduleRef.close();
   });
+
   describe('#createAds', () => {
     it('should be able to create ads for promote Page', async () => {
       await new transactionModel({
         from: {
-          type: WalletType.CASTCLE_TREASURY,
+          type: WalletType.EXTERNAL_DEPOSIT,
           value: 999999,
         },
         to: [
@@ -154,28 +154,29 @@ describe('AdsService', () => {
           },
         ],
       }).save();
-      const adsIput = {
+      const adDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        castcleId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].displayId,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       } as AdsRequestDto;
-      const ads = await service.createAds(mocks[0].pages[0], adsIput);
-      expect(ads.detail.dailyBudget).toEqual(adsIput.dailyBudget);
-      expect(ads.detail.duration).toEqual(adsIput.duration);
-      expect(ads.objective).toEqual(adsIput.objective);
-      expect(ads.detail.message).toEqual(adsIput.campaignMessage);
-      expect(ads.detail.name).toEqual(adsIput.campaignName);
-      expect(ads.adsRef).not.toBeUndefined();
-      expect(ads.adsRef.$id).toEqual(mocks[0].pages[0]._id);
+      const ads = await service.createAds(mocks[0].pages[0], adDto);
+      expect(ads.dailyBudget).toEqual(adDto.dailyBudget);
+      expect(ads.duration).toEqual(adDto.duration);
+      expect(ads.objective).toEqual(adDto.objective);
+      expect(ads.campaignMessage).toEqual(adDto.campaignMessage);
+      expect(ads.campaignName).toEqual(adDto.campaignName);
+      expect(ads.payload).not.toBeUndefined();
+      expect(ads.payload.id).toEqual(mocks[0].pages[0].id);
     });
+
     it('should be able to create ads for promote contents', async () => {
       await new transactionModel({
         from: {
-          type: WalletType.CASTCLE_TREASURY,
+          type: WalletType.EXTERNAL_DEPOSIT,
           value: 999999,
         },
         to: [
@@ -198,13 +199,13 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       } as AdsRequestDto;
       const ads = await service.createAds(mocks[0].user, adsIput);
-      expect(ads.detail.dailyBudget).toEqual(adsIput.dailyBudget);
-      expect(ads.detail.duration).toEqual(adsIput.duration);
+      expect(ads.dailyBudget).toEqual(adsIput.dailyBudget);
+      expect(ads.duration).toEqual(adsIput.duration);
       expect(ads.objective).toEqual(adsIput.objective);
-      expect(ads.detail.message).toEqual(adsIput.campaignMessage);
-      expect(ads.detail.name).toEqual(adsIput.campaignName);
-      expect(ads.adsRef).not.toBeUndefined();
-      expect(ads.adsRef.$id).toEqual(promoteContent._id);
+      expect(ads.campaignMessage).toEqual(adsIput.campaignMessage);
+      expect(ads.campaignName).toEqual(adsIput.campaignName);
+      expect(ads.payload).not.toBeUndefined();
+      expect(ads.payload.id).toEqual(promoteContent.id);
     });
   });
   describe('#listAds', () => {
@@ -215,8 +216,10 @@ describe('AdsService', () => {
         timezone: '+07:00',
       } as AdsQuery);
 
-      expect(adsCampaigns.length).toBeGreaterThan(0);
-      expect(String(adsCampaigns[0].owner)).toBe(String(mocks[0].user._id));
+      expect(adsCampaigns.payload.length).toBeGreaterThan(0);
+      expect(String((adsCampaigns.payload[0].payload as any).authorId)).toBe(
+        String(mocks[0].user.id),
+      );
     });
   });
   describe('#lookupAds', () => {
@@ -224,7 +227,7 @@ describe('AdsService', () => {
       const adsInput = {
         campaignName: 'Ads',
         campaignMessage: 'This is ads',
-        castcleId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].displayId,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
@@ -236,11 +239,13 @@ describe('AdsService', () => {
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
       const adsCampaign = await service.lookupAds(
         mocks[0].pages[0]._id,
-        ads._id,
+        ads.id,
       );
 
       expect(adsCampaign).toBeTruthy();
-      expect(String(adsCampaign.owner)).toBe(String(mocks[0].pages[0]._id));
+      expect(String(adsCampaign.payload.id)).toBe(
+        String(mocks[0].pages[0]._id),
+      );
     });
   });
 
@@ -249,7 +254,7 @@ describe('AdsService', () => {
       const adsInput: AdsRequestDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        castcleId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].displayId,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
@@ -269,9 +274,7 @@ describe('AdsService', () => {
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
       await service.updateAdsById(ads.id, adsUpdate);
-      const adsCampaign = await service._adsCampaignModel
-        .findById(ads.id)
-        .exec();
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign).toBeTruthy();
       expect(adsCampaign.detail.name).toEqual(adsUpdate.campaignName);
@@ -281,12 +284,13 @@ describe('AdsService', () => {
       expect(adsCampaign.objective).toEqual(adsUpdate.objective);
     });
   });
+
   describe('#deleteAds', () => {
     it('should be able delete ads is correct.', async () => {
       const adsInput: AdsRequestDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        castcleId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].displayId,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
@@ -296,19 +300,18 @@ describe('AdsService', () => {
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
       await service.deleteAdsById(ads.id);
-      const adsCampaign = await service._adsCampaignModel
-        .findById(ads.id)
-        .exec();
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign).toBeNull();
     });
   });
-  describe('#updateAdsBoostStatus', () => {
-    it('should be able update ads boost status.', async () => {
+
+  describe('#adsRunning', () => {
+    it('should be able update ads is correct.', async () => {
       const adsInput: AdsRequestDto = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',
-        castcleId: mocks[0].pages[0].id,
+        castcleId: mocks[0].pages[0].displayId,
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
@@ -317,8 +320,67 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       };
       const ads = await service.createAds(mocks[0].pages[0], adsInput);
-      await service._adsCampaignModel.updateOne(
-        { _id: ads._id },
+
+      const adCampaign1 = await adsCampaignModel.findById(ads.id).exec();
+
+      await service.approveAd(ads.id);
+      await service.adsPause(adCampaign1);
+
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
+
+      expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
+
+      await service.adsRunning(adsCampaign);
+      const adsCampaign1 = await adsCampaignModel.findById(ads.id).exec();
+
+      expect(adsCampaign1.boostStatus).toEqual(AdsBoostStatus.Running);
+      expect(adsCampaign1.pauseInterval).toHaveLength(1);
+    });
+  });
+
+  describe('#adsPause', () => {
+    it('should be able update ads is correct.', async () => {
+      const adsInput: AdsRequestDto = {
+        campaignName: 'Ads1',
+        campaignMessage: 'This is ads',
+        castcleId: mocks[0].pages[0].displayId,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
+      };
+      const ads = await service.createAds(mocks[0].pages[0], adsInput);
+
+      const adCampaign1 = await adsCampaignModel.findById(ads.id).exec();
+
+      await service.approveAd(ads.id);
+      await service.adsPause(adCampaign1);
+
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
+
+      expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
+      expect(adsCampaign.pauseInterval).toHaveLength(1);
+    });
+  });
+
+  describe('#updateAdsBoostStatus', () => {
+    it('should be able update ads boost status.', async () => {
+      const adsInput: AdsRequestDto = {
+        campaignName: 'Ads1',
+        campaignMessage: 'This is ads',
+        castcleId: mocks[0].pages[0].displayId,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        dailyBidType: AdsBidType.Auto,
+        dailyBidValue: 1,
+      };
+      const ads = await service.createAds(mocks[0].pages[0], adsInput);
+      await adsCampaignModel.updateOne(
+        { _id: ads.id },
         {
           $set: {
             status: AdsStatus.Approved,
@@ -327,9 +389,7 @@ describe('AdsService', () => {
       );
 
       await service.updateAdsBoostStatus(ads.id, AdsBoostStatus.Pause);
-      const adsCampaign = await service._adsCampaignModel
-        .findById(ads.id)
-        .exec();
+      const adsCampaign = await adsCampaignModel.findById(ads.id).exec();
 
       expect(adsCampaign).toBeTruthy();
       expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
@@ -341,8 +401,8 @@ describe('AdsService', () => {
     const adsCampaigns: AdsCampaign[] = [];
     beforeAll(async () => {
       //remove all adsCampaign
-      await service._adsCampaignModel.remove({});
-      expect(await service._adsCampaignModel.countDocuments()).toEqual(0);
+      await adsCampaignModel.deleteMany({});
+      expect(await adsCampaignModel.countDocuments()).toEqual(0);
       const mockRelevanceScores = [
         0.1, 0.3, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.15, 0.22, 0.23, 0.34, 0.67,
         0.87,
@@ -371,13 +431,18 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       };
       const c1 = await service.createAds(mocks[0].user, adsIput);
-      c1.status = AdsStatus.Approved;
-      c1.boostStatus = AdsBoostStatus.Running;
-      c1.statistics.dailySpent = 4.99;
-      c1.markModified('statistics');
-      adsCampaigns[0] = await c1.save();
+
+      const ad1 = await adsCampaignModel.findOne({
+        _id: new Types.ObjectId(c1.id),
+      });
+
+      ad1.status = AdsStatus.Approved;
+      ad1.boostStatus = AdsBoostStatus.Running;
+      ad1.statistics.dailySpent = 4.99;
+      ad1.markModified('statistics');
+      adsCampaigns[0] = await ad1.save();
       for (let i = 1; i < mockRelevanceScores.length - 1; i++) {
-        adsCampaigns[i] = await service.createAds(mocks[0].user, {
+        await service.createAds(mocks[0].user, {
           campaignName: 'cf2',
           campaignMessage: 'This is ads',
           contentId: adsContents[i].id,
@@ -388,6 +453,11 @@ describe('AdsService', () => {
           dailyBidType: AdsBidType.Auto,
           dailyBidValue: 1,
         });
+
+        adsCampaigns[i] = await adsCampaignModel.findOne({
+          _id: new Types.ObjectId(c1.id),
+        });
+
         adsCampaigns[i].status = AdsStatus.Approved;
         adsCampaigns[i].boostStatus = AdsBoostStatus.Running;
         await adsCampaigns[i].save();
@@ -405,20 +475,18 @@ describe('AdsService', () => {
         dailyBidValue: 1,
       };
       const cLast = await service.createAds(mocks[0].user, adsIputLast);
-      cLast.statistics.dailySpent = 5;
-      cLast.markModified('statistics');
-      cLast.status = AdsStatus.Approved;
-      cLast.boostStatus = AdsBoostStatus.Running;
-      adsCampaigns[mockRelevanceScores.length - 1] = await cLast.save();
+      const ad2 = await adsCampaignModel.findOne({ _id: cLast.id });
+      ad2.status = AdsStatus.Approved;
+      ad2.boostStatus = AdsBoostStatus.Running;
+      ad2.statistics.dailySpent = 4.99;
+      ad2.markModified('statistics');
+      adsCampaigns[mockRelevanceScores.length - 1] = await ad2.save();
       const mockObj: { [key: string]: number } = {};
       mockRelevanceScores.forEach((item, index) => {
         mockObj[adsContents[index].id] = item;
       });
-      console.log('///////////////// MOCK SCORE///////////');
       jest.spyOn(dataService, 'personalizeContents').mockResolvedValue(mockObj);
-      console.log(
-        await dataService.personalizeContents(mocks[1].account.id, []),
-      );
+      await dataService.personalizeContents(mocks[1].account.id, []);
     });
     describe('getAds', () => {
       it('should return bidding price of CPM(cost per thousand) as expect in google doc', async () => {
@@ -481,27 +549,28 @@ describe('AdsService', () => {
       });
     });
   });
-  describe('Distrute Reward cases', () => {
+
+  describe('Distribute Reward cases', () => {
     beforeAll(async () => {
       const socialReward = await new cAccountModel({
-        no: CACCOUNT_NO.SOCIAL_REWARD.NO,
+        no: CAccountNo.SOCIAL_REWARD.NO,
         name: 'SOCIAL_REWARD',
         nature: 'credit',
         child: [
-          CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO,
-          CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          CAccountNo.SOCIAL_REWARD.ADS_CREDIT.NO,
+          CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
         ],
       }).save();
       await cAccountModel.insertMany([
         {
-          no: CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO,
+          no: CAccountNo.SOCIAL_REWARD.ADS_CREDIT.NO,
           name: 'SOCIAL_REWARD.ADS_CREDIT',
           nature: 'credit',
           parent: socialReward._id,
           child: [],
         },
         {
-          no: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          no: CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           name: 'SOCIAL_REWARD.PERSONAL',
           nature: 'credit',
           parent: socialReward._id,
@@ -509,24 +578,24 @@ describe('AdsService', () => {
         },
       ]);
       const liability = await new cAccountModel({
-        no: CACCOUNT_NO.LIABILITY.NO,
+        no: CAccountNo.LIABILITY.NO,
         name: 'LIABILITY',
         nature: 'credit',
         child: [
-          CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
-          CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          CAccountNo.LIABILITY.USER_WALLET.ADS,
+          CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
         ],
       }).save();
-      cAccountModel.insertMany([
+      await cAccountModel.insertMany([
         {
-          no: CACCOUNT_NO.LIABILITY.USER_WALLET.ADS,
+          no: CAccountNo.LIABILITY.USER_WALLET.ADS,
           name: 'LIABILITY.ADS_CREDIT',
           nature: 'credit',
           parent: liability._id,
           child: [],
         },
         {
-          no: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          no: CAccountNo.LIABILITY.USER_WALLET.PERSONAL,
           name: 'LIABILITY.PERSONAL',
           nature: 'credit',
           parent: liability._id,
@@ -538,20 +607,20 @@ describe('AdsService', () => {
       describe('distributeContentFarmingReward()', () => {
         it('should distribute reward to content creator if no content farming', async () => {
           const authors = [
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
           ];
           const newContents = authors.map((author) => ({
             authorId: author,
-            contentId: Types.ObjectId(),
+            contentId: new Types.ObjectId(),
           }));
-          const campaign = Types.ObjectId();
-          const viewer = Types.ObjectId();
+          const campaign = new Types.ObjectId();
+          const viewer = new Types.ObjectId();
           const topupValue = 100;
-          new transactionModel({
+          await new transactionModel({
             from: {
               type: WalletType.EXTERNAL_DEPOSIT,
               value: topupValue,
@@ -565,18 +634,18 @@ describe('AdsService', () => {
             ledgers: [
               {
                 credit: {
-                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  cAccountNo: CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
                   value: topupValue,
                 },
                 debit: {
-                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  cAccountNo: CAccountNo.ASSET.CASTCLE_DEPOSIT,
                   value: topupValue,
                 },
               },
             ],
           }).save();
-          const balance = await service.taccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          const balance = await tAccountService.getBalance(
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
           const session = await transactionModel.startSession();
@@ -602,16 +671,15 @@ describe('AdsService', () => {
             reward,
             session,
           );
-          const newBalance = await service.taccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          const newBalance = await tAccountService.getBalance(
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(newBalance).not.toEqual(topupValue);
           for (let i = 0; i < authors.length; i++) {
-            const authorBalance =
-              await service.taccountService.getAccountBalance(
-                String(authors[i]),
-                WalletType.PERSONAL,
-              );
+            const authorBalance = await tAccountService.getAccountBalance(
+              String(authors[i]),
+              WalletType.PERSONAL,
+            );
             expect(authorBalance).toEqual(reward.farmingShare / authors.length);
           }
         });
@@ -619,21 +687,21 @@ describe('AdsService', () => {
       describe('distributeContentCreatorReward()', () => {
         it('should distrubute author reward', async () => {
           const authors = [
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
           ];
           const newContents = authors.map((author) => ({
             authorId: author,
-            contentId: Types.ObjectId(),
+            contentId: new Types.ObjectId(),
           }));
-          const campaign = Types.ObjectId();
-          const viewer = Types.ObjectId();
+          const campaign = new Types.ObjectId();
+          const viewer = new Types.ObjectId();
           const topupValue = 100;
           await transactionModel.deleteMany({});
-          new transactionModel({
+          await new transactionModel({
             from: {
               type: WalletType.EXTERNAL_DEPOSIT,
               value: topupValue,
@@ -647,18 +715,18 @@ describe('AdsService', () => {
             ledgers: [
               {
                 credit: {
-                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  cAccountNo: CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
                   value: topupValue,
                 },
                 debit: {
-                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  cAccountNo: CAccountNo.ASSET.CASTCLE_DEPOSIT,
                   value: topupValue,
                 },
               },
             ],
           }).save();
-          const balance = await service.taccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          const balance = await tAccountService.getBalance(
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
           const session = await transactionModel.startSession();
@@ -684,16 +752,15 @@ describe('AdsService', () => {
             reward,
             session,
           );
-          const newBalance = await service.taccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          const newBalance = await tAccountService.getBalance(
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(newBalance).not.toEqual(topupValue);
           for (let i = 0; i < authors.length; i++) {
-            const authorBalance =
-              await service.taccountService.getAccountBalance(
-                String(authors[i]),
-                WalletType.PERSONAL,
-              );
+            const authorBalance = await tAccountService.getAccountBalance(
+              String(authors[i]),
+              WalletType.PERSONAL,
+            );
             expect(authorBalance).toEqual(reward.creatorShare / authors.length);
           }
         });
@@ -701,21 +768,21 @@ describe('AdsService', () => {
       describe('distributeViewerReward()', () => {
         it('should distribute to viewer', async () => {
           const authors = [
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
-            Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
+            new Types.ObjectId(),
           ];
           const newContents = authors.map((author) => ({
             authorId: author,
-            contentId: Types.ObjectId(),
+            contentId: new Types.ObjectId(),
           }));
-          const campaign = Types.ObjectId();
-          const viewer = Types.ObjectId();
+          const campaign = new Types.ObjectId();
+          const viewer = new Types.ObjectId();
           const topupValue = 100;
           await transactionModel.deleteMany({});
-          new transactionModel({
+          await new transactionModel({
             from: {
               type: WalletType.EXTERNAL_DEPOSIT,
               value: topupValue,
@@ -729,18 +796,18 @@ describe('AdsService', () => {
             ledgers: [
               {
                 credit: {
-                  caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  cAccountNo: CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
                   value: topupValue,
                 },
                 debit: {
-                  caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                  cAccountNo: CAccountNo.ASSET.CASTCLE_DEPOSIT,
                   value: topupValue,
                 },
               },
             ],
           }).save();
-          const balance = await service.taccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          const balance = await tAccountService.getBalance(
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(balance).toEqual(topupValue);
           const session = await transactionModel.startSession();
@@ -766,34 +833,35 @@ describe('AdsService', () => {
             reward,
             session,
           );
-          const viewerBalance = await service.taccountService.getAccountBalance(
+          const viewerBalance = await tAccountService.getAccountBalance(
             String(viewer),
             WalletType.PERSONAL,
           );
           expect(viewerBalance).toEqual(reward.viewerShare);
-          const newBalance = await service.taccountService.getBalance(
-            CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          const newBalance = await tAccountService.getBalance(
+            CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
           );
           expect(newBalance).not.toEqual(topupValue);
         });
       });
+
       it('should distribute all rewards to all counter parties', async () => {
         const authors = [
-          Types.ObjectId(),
-          Types.ObjectId(),
-          Types.ObjectId(),
-          Types.ObjectId(),
-          Types.ObjectId(),
+          new Types.ObjectId(),
+          new Types.ObjectId(),
+          new Types.ObjectId(),
+          new Types.ObjectId(),
+          new Types.ObjectId(),
         ];
         const newContents = authors.map((author) => ({
           authorId: author,
-          contentId: Types.ObjectId(),
+          contentId: new Types.ObjectId(),
         }));
-        const campaign = Types.ObjectId();
-        const viewer = Types.ObjectId();
+        const campaign = new Types.ObjectId();
+        const viewer = new Types.ObjectId();
         const topupValue = 100;
         await transactionModel.deleteMany({});
-        new transactionModel({
+        await new transactionModel({
           from: {
             type: WalletType.EXTERNAL_DEPOSIT,
             value: topupValue,
@@ -807,18 +875,18 @@ describe('AdsService', () => {
           ledgers: [
             {
               credit: {
-                caccountNo: CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                cAccountNo: CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
                 value: topupValue,
               },
               debit: {
-                caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+                cAccountNo: CAccountNo.ASSET.CASTCLE_DEPOSIT,
                 value: topupValue,
               },
             },
           ],
         }).save();
-        const balance = await service.taccountService.getBalance(
-          CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+        const balance = await tAccountService.getBalance(
+          CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
         );
         expect(balance).toEqual(topupValue);
         const session = await transactionModel.startSession();
@@ -844,17 +912,17 @@ describe('AdsService', () => {
           reward,
           session,
         );
-        const newBalance = await service.taccountService.getBalance(
-          CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+        const newBalance = await tAccountService.getBalance(
+          CAccountNo.SOCIAL_REWARD.PERSONAL.NO,
         );
         expect(newBalance).not.toEqual(topupValue);
-        const viewerBalance = await service.taccountService.getAccountBalance(
+        const viewerBalance = await tAccountService.getAccountBalance(
           String(viewer),
           WalletType.PERSONAL,
         );
         expect(viewerBalance).toEqual(reward.viewerShare);
         for (let i = 0; i < authors.length; i++) {
-          const authorBalance = await service.taccountService.getAccountBalance(
+          const authorBalance = await tAccountService.getAccountBalance(
             String(authors[i]),
             WalletType.PERSONAL,
           );
@@ -864,11 +932,5 @@ describe('AdsService', () => {
         }
       });
     });
-  });
-  afterAll(() => {
-    service._adsCampaignModel.deleteMany({});
-    userService._accountModel.deleteMany({});
-    userService._userModel.deleteMany({});
-    contentService._contentModel.deleteMany({});
   });
 });

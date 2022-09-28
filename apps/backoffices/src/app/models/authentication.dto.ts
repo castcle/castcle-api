@@ -43,6 +43,16 @@ export class GetStaffParams {
   staffId: string;
 }
 
+export class ChangePasswordDto {
+  @IsString()
+  @IsNotEmpty()
+  oldPassword: string;
+
+  @IsString()
+  @IsNotEmpty()
+  newPassword: string;
+}
+
 export interface AccessTokenPayload {
   id: string;
   email: string;

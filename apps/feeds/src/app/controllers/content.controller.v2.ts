@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   ContentServiceV2,
   CreateContentDto,
@@ -30,16 +31,14 @@ import {
   ReportingStatus,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
   CastcleAuth,
   CastcleBasicAuth,
   CastcleClearCacheAuth,
-  CastcleControllerV2,
+  CastcleController,
 } from '@castcle-api/utils/decorators';
-import { CastcleException } from '@castcle-api/utils/exception';
 import {
   Body,
   Delete,
@@ -52,9 +51,9 @@ import {
 } from '@nestjs/common';
 import { SaveContentPipe } from '../pipes/save-content.pipe';
 
-@CastcleControllerV2({ path: 'contents' })
+@CastcleController({ path: 'v2/contents' })
 export class ContentControllerV2 {
-  private logger = new CastLogger(ContentControllerV2.name);
+  private logger = new CastcleLogger(ContentControllerV2.name);
 
   constructor(private contentServiceV2: ContentServiceV2) {}
 
@@ -63,17 +62,20 @@ export class ContentControllerV2 {
   getContent(
     @Param() { contentId }: GetContentDto,
     @Auth() authorizer: Authorizer,
-    @Query() { hasRelationshipExpansion }: PaginationQuery,
+    @Query() { userFields }: PaginationQuery,
   ) {
     this.logger.log(`Get casts from content : ${contentId}`);
 
     return this.contentServiceV2.getContent(
       contentId,
       authorizer.user,
-      hasRelationshipExpansion,
+      userFields,
     );
   }
 
+  /**
+   * @deprecated The method should not be used. Please use [GET] users/:userId/farming/cast/:contentId
+   */
   @CastcleAuth(CacheKeyName.Contents)
   @Get(':contentId/farming')
   async getContentFarming(
@@ -84,12 +86,15 @@ export class ContentControllerV2 {
     return this.contentServiceV2.pipeContentFarming(
       await this.contentServiceV2.getContentFarming(
         contentId,
-        authorizer.account.id,
+        authorizer.user.id,
       ),
-      authorizer.account.id,
+      authorizer.user.id,
     );
   }
 
+  /**
+   * @deprecated The method should not be used. Please use [POST] users/:userId/farming/cast
+   */
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Post(':contentId/farm')
   async farmContent(
@@ -98,11 +103,18 @@ export class ContentControllerV2 {
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
     return this.contentServiceV2.pipeContentFarming(
-      await this.contentServiceV2.farm(contentId, authorizer.account.id),
-      authorizer.account.id,
+      await this.contentServiceV2.farm(
+        contentId,
+        authorizer.user.id,
+        authorizer.account.id,
+      ),
+      authorizer.user.id,
     );
   }
 
+  /**
+   * @deprecated The method should not be used. Please use [DELETE] users/:userId/farming/:farmingId
+   */
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Delete(':contentId/farm')
   async unfarmContent(
@@ -111,8 +123,8 @@ export class ContentControllerV2 {
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
     return this.contentServiceV2.pipeContentFarming(
-      await this.contentServiceV2.unfarm(contentId, authorizer.account.id),
-      authorizer.account.id,
+      await this.contentServiceV2.unfarm(contentId, authorizer.user.id),
+      authorizer.user.id,
     );
   }
 
@@ -197,7 +209,7 @@ export class ContentControllerV2 {
     @Auth() authorizer: Authorizer,
     @Param() { contentId }: GetContentDto,
   ) {
-    if (authorizer.account.isGuest) throw new CastcleException('FORBIDDEN');
+    authorizer.requireActivation();
 
     return this.contentServiceV2.getParticipates(contentId, authorizer.account);
   }

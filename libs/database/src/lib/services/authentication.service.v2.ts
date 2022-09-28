@@ -21,500 +21,50 @@
  * or have any questions.
  */
 
+import { CastcleLogger, Token } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
-  FacebookClient,
   GoogleClient,
-  Mailer,
   TwilioChannel,
   TwilioClient,
   TwilioErrorMessage,
   TwilioStatus,
-  TwitterClient,
 } from '@castcle-api/utils/clients';
-import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
+import { Queue } from 'bull';
 import { DateTime } from 'luxon';
-import { Types } from 'mongoose';
 import {
-  AccessTokenPayload,
   ChangePasswordDto,
-  CreateCredentialDto,
-  EntityVisibility,
   RegisterFirebaseDto,
-  RegisterWithEmailDto,
   RequestOtpByEmailDto,
   RequestOtpByMobileDto,
   RequestOtpForChangingPasswordDto,
-  SocialConnectDto,
-  UserAccessTokenPayload,
-  UserField,
   VerifyOtpByEmailDto,
   VerifyOtpByMobileDto,
 } from '../dtos';
 import {
   AccountActivationType,
-  AccountRequirements,
-  AccountRole,
-  AuthenticationProvider,
   OtpObjective,
   OtpTemplateMessage,
-  UserType,
+  QueueName,
+  VerifyEmailMessage,
 } from '../models';
 import { Repository } from '../repositories';
-import { Account, Credential, User } from '../schemas';
-import { AnalyticService } from './analytic.service';
+import { Account } from '../schemas';
 
 @Injectable()
 export class AuthenticationServiceV2 {
-  private logger = new CastLogger(AuthenticationServiceV2.name);
+  private logger = new CastcleLogger(AuthenticationServiceV2.name);
 
   constructor(
-    private analyticService: AnalyticService,
-    private facebookClient: FacebookClient,
     private googleClient: GoogleClient,
     private twilioClient: TwilioClient,
-    private twitterClient: TwitterClient,
-    private mailer: Mailer,
     private repository: Repository,
+    @InjectQueue(QueueName.VERIFY_EMAIL)
+    private emailVerifier: Queue<VerifyEmailMessage>,
   ) {}
-
-  private generateTokenPayload(credential: Credential, user?: User) {
-    if (credential.account.isGuest) {
-      return {
-        id: credential.account._id,
-        preferredLanguage: credential.account.preferences.languages,
-        role: 'guest',
-        showAds: true,
-      } as AccessTokenPayload;
-    }
-
-    return {
-      id: credential.account._id,
-      preferredLanguage: credential.account.preferences.languages,
-      role: 'member',
-      showAds: true,
-      verified: user.verified,
-    } as UserAccessTokenPayload;
-  }
-
-  /**
-   * should remove account from credential.account and set it's new account to credential.account
-   * @param {Credential} credential
-   * @param {Account} account
-   */
-  private async linkCredentialToAccount(
-    credential: Credential,
-    account: Account,
-  ) {
-    const isSameAccount = String(credential.account._id) === account.id;
-    const isLinkedCredential = account.credentials?.some(
-      ({ deviceUUID }) => deviceUUID === credential.deviceUUID,
-    );
-
-    if (!isSameAccount) {
-      await this.repository.deleteAccount({ _id: credential.account._id });
-      await credential
-        .set({
-          account: {
-            _id: account._id,
-            visibility: account.visibility,
-            isGuest: account.isGuest,
-            preferences: account.preferences,
-            activateDate: account.activateDate,
-            geolocation: account.geolocation,
-          },
-        })
-        .save();
-    }
-
-    if (!isLinkedCredential) {
-      await this.repository.updateAccount(
-        { _id: account._id },
-        {
-          $push: {
-            credentials: {
-              _id: Types.ObjectId(credential._id),
-              deviceUUID: credential.deviceUUID,
-            },
-          },
-        },
-      );
-    }
-
-    return credential;
-  }
-
-  private async login(credential: Credential, account: Account) {
-    const users = await this.repository.findUsers(
-      { accountId: account._id },
-      { sort: { updatedAt: -1 } },
-    );
-
-    const user = users.find((user) => user.type === UserType.PEOPLE);
-    const pages = users.filter((user) => user.type === UserType.PAGE);
-    const tokenPayload = this.generateTokenPayload(credential, user);
-    const { accessToken, refreshToken } = await credential.renewTokens(
-      tokenPayload,
-      { id: String(account._id) },
-    );
-
-    return {
-      accessToken,
-      refreshToken,
-      profile: await user?.toOwnerResponse({
-        expansionFields: [
-          UserField.LinkSocial,
-          UserField.SyncSocial,
-          UserField.Wallet,
-        ],
-      }),
-      pages: await Promise.all(
-        pages.map((page) =>
-          page.toOwnerResponse({
-            expansionFields: [
-              UserField.LinkSocial,
-              UserField.SyncSocial,
-              UserField.Wallet,
-            ],
-          }),
-        ),
-      ),
-    };
-  }
-
-  async loginWithEmail(
-    credential: Credential,
-    email: string,
-    password: string,
-  ) {
-    const account = await this.repository.findAccount({ email });
-
-    if (!account) throw new CastcleException('INVALID_EMAIL');
-    if (!account.verifyPassword(password)) {
-      throw new CastcleException('INVALID_EMAIL_OR_PASSWORD');
-    }
-
-    await this.linkCredentialToAccount(credential, account);
-    return this.login(credential, account);
-  }
-
-  async loginWithSocial(
-    credential: Credential,
-    socialConnectDto: SocialConnectDto & { ip: string; userAgent: string },
-  ) {
-    const { email, socialId, provider, ip, userAgent, authToken } =
-      socialConnectDto;
-
-    if (provider === AuthenticationProvider.FACEBOOK) {
-      const profile = await this.facebookClient.getFacebookProfile(authToken);
-      if (socialId !== profile.id)
-        throw new CastcleException('INVALID_AUTH_TOKEN');
-      socialConnectDto.displayName ||= profile.name;
-    } else if (provider === AuthenticationProvider.TWITTER) {
-      const [token, secret] = authToken.split('|');
-      const profile = await this.twitterClient.verifyCredentials(token, secret);
-      if (socialId !== profile.id_str) {
-        throw new CastcleException('INVALID_AUTH_TOKEN');
-      }
-      socialConnectDto.displayName ||= profile.name;
-    }
-
-    const accountFromSocial = await this.repository.findAccount({
-      provider,
-      socialId,
-    });
-
-    if (accountFromSocial) {
-      await this.linkCredentialToAccount(credential, accountFromSocial);
-      const login = await this.login(credential, accountFromSocial);
-      return { registered: true, ...login };
-    }
-
-    if (email) {
-      const duplicateAccount = await this.repository.findAccount({ email });
-      if (duplicateAccount) {
-        const duplicateUser = await this.repository.findUser({
-          accountId: duplicateAccount._id,
-        });
-        const profile = duplicateUser?.toPublicResponse();
-        throw new CastcleException(
-          'DUPLICATE_EMAIL',
-          profile ? { profile } : null,
-        );
-      }
-    }
-
-    const registration = await this.registerWithSocial(
-      credential,
-      socialConnectDto,
-    );
-    await this.analyticService.trackRegistration(ip, userAgent);
-    return { registered: false, ...registration };
-  }
-
-  async connectWithSocial(
-    credential: Credential,
-    account: Account,
-    { avatar, provider, socialId, authToken }: SocialConnectDto,
-  ) {
-    if (account.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
-
-    const socialConnected = await this.repository.findAccount({
-      provider,
-      socialId,
-    });
-
-    if (socialConnected) throw new CastcleException('SOCIAL_PROVIDER_IS_EXIST');
-    if (provider === AuthenticationProvider.FACEBOOK) {
-      const profile = await this.facebookClient.getFacebookProfile(authToken);
-      if (socialId !== profile.id)
-        throw new CastcleException('INVALID_AUTH_TOKEN');
-    } else if (provider === AuthenticationProvider.TWITTER) {
-      const [token, secret] = authToken.split('|');
-      const profile = await this.twitterClient.verifyCredentials(token, secret);
-      if (socialId !== profile.id_str) {
-        throw new CastcleException('INVALID_AUTH_TOKEN');
-      }
-    }
-
-    await account
-      .set({ [`authentications.${provider}`]: { socialId, avatar } })
-      .save();
-
-    return this.login(credential, account);
-  }
-
-  async getRefreshToken(refreshToken: string) {
-    const credential = await this.repository.findCredential({ refreshToken });
-    if (!credential?.isRefreshTokenValid())
-      throw new CastcleException('INVALID_REFRESH_TOKEN');
-    const account = await this.repository.findAccount({
-      _id: credential.account._id,
-    });
-    return this.login(credential, account);
-  }
-
-  async registerWithEmail(
-    credential: Credential,
-    dto: RegisterWithEmailDto & { hostUrl: string; ip: string },
-  ) {
-    const [account, emailAlreadyExists, castcleIdAlreadyExists] =
-      await Promise.all([
-        this.repository.findAccount({ _id: credential.account._id }),
-        this.repository.findAccount({ email: dto.email }),
-        this.repository.findUser({ _id: dto.castcleId }),
-      ]);
-
-    if (!account.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
-    if (emailAlreadyExists)
-      throw new CastcleException('EMAIL_OR_PHONE_IS_EXIST');
-    if (castcleIdAlreadyExists) throw new CastcleException('USER_ID_IS_EXIST');
-
-    await this.repository.updateCredentials(
-      { 'account._id': account._id },
-      { isGuest: false },
-    );
-
-    account.isGuest = false;
-    account.email = dto.email;
-
-    if (Environment.PDPA_ACCEPT_DATES.length)
-      account.set(`pdpa.${Environment.PDPA_ACCEPT_DATES[0]}`, true);
-
-    account.password = Password.hash(dto.password);
-    const activation = account.createActivation(AccountActivationType.EMAIL);
-    await this.updateReferral(account, dto.referral, dto.ip);
-    await account.save();
-
-    await this.repository.createUser({
-      ownerAccount: account._id,
-      displayId: dto.castcleId,
-      displayName: dto.displayName,
-      type: UserType.PEOPLE,
-      email: dto.email,
-    });
-    await this.analyticService.trackRegistration(dto.ip, account._id);
-    await this.mailer.sendRegistrationEmail(
-      dto.hostUrl,
-      account.email,
-      activation.verifyToken,
-    );
-
-    return this.login(credential, account);
-  }
-
-  async registerWithSocial(
-    credential: Credential,
-    { ip, referral, ...dto }: SocialConnectDto & { ip: string },
-  ) {
-    const account = await this.repository.findAccount({
-      _id: credential.account._id,
-    });
-
-    if (!account) throw new CastcleException('INVALID_ACCESS_TOKEN');
-    if (dto.email) {
-      this.createAccountActivation(account, AccountActivationType.EMAIL, true);
-      account.email = dto.email;
-      account.activateDate = new Date();
-    }
-
-    (account.authentications ||= {})[dto.provider] = {
-      socialId: dto.socialId,
-      avatar: dto.avatar,
-    };
-
-    await this.updateReferral(account, referral, ip);
-    await account.set({ isGuest: false }).save();
-
-    await this.repository.createUser({
-      ownerAccount: account._id,
-      displayId: dto.displayName || `${dto.provider}${dto.socialId}`,
-      displayName: dto.displayName || `${dto.provider}${dto.socialId}`,
-      type: UserType.PEOPLE,
-      email: dto.email,
-      profile: {
-        overview: dto.overview,
-        socials: { [dto.provider]: dto.link },
-        images: {
-          avatar: dto.avatar
-            ? await this.repository.createProfileImage(account._id, dto.avatar)
-            : null,
-          cover: dto.cover
-            ? await this.repository.createCoverImage(account._id, dto.cover)
-            : null,
-        },
-      },
-    });
-
-    return this.login(credential, account);
-  }
-
-  private async updateReferral(
-    account: Account,
-    referrerCastcleId: string,
-    ip: string,
-  ) {
-    const referrer =
-      (await this.repository.findUser({ _id: referrerCastcleId })) ||
-      (await this.analyticService.getReferrer(ip));
-
-    if (!referrer) return;
-
-    const referrerAccount = await this.repository.findAccount({
-      _id: referrer.ownerAccount,
-    });
-
-    account.referralBy = referrerAccount._id;
-
-    await this.repository.updateAccount(
-      { _id: referrerAccount._id },
-      { $inc: { referralCount: 1 } },
-    );
-  }
-
-  private createAccountActivation(
-    account: Account,
-    type: AccountActivationType,
-    autoActivateEmail = false,
-  ) {
-    const now = new Date();
-    const verifyTokenExpireDate = new Date(
-      now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000,
-    );
-    const verifyToken = Token.generateToken(
-      {
-        _id: account._id,
-        verifyTokenExpiresTime: verifyTokenExpireDate.toISOString(),
-      },
-      Environment.JWT_VERIFY_SECRET,
-      Environment.JWT_VERIFY_EXPIRES_IN,
-    );
-
-    (account.activations ??= []).push({
-      type,
-      verifyToken,
-      verifyTokenExpireDate,
-      activationDate: autoActivateEmail ? now : undefined,
-    });
-  }
-
-  /**
-   * create account from guest user
-   * @param {AccountRequirements} requestOption
-   * @returns {TokenResponse}
-   */
-  async guestLogin(requestOption: AccountRequirements) {
-    const credentialGuest = await this.repository.findCredential({
-      deviceUUID: requestOption.deviceUUID,
-      'account.isGuest': true,
-    });
-
-    if (credentialGuest) {
-      const tokenPayload = this.generateTokenPayload(credentialGuest);
-      return await credentialGuest.renewTokens(tokenPayload, {
-        id: String(credentialGuest.account._id),
-      });
-    }
-
-    const session = await this.repository.accountSession();
-    session.startTransaction();
-    try {
-      const account = await this.repository.createAccount(requestOption);
-      const { accessToken, accessTokenExpireDate } =
-        this.repository.generateAccessToken({
-          id: String(account._id),
-          role: AccountRole.Guest,
-          showAds: true,
-        });
-
-      const { refreshToken, refreshTokenExpireDate } =
-        this.repository.generateRefreshToken({
-          id: String(account._id),
-        });
-
-      const credential = await this.repository.createCredential(
-        {
-          account: {
-            _id: account._id,
-            isGuest: true,
-            preferences: {
-              languages: requestOption.languagesPreferences,
-            },
-            visibility: EntityVisibility.Publish,
-          },
-          accessToken,
-          accessTokenExpireDate,
-          refreshToken,
-          refreshTokenExpireDate,
-          device: requestOption.device,
-          platform: requestOption.header.platform,
-          deviceUUID: requestOption.deviceUUID,
-        } as CreateCredentialDto,
-        {
-          session,
-        },
-      );
-
-      (account.credentials ??= []).push({
-        _id: Types.ObjectId(credential._id),
-        deviceUUID: credential.deviceUUID,
-      });
-
-      await account.save({ session });
-      await session.commitTransaction();
-
-      return {
-        accessToken: credential.accessToken,
-        refreshToken: credential.refreshToken,
-      };
-    } catch (error) {
-      await session.abortTransaction();
-      throw new CastcleException('INTERNAL_SERVER_ERROR');
-    }
-  }
 
   /**
    * For check if castcle ID is existed
@@ -792,9 +342,9 @@ export class AuthenticationServiceV2 {
     email,
     refCode,
     otp: otpCode,
-    credential,
-  }: VerifyOtpByEmailDto & { credential: Credential }) {
-    const requestedBy = credential.account;
+    requestedBy,
+    guestAccessToken,
+  }: VerifyOtpByEmailDto & { requestedBy: Account; guestAccessToken: string }) {
     if (objective !== OtpObjective.CHANGE_PASSWORD && !requestedBy.isGuest) {
       throw new CastcleException('INVALID_ACCESS_TOKEN');
     }
@@ -818,8 +368,14 @@ export class AuthenticationServiceV2 {
 
     if (objective !== OtpObjective.MERGE_ACCOUNT) return { otp };
 
-    await this.linkCredentialToAccount(credential, account);
-    const { accessToken } = await this.login(credential, account);
+    const credential = requestedBy.credentials.find(
+      (c) => c.accessToken === guestAccessToken,
+    );
+    const [{ accessToken }] = await Promise.all([
+      account.generateToken(credential),
+      requestedBy.remove(),
+    ]);
+
     return { otp, accessToken };
   }
 
@@ -1034,10 +590,14 @@ export class AuthenticationServiceV2 {
 
     account.markModified('activations');
     await account.save();
-    await this.mailer.sendRegistrationEmail(
-      hostUrl,
-      account.email,
-      activation.verifyToken,
+
+    await this.emailVerifier.add(
+      {
+        hostUrl: hostUrl,
+        toEmail: account.email,
+        accountId: account.id,
+      },
+      { removeOnComplete: true },
     );
   }
 

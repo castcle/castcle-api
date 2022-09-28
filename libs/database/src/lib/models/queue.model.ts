@@ -21,15 +21,13 @@
  * or have any questions.
  */
 
-import { MicroTransaction } from '../schemas/transaction.schema';
-import { QueueTopic } from './queue.enum';
+import {
+  Processor as BullProcessor,
+  InjectQueue as InjectBullQueue,
+} from '@nestjs/bull';
 
-export class ClaimAirdropPayload {
-  topic = QueueTopic.CLAIM_AIRDROP;
+type AvailableQueues = 'external-withdrawal' | 'new-transaction';
 
-  constructor(
-    public campaignId: string,
-    public to: MicroTransaction[],
-    public mobile?: { countryCode: string; number: string },
-  ) {}
-}
+export const InjectQueue = (name: AvailableQueues) => InjectBullQueue(name);
+
+export const Processor = (name: AvailableQueues) => BullProcessor(name);

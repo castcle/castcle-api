@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { ContentService, SocialSyncService } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import { Test, TestingModule } from '@nestjs/testing';
 import { XMLParser } from 'fast-xml-parser';
@@ -37,11 +37,11 @@ describe('Youtube Webhook Service', () => {
   let socialSyncService: SocialSyncService;
   let youtubeService: Extend<
     YoutubeWebhookService,
-    { parser: XMLParser; logger: CastLogger }
+    { parser: XMLParser; logger: CastcleLogger }
   >;
 
   const author = {
-    id: Types.ObjectId(),
+    id: new Types.ObjectId(),
     type: 'page',
     castcleId: 'castcleId',
     displayName: 'Castcle',

@@ -21,12 +21,13 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { lastValueFrom, map } from 'rxjs';
 import {
+  ContentFlowItem,
   PersonalizeAdsItem,
   SuggestContentItem,
   SuggestUserItem,
@@ -34,7 +35,7 @@ import {
 
 @Injectable()
 export class DataService {
-  private logger = new CastLogger(DataService.name);
+  private logger = new CastcleLogger(DataService.name);
 
   constructor(private httpService: HttpService) {}
 
@@ -123,13 +124,16 @@ export class DataService {
   async detectContent(contentId: string) {
     const url = `${Environment.DS_SERVICE_BASE_URL}/ds_service/contentflow`;
     const body = { contentflow: contentId };
-    const detection = await this.post<{ illegalClass: boolean }>(
+    const detection = await this.post<ContentFlowItem>(
       url,
       body,
       'detectContent',
     );
 
-    return Boolean(detection?.illegalClass);
+    return {
+      ...detection,
+      illegalClass: Boolean(detection?.illegalClass),
+    };
   }
 
   async suggestContents(accountId: string, maxResults: number) {

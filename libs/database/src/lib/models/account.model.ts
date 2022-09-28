@@ -22,7 +22,7 @@
  */
 
 import { AcceptPlatform } from '../dtos';
-import { AuthenticationProvider } from './account.enum';
+import { AccountRole, AuthenticationProvider } from './account.enum';
 
 export class AccountAuthentication {
   socialId: string;
@@ -71,4 +71,26 @@ export interface AccountRequirements {
 }
 export class AcceptDatePDPA {
   [key: string]: boolean;
+}
+
+export interface EmailDomainDisposable {
+  emailDomainDisposables: string[];
+}
+
+export class GenerateTokenDto {
+  device: string;
+  deviceUUID: string;
+  platform: string;
+}
+
+export class GeneratedToken {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export class TokenPayload {
+  id: string;
+  role: AccountRole;
+  accessTokenExpiresTime?: string;
+  showAds: boolean;
 }

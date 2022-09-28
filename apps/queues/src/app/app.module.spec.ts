@@ -21,36 +21,23 @@
  * or have any questions.
  */
 
-import { Test } from '@nestjs/testing';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { TestingModule } from '@castcle-api/testing';
 import { AppModule } from './app.module';
-import { CampaignConsumer } from './campaign.consumer';
-import { CampaignScheduler } from './campaign.scheduler';
 
-jest.mock('libs/environments/src/lib/factories');
 describe('App Module', () => {
-  let mongo: MongoMemoryReplSet;
-  let campaignConsumer: CampaignConsumer;
-  let campaignScheduler: CampaignScheduler;
+  let moduleRef: TestingModule;
 
   beforeAll(async () => {
-    mongo = await MongoMemoryReplSet.create();
-    global.mongoUri = mongo.getUri();
-
-    const module = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [AppModule],
-    }).compile();
-
-    campaignConsumer = module.get(CampaignConsumer);
-    campaignScheduler = module.get(CampaignScheduler);
+    });
   });
 
-  afterAll(async () => {
-    await mongo.stop();
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   it('should be defined', () => {
-    expect(campaignConsumer).toBeDefined();
-    expect(campaignScheduler).toBeDefined();
+    expect(moduleRef).toBeDefined();
   });
 });

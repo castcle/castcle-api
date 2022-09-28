@@ -21,64 +21,60 @@
  * or have any questions.
  */
 import {
-  AuthenticationService,
+  AnalyticService,
   CommentServiceV2,
-  Content,
   ContentService,
   ContentType,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService,
   NotificationServiceV2,
   QueueName,
+  SocialSyncServiceV2,
   User,
-  UserService,
-  generateMockUsers,
+  UserServiceV2,
 } from '@castcle-api/database';
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
+import { Downloader } from '@castcle-api/utils/aws';
+import { Mailer } from '@castcle-api/utils/clients';
+import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
+import { JwtModule } from '@nestjs/jwt';
 import { Repository } from 'libs/database/src/lib/repositories';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { CommentControllerV2 } from './comment.controller.v2';
 
 describe('CommentControllerV2', () => {
-  let mongod: MongoMemoryServer;
   let app: TestingModule;
   let commentController: CommentControllerV2;
-  let service: UserService;
-  let authService: AuthenticationService;
   let contentService: ContentService;
   let user: User;
-  let content: Content;
-  let credential;
+  let authorizer: Authorizer;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    app = await TestingModule.createWithDb({
       imports: [
-        MongooseModule.forRoot(mongod.getUri()),
-        CacheModule.register({
-          store: 'memory',
-          ttl: 1000,
-        }),
+        CastcleMongooseModule,
+        CacheModule.register(),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
         HttpModule,
+        JwtModule,
       ],
       controllers: [CommentControllerV2],
       providers: [
-        UserService,
-        AuthenticationService,
-        ContentService,
+        AnalyticService,
         CommentServiceV2,
-        NotificationService,
-        NotificationServiceV2,
+        ContentService,
         HashtagService,
+        Mailer,
+        NotificationServiceV2,
         Repository,
+        UserServiceV2,
+        { provide: SocialSyncServiceV2, useValue: {} },
+        { provide: Downloader, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -91,32 +87,34 @@ describe('CommentControllerV2', () => {
           provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
+        {
+          provide: getQueueToken(QueueName.REPORTING),
+          useValue: { add: jest.fn() },
+        },
       ],
-    }).compile();
-    service = app.get<UserService>(UserService);
-    authService = app.get<AuthenticationService>(AuthenticationService);
-    contentService = app.get<ContentService>(ContentService);
-    commentController = app.get<CommentControllerV2>(CommentControllerV2);
-    const mocksUsers = await generateMockUsers(1, 0, {
-      userService: service,
-      accountService: authService,
     });
 
-    user = mocksUsers[0].user;
-    credential = {
-      $credential: mocksUsers[0].credential,
-      $language: 'th',
-    } as any;
+    contentService = app.get<ContentService>(ContentService);
+    commentController = app.get<CommentControllerV2>(CommentControllerV2);
   });
 
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
+  afterAll(() => {
+    return app.close();
+  });
+
+  beforeEach(async () => {
+    const created = await app.createUser();
+    authorizer = new Authorizer(created.account, created.user, 'uuid');
+    user = created.user;
+  });
+
+  afterEach(() => {
+    return app.cleanDb();
   });
 
   describe('#getAllComment()', () => {
     it('should display all comments', async () => {
-      content = await contentService.createContentFromUser(user, {
+      const content = await contentService.createContentFromUser(user, {
         payload: { message: 'hi v2' },
         type: ContentType.Short,
         castcleId: user.displayId,
@@ -131,8 +129,8 @@ describe('CommentControllerV2', () => {
       });
 
       const comments = await commentController.getAllComment(
-        content.id,
-        credential,
+        { contentId: content.id },
+        authorizer,
         { hasRelationshipExpansion: false },
       );
       expect(comments.payload.length).toEqual(2);
@@ -143,7 +141,7 @@ describe('CommentControllerV2', () => {
 
   describe('#getAllReplyComment()', () => {
     it('should display all reply comments', async () => {
-      content = await contentService.createContentFromUser(user, {
+      const content = await contentService.createContentFromUser(user, {
         payload: { message: 'hi reply v2' },
         type: ContentType.Short,
         castcleId: user.displayId,
@@ -162,9 +160,9 @@ describe('CommentControllerV2', () => {
       });
 
       const replyComments = await commentController.getAllReplyComment(
-        content.id,
-        comment.id,
-        credential,
+        { contentId: content.id },
+        { sourceCommentId: comment.id },
+        authorizer,
         { hasRelationshipExpansion: false },
       );
       expect(replyComments.payload.length).toEqual(1);

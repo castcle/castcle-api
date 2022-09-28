@@ -21,23 +21,31 @@
  * or have any questions.
  */
 
+import { PipelineStage, Types } from 'mongoose';
 import { DEFAULT_CONTENT_QUERY_OPTIONS, EntityVisibility } from '../dtos';
-import { EngagementType } from '../models';
+import { ContentFarmingStatus, EngagementType } from '../models';
 import { User } from '../schemas';
 
 type GetContentFilter = {
   [key: string]: string;
 };
 
-type GetContentsQuery = {
-  filter?: GetContentFilter;
+class GetContentsQuery {
+  filters?: GetContentFilter;
   maxResults?: number;
   viewer?: User;
-  sortBy?: {
-    [key: string]: string;
-  };
-};
-export const pipelineGetContents = (query: GetContentsQuery) => {
+  sortBy?: Record<string, 1 | -1>;
+  calledAt?: boolean;
+}
+
+class GetFarmAmountQuery {
+  content?: Types.ObjectId[];
+  status?: ContentFarmingStatus;
+}
+
+export const pipelineGetContents = (
+  query: GetContentsQuery,
+): PipelineStage[] => {
   return [
     {
       $sort: query.sortBy || {
@@ -45,7 +53,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
       },
     },
     {
-      $match: query.filter,
+      $match: query.filters,
     },
     {
       $limit: query.maxResults || DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
@@ -132,7 +140,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
             },
           },
           { $unwind: '$authors' },
-          { $replaceWith: '$authors' },
+          { $replaceWith: '$authors' as any },
           {
             $project: {
               id: '$_id',
@@ -291,7 +299,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
               from: 'engagements',
               let: {
                 contentId: '$_id',
-                userId: query.viewer?._id,
+                accountId: query.viewer?.ownerAccount,
               },
               pipeline: [
                 {
@@ -300,7 +308,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                       $and: [
                         { $eq: ['$targetRef.$ref', 'content'] },
                         { $eq: ['$targetRef.$id', '$$contentId'] },
-                        { $eq: ['$user', '$$userId'] },
+                        { $eq: ['$account', '$$accountId'] },
                         { $eq: ['$visibility', EntityVisibility.Publish] },
                       ],
                     },
@@ -325,7 +333,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
               from: 'engagements',
               let: {
                 contentId: '$originalPost._id',
-                userId: query.viewer?._id,
+                accountId: query.viewer?.ownerAccount,
               },
               pipeline: [
                 {
@@ -334,7 +342,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                       $and: [
                         { $eq: ['$targetRef.$ref', 'content'] },
                         { $eq: ['$targetRef.$id', '$$contentId'] },
-                        { $eq: ['$user', '$$userId'] },
+                        { $eq: ['$account', '$$accountId'] },
                         { $eq: ['$visibility', EntityVisibility.Publish] },
                       ],
                     },
@@ -357,3 +365,96 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
     },
   ];
 };
+
+export const projectionContent = () => ({
+  _id: '$_id',
+  contentId: '$_id',
+  authorId: '$author.id',
+  payload: '$payload',
+  type: '$type',
+  visibility: '$visibility',
+  metrics: {
+    likeCount: '$engagements.like.count',
+    commentCount: '$engagements.comment.count',
+    recastCount: '$engagements.recast.count',
+    quoteCount: '$engagements.quote.count',
+    farmCount: { $ifNull: ['$engagements.farm.count', 0] },
+  },
+  originalPost: {
+    $cond: [
+      {
+        $ne: [{ $ifNull: ['$originalPost', null] }, null],
+      },
+      {
+        _id: '$originalPost._id',
+        contentId: '$originalPost._id',
+        authorId: '$originalPost.author.id',
+        payload: '$originalPost.payload',
+        type: '$originalPost.type',
+        visibility: '$originalPost.visibility',
+        metrics: {
+          likeCount: '$originalPost.engagements.like.count',
+          commentCount: '$originalPost.engagements.comment.count',
+          recastCount: '$originalPost.engagements.recast.count',
+          quoteCount: '$originalPost.engagements.quote.count',
+          farmCount: '$originalPost.engagements.farm.count',
+        },
+        createdAt: '$originalPost.createdAt',
+        updatedAt: '$originalPost.updatedAt',
+      },
+      null,
+    ],
+  },
+  reportedStatus: '$reportedStatus',
+  reportedSubject: '$reportedSubject',
+  isQuote: '$isQuote',
+  isRecast: '$isRecast',
+  createdAt: '$createdAt',
+  updatedAt: '$updatedAt',
+});
+
+export const pipelineGetContentsV2 = ({
+  sortBy,
+  filters,
+  maxResults,
+}: GetContentsQuery): PipelineStage[] => [
+  {
+    $sort: sortBy ?? {
+      createdAt: -1,
+    },
+  },
+  {
+    $match: filters,
+  },
+  {
+    $limit: maxResults ?? DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
+  },
+  {
+    $project: projectionContent(),
+  },
+];
+
+export const pipelineGetFarmAmount = ({
+  content,
+  ...filters
+}: GetFarmAmountQuery): PipelineStage[] => [
+  {
+    $match: {
+      ...filters,
+      content: { $in: content },
+    },
+  },
+  {
+    $group: {
+      _id: '$content',
+      farmAmount: { $sum: '$farmAmount' },
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      contentId: '$_id',
+      farmAmount: '$farmAmount',
+    },
+  },
+];

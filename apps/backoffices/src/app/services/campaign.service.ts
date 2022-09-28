@@ -1,4 +1,8 @@
-import { Campaign, CampaignType } from '@castcle-api/database';
+import {
+  Campaign,
+  CampaignType,
+  EntityVisibility,
+} from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -20,7 +24,10 @@ export class CampaignBackofficeService {
 
     if (campaignExist) throw new CastcleException('CAMPAIGN_TYPE_IS_EXIST');
 
-    await this.campaignModel.create(campaign);
+    await this.campaignModel.create({
+      ...campaign,
+      visibility: EntityVisibility.Publish,
+    });
   }
 
   async updateCampaign(
@@ -36,7 +43,7 @@ export class CampaignBackofficeService {
       },
     );
 
-    if (updateCampaign.nModified === 0)
+    if (updateCampaign.modifiedCount === 0)
       throw new CastcleException('CAMPAIGN_NOT_FOUND');
   }
 }

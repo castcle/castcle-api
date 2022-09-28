@@ -36,7 +36,7 @@ export type ContentReport = {
   link?: any[];
   message?: string;
   photo?: any;
-  updatedAt: string;
+  updatedAt: Date;
 };
 
 export type Reporting = {
@@ -60,7 +60,7 @@ export const getHtmlReportingContent = (
       padding: 0;
       margin: 0;
     ">
-    <div style="padding: 15px; height: 100%; width: 750px; border-radius: 5px">
+    <div style="padding: 15px; height: 100%; width: 720px; border-radius: 5px">
       <div style="background-color: #23262b; padding: 10px; display: flex; vertical-align: middle">
         <img
           src="https://castcle-public.s3.amazonaws.com/assets/castcle-logo.png"
@@ -75,8 +75,9 @@ export const getHtmlReportingContent = (
         content.photo?.contents?.length
           ? `
     <div style="margin-top: 20px;">
-     ${content.photo.contents?.map(
-       (image) => `
+     ${content.photo.contents
+       ?.map(
+         (image) => `
       <a
           href="${image.original}"
           target="_blank"
@@ -90,7 +91,8 @@ export const getHtmlReportingContent = (
             alt="Content"
           />
       </a>`,
-     )}
+       )
+       .join('')}
     </div>`
           : ''
       }
@@ -119,13 +121,15 @@ export const getHtmlReportingContent = (
                 padding: 4px;
                 vertical-align: top;
               ">
-              ${reporting.actionBy?.map(
-                (actionBy) => `
+              ${reporting.actionBy
+                ?.map(
+                  (actionBy) => `
               displayName : ${actionBy.firstName} ${actionBy.lastName}<br>
               Action : ${actionBy.action}<br>
               Status : ${actionBy.status}
               `,
-              )}
+                )
+                .join('')}
             </td>
           </tr>`
                : ''
@@ -150,7 +154,7 @@ export const getHtmlReportingContent = (
                 padding: 4px;
                 vertical-align: top;
               ">
-              ${reporting.user.displayName} (@${reporting.user.castcleId})
+              ${reporting.user.displayName} (${reporting.user.castcleId})
             </td>
           </tr>
           <tr>
@@ -267,8 +271,9 @@ export const getHtmlReportingContent = (
                 padding: 4px;
                 vertical-align: top;
               ">
-              ${content.link?.map(
-                (link) => `
+              ${content.link
+                ?.map(
+                  (link) => `
                 <div>
                   ${
                     link.url
@@ -300,7 +305,8 @@ export const getHtmlReportingContent = (
                  }
                 </div>
               `,
-              )}
+                )
+                .join('')}
             </td>
           </tr>`
                 : ''
@@ -397,13 +403,15 @@ export const getHtmlReportingUser = (
              padding: 4px;
              vertical-align: top;
            ">
-           ${reporting.actionBy?.map(
-             (actionBy) => `
+           ${reporting.actionBy
+             ?.map(
+               (actionBy) => `
           displayName : ${actionBy.firstName} ${actionBy.lastName}<br>
           Action : ${actionBy.action}<br>
           Status : ${actionBy.status}
           `,
-           )}
+             )
+             .join('')}
          </td>
        </tr>`
             : ''
@@ -428,7 +436,7 @@ export const getHtmlReportingUser = (
               padding: 4px;
               vertical-align: top;
             ">
-            ${reporting.user.displayName} (@${reporting.user.castcleId})
+            ${reporting.user.displayName} (${reporting.user.castcleId})
           </td>
         </tr>
         <tr>

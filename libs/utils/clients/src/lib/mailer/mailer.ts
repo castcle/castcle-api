@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { createTransport } from 'nodemailer';
 import { getRegistrationHtml } from './templates/registration';
@@ -36,7 +36,7 @@ import {
 
 @Injectable()
 export class Mailer {
-  private logger = new CastLogger(Mailer.name);
+  private logger = new CastcleLogger(Mailer.name);
   private transporter = createTransport({
     host: Environment.SMTP_HOST,
     port: Environment.SMTP_PORT,
@@ -100,7 +100,7 @@ export class Mailer {
         from: 'castcle-noreply" <no-reply@castcle.com>',
         subject: `Password for login backoffice of Castcle.`,
         to: email,
-        text: `Your password to login backoffice is ${password}`,
+        text: `Your password to login backoffice is ${password}.`,
       });
 
       this.logger.log(`Password has been submitted ${info.messageId}`);

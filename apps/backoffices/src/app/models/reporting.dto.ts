@@ -21,13 +21,14 @@
  * or have any questions.
  */
 
+import { TransformStringToArrayOfStrings } from '@castcle-api/common';
 import {
-  Content,
+  GetContentPayload,
+  PaginationQuery,
   ReportingStatus,
   ReportingType,
   User,
 } from '@castcle-api/database';
-import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
 import {
   IsEnum,
   IsMongoId,
@@ -36,7 +37,7 @@ import {
   IsString,
 } from 'class-validator';
 
-export class GetReportingQuery {
+export class GetReportingQuery extends PaginationQuery {
   @IsOptional()
   @IsEnum(ReportingType, { each: true })
   @TransformStringToArrayOfStrings()
@@ -49,7 +50,7 @@ export class GetReportingQuery {
 }
 
 class ReportingPayload {
-  id: string;
+  payloadId: string;
   reportBy: string[];
   status: string;
   type: string;
@@ -66,7 +67,7 @@ class ReportedBy {
     slug: string;
     name: string;
   };
-  payload: Content | User;
+  payload: GetContentPayload | User;
   type: string;
   createdAt: Date;
   updatedAt: Date;
@@ -89,4 +90,8 @@ export class UpdateIllegal {
   @IsOptional()
   @IsString()
   subjectByAdmin?: string;
+
+  @IsOptional()
+  @IsString()
+  messageByAdmin?: string;
 }

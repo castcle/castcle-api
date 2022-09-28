@@ -20,69 +20,66 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import {
+  Account,
   AnalyticService,
-  AuthenticationService,
-  CampaignService,
   ContentService,
-  CreateHashtag,
   ExcludeType,
   HashtagService,
   KeywordType,
-  MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationServiceV2,
   QueueName,
+  Repository,
   SearchServiceV2,
-  UserService,
+  SocialSyncServiceV2,
+  User,
   UserServiceV2,
-  generateMockUsers,
 } from '@castcle-api/database';
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
+import { Downloader } from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'libs/database/src/lib/repositories';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { JwtModule } from '@nestjs/jwt';
 import { Types } from 'mongoose';
 import { SearchesControllerV2 } from './searches.controller.v2';
 
 describe('SearchesControllerV2', () => {
-  let mongod: MongoMemoryServer;
   let app: TestingModule;
   let controller: SearchesControllerV2;
   let hashtagService: HashtagService;
-  let authService: AuthenticationService;
-  let userService: UserService;
   let userServiceV2: UserServiceV2;
-  let mocksUsers: MockUserDetail[];
+  let account: Account;
+  let user: User;
+  const uuid = 'uuid';
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    app = await TestingModule.createWithDb({
       imports: [
         HttpModule,
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
         CacheModule.register(),
+        JwtModule,
       ],
       controllers: [SearchesControllerV2],
       providers: [
-        SearchServiceV2,
-        Repository,
-        UserServiceV2,
         ContentService,
-        AuthenticationService,
-        UserService,
         HashtagService,
         NotificationServiceV2,
+        Repository,
+        SearchServiceV2,
+        UserServiceV2,
+        { provide: SocialSyncServiceV2, useValue: {} },
+        { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
-        { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
@@ -101,44 +98,44 @@ describe('SearchesControllerV2', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
-
-    authService = app.get(AuthenticationService);
-    hashtagService = app.get<HashtagService>(HashtagService);
-    userService = app.get(UserService);
-    userServiceV2 = app.get<UserServiceV2>(UserServiceV2);
-
-    controller = app.get<SearchesControllerV2>(SearchesControllerV2);
-
-    mocksUsers = await generateMockUsers(20, 0, {
-      userService: userService,
-      accountService: authService,
     });
-    const mockHashtag = async (slug, hName, hScore) => {
-      const newHashtag: CreateHashtag = {
-        tag: slug,
-        score: hScore,
-        aggregator: {
-          _id: String(Types.ObjectId()),
-        },
-        name: hName,
-      };
-      await hashtagService.create(newHashtag);
-    };
 
-    for (let i = 0; i < 20; i++) {
-      await mockHashtag(`#castcle${i}`, `Castcle ${i}`, 90 - i);
-    }
+    hashtagService = app.get(HashtagService);
+    userServiceV2 = app.get(UserServiceV2);
+    controller = app.get(SearchesControllerV2);
+  });
+
+  afterAll(() => {
+    return app.close();
+  });
+
+  beforeEach(async () => {
+    const created = await app.createUser();
+    account = created.account;
+    user = created.user;
+
+    await Promise.all([
+      ...Array.from({ length: 20 }, (_, i) =>
+        app.createUser({ castcleId: `mock-${i}` }),
+      ),
+      ...Array.from({ length: 20 }, (_, i) =>
+        hashtagService.create({
+          tag: `#castcle${i}`,
+          score: 90 - i,
+          aggregator: { _id: new Types.ObjectId().toString() },
+          name: `Castcle ${i}`,
+        }),
+      ),
+    ]);
+  });
+
+  afterEach(() => {
+    return app.cleanDb();
   });
 
   describe('#getTopTrends', () => {
     it('should get all top trend', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
-
+      const authorizer = new Authorizer(account, user, uuid);
       const getTopTrends = await controller.getTopTrends(authorizer, {
         limit: 10,
       });
@@ -148,12 +145,7 @@ describe('SearchesControllerV2', () => {
     });
 
     it('should get top trend exclude hashtags', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
-
+      const authorizer = new Authorizer(account, user, uuid);
       const getTopTrends = await controller.getTopTrends(authorizer, {
         limit: 10,
         exclude: [ExcludeType.Hashtags],
@@ -164,12 +156,7 @@ describe('SearchesControllerV2', () => {
     });
 
     it('should get top trend exclude users', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
-
+      const authorizer = new Authorizer(account, user, uuid);
       const getTopTrends = await controller.getTopTrends(authorizer, {
         limit: 10,
         exclude: [ExcludeType.Users],
@@ -180,12 +167,7 @@ describe('SearchesControllerV2', () => {
     });
 
     it('should get empty top trend with exclude all', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
-
+      const authorizer = new Authorizer(account, user, uuid);
       const getTopTrends = await controller.getTopTrends(authorizer, {
         exclude: [ExcludeType.Users, ExcludeType.Hashtags],
       });
@@ -197,11 +179,7 @@ describe('SearchesControllerV2', () => {
 
   describe('getByKeyword', () => {
     it('should get user by keyword', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
+      const authorizer = new Authorizer(account, user, uuid);
       const getByKeyword = await controller.getByKeyword(authorizer, {
         keyword: {
           type: KeywordType.Mention,
@@ -220,11 +198,7 @@ describe('SearchesControllerV2', () => {
     });
 
     it('should get user by keyword is empty', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
+      const authorizer = new Authorizer(account, user, uuid);
       const getByKeyword = await controller.getByKeyword(authorizer, {
         keyword: {
           type: KeywordType.Mention,
@@ -240,20 +214,13 @@ describe('SearchesControllerV2', () => {
   });
 
   describe('getUserMentions', () => {
-    beforeAll(async () => {
-      await userServiceV2.followUser(
-        mocksUsers[1].user,
-        mocksUsers[0].user._id,
-        mocksUsers[1].account,
-      );
+    beforeEach(async () => {
+      const created = await app.createUser({ castcleId: 'm' });
+      await userServiceV2.followUser(created.user, user._id, created.account);
     });
-    it('should get user by keyword', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
 
+    it('should get user by keyword', async () => {
+      const authorizer = new Authorizer(account, user, uuid);
       const getUserMentions = await controller.getUserMentions(authorizer, {
         keyword: {
           type: KeywordType.Mention,
@@ -266,12 +233,7 @@ describe('SearchesControllerV2', () => {
     });
 
     it('should get user by keyword is empty', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
-
+      const authorizer = new Authorizer(account, user, uuid);
       const getUserMentions = await controller.getUserMentions(authorizer, {
         maxResults: 25,
         keyword: {
@@ -287,11 +249,7 @@ describe('SearchesControllerV2', () => {
 
   describe('getSearchByKeyword', () => {
     it('should get user by keyword', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
+      const authorizer = new Authorizer(account, user, uuid);
       const getSearchByKeyword = await controller.getSearchByKeyword(
         authorizer,
         {
@@ -308,12 +266,7 @@ describe('SearchesControllerV2', () => {
     });
 
     it('should get user by keyword is empty', async () => {
-      const authorizer = new Authorizer(
-        mocksUsers[0].account,
-        mocksUsers[0].user,
-        mocksUsers[0].credential,
-      );
-
+      const authorizer = new Authorizer(account, user, uuid);
       const getSearchByKeyword = await controller.getSearchByKeyword(
         authorizer,
         {
@@ -328,10 +281,5 @@ describe('SearchesControllerV2', () => {
 
       expect(getSearchByKeyword.payload).toHaveLength(0);
     });
-  });
-
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
   });
 });

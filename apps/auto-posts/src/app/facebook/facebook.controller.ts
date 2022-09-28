@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import {
   ContentService,
   ContentType,
@@ -32,7 +33,6 @@ import {
   SocialSyncService,
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { isEnum } from 'class-validator';
@@ -49,7 +49,7 @@ import {
 
 @Controller('facebook')
 export class FacebookController {
-  private logger = new CastLogger(FacebookController.name);
+  private logger = new CastcleLogger(FacebookController.name);
 
   constructor(
     private readonly contentService: ContentService,

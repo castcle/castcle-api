@@ -1,5 +1,6 @@
-import { BackofficeDatabaseModule } from '@castcle-api/database';
+import { CastcleBackofficeMongooseModule } from '@castcle-api/environments';
 import { Mailer } from '@castcle-api/utils/clients';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { StaffRole } from '../models/authentication.enum';
@@ -10,12 +11,13 @@ describe('Authentication', () => {
   let service: AuthenticationService;
   let mongod: MongoMemoryReplSet;
   let moduleRef: TestingModule;
+  let user;
 
   beforeAll(async () => {
     mongod = await MongoMemoryReplSet.create();
     global.mongoUri = mongod.getUri();
     moduleRef = await Test.createTestingModule({
-      imports: [BackofficeDatabaseModule, BackOfficeMongooseForFeatures],
+      imports: [CastcleBackofficeMongooseModule, BackOfficeMongooseForFeatures],
       providers: [AuthenticationService, Mailer],
     }).compile();
 
@@ -44,6 +46,7 @@ describe('Authentication', () => {
         lastName: 'test',
         role: StaffRole.ADMINISTRATOR,
       });
+      user = newUser;
 
       expect(newUser).toBeDefined();
     });
@@ -51,6 +54,28 @@ describe('Authentication', () => {
     it('should get staff after created', async () => {
       const staffs = await service.getStaffs();
       expect(staffs).toHaveLength(1);
+    });
+
+    it('should change password error if password incorrect', async () => {
+      const staff = await service.getStaffs();
+      const body = {
+        oldPassword: 'test',
+        newPassword: 'changeNaja',
+      };
+      await expect(service.changePassword(staff[0].id, body)).rejects.toEqual(
+        new CastcleException('INVALID_PASSWORD'),
+      );
+    });
+
+    it('should change user password', async () => {
+      const staff = await service.getStaffs();
+      const body = {
+        oldPassword: user.password,
+        newPassword: 'changeNaja',
+      };
+      await expect(
+        service.changePassword(staff[0].id, body),
+      ).resolves.toBeUndefined();
     });
 
     it('should reset password staff', async () => {

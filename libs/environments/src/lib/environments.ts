@@ -272,7 +272,20 @@ export class Environment {
       : '';
   static BACKOFFICE_DB_URI = `${Environment.DB_FORMAT}://${Environment.BACKOFFICE_DB_AUTHENTICATION}${Environment.BACKOFFICE_DB_HOST}/${Environment.BACKOFFICE_DB_DATABASE_NAME}?retryWrites=true&w=majority`;
   static BACKOFFICE_APP_DB_URI = `${Environment.DB_FORMAT}://${Environment.BACKOFFICE_DB_AUTHENTICATION}${Environment.BACKOFFICE_DB_HOST}/${Environment.DB_DATABASE_NAME}?retryWrites=true&w=majority`;
+  static BACKOFFICE_APP_PATH = process.env.BACKOFFICE_APP_PATH || '';
 
   // Chain internal name
   static CHAIN_INTERNAL = process.env.CHAIN_INTERNAL;
+
+  // Content farming limit
+  static FARMING_LIMIT = Number(process.env.FARMING_LIMIT) || 999;
+
+  // Check email disposable
+  static EMAIL_DISPOSABLE = Number(process.env.EMAIL_DISPOSABLE) || 0;
+
+  // TTL number top trend search cache
+  static TOP_TREND_TTL = Number(process.env.TOP_TREND_TTL) || 600;
+
+  // Distribute Farming Percents
+  static DISTRIBUTE_FARMING = Number(process.env.DISTRIBUTE_FARMING) || 0.05;
 }

@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { ContentService, SocialSyncService } from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
@@ -36,7 +36,7 @@ import { TwitterService } from './twitter.service';
 
 class PrivateTwitterService {
   client: TwitterApiv2;
-  logger: CastLogger;
+  logger: CastcleLogger;
 }
 
 type Union<T, R> = Pick<T, Exclude<keyof T, keyof R>> & R;
@@ -48,7 +48,7 @@ describe('Twitter Service', () => {
   let twitterService: Union<TwitterService, PrivateTwitterService>;
 
   const author = {
-    id: Types.ObjectId(),
+    id: new Types.ObjectId(),
     type: 'page',
     castcleId: 'castcleId',
     displayName: 'Castcle',

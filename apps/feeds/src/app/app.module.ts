@@ -21,28 +21,24 @@
  * or have any questions.
  */
 
+import {
+  CastcleHealthyModule,
+  CastcleThrottlerModule,
+  CastcleTracingModule,
+} from '@castcle-api/core';
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleCacheModule } from '@castcle-api/environments';
-import { CastcleHealthyModule } from '@castcle-api/healthy';
-import { CastcleThrottlerModule } from '@castcle-api/throttler';
-import { CastcleTracingModule } from '@castcle-api/tracing';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { Module } from '@nestjs/common';
-import { AdsController } from './controllers/ads.controller';
-import { CommentController } from './controllers/comment.controller';
+import { AdsControllerV2 } from './controllers/ads.controller.v2';
 import { CommentControllerV2 } from './controllers/comment.controller.v2';
-import { ContentController } from './controllers/content.controller';
 import { ContentControllerV2 } from './controllers/content.controller.v2';
-import { CountryController } from './controllers/country.controller';
-import { FeedsController } from './controllers/feeds.controller';
-import { FeedsControllerV2 } from './controllers/feeds.controller.v2';
-import { HashtagsController } from './controllers/hashtags.controller';
-import { LanguagesController } from './controllers/languages.controller';
+import { FarmingsControllerV2 } from './controllers/farmings.controller.v2';
 import { MetaDataControllerV2 } from './controllers/metadatas.controller.v2';
-import { SearchesController } from './controllers/searches.controller';
 import { SearchesControllerV2 } from './controllers/searches.controller.v2';
-import { AppService, SuggestionService } from './services';
+import { FeedsControllerV2 } from './feed/app.controller.v2';
+import { RecentFeedService } from './feed/services/recent-feed/service.abstract';
+import { RecentFeedServiceImpl } from './feed/services/recent-feed/service.implementation';
 
 @Module({
   imports: [
@@ -52,23 +48,21 @@ import { AppService, SuggestionService } from './services';
     CastcleTracingModule.forRoot({ serviceName: 'feeds' }),
     DatabaseModule,
     UtilsInterceptorsModule,
-    UtilsPipesModule,
   ],
   controllers: [
-    AdsController,
-    CommentController,
+    AdsControllerV2,
     CommentControllerV2,
-    ContentController,
     ContentControllerV2,
-    CountryController,
-    FeedsController,
+    FarmingsControllerV2,
     FeedsControllerV2,
-    HashtagsController,
-    LanguagesController,
     MetaDataControllerV2,
-    SearchesController,
     SearchesControllerV2,
   ],
-  providers: [AppService, SuggestionService],
+  providers: [
+    {
+      provide: RecentFeedService,
+      useClass: RecentFeedServiceImpl,
+    },
+  ],
 })
 export class AppModule {}

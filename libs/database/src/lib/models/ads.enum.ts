@@ -27,9 +27,11 @@ export enum AdsObjective {
 }
 
 export enum AdsStatus {
-  Processing = 'processing',
-  Declined = 'declined',
   Approved = 'approved',
+  Cancelled = 'cancelled',
+  Declined = 'declined',
+  Processing = 'processing',
+  Suspended = 'suspended',
 }
 
 export enum AdsBoostStatus {
@@ -37,6 +39,11 @@ export enum AdsBoostStatus {
   Running = 'running',
   Pause = 'pause',
   End = 'end',
+}
+
+export enum AdsBoostType {
+  Content = 'content',
+  User = 'user',
 }
 
 export enum AdsEngagementKey {
@@ -48,6 +55,7 @@ export enum AdsEngagementKey {
   Farm = 'farm',
   Reward = 'rewardDistributed',
 }
+
 export enum FilterInterval {
   All = 'all',
   Today = 'today',

@@ -26,7 +26,7 @@ import {
   ResponseDto,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import {
   HeadersInterceptor,
   HttpCacheSharedInterceptor,
@@ -39,7 +39,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-@CastcleControllerV2({ path: 'metadata' })
+@CastcleController({ path: 'v2/metadata' })
 export class MetaDataControllerV2 {
   constructor(private metadataService: MetadataServiceV2) {}
 

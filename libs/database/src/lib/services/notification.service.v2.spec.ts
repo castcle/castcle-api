@@ -20,6 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { CreatedUser, TestingModule } from '@castcle-api/testing';
+import { Downloader } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
   GoogleClient,
@@ -30,26 +33,21 @@ import {
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   AnalyticService,
   AuthenticationServiceV2,
-  CampaignService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService,
+  SocialSyncServiceV2,
   UserServiceV2,
 } from '../database.module';
 import {
+  NotificationQuery,
   NotificationRef,
   NotificationSource,
   NotificationType,
 } from '../dtos/notification.dto';
-import { MockUserService } from '../mocks';
-import { MockUserDetail } from '../mocks/user.mocks';
 import { ContentType, QueueName } from '../models';
 import { Comment, Content, Notification } from '../schemas';
 import { ContentService } from './content.service';
@@ -57,23 +55,20 @@ import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
 
 describe('NotificationServiceV2', () => {
-  let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: NotificationServiceV2;
   let comment: Comment;
   let content: Content;
   let contentService: ContentService;
-  let generateUser: MockUserService;
-  let mocksUsers: MockUserDetail[];
+  let mocksUsers: CreatedUser[];
   let notification: Notification[];
   let repository: Repository;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
         CacheModule.register(),
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
         HttpModule,
@@ -82,13 +77,12 @@ describe('NotificationServiceV2', () => {
         AuthenticationServiceV2,
         ContentService,
         HashtagService,
-        MockUserService,
-        NotificationService,
         NotificationServiceV2,
         Repository,
         UserServiceV2,
+        { provide: SocialSyncServiceV2, useValue: {} },
+        { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
-        { provide: CampaignService, useValue: {} },
         { provide: FacebookClient, useValue: {} },
         { provide: GoogleClient, useValue: {} },
         { provide: Mailer, useValue: {} },
@@ -110,15 +104,25 @@ describe('NotificationServiceV2', () => {
           provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
+        {
+          provide: getQueueToken(QueueName.VERIFY_EMAIL),
+          useValue: { add: jest.fn() },
+        },
       ],
-    }).compile();
+    });
 
     contentService = moduleRef.get(ContentService);
     service = moduleRef.get(NotificationServiceV2);
     repository = moduleRef.get(Repository);
-    generateUser = moduleRef.get(MockUserService);
+  });
 
-    mocksUsers = await generateUser.generateMockUsers(3);
+  afterAll(() => {
+    return moduleRef.close();
+  });
+
+  beforeEach(async () => {
+    await moduleRef.cleanDb();
+    mocksUsers = await moduleRef.createUsers(3);
 
     const user = mocksUsers[0].user;
     content = await contentService.createContentFromUser(user, {
@@ -166,7 +170,7 @@ describe('NotificationServiceV2', () => {
         account: mocksUsers[0].account._id,
       });
 
-      const isNotify = (service as any).checkNotify(notify);
+      const isNotify = service.checkNotify(notify);
       expect(isNotify).toEqual(false);
     });
   });
@@ -186,7 +190,9 @@ describe('NotificationServiceV2', () => {
         mocksUsers[0].user,
       );
 
-      expect(newMessage).toEqual('people-1 commented on your cast');
+      expect(newMessage).toEqual(
+        `${mocksUsers[1].user.displayId} commented on your cast.`,
+      );
     });
 
     it('generate message by type notification and language thai.', async () => {
@@ -203,7 +209,9 @@ describe('NotificationServiceV2', () => {
         mocksUsers[0].user,
       );
 
-      expect(newMessage).toEqual('people-1 แสดงความคิดเห็นบน cast ของคุณ');
+      expect(newMessage).toEqual(
+        `${mocksUsers[1].user.displayId} แสดงความคิดเห็นบน cast ของคุณ`,
+      );
     });
   });
 
@@ -217,7 +225,11 @@ describe('NotificationServiceV2', () => {
 
       const landingPage = (service as any).checkNotificationTypePage(
         notify.type,
-        notify.commentRef ? NotificationRef.Comment : NotificationRef.Content,
+        notify.commentRef
+          ? NotificationRef.Comment
+          : notify.contentRef
+          ? NotificationRef.Content
+          : undefined,
       );
       expect(landingPage).toEqual('comment');
     });
@@ -231,7 +243,11 @@ describe('NotificationServiceV2', () => {
 
       const landingPage = (service as any).checkNotificationTypePage(
         notify.type,
-        notify.commentRef ? NotificationRef.Comment : NotificationRef.Content,
+        notify.commentRef
+          ? NotificationRef.Comment
+          : notify.contentRef
+          ? NotificationRef.Content
+          : undefined,
       );
       expect(landingPage).toEqual('follower');
     });
@@ -244,7 +260,7 @@ describe('NotificationServiceV2', () => {
         type: NotificationType.Follow,
         account: mocksUsers[0].account._id,
       });
-      const notifyBy = await (service as any).getFromId(notify._id);
+      const notifyBy = await service.getFromId(notify._id);
 
       expect(notifyBy.sourceUserId).toContainEqual(mocksUsers[1].user._id);
       expect(notifyBy.source).toEqual(NotificationSource.Profile);
@@ -255,10 +271,9 @@ describe('NotificationServiceV2', () => {
   });
   describe('getAllNotify', () => {
     it('should get all notification data is exists.', async () => {
-      const notifies = await (service as any).getAllNotify(
-        mocksUsers[0].account,
-        { maxResults: 100 },
-      );
+      const notifies = await service.getAllNotify(mocksUsers[0].account, {
+        maxResults: 100,
+      } as NotificationQuery);
 
       expect(notifies).toHaveLength(2);
       expect(notifies).toBeDefined();
@@ -275,9 +290,7 @@ describe('NotificationServiceV2', () => {
 
   describe('getBadges', () => {
     it('should get count by notification unread is exists', async () => {
-      const notifyBadges = await (service as any).getBadges(
-        mocksUsers[0].account,
-      );
+      const notifyBadges = await service.getBadges(mocksUsers[0].account);
 
       expect(notifyBadges.profile).toEqual(2);
       expect(notifyBadges.page).toEqual(0);
@@ -287,26 +300,26 @@ describe('NotificationServiceV2', () => {
 
   describe('readNotify', () => {
     it('should update notification read equal true.', async () => {
-      await (service as any).readNotify({ _id: notification[0]._id });
+      await service.readNotify(notification[0]._id);
 
-      const notifyBy = await (service as any).getFromId(notification[0]._id);
+      const notifyBy = await service.getFromId(notification[0]._id);
 
       expect(notifyBy.read).toEqual(true);
       expect(notifyBy.type).toEqual(NotificationType.Comment);
       expect(notifyBy.account).toEqual(mocksUsers[0].account._id);
     });
   });
+
   describe('readAllSourceNotify', () => {
     it('should update all notification read equal true.', async () => {
-      await (service as any).readAllSourceNotify(
+      await service.readAllSourceNotify(
         mocksUsers[0].account,
         NotificationSource.Profile,
       );
 
-      const notifies = await (service as any).getAllNotify(
-        mocksUsers[0].account,
-        { maxResults: 100 },
-      );
+      const notifies = await service.getAllNotify(mocksUsers[0].account, {
+        maxResults: 100,
+      } as NotificationQuery);
 
       expect(notifies).toHaveLength(2);
       expect(notifies).toBeDefined();
@@ -324,13 +337,15 @@ describe('NotificationServiceV2', () => {
         type: NotificationType.Follow,
         account: mocksUsers[0].account._id,
       });
-      const { message } = await (service as any).generateMessage(
+      const { message } = await service.generateMessage(
         notify,
         mocksUsers[0].user,
         'en',
       );
       expect(message).toBeDefined();
-      expect(message).toEqual('people-1 started following you');
+      expect(message).toEqual(
+        `${mocksUsers[1].user.displayId} started following you.`,
+      );
     });
 
     it('should generate message notification by language thai is correct.', async () => {
@@ -339,14 +354,14 @@ describe('NotificationServiceV2', () => {
         type: NotificationType.Follow,
         account: mocksUsers[0].account._id,
       });
-      const { message } = await (service as any).generateMessage(
+      const { message } = await service.generateMessage(
         notify,
         mocksUsers[0].user,
         'th',
       );
 
       expect(message).toBeDefined();
-      expect(message).toEqual('people-1 ได้ติดตามคุณ');
+      expect(message).toEqual(`${mocksUsers[1].user.displayId} ได้ติดตามคุณ`);
     });
   });
 
@@ -356,16 +371,20 @@ describe('NotificationServiceV2', () => {
         account: mocksUsers[0].account._id,
       });
 
-      const notifyResp = await (service as any).generateNotificationsResponse(
+      const notifyResp = await service.generateNotificationsResponse(
         notifies,
         'en',
       );
 
       notifyResp.forEach((item) => {
         if (item.type === NotificationType.Comment) {
-          expect(item.message).toEqual('people-1 commented on your cast');
+          expect(item.message).toEqual(
+            `${mocksUsers[1].user.displayId} commented on your cast.`,
+          );
         } else {
-          expect(item.message).toEqual('people-1 started following you');
+          expect(item.message).toEqual(
+            `${mocksUsers[1].user.displayId} started following you.`,
+          );
         }
       });
     });
@@ -374,7 +393,7 @@ describe('NotificationServiceV2', () => {
         account: mocksUsers[0].account._id,
       });
 
-      const notifyResp = await (service as any).generateNotificationsResponse(
+      const notifyResp = await service.generateNotificationsResponse(
         notifies,
         'th',
       );
@@ -383,43 +402,39 @@ describe('NotificationServiceV2', () => {
       notifyResp.forEach((item) => {
         if (item.type === NotificationType.Comment) {
           expect(item.message).toEqual(
-            'people-1 แสดงความคิดเห็นบน cast ของคุณ',
+            `${mocksUsers[1].user.displayId} แสดงความคิดเห็นบน cast ของคุณ`,
           );
         } else {
-          expect(item.message).toEqual('people-1 ได้ติดตามคุณ');
+          expect(item.message).toEqual(
+            `${mocksUsers[1].user.displayId} ได้ติดตามคุณ`,
+          );
         }
       });
     });
   });
 
-  // describe('deleteNotify', () => {
-  //   it('should delete notification by id is correct.', async () => {
-  //     await (service as any).deleteNotify(notification[0]._id);
+  describe('deleteNotify', () => {
+    it('should delete notification by id is correct.', async () => {
+      await service.deleteNotify(notification[0]._id);
 
-  //     const notify = await (service as any).getFromId(notification[0]._id);
+      const notify = await service.getFromId(notification[0]._id);
 
-  //     expect(notify).toBeNull();
-  //   });
-  // });
+      expect(notify).toBeNull();
+    });
+  });
 
-  // describe('getAllNotify', () => {
-  //   it('should delete all notification by source is correct.', async () => {
-  //     await (service as any).deleteAllSourceNotify(
-  //       mocksUsers[0].account,
-  //       NotificationSource.Profile,
-  //     );
+  describe('getAllNotify', () => {
+    it('should delete all notification by source is correct.', async () => {
+      await service.deleteAllSourceNotify(
+        mocksUsers[0].account,
+        NotificationSource.Profile,
+      );
 
-  //     const notifies = await (service as any).getAllNotify(
-  //       mocksUsers[0].account,
-  //       { maxResults: 100 },
-  //     );
+      const notifies = await service.getAllNotify(mocksUsers[0].account, {
+        maxResults: 100,
+      } as NotificationQuery);
 
-  //     expect(notifies).toHaveLength(0);
-  //   });
-  // });
-
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
+      expect(notifies).toHaveLength(0);
+    });
   });
 });

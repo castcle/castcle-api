@@ -21,6 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleName, CastcleRegExp } from '@castcle-api/common';
+import { Configs } from '@castcle-api/environments';
 import {
   AVATAR_SIZE_CONFIGS,
   AWSClient,
@@ -28,11 +30,11 @@ import {
   Image,
 } from '@castcle-api/utils/aws';
 import { TwilioChannel } from '@castcle-api/utils/clients';
-import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isArray, isBoolean, isMongoId, isString } from 'class-validator';
+import { DBRef } from 'mongodb';
 import {
   AnyKeys,
   ClientSession,
@@ -46,33 +48,43 @@ import {
 import { lastValueFrom, map } from 'rxjs';
 import {
   GetAvailableIdResponse,
-  GetBalanceResponse,
-  pipelineGetContents,
+  WalletBalance,
+  pipelineGetAdsCampaigns,
+  pipelineGetContentsV2,
+  pipelineGetFarmAmount,
+  pipelineGetFeedDefaults,
   pipelineOfGetAvailableId,
-  pipelineOfGetBalance,
+  pipelineOfGetParticipate,
+  pipelineOfGetParticipates,
+  pipelineOfGetWalletBalance,
 } from '../aggregations';
 import {
-  AccessTokenPayload,
+  Author,
   BlogPayload,
+  CastcleQueryOptions,
   CreateContentDto,
-  CreateCredentialDto,
   EntityVisibility,
-  GetCastDto,
   NotificationSource,
   NotificationType,
-  RefreshTokenPayload,
+  Participates,
   ShortPayload,
+  SortDirection,
   Url,
   UserField,
 } from '../dtos';
 import {
   AdsBoostStatus,
   AdsPaymentMethod,
-  CACCOUNT_NO,
+  AdsStatus,
+  CAccountNo,
   CastcleIdMetadata,
-  CastcleNumber,
+  CommentType,
+  ContentFarmingStatus,
   ContentType,
   Country,
+  EmailDomainDisposable,
+  GetContentPayload,
+  GetFarmingCountPayload,
   KeywordType,
   Language,
   MetadataType,
@@ -86,17 +98,13 @@ import {
 } from '../models';
 import {
   Account,
-  AccountDeviceV1,
-  AccountActivationModel as ActivationModel,
   AdsCampaign,
   AdsPlacement,
-  AccountAuthenId as AuthenId,
-  CAccount,
   CAccountNature,
   Comment,
   Content,
-  Credential,
-  CredentialModel,
+  ContentFarming,
+  DefaultContent,
   Engagement,
   FeedItem,
   Hashtag,
@@ -106,7 +114,6 @@ import {
   Otp,
   OtpModel,
   Queue,
-  AccountReferral as Referral,
   Relationship,
   Reporting,
   Revision,
@@ -114,6 +121,7 @@ import {
   Transaction,
   User,
   UxEngagement,
+  cAccount,
 } from '../schemas';
 import { FeedItemV2 } from '../schemas/feed-item-v2.schema';
 import { WalletShortcut } from '../schemas/wallet-shortcut.schema';
@@ -135,7 +143,7 @@ type AccountQuery = {
 type UserQuery = {
   /** Mongo ID or castcle ID */
   _id?: string | Types.ObjectId[] | string[];
-  accountId?: string | Types.ObjectId[];
+  accountId?: string | Types.ObjectId | Types.ObjectId[];
   castcleId?: string;
   excludeRelationship?: string[] | User[];
   keyword?: {
@@ -160,17 +168,11 @@ type EngagementQuery = {
 
 type RelationshipQuery = {
   userId?: User | User[] | Types.ObjectId;
-  followedUser?: User | User[] | Types.ObjectId;
+  followedUser?: User | User[] | Types.ObjectId | string[];
   blocking?: boolean;
+  following?: boolean;
   sinceId?: string;
   untilId?: string;
-};
-
-type CredentialQuery = {
-  refreshToken?: string;
-  accessToken?: string;
-  deviceUUID?: string;
-  'account.isGuest'?: boolean;
 };
 
 type NotificationQueryOption = {
@@ -185,14 +187,14 @@ type NotificationQueryOption = {
   contentRef?: Types.ObjectId | any;
   commentRef?: Types.ObjectId | any;
   replyRef?: Types.ObjectId | any;
-  adsRef?: Types.ObjectId | any;
+  advertiseId?: Types.ObjectId | any;
   profileRef?: Types.ObjectId | any;
   sourceUserId?: Types.ObjectId;
 };
 
 type ContentQuery = {
   _id?: string | string[];
-  author?: string | Types.ObjectId;
+  author?: string | Types.ObjectId | string[];
   contentType?: string;
   decayDays?: number;
   excludeAuthor?: string[] | User[];
@@ -207,10 +209,8 @@ type ContentQuery = {
   message?: string;
   originalPost?: string;
   sinceId?: string;
-  type?: string[];
-  sortBy?: {
-    [key: string]: string;
-  };
+  type?: ContentType[];
+  sortBy?: Record<string, 1 | -1>;
   untilId?: string;
   viewer?: User;
   visibility?: EntityVisibility | EntityVisibility[];
@@ -253,26 +253,44 @@ type ReportingQuery = {
   createdAt_lt?: Date;
 };
 
+type CommentQuery = {
+  _id?: string;
+  targetRef?: any;
+  type?: CommentType;
+};
+
+type ParticipateQuery = {
+  targetRef: DBRef | DBRef[];
+  userId?: string;
+};
+
+type AdsCampaignQuery = {
+  excludeAds?: Types.ObjectId[];
+  boostStatus?: AdsBoostStatus;
+  status?: AdsStatus;
+};
+
+type GetFarmAmountQuery = {
+  content?: Types.ObjectId[];
+  status?: ContentFarmingStatus;
+};
+
 @Injectable()
 export class Repository {
   private castcleIdMetadata: CastcleIdMetadata;
+  private castcleEmailDomain: EmailDomainDisposable;
 
   constructor(
-    /** @deprecated */
-    @InjectModel('AccountActivation') private activationModel: ActivationModel,
-    /** @deprecated */
-    @InjectModel('AccountAuthenId') private authenIdModel: Model<AuthenId>,
-    /** @deprecated */
-    @InjectModel('AccountDevice') private deviceModel: Model<AccountDeviceV1>,
-    /** @deprecated */
-    @InjectModel('AccountReferral') private referralModel: Model<Referral>,
     @InjectModel('Account') private accountModel: Model<Account>,
     @InjectModel('AdsCampaign') private adsCampaignModel: Model<AdsCampaign>,
     @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
-    @InjectModel('CAccount') private caccountModel: Model<CAccount>,
+    @InjectModel('cAccount') private caccountModel: Model<cAccount>,
     @InjectModel('Comment') private commentModel: Model<Comment>,
     @InjectModel('Content') private contentModel: Model<Content>,
-    @InjectModel('Credential') private credentialModel: CredentialModel,
+    @InjectModel('ContentFarming')
+    private contentFarmingModel: Model<ContentFarming>,
+    @InjectModel('DefaultContent')
+    private defaultContentModel: Model<DefaultContent>,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
     @InjectModel('FeedItemV2') private feedItemV2Model: Model<FeedItemV2>,
@@ -307,6 +325,56 @@ export class Repository {
     );
   }
 
+  private isValidCastcleId(castcleId: string) {
+    const hasBannedWord = this.castcleIdMetadata.bannedWords.some(
+      (bannedWord) => new RegExp(bannedWord, 'i').test(castcleId),
+    );
+
+    return (
+      !hasBannedWord &&
+      castcleId.length >= this.castcleIdMetadata.minLength &&
+      castcleId.length <= this.castcleIdMetadata.maxLength
+    );
+  }
+
+  private randomCastcleId() {
+    const randomLength = (length = 0) => {
+      return Math.floor(Math.random() * length);
+    };
+
+    return `${
+      this.castcleIdMetadata.adjectives[
+        randomLength(this.castcleIdMetadata.adjectives.length)
+      ]
+    }${
+      this.castcleIdMetadata.nouns[
+        randomLength(this.castcleIdMetadata.nouns.length)
+      ]
+    }`;
+  }
+
+  async suggestCastcleId(preferredCastcleId?: string) {
+    if (!this.castcleIdMetadata) {
+      const castcleIdMetadata = await AWSClient.getCastcleMetadata(
+        Configs.AssetsPath.SuggestWords,
+      );
+
+      this.castcleIdMetadata = castcleIdMetadata;
+    }
+
+    const castcleId =
+      !this.castcleIdMetadata || this.isValidCastcleId(preferredCastcleId)
+        ? CastcleName.toSlug(preferredCastcleId)
+        : this.randomCastcleId();
+
+    const [availableId] =
+      await this.userModel.aggregate<GetAvailableIdResponse>(
+        pipelineOfGetAvailableId(castcleId),
+      );
+
+    return `${castcleId}${availableId ? availableId?.number : ''}`;
+  }
+
   private getAccountQuery(filter: AccountQuery) {
     const query: FilterQuery<Account> = {
       visibility: EntityVisibility.Publish,
@@ -338,6 +406,7 @@ export class Repository {
       if (filter.untilId) query.followedUser.$lt = filter.untilId as any;
     }
     if (filter.blocking) query.blocking = filter.blocking;
+    if (filter.following) query.following = filter.following;
     if (filter.followedUser) query.followedUser = filter.followedUser as any;
     if (isArray(filter.followedUser))
       query.followedUser = { $in: filter.followedUser as any };
@@ -355,18 +424,19 @@ export class Repository {
     if (isArray(filter._id))
       query._id = {
         $in: (filter._id as any).map((id) =>
-          isString(id) ? Types.ObjectId(id) : id,
+          isString(id) ? new Types.ObjectId(id) : id,
         ),
       };
     else if (filter._id)
       query._id = isString(filter._id)
-        ? Types.ObjectId(filter._id as any)
+        ? new Types.ObjectId(filter._id as any)
         : filter._id;
 
     if (filter.message) query['payload.message'] = filter.message;
     if (filter.originalPost)
-      query['originalPost._id'] = Types.ObjectId(filter.originalPost);
+      query['originalPost._id'] = new Types.ObjectId(filter.originalPost);
     if (filter.author) query['author.id'] = filter.author;
+    if (isArray(filter.author)) query['author.id'] = { $in: filter.author };
     if (filter.isRecast) query.isRecast = filter.isRecast;
     if (filter.isQuote) query.isQuote = filter.isQuote;
     if (isArray(filter.type)) query.type = { $in: filter.type };
@@ -441,6 +511,28 @@ export class Repository {
     return query;
   };
 
+  private getCommentQuery = (filter: CommentQuery) => {
+    const query: FilterQuery<Comment> = {
+      visibility: EntityVisibility.Publish,
+    };
+
+    if (filter.type) query.type = filter.type;
+
+    if (filter.targetRef) {
+      let id;
+      if (isArray(filter.targetRef.$id)) {
+        id = { $in: filter.targetRef.$id };
+      } else {
+        id = new Types.ObjectId(filter.targetRef.$id);
+      }
+
+      query['targetRef.$id'] = id;
+      query['targetRef.$ref'] = filter.targetRef.$ref;
+    }
+
+    return query;
+  };
+
   private getEngagementQuery = (filter: EngagementQuery) => {
     const query: FilterQuery<Engagement> = {
       visibility: EntityVisibility.Publish,
@@ -453,8 +545,15 @@ export class Repository {
     if (filter.targetRef)
       query.targetRef = {
         $ref: filter.targetRef.$ref,
-        $id: Types.ObjectId(filter.targetRef.$id),
+        $id: isArray(filter.targetRef.$id)
+          ? { $in: filter.targetRef.$id }
+          : new Types.ObjectId(filter.targetRef.$id),
       };
+    if (isArray(filter.targetRef)) {
+      query.targetRef = {
+        $in: query.targetRef,
+      };
+    }
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
         sinceId: filter.sinceId,
@@ -475,8 +574,9 @@ export class Repository {
     if (filter?.commentRef) query.commentRef = filter.commentRef;
     if (filter?.replyRef) query.replyRef = filter.replyRef;
     if (filter?.profileRef) query.profileRef = filter.profileRef;
-    if (filter?.adsRef) query.adsRef = filter.adsRef;
+    if (filter?.advertiseId) query.advertiseId = filter.advertiseId;
     if (filter?.sourceUserId) query.sourceUserId = filter.sourceUserId;
+    if (filter?.user) query.user = filter.user;
 
     return createCastcleFilter(query, {
       sinceId: filter?.sinceId,
@@ -507,7 +607,7 @@ export class Repository {
   private getSocialSyncQuery(filter: SocialSyncQuery) {
     const query: FilterQuery<SocialSync> = {};
 
-    if (filter._id) query._id = Types.ObjectId(filter._id);
+    if (filter._id) query._id = new Types.ObjectId(filter._id);
     if (filter.user) query.user = filter.user as any;
 
     return query;
@@ -551,6 +651,17 @@ export class Repository {
     return query;
   }
 
+  async isEmailDisposable(email: string) {
+    if (!this.castcleEmailDomain)
+      this.castcleEmailDomain = await AWSClient.getCastcleMetadata(
+        Configs.AssetsPath.DomainEmailDisposables,
+      );
+
+    return this.castcleEmailDomain?.emailDomainDisposables?.some((domain) =>
+      email.includes(domain),
+    );
+  }
+
   deleteAccount(filter: AccountQuery) {
     return this.accountModel.deleteOne(this.getAccountQuery(filter));
   }
@@ -580,12 +691,6 @@ export class Repository {
       .exec();
   }
 
-  updateCredentials(
-    filter: FilterQuery<Credential>,
-    updateQuery?: UpdateQuery<Credential>,
-  ) {
-    return this.credentialModel.updateMany(filter, updateQuery);
-  }
   async createAccount(
     accountRequirements: AnyKeys<Account>,
     queryOptions?: SaveOptions,
@@ -683,8 +788,13 @@ export class Repository {
       user.displayId || user.displayName,
     );
 
-    user.displayId = suggestId;
+    user.displayId = this.getDisplayIdWithPrefix(suggestId);
     return new this.userModel(user).save();
+  }
+
+  private getDisplayIdWithPrefix(displayId: string) {
+    if (displayId.startsWith('@')) return displayId;
+    return `@${displayId}`;
   }
 
   private getUserQuery(filter: UserQuery) {
@@ -692,30 +802,26 @@ export class Repository {
       visibility: EntityVisibility.Publish,
     };
 
-    if (isArray(filter.accountId))
-      query.ownerAccount = { $in: filter.accountId as any };
+    if (Array.isArray(filter.accountId)) {
+      query.ownerAccount = { $in: filter.accountId };
+    } else if (filter.accountId) {
+      query.ownerAccount = new Types.ObjectId(filter.accountId);
+    }
 
-    if (filter.accountId) query.ownerAccount = filter.accountId as any;
     if (filter.type) query.type = filter.type;
-    let andId = [];
 
-    if (isMongoId(String(filter._id))) {
-      andId = [{ _id: filter._id }];
-    } else if (isArray(filter._id)) {
-      andId = [{ _id: { $in: filter._id } }];
+    if (filter._id || filter.excludeRelationship) query.$and = [];
+    if (Array.isArray(filter._id)) {
+      query.$and.push({ _id: { $in: filter._id } });
+    } else if (isMongoId(String(filter._id))) {
+      query.$and.push({ _id: filter._id });
     } else if (filter._id) {
-      andId = [
-        {
-          displayId: CastcleRegExp.fromString(filter._id as string),
-        },
-      ];
+      query.$and.push({ displayId: CastcleRegExp.fromString(filter._id) });
     }
 
     if (filter.excludeRelationship) {
-      andId = [...andId, { _id: { $nin: filter.excludeRelationship } }];
+      query.$and.push({ _id: { $nin: filter.excludeRelationship } });
     }
-
-    if (andId.length) query.$and = andId;
 
     if (filter.keyword?.input) {
       query.$or = [
@@ -765,7 +871,15 @@ export class Repository {
     user: UpdateQuery<User>,
     option?: QueryOptions,
   ) {
-    return this.userModel.updateOne(filter as any, user, option);
+    return this.userModel.updateOne(this.getUserQuery(filter), user, option);
+  }
+
+  updateUsers(
+    filter: UserQuery,
+    user: UpdateQuery<User>,
+    option?: QueryOptions,
+  ) {
+    return this.userModel.updateMany(filter as any, user, option);
   }
 
   findEngagement(filter: EngagementQuery, queryOptions?: QueryOptions) {
@@ -845,11 +959,18 @@ export class Repository {
     return this.relationshipModel.updateOne(filter, updateQuery, queryOptions);
   }
 
-  removeRelationship(
+  deleteRelationship(
     filter: FilterQuery<Relationship>,
     queryOptions?: QueryOptions,
   ) {
     return this.relationshipModel.deleteOne(filter, queryOptions);
+  }
+
+  deleteRelationships(
+    filter: FilterQuery<Relationship>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.relationshipModel.deleteMany(filter, queryOptions);
   }
 
   findContent(filter: ContentQuery, queryOptions?: QueryOptions) {
@@ -869,14 +990,44 @@ export class Repository {
       .exec();
   }
 
-  aggregationContent({ maxResults, sortBy, ...filter }: ContentQuery) {
-    return this.contentModel.aggregate(
-      pipelineGetContents({
+  aggregationContentsV2({ maxResults, sortBy, ...filter }: ContentQuery) {
+    return this.contentModel.aggregate<GetContentPayload>(
+      pipelineGetContentsV2({
         maxResults,
         sortBy,
         viewer: filter.viewer,
-        filter: this.getContentQuery(filter),
+        filters: this.getContentQuery(filter),
       }),
+    );
+  }
+
+  aggregationParticipates(filters: ParticipateQuery) {
+    return this.engagementModel.aggregate<Participates>(
+      pipelineOfGetParticipates(filters),
+    );
+  }
+
+  aggregationParticipate(filters: ParticipateQuery) {
+    return this.engagementModel.aggregate<Participates>(
+      pipelineOfGetParticipate(filters),
+    );
+  }
+
+  aggregationAdsCampaigns(filters: AdsCampaignQuery) {
+    return this.adsCampaignModel.aggregate<any>(
+      pipelineGetAdsCampaigns(filters),
+    );
+  }
+
+  aggregationFeedDefault() {
+    return this.defaultContentModel.aggregate<GetContentPayload>(
+      pipelineGetFeedDefaults(),
+    );
+  }
+
+  aggregationGetFarmAmount(filters: GetFarmAmountQuery) {
+    return this.contentFarmingModel.aggregate<GetFarmingCountPayload>(
+      pipelineGetFarmAmount(filters),
     );
   }
 
@@ -931,10 +1082,6 @@ export class Repository {
       ),
       ...$deletedContents,
     ]);
-  }
-
-  findCredential(filter: CredentialQuery) {
-    return this.credentialModel.findOne(filter);
   }
 
   createNotification(notify: AnyKeys<Notification>) {
@@ -1029,21 +1176,6 @@ export class Repository {
     );
   }
 
-  async createCredential(
-    credential: CreateCredentialDto,
-    queryOptions?: SaveOptions,
-  ) {
-    return new this.credentialModel(credential).save(queryOptions);
-  }
-
-  generateAccessToken(payload: AccessTokenPayload) {
-    return this.credentialModel.generateAccessToken(payload);
-  }
-
-  generateRefreshToken(payload: RefreshTokenPayload) {
-    return this.credentialModel.generateRefreshToken(payload);
-  }
-
   createOtp(createOtpDto: {
     accountId: string;
     objective: OtpObjective;
@@ -1084,6 +1216,16 @@ export class Repository {
     return this.accountModel.startSession();
   }
 
+  createComment(comment: AnyKeys<Comment>) {
+    return new this.commentModel(comment).save();
+  }
+
+  findComments(filter: CommentQuery, queryOptions?: QueryOptions) {
+    return this.commentModel
+      .find(this.getCommentQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
   updateComments(
     filter: FilterQuery<Comment>,
     comment: UpdateQuery<Comment>,
@@ -1111,11 +1253,7 @@ export class Repository {
     return this.feedItemV2Model.updateOne(filter, feedItem, queryOptions);
   }
 
-  async seenFeedItem(
-    account: Account,
-    feedItemId: string,
-    credential: Credential,
-  ) {
+  async seenFeedItem(account: Account, feedItemId: string, uuid: string) {
     return this.feedItemV2Model
       .updateOne(
         {
@@ -1127,7 +1265,7 @@ export class Repository {
         },
         {
           seenAt: new Date(),
-          seenCredential: credential._id,
+          seenUUID: uuid,
         },
       )
       .exec();
@@ -1138,35 +1276,26 @@ export class Repository {
     queryOptions?: QueryOptions,
   ) => this.feedItemV2Model.find(filter, queryOptions);
 
-  async saveFeedItemFromContents(
-    contents: GetCastDto,
-    viewerAccountId: string,
-  ) {
-    const calledFeeds = await this.feedItemV2Model.find({
-      content: {
-        $in: contents.contents.map((c) => c._id),
-      },
-    });
-    await this.feedItemV2Model.updateMany(
-      {
-        content: {
-          $in: contents.contents.map((c) => c._id),
+  async saveFeedItemFromContents(feedItems: AnyKeys<any>[]) {
+    const [newFeeds] = await Promise.all([
+      this.feedItemV2Model.create(
+        feedItems.filter(({ wasNew }) => wasNew).map(({ newFeed }) => newFeed),
+      ),
+      this.feedItemV2Model.updateMany(
+        {
+          content: {
+            $in: feedItems
+              .filter(({ wasNew }) => !wasNew)
+              .map(({ newFeed }) => newFeed.content),
+          },
         },
-      },
-      {
-        calledAt: new Date(),
-      },
-    );
-    return this.feedItemV2Model
-      .insertMany(
-        contents.newContents.map((c) => ({
-          viewer: viewerAccountId,
-          content: c._id,
-          author: c.author.id,
+        {
           calledAt: new Date(),
-        })),
-      )
-      .then((items) => calledFeeds.concat(items));
+        },
+      ),
+    ]);
+
+    return newFeeds;
   }
 
   findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {
@@ -1191,10 +1320,6 @@ export class Repository {
     return this.feedItemModel.deleteMany(filter, queryOptions);
   }
 
-  deleteRevisions(filter: FilterQuery<Revision>, queryOptions?: QueryOptions) {
-    return this.revisionModel.deleteMany(filter, queryOptions);
-  }
-
   findHashtags(filter: HashtagQuery, queryOptions?: QueryOptions) {
     return this.hashtagModel.find(
       this.getHashtagQuery(filter),
@@ -1203,64 +1328,59 @@ export class Repository {
     );
   }
 
-  /**
-   * Get account's balance
-   */
-  getBalance = async (dto: { accountId: string }) => {
-    const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
-      pipelineOfGetBalance(dto.accountId),
-    );
-
-    return CastcleNumber.from(balance?.total?.toString()).toNumber();
-  };
-
-  getFindQueryForChild = (caccount: CAccount) => {
+  getFindQueryForChild = (cAccount: cAccount) => {
     const orQuery = [
       {
-        'ledgers.debit.caccountNo': caccount.no,
+        'ledgers.debit.cAccountNo': cAccount.no,
       },
       {
-        'ledgers.credit.caccountNo': caccount.no,
+        'ledgers.credit.cAccountNo': cAccount.no,
       },
     ];
-    if (caccount.child)
-      caccount.child.forEach((childNo) => {
+    if (cAccount.child)
+      cAccount.child.forEach((childNo) => {
         orQuery.push({
-          'ledgers.debit.caccountNo': childNo,
+          'ledgers.debit.cAccountNo': childNo,
         });
         orQuery.push({
-          'ledgers.credit.caccountNo': childNo,
+          'ledgers.credit.cAccountNo': childNo,
         });
       });
     return orQuery;
   };
 
-  findTransactionsOfCAccount = (caccount: CAccount) => {
-    const orQuery = this.getFindQueryForChild(caccount);
+  findTransactionsOfCAccount = (cAccount: cAccount) => {
+    const orQuery = this.getFindQueryForChild(cAccount);
     const findFilter: FilterQuery<Transaction> = {
       $or: orQuery,
     };
     return this.transactionModel.find(findFilter);
   };
 
-  findCAccountByCaccountNO = (caccountNo: string) =>
-    this.caccountModel.findOne({ no: caccountNo });
+  aggregateTransaction = (userId: Types.ObjectId) => {
+    return this.transactionModel.aggregate<WalletBalance>(
+      pipelineOfGetWalletBalance(userId),
+    );
+  };
 
-  getTAccountBalance = async (caccountNo: string) => {
+  findCAccountByCaccountNO = (cAccountNo: string) =>
+    this.caccountModel.findOne({ no: cAccountNo });
+
+  getTAccountBalance = async (cAccountNo: string) => {
     //get account First
-    const caccount = await this.caccountModel.findOne({ no: caccountNo });
-    const txs = await this.findTransactionsOfCAccount(caccount);
+    const cAccount = await this.caccountModel.findOne({ no: cAccountNo });
+    const txs = await this.findTransactionsOfCAccount(cAccount);
     const allDebit = txs.reduce((totalDebit, currentTx) => {
       return (
         totalDebit +
         currentTx.ledgers
           .filter(
             (t) =>
-              caccount.child.findIndex(
-                (childNo) => t.debit.caccountNo === childNo,
-              ) >= 0 || caccount.no === t.debit.caccountNo,
+              cAccount.child.findIndex(
+                (childNo) => t.debit.cAccountNo === childNo,
+              ) >= 0 || cAccount.no === t.debit.cAccountNo,
           )
-          .reduce((sumDebit, now) => now.debit.value + sumDebit, 0)
+          .reduce((sumDebit, now) => Number(now.debit.value) + sumDebit, 0)
       );
     }, 0);
     const allCredit = txs.reduce((totalCredit, currentTx) => {
@@ -1269,14 +1389,14 @@ export class Repository {
         currentTx.ledgers
           .filter(
             (t) =>
-              caccount.child.findIndex(
-                (childNo) => t.credit.caccountNo === childNo,
-              ) >= 0 || caccount.no === t.credit.caccountNo,
+              cAccount.child.findIndex(
+                (childNo) => t.credit.cAccountNo === childNo,
+              ) >= 0 || cAccount.no === t.credit.cAccountNo,
           )
-          .reduce((sumCredit, now) => now.debit.value + sumCredit, 0)
+          .reduce((sumCredit, now) => Number(now.debit.value) + sumCredit, 0)
       );
     }, 0);
-    if (caccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
+    if (cAccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
     else return allCredit - allDebit;
   };
 
@@ -1295,7 +1415,7 @@ export class Repository {
 
   getCastUSDDistributeRate = async () => {
     const collectedCast = await this.getTAccountBalance(
-      CACCOUNT_NO.SOCIAL_REWARD.NO,
+      CAccountNo.SOCIAL_REWARD.NO,
     );
     const adsPlacements = await this.getUndistributedAdsplacements();
     const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);
@@ -1304,35 +1424,18 @@ export class Repository {
 
   pauseAdsFromContentId = async (contentId: string) =>
     this.adsCampaignModel.updateOne(
-      {
-        adsRef: {
-          $ref: 'content',
-          $id: contentId,
-        },
-      },
-      {
-        boostStatus: AdsBoostStatus.Pause,
-      },
+      { adsRef: new DBRef('content', new Types.ObjectId(contentId)) },
+      { boostStatus: AdsBoostStatus.Pause },
     );
 
   async deleteCastcleAccount(account: Account) {
     const users = await this.userModel.find({ ownerAccount: account._id });
     const userIds = users.map((user) => user._id);
-    const $v1Delete = [
-      this.activationModel.deleteMany({ account: account._id }),
-      this.authenIdModel.deleteMany({ account: account._id }),
-      this.credentialModel.deleteMany({ account: account._id }),
-      this.deviceModel.deleteMany({ account: account._id }),
-      this.referralModel.updateMany(
-        {
-          $or: [
-            { referrerAccount: account._id },
-            { referringAccount: account._id },
-          ],
-        },
-        { $set: { visibility: EntityVisibility.Deleted } },
-      ),
-    ];
+
+    const follower = await this.relationshipModel.find({
+      $or: [{ followedUser: { $in: userIds } }, { user: { $in: userIds } }],
+      following: true,
+    });
 
     const $hardDelete = [
       this.commentModel.deleteMany({ 'author._id': { $in: userIds } }),
@@ -1363,9 +1466,33 @@ export class Repository {
         { _id: { $in: userIds } },
         { visibility: EntityVisibility.Deleted },
       ),
+      userIds.map(async (id) => {
+        await this.userModel.updateMany(
+          {
+            _id: {
+              $in: follower
+                .filter(({ user }) => String(user) === String(id))
+                .map(({ followedUser }) => followedUser),
+            },
+          },
+          { $inc: { followerCount: -1 } },
+        );
+        await this.userModel.updateMany(
+          {
+            _id: {
+              $in: follower
+                .filter(
+                  ({ followedUser }) => String(followedUser) === String(id),
+                )
+                .map(({ user }) => user),
+            },
+          },
+          { $inc: { followedCount: -1 } },
+        );
+      }),
     ];
 
-    await Promise.all([...$v1Delete, ...$hardDelete, ...$softDelete]);
+    await Promise.all([...$hardDelete, ...$softDelete]);
 
     if (account.referralBy) {
       await this.accountModel.updateOne(
@@ -1391,12 +1518,120 @@ export class Repository {
         this.deleteEngagements({ user: pageId }),
         this.deleteComments({ 'author._id': pageId }, { session }),
         this.deleteFeedItems({ author: pageId }, { session }),
-        this.deleteRevisions({ author: pageId }, { session }),
         this.deleteSocialSyncs({ user: pageId }, { session }),
         this.deleteNotifications({ user: pageId }, { session }),
       ]);
       await session.commitTransaction();
-      session.endSession();
+      await session.endSession();
+    });
+  }
+
+  async deleteAllContent(contentId: string) {
+    const session = await this.contentModel.startSession();
+
+    const contents = await this.contentModel.find({
+      'originalPost._id': new Types.ObjectId(contentId),
+    });
+
+    await session.withTransaction(async () => {
+      await Promise.all([
+        this.deleteContents({
+          'originalPost._id': new Types.ObjectId(contentId) as any,
+        }),
+        this.deleteContents({
+          _id: new Types.ObjectId(contentId),
+        }),
+        this.deleteEngagements({
+          targetRef: {
+            $ref: 'content',
+            $id: new Types.ObjectId(contentId),
+          },
+        }),
+        this.deleteComments(
+          {
+            targetRef: {
+              $ref: 'content',
+              $id: new Types.ObjectId(contentId),
+            },
+          },
+          { session },
+        ),
+        this.deleteFeedItems(
+          { content: new Types.ObjectId(contentId) as any },
+          { session },
+        ),
+        this.deleteNotifications(
+          { contentRef: new Types.ObjectId(contentId) },
+          { session },
+        ),
+        this.notificationModel.deleteMany(
+          {
+            contentRef: contents.map(({ _id }) => _id),
+          },
+          { session },
+        ),
+      ]);
+      await session.commitTransaction();
+      await session.endSession();
+    });
+  }
+
+  async deleteUser(userId: string) {
+    const session = await this.userModel.startSession();
+    await session.withTransaction(async () => {
+      const following = await this.relationshipModel.find({
+        user: userId as any,
+        following: true,
+      });
+
+      const follower = await this.relationshipModel.find({
+        followedUser: userId as any,
+        following: true,
+      });
+
+      const user = await this.userModel.findOne({
+        _id: userId,
+        visibility: EntityVisibility.Publish,
+      });
+      await Promise.all([
+        this.updateUser(
+          {
+            _id: userId,
+            visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+          },
+          { $set: { visibility: EntityVisibility.Deleted } },
+          { session },
+        ),
+        user
+          ? (this.updateUsers(
+              {
+                _id: following.map(({ _id }) => _id),
+              },
+              { $inc: { followedCount: -1 } },
+              { session },
+            ),
+            this.updateUsers(
+              {
+                _id: follower.map(({ _id }) => _id),
+              },
+              { $inc: { followerCount: -1 } },
+              { session },
+            ))
+          : undefined,
+        this.deleteRelationships({
+          $or: [{ followedUser: userId as any }, { user: userId as any }],
+        }),
+        this.deleteContents({
+          'author._id': userId,
+        }),
+        this.deleteEngagements({ user: userId as any }),
+        this.deleteComments({ 'author._id': userId }, { session }),
+        this.deleteFeedItems({ author: userId }, { session }),
+        this.deleteSocialSyncs({ user: userId }, { session }),
+        this.deleteNotifications({ user: userId as any }, { session }),
+      ]);
+      await session.commitTransaction();
+      await session.endSession();
     });
   }
 
@@ -1465,8 +1700,7 @@ export class Repository {
         );
 
         return user.toPublicResponse({
-          blocked: relationship?.blocked ?? false,
-          blocking: relationship?.blocking ?? false,
+          blocked: relationship?.blocking ?? false,
           followed: relationship?.following ?? false,
         });
       }
@@ -1546,55 +1780,111 @@ export class Repository {
     );
   }
 
-  private isValidCastcleId(castcleId: string) {
-    const hasBannedWord = this.castcleIdMetadata.bannedWords.some(
-      (bannedWord) => new RegExp(bannedWord, 'i').test(castcleId),
-    );
-
-    return (
-      !hasBannedWord &&
-      castcleId.length >= this.castcleIdMetadata.minLength &&
-      castcleId.length <= this.castcleIdMetadata.maxLength
-    );
-  }
-
-  private randomCastcleId() {
-    const randomLength = (length = 0) => {
-      return Math.floor(Math.random() * length);
-    };
-
-    return `${
-      this.castcleIdMetadata.adjectives[
-        randomLength(this.castcleIdMetadata.adjectives.length)
-      ]
-    }${
-      this.castcleIdMetadata.nouns[
-        randomLength(this.castcleIdMetadata.nouns.length)
-      ]
-    }`;
-  }
-
-  async suggestCastcleId(preferredCastcleId?: string) {
-    if (!this.castcleIdMetadata) {
-      const castcleIdMetadata = await AWSClient.getCastcleIdMetadata();
-
-      this.castcleIdMetadata = castcleIdMetadata;
-    }
-
-    const castcleId =
-      !this.castcleIdMetadata || this.isValidCastcleId(preferredCastcleId)
-        ? CastcleName.toSlug(preferredCastcleId)
-        : this.randomCastcleId();
-
-    const [availableId] =
-      await this.userModel.aggregate<GetAvailableIdResponse>(
-        pipelineOfGetAvailableId(castcleId),
-      );
-
-    return `${castcleId}${availableId ? availableId?.number : ''}`;
-  }
-
   async findNetwork(chainId: string): Promise<Network> {
     return this.networkModel.findOne({ chainId });
   }
+
+  async updateCastByReCastORQuote(
+    contentId: string,
+    visibility: EntityVisibility,
+    increase?: number,
+  ) {
+    await this.updateContents(
+      {
+        originalPost: contentId,
+        visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+      },
+      { $set: { visibility } },
+    );
+
+    const contents = await this.findContents({
+      originalPost: contentId,
+    });
+    await this.updateUsers(
+      {
+        _id: contents.map(({ author }) => author.id),
+      },
+      { $inc: { casts: increase ?? -1 } },
+    );
+  }
+
+  /**
+   * Get all hashtag that could get from the system sort by score
+   * @param {string} keyword
+   * @param {CastcleQueryOptions} queryOption
+   * @returns {Hashtag[]}
+   */
+  searchHashtag = async (
+    keyword: string,
+    queryOptions: CastcleQueryOptions,
+  ) => {
+    const newKeyword = keyword.charAt(0) === '#' ? keyword.slice(1) : keyword;
+    const query = {
+      tag: { $regex: new RegExp('^' + newKeyword.toLowerCase(), 'i') },
+    };
+
+    queryOptions.sortBy = {
+      field: 'score',
+      type: SortDirection.DESC,
+    };
+
+    let hashtagQuery = this.hashtagModel.find(query);
+
+    if (queryOptions?.limit)
+      hashtagQuery = hashtagQuery.limit(queryOptions.limit);
+    if (queryOptions?.page)
+      hashtagQuery = hashtagQuery.skip(queryOptions.page - 1);
+    if (queryOptions?.sortBy) {
+      const sortDirection = queryOptions.sortBy.type === 'desc' ? '-' : '';
+      const sortOrder = `${sortDirection}${queryOptions.sortBy.field}`;
+      hashtagQuery = hashtagQuery.sort(sortOrder);
+    }
+    return hashtagQuery.exec();
+  };
+
+  getIncludesUsers = async (
+    viewerAccount: Account,
+    authors: Author[],
+    hasRelationshipExpansion = false,
+  ) => {
+    const viewer = await this.userModel.findOne({
+      ownerAccount: viewerAccount._id,
+    });
+
+    const authorIds = authors.map(({ id }) => id as any);
+    const users = await this.userModel.find({ _id: { $in: authorIds } });
+    const relationships = hasRelationshipExpansion
+      ? await this.relationshipModel.find({
+          $or: [
+            { user: viewer?._id, followedUser: { $in: authorIds } },
+            { user: { $in: authorIds }, followedUser: viewer?._id },
+          ],
+          visibility: EntityVisibility.Publish,
+        })
+      : [];
+
+    return users.map((user) => {
+      const author = {
+        id: user._id,
+        avatar: user.profile?.images?.avatar || null,
+        castcleId: user.displayId,
+        displayName: user.displayName,
+        type: user.type as 'people' | 'page',
+        verified: user.verified,
+      };
+
+      if (!hasRelationshipExpansion) return new Author(author).toIncludeUser();
+
+      const getterRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(followedUser) === String(author.id) &&
+          String(user) === String(viewer?.id),
+      );
+
+      const blocked = Boolean(getterRelationship?.blocking);
+      const followed = Boolean(getterRelationship?.following);
+
+      return new Author(author).toIncludeUser({ blocked, followed });
+    });
+  };
 }

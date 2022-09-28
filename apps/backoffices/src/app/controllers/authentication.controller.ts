@@ -1,4 +1,4 @@
-import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import { HeadersInterceptor } from '@castcle-api/utils/interceptors';
 import {
   Body,
@@ -7,18 +7,18 @@ import {
   HttpCode,
   Param,
   Post,
+  Put,
   Req,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
+import { BackofficeAuth } from '../decorators';
 import { CredentialGuard } from '../guards/credential.guard';
-import {
-  PermissionGuard,
-  RequiredPermissions,
-} from '../guards/permisson.guard';
+import { RequiredPermissions } from '../guards/permission.guard';
 import { HeaderBackofficeInterceptor } from '../interceptors/header-backoffice.interceptor';
 import {
+  ChangePasswordDto,
   GetStaffParams,
   LoginDto,
   StaffDto,
@@ -27,7 +27,7 @@ import { Permission } from '../models/authentication.enum';
 import { Staff } from '../schemas/staff.schema';
 import { AuthenticationService } from '../services/authentication.service';
 
-@CastcleControllerV2({ path: 'backoffices' })
+@CastcleController({ path: 'v2/backoffices' })
 export class AuthenticationController {
   constructor(private authService: AuthenticationService) {}
 
@@ -46,8 +46,7 @@ export class AuthenticationController {
     return this.authService.removeToken($payload.id);
   }
 
-  @UseInterceptors(HeaderBackofficeInterceptor)
-  @UseGuards(CredentialGuard, PermissionGuard)
+  @BackofficeAuth()
   @RequiredPermissions(Permission.Manage)
   @Post('staff')
   @HttpCode(201)
@@ -55,8 +54,7 @@ export class AuthenticationController {
     return this.authService.createStaffFromEmail(body);
   }
 
-  @UseInterceptors(HeaderBackofficeInterceptor)
-  @UseGuards(CredentialGuard, PermissionGuard)
+  @BackofficeAuth()
   @RequiredPermissions(Permission.Manage)
   @Get('staff')
   @HttpCode(200)
@@ -64,8 +62,7 @@ export class AuthenticationController {
     return this.authService.getStaffs();
   }
 
-  @UseInterceptors(HeaderBackofficeInterceptor)
-  @UseGuards(CredentialGuard, PermissionGuard)
+  @BackofficeAuth()
   @RequiredPermissions(Permission.Manage)
   @Post('staff/:staffId/reset/password')
   @HttpCode(200)
@@ -73,12 +70,22 @@ export class AuthenticationController {
     return this.authService.resetPassword(staffId);
   }
 
-  @UseInterceptors(HeaderBackofficeInterceptor)
-  @UseGuards(CredentialGuard, PermissionGuard)
+  @BackofficeAuth()
   @RequiredPermissions(Permission.Manage)
   @Delete('staff/:staffId')
   @HttpCode(200)
   deleteStaff(@Param() { staffId }: GetStaffParams) {
     return this.authService.deleteStaff(staffId);
+  }
+
+  @UseInterceptors(HeaderBackofficeInterceptor)
+  @UseGuards(CredentialGuard)
+  @Put('staff/change-password')
+  @HttpCode(200)
+  changePassword(
+    @Req() { $payload }: FastifyRequest & { $payload: Staff },
+    @Body() body: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword($payload.id, body);
   }
 }

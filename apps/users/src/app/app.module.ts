@@ -20,25 +20,34 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import {
+  CastcleHealthyModule,
+  CastcleThrottlerModule,
+  CastcleTracingModule,
+} from '@castcle-api/core';
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleCacheModule } from '@castcle-api/environments';
-import { CastcleHealthyModule } from '@castcle-api/healthy';
-import { CastcleThrottlerModule } from '@castcle-api/throttler';
-import { CastcleTracingModule } from '@castcle-api/tracing';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
-import { NotificationsController } from './controllers/notifications.controller';
-import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
-import { PagesController } from './controllers/pages.controller';
-import { PagesControllerV2 } from './controllers/pages.controller.v2';
-import { QRCodeControllerV2 } from './controllers/qrcodes.controller.v2';
-import { UsersController } from './controllers/users.controller';
-import { UsersControllerV2 } from './controllers/users.controller.v2';
-import { WalletController } from './controllers/wallet.controller';
-import { SuggestionService } from './services/suggestion.service';
-import { WalletService } from './services/wallet.service';
+import { NetworksController } from './networks/controller';
+import { GetNetworksService } from './networks/services/get-networks/service.abstract';
+import { GetNetworksServiceImpl } from './networks/services/get-networks/service.impl';
+import { NotificationsControllerV2 } from './notifications/controller.v2';
+import { PagesControllerV2 } from './pages/controller.v2';
+import { QRCodeControllerV2 } from './qr-codes/controller.v2';
+import { UsersControllerV2 } from './users/controller.v2';
+import { UpdateMobileService } from './users/services/update-mobile/service.abstract';
+import { UpdateMobileServiceImpl } from './users/services/update-mobile/service.implementation';
+import { WalletControllerV2 } from './wallets/controller.v2';
+import { GetWalletBalanceService } from './wallets/services/get-wallet-balance/service.abstract';
+import { GetWalletBalanceServiceImpl } from './wallets/services/get-wallet-balance/service.implementation';
+import { ReviewTransactionService } from './wallets/services/review-transaction/service.abstract';
+import { ReviewTransactionServiceImpl } from './wallets/services/review-transaction/service.implementation';
+import { SendTransactionService } from './wallets/services/send-transaction/service.abstract';
+import { SendTransactionServiceImpl } from './wallets/services/send-transaction/service.implementation';
 
 @Module({
   imports: [
@@ -52,15 +61,34 @@ import { WalletService } from './services/wallet.service';
     UtilsInterceptorsModule,
   ],
   controllers: [
-    NotificationsController,
+    NetworksController,
     NotificationsControllerV2,
-    PagesController,
     PagesControllerV2,
     QRCodeControllerV2,
-    UsersController,
     UsersControllerV2,
-    WalletController,
+    WalletControllerV2,
   ],
-  providers: [SuggestionService, WalletService],
+  providers: [
+    {
+      provide: GetNetworksService,
+      useClass: GetNetworksServiceImpl,
+    },
+    {
+      provide: GetWalletBalanceService,
+      useClass: GetWalletBalanceServiceImpl,
+    },
+    {
+      provide: ReviewTransactionService,
+      useClass: ReviewTransactionServiceImpl,
+    },
+    {
+      provide: SendTransactionService,
+      useClass: SendTransactionServiceImpl,
+    },
+    {
+      provide: UpdateMobileService,
+      useClass: UpdateMobileServiceImpl,
+    },
+  ],
 })
 export class AppModule {}

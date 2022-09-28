@@ -42,7 +42,7 @@ export const pipelineOfGetCampaignClaims = (
         { $unwind: '$to' },
         {
           $match: {
-            'to.account': Types.ObjectId(accountId),
+            'to.account': new Types.ObjectId(accountId),
             'data.campaignId': { $exists: true },
             $expr: { $eq: ['$data.campaignId', '$$campaignId'] },
           },

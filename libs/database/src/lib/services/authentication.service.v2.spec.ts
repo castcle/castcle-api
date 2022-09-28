@@ -21,6 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { TestingModule } from '@castcle-api/testing';
 import { AWSClient } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
@@ -30,115 +32,64 @@ import {
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
+import { getQueueToken } from '@nestjs/bull';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
 import { GoogleClientMock } from 'libs/utils/clients/src/lib/google/google.client.spec';
 import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.mock';
 import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.client.spec';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
   AnalyticService,
   AuthenticationServiceV2,
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '../database.module';
-import { AcceptPlatform, OwnerResponse } from '../dtos';
+import { AcceptPlatform } from '../dtos';
+import { QueueName } from '../models';
 import { Repository } from '../repositories';
-import { Account } from '../schemas';
+import { Account, User } from '../schemas';
 
 describe('AuthenticationServiceV2', () => {
-  let mongod: MongoMemoryReplSet;
   let moduleRef: TestingModule;
   let service: AuthenticationServiceV2;
   let repository: Repository;
-
-  let loginResponse = {} as {
+  let loginResponse: {
     account: Account;
+    user: User;
     accessToken: string;
     refreshToken: string;
-    profile: OwnerResponse;
-    pages: OwnerResponse[];
   };
 
   beforeAll(async () => {
-    mongod = await MongoMemoryReplSet.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
+        CastcleMongooseModule,
         HttpModule,
-        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
       ],
       providers: [
         AuthenticationServiceV2,
         AnalyticService,
+        Repository,
         { provide: FacebookClient, useValue: FacebookClientMock },
         { provide: GoogleClient, useValue: GoogleClientMock },
         { provide: TwilioClient, useValue: TwilioClientMock },
         { provide: TwitterClient, useValue: TwitterClientMock },
         { provide: Mailer, useValue: { sendRegistrationEmail: jest.fn() } },
-        Repository,
+        {
+          provide: getQueueToken(QueueName.VERIFY_EMAIL),
+          useValue: { add: jest.fn() },
+        },
       ],
-    }).compile();
+    });
 
     service = moduleRef.get(AuthenticationServiceV2);
     repository = moduleRef.get(Repository);
-
-    jest.spyOn(AWSClient, 'getCastcleIdMetadata').mockResolvedValue({
-      bannedWords: ['bitch', 'admin', 'web'],
-      nouns: ['apple'],
-      adjectives: ['green'],
-      minLength: 4,
-      maxLength: 20,
-    });
-
-    const { accessToken } = await service.guestLogin({
-      device: 'iPhone01',
-      deviceUUID: '83b696d7-320b-4402-a412-d9cee10fc6a3',
-      languagesPreferences: ['en'],
-      header: {
-        platform: 'iOs',
-      },
-    });
-
-    loginResponse = {
-      ...loginResponse,
-      ...(await service.registerWithEmail(
-        await repository.findCredential({ accessToken }),
-        {
-          email: 'tester@castcle.com',
-          password: '2@HelloWorld',
-          displayName: 'Tester',
-          castcleId: 'tester',
-          hostUrl: 'https://www.castcle.com',
-          ip: '::1',
-        },
-      )),
-    };
-    const user = await repository.findUser({ _id: loginResponse.profile.id });
-    loginResponse.account = await repository.findAccount({
-      _id: user.ownerAccount,
-    });
+    loginResponse = await moduleRef.createUser({ castcleId: 'tester' });
   });
 
   afterAll(async () => {
-    await Promise.all([moduleRef.close(), mongod.stop()]);
-  });
-
-  describe('#guestLogin()', () => {
-    it('should return access token and refresh token after guestLogin', async () => {
-      const tokenResponse = await service.guestLogin({
-        device: 'iPhone01',
-        deviceUUID: '83b696d7-320b-4402-a412-d9cee10fc6a3',
-        languagesPreferences: ['en'],
-        header: {
-          platform: 'iOs',
-        },
-      });
-      expect(tokenResponse.accessToken).toBeDefined();
-      expect(tokenResponse.refreshToken).toBeDefined();
-    });
+    return moduleRef.close();
   });
 
   describe('#getExistedUserFromCastcleId()', () => {
@@ -153,7 +104,7 @@ describe('AuthenticationServiceV2', () => {
     });
 
     it('should return existing user', async () => {
-      const id = loginResponse.profile.castcleId;
+      const id = loginResponse.user.displayId;
       const findUser = await service.getExistedUserFromCastcleId(id);
       expect(findUser).not.toBeNull();
     });
@@ -167,7 +118,7 @@ describe('AuthenticationServiceV2', () => {
     });
 
     it('should found an account that have email match', async () => {
-      const email = loginResponse.profile.email;
+      const email = loginResponse.user.email;
       const account = await service.getAccountFromEmail(email);
       expect(account._id).toEqual(loginResponse.account._id);
     });
@@ -226,6 +177,16 @@ describe('AuthenticationServiceV2', () => {
   });
 
   describe('#suggestCastcleId', () => {
+    beforeAll(() => {
+      jest.spyOn(AWSClient, 'getCastcleMetadata').mockResolvedValue({
+        bannedWords: ['bitch', 'admin', 'web'],
+        nouns: ['apple'],
+        adjectives: ['green'],
+        minLength: 4,
+        maxLength: 20,
+      });
+    });
+
     it('should return suggest name', async () => {
       const suggestId = await service.suggestCastcleId('John555');
       expect(suggestId).toEqual('john555');
@@ -233,11 +194,11 @@ describe('AuthenticationServiceV2', () => {
 
     it('should return suggest name duplicate name', async () => {
       const suggestId = await service.suggestCastcleId(
-        loginResponse.profile.castcleId,
+        loginResponse.user.displayId,
       );
 
       /* castcle id + date time */
-      expect(suggestId).toMatch(loginResponse.profile.castcleId);
+      expect(suggestId).toMatch(loginResponse.user.displayId);
     });
 
     it('should return suggest new name', async () => {

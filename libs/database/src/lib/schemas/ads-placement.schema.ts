@@ -25,7 +25,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
 import { AdsCost, AdsPlacementCampaign, AdsPlacementContent } from '../models';
 import { CastcleBase } from './base.schema';
-import { Credential } from './credential.schema';
 import { User } from './user.schema';
 
 @Schema({ timestamps: true })
@@ -36,20 +35,23 @@ export class AdsPlacement extends CastcleBase {
   @Prop({ required: true, type: Object })
   cost: AdsCost;
 
-  @Prop({ required: true, type: Object })
+  @Prop({ required: true, type: Object, index: true })
   campaign: AdsPlacementCampaign;
 
   @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'User' })
   user: User;
 
-  @Prop({ type: Object })
+  @Prop({ required: true, type: Object })
   engagements: { [key: string]: number };
 
   @Prop()
   seenAt?: Date; //crucial use for calculate ads-fee / redistribute reward
 
-  @Prop({ type: SchemaTypes.ObjectId, ref: 'Credential' })
-  seenCredential?: Credential;
+  @Prop()
+  seenUUID?: string;
+
+  @Prop()
+  isGuest?: string;
 }
 
 export const AdsPlacementSchema = SchemaFactory.createForClass(AdsPlacement);

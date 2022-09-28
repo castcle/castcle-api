@@ -21,7 +21,13 @@
  * or have any questions.
  */
 
-import { CastcleBullModule, Environment } from '@castcle-api/environments';
+import {
+  CastcleBullModule,
+  CastcleMongooseModule,
+  Environment,
+} from '@castcle-api/environments';
+import { CreatedUser, TestingModule } from '@castcle-api/testing';
+import { Downloader } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
   GoogleClient,
@@ -33,90 +39,70 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { Model } from 'mongoose';
 import {
   AdsService,
   AnalyticService,
   AuthenticationServiceV2,
-  CampaignService,
   DataService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationServiceV2,
   RankerService,
+  SocialSyncServiceV2,
   SuggestionServiceV2,
   TAccountService,
-  UserService,
   UserServiceV2,
 } from '../database.module';
 import { EntityVisibility, PaginationQuery, QRCodeImageSize } from '../dtos';
-import { MockUserService } from '../mocks';
-import { MockUserDetail } from '../mocks/user.mocks';
 import {
   KeywordType,
   MetadataType,
   QueueName,
   ReportingStatus,
   ReportingSubject,
+  SocialProvider,
   UserType,
 } from '../models';
 import { Repository } from '../repositories';
-import { Account, Credential, Metadata, User } from '../schemas';
-import { AuthenticationService } from './authentication.service';
+import { Account, Metadata, User } from '../schemas';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 
 describe('UserServiceV2', () => {
   let moduleRef: TestingModule;
-  let mongod: MongoMemoryReplSet;
-  let accountDemo: any;
-  let authService: AuthenticationService;
-  let authServiceV2: AuthenticationServiceV2;
   let dataService: DataService;
-  let generateUser: MockUserService;
-  let guestDemo: {
-    accountDocument: Account;
-    credentialDocument: Credential;
-  };
-  let mocksUsers: MockUserDetail[];
+  let mocksUsers: CreatedUser[];
   let repository: Repository;
   let suggestServiceV2: SuggestionServiceV2;
-  let userDemo: User;
   let userServiceV2: UserServiceV2;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryReplSet.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
         CacheModule.register(),
         CastcleBullModule,
+        CastcleMongooseModule,
         HttpModule,
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
-        MongooseModule.forRoot(mongod.getUri()),
       ],
       providers: [
         AdsService,
         AnalyticService,
-        AuthenticationService,
         AuthenticationServiceV2,
         CommentService,
         ContentService,
         DataService,
+        Downloader,
         HashtagService,
-        MockUserService,
         NotificationServiceV2,
         RankerService,
         Repository,
         SuggestionServiceV2,
+        SocialSyncServiceV2,
         TAccountService,
-        UserService,
         UserServiceV2,
-        { provide: CampaignService, useValue: {} },
         { provide: FacebookClient, useValue: {} },
         { provide: GoogleClient, useValue: {} },
         { provide: TwitterClient, useValue: {} },
@@ -133,6 +119,10 @@ describe('UserServiceV2', () => {
           useValue: { add: jest.fn() },
         },
         {
+          provide: getQueueToken(QueueName.NEW_TRANSACTION),
+          useValue: { add: jest.fn() },
+        },
+        {
           provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
@@ -144,41 +134,22 @@ describe('UserServiceV2', () => {
           provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
+        {
+          provide: getQueueToken(QueueName.VERIFY_EMAIL),
+          useValue: { add: jest.fn() },
+        },
       ],
-    }).compile();
-
-    generateUser = moduleRef.get(MockUserService);
-    dataService = moduleRef.get<DataService>(DataService);
-    suggestServiceV2 = moduleRef.get<SuggestionServiceV2>(SuggestionServiceV2);
-    userServiceV2 = moduleRef.get<UserServiceV2>(UserServiceV2);
-    dataService = moduleRef.get<DataService>(DataService);
-    repository = moduleRef.get<Repository>(Repository);
-    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
-    authServiceV2 = moduleRef.get<AuthenticationServiceV2>(
-      AuthenticationServiceV2,
-    );
-    suggestServiceV2 = moduleRef.get<SuggestionServiceV2>(SuggestionServiceV2);
-
-    guestDemo = await authService.createAccount({
-      deviceUUID: 'test12354',
-      languagesPreferences: ['th', 'th'],
-      header: {
-        platform: 'ios',
-      },
-      device: 'ifong',
-    });
-    accountDemo = await authService.signupByEmail(guestDemo.accountDocument, {
-      displayId: 'sp',
-      displayName: 'sp002',
-      email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567',
     });
 
-    userDemo = await authService.getUserFromAccount(accountDemo.account);
+    dataService = moduleRef.get(DataService);
+    suggestServiceV2 = moduleRef.get(SuggestionServiceV2);
+    userServiceV2 = moduleRef.get(UserServiceV2);
+    dataService = moduleRef.get(DataService);
+    repository = moduleRef.get(Repository);
+    suggestServiceV2 = moduleRef.get(SuggestionServiceV2);
 
-    const metadataModel = moduleRef.get<Model<Metadata<ReportingSubject>>>(
-      getModelToken('Metadata'),
-    );
+    const metadataModel =
+      moduleRef.getModel<Metadata<ReportingSubject>>('Metadata');
 
     await new metadataModel({
       type: MetadataType.REPORTING_SUBJECT,
@@ -188,19 +159,19 @@ describe('UserServiceV2', () => {
         order: 1,
       },
     }).save();
+
+    jest.spyOn(dataService, 'getFollowingSuggestions').mockRestore();
   });
 
-  afterAll(async () => {
-    await Promise.all([moduleRef.close(), mongod.stop()]);
-    jest.spyOn(dataService, 'getFollowingSuggestions').mockRestore();
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   describe('#getUserRelationships', () => {
     let user1: User;
     let user2: User;
     beforeAll(async () => {
-      mocksUsers = await generateUser.generateMockUsers(2, 10);
-
+      mocksUsers = await moduleRef.createUsers(2);
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
     });
@@ -218,8 +189,7 @@ describe('UserServiceV2', () => {
     let user1: User;
     let user2: User;
     beforeAll(async () => {
-      const mocksUsers = await generateUser.generateMockUsers(2, 10);
-
+      mocksUsers = await moduleRef.createUsers(2);
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
 
@@ -282,8 +252,7 @@ describe('UserServiceV2', () => {
     let user1: User;
     let user2: User;
     beforeAll(async () => {
-      mocksUsers = await generateUser.generateMockUsers(2, 10);
-
+      mocksUsers = await moduleRef.createUsers(2);
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
     });
@@ -328,7 +297,7 @@ describe('UserServiceV2', () => {
         },
       );
       expect(followingUser).not.toBeNull();
-      expect((followingUser.users[0] as any).userId).toEqual(user2._id);
+      expect((followingUser.users[0] as any).id).toEqual(user2._id);
     });
 
     it('should return followers user after create follow relationship', async () => {
@@ -372,12 +341,12 @@ describe('UserServiceV2', () => {
 
   describe('#pages', () => {
     it('should return undefined when user have no page', async () => {
-      const result = await userServiceV2.getMyPages(userDemo);
+      const result = await userServiceV2.getMyPages(mocksUsers[0].user);
       expect(result[0]).toBeUndefined();
     });
 
     it('should return page when user create page', async () => {
-      const page = await userServiceV2.createPage(userDemo, {
+      const page = await userServiceV2.createPage(mocksUsers[0].user, {
         castcleId: 'testNewPage',
         displayName: 'testNewPage',
       });
@@ -386,22 +355,50 @@ describe('UserServiceV2', () => {
     });
 
     it('should return new castcleId is duplicate', async () => {
-      const respPage = await userServiceV2.createPage(userDemo, {
-        castcleId: 'testNewPage',
+      const respPage = await userServiceV2.createPage(mocksUsers[0].user, {
+        castcleId: '@testNewPage',
         displayName: 'testNewPage',
       });
-      expect(respPage.castcleId).toEqual('testnewpage1');
+      expect(respPage.castcleId).toEqual('@testnewpage1');
     });
 
     it('should return page of user when created', async () => {
-      const pages = await userServiceV2.getMyPages(userDemo);
+      const pages = await userServiceV2.getMyPages(mocksUsers[0].user);
       expect(pages[0]).toBeDefined();
+    });
+
+    it('should return page when user create page with syncsocial', async () => {
+      const page = await userServiceV2.createPageAndSyncSocial(
+        mocksUsers[0].user,
+        {
+          provider: SocialProvider.Twitter,
+          socialId: 'twitterId',
+          userName: 'evekung',
+          displayName: 'evejung',
+        } as any,
+      );
+
+      expect(page.castcleId).toEqual('@evekung');
+    });
+
+    it('should add postfix if castcleid exist', async () => {
+      const page = await userServiceV2.createPageAndSyncSocial(
+        mocksUsers[0].user,
+        {
+          provider: SocialProvider.Twitter,
+          socialId: 'twitterId',
+          userName: 'evekung',
+          displayName: 'evejung',
+        } as any,
+      );
+
+      expect(page.castcleId).toEqual('@evekung1');
     });
   });
 
   describe('getUserByKeyword', () => {
     beforeAll(async () => {
-      mocksUsers = await generateUser.generateMockUsers(20);
+      mocksUsers = await moduleRef.createUsers(10);
     });
     it('should get user by keyword', async () => {
       const getUserByKeyword = await userServiceV2.getUserByKeyword(
@@ -409,7 +406,7 @@ describe('UserServiceV2', () => {
           maxResults: 25,
           keyword: {
             type: KeywordType.Mention,
-            input: 'people-10',
+            input: mocksUsers[0].user.displayId,
           },
           hasRelationshipExpansion: false,
         },
@@ -438,7 +435,7 @@ describe('UserServiceV2', () => {
 
   describe('createQRCode', () => {
     beforeAll(async () => {
-      mocksUsers = await generateUser.generateMockUsers(1);
+      mocksUsers = await moduleRef.createUsers(1);
     });
     it('should get qr code size thumbnail', async () => {
       const createQRCode = await userServiceV2.createQRCode(
@@ -452,11 +449,10 @@ describe('UserServiceV2', () => {
   });
 
   describe('#suggest', () => {
-    let authorizer: any;
+    let user: User;
 
     beforeAll(async () => {
-      mocksUsers = await generateUser.generateMockUsers(3);
-
+      mocksUsers = await moduleRef.createUsers(10);
       jest.spyOn(dataService, 'getFollowingSuggestions').mockResolvedValue([
         {
           userId: mocksUsers[0].user._id,
@@ -468,19 +464,15 @@ describe('UserServiceV2', () => {
         },
       ]);
 
-      authorizer = {
-        account: mocksUsers[2].account,
-        user: mocksUsers[2].user,
-        credential: mocksUsers[2].credential,
-      };
+      user = mocksUsers[2].user;
     });
 
     it('should return suggest user by datascience and cache to redis', async () => {
       const usersFiltered = await (
         suggestServiceV2 as any
       ).querySuggestByDataScience(
-        authorizer.user.ownerAccount._id,
-        authorizer.credential.accessToken,
+        user.ownerAccount._id,
+        mocksUsers[2].accessToken,
       );
 
       expect(usersFiltered).toHaveLength(2);
@@ -488,7 +480,7 @@ describe('UserServiceV2', () => {
 
     it('should return next value of untilId', async () => {
       const usersFiltered = await (suggestServiceV2 as any).querySuggestByCache(
-        authorizer.credential.accessToken,
+        mocksUsers[2].accessToken,
         {
           untilId: mocksUsers[0].user.id,
           hasRelationshipExpansion: false,
@@ -499,7 +491,7 @@ describe('UserServiceV2', () => {
 
     it('should return previous value of sinceId', async () => {
       const usersFiltered = await (suggestServiceV2 as any).querySuggestByCache(
-        authorizer.credential.accessToken,
+        mocksUsers[2].accessToken,
         {
           sinceId: mocksUsers[1].user.id,
           hasRelationshipExpansion: false,
@@ -511,7 +503,7 @@ describe('UserServiceV2', () => {
 
     it('should return empty array if userId not exist in suggest user', async () => {
       const usersFiltered = await (suggestServiceV2 as any).querySuggestByCache(
-        authorizer.credential.accessToken,
+        mocksUsers[2].accessToken,
         { untilId: 'undefined', hasRelationshipExpansion: false },
       );
       expect(usersFiltered).toHaveLength(0);
@@ -520,7 +512,7 @@ describe('UserServiceV2', () => {
 
   describe('updatePDPA', () => {
     beforeAll(async () => {
-      mocksUsers = await generateUser.generateMockUsers(2);
+      mocksUsers = await moduleRef.createUsers(1);
       Environment.PDPA_ACCEPT_DATES = ['20200701'];
     });
 
@@ -533,29 +525,15 @@ describe('UserServiceV2', () => {
       expect(userResponse).toBeUndefined();
     });
   });
+
   describe('getReferral', () => {
     beforeAll(async () => {
-      mocksUsers = await generateUser.generateMockUsers(2);
-
-      guestDemo = await authService.createAccount({
-        deviceUUID: `testuuid1`,
-        languagesPreferences: ['th', 'th'],
-        header: {
-          platform: 'ios',
-        },
-        device: `testdevice1`,
-      });
-
-      await authServiceV2.registerWithEmail(guestDemo.credentialDocument, {
-        hostUrl: 'http://test.com',
-        ip: '0.0.0.0',
-        email: `test1@gmail.com`,
-        password: '12345678Ab',
-        displayName: `Test1`,
-        castcleId: `test1`,
-        referral: mocksUsers[0].user.displayId,
-      });
+      mocksUsers = await moduleRef.createUsers(1);
+      mocksUsers.push(
+        await moduleRef.createUser({ referrer: mocksUsers[0].account._id }),
+      );
     });
+
     it('should get user referee', async () => {
       const referee = await userServiceV2.getReferral(
         {
@@ -588,7 +566,7 @@ describe('UserServiceV2', () => {
     let mockAccount: Account;
 
     beforeAll(async () => {
-      mocksUsers = await generateUser.generateMockUsers(2);
+      mocksUsers = await moduleRef.createUsers(2);
       mockAccount = await repository.createAccount({
         preferences: {
           languages: ['th', 'th'],
@@ -639,10 +617,9 @@ describe('UserServiceV2', () => {
   describe('reportUser', () => {
     let reportedUser: User;
     let reportedByUser: User;
-    let mocksUsers: MockUserDetail[];
+    let mocksUsers: CreatedUser[];
     beforeAll(async () => {
-      mocksUsers = await generateUser.generateMockUsers(2);
-
+      mocksUsers = await moduleRef.createUsers(2);
       reportedUser = mocksUsers[1].user;
       reportedByUser = mocksUsers[0].user;
     });
@@ -691,10 +668,9 @@ describe('UserServiceV2', () => {
   describe('updateAppealUser', () => {
     let reportedUser: User;
     let reportedByUser: User;
-    let mocksUsers: MockUserDetail[];
+    let mocksUsers: CreatedUser[];
     beforeAll(async () => {
-      mocksUsers = await generateUser.generateMockUsers(2);
-
+      mocksUsers = await moduleRef.createUsers(2);
       reportedUser = mocksUsers[1].user;
       reportedByUser = mocksUsers[0].user;
 

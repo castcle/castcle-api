@@ -21,12 +21,19 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment as env } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import * as AWS from 'aws-sdk';
 import { DateTime } from 'luxon';
 import * as sharp from 'sharp';
-import { EXPIRE_TIME, IMAGE_BUCKET_FOLDER, Size, SizeName } from './config';
+import {
+  AVATAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS,
+  EXPIRE_TIME,
+  IMAGE_BUCKET_FOLDER,
+  Size,
+  SizeName,
+} from './config';
 import { UploadOptions, Uploader } from './uploader';
 
 export class CastcleImage {
@@ -172,7 +179,7 @@ export class Image {
     options?: UploadOptions & { sizes?: Size[] },
   ) {
     const OriginalSuffix = 'original';
-    const logger = new CastLogger(Image.name);
+    const logger = new CastcleLogger(Image.name);
     logger.log(JSON.stringify(options), 'upload');
     const uploader = new Uploader(
       env.ASSETS_BUCKET_NAME ? env.ASSETS_BUCKET_NAME : 'testBucketName',
@@ -206,5 +213,34 @@ export class Image {
     }
 
     return new Image(image, options.order);
+  }
+
+  static async uploadUserImages(
+    imagesToUpload: { avatar?: string; cover?: string },
+    accountId: string,
+  ): Promise<{
+    avatar?: CastcleImage;
+    cover?: CastcleImage;
+  }> {
+    const [avatar, cover] = await Promise.all([
+      imagesToUpload?.avatar
+        ? Image.upload(imagesToUpload.avatar, {
+            filename: `avatar-${accountId}`,
+            addTime: true,
+            sizes: AVATAR_SIZE_CONFIGS,
+            subpath: `account_${accountId}`,
+          })
+        : null,
+      imagesToUpload?.cover
+        ? Image.upload(imagesToUpload.cover, {
+            filename: `cover-${accountId}`,
+            addTime: true,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `account_${accountId}`,
+          })
+        : null,
+    ]);
+
+    return { avatar: avatar?.image, cover: cover?.image };
   }
 }

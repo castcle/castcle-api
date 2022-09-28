@@ -21,10 +21,10 @@
  * or have any questions.
  */
 
-import { FilterQuery, Types } from 'mongoose';
-import { Author, CastcleMetric } from '../dtos';
-import { EngagementType } from '../models';
+import { FilterQuery, PipelineStage, Types } from 'mongoose';
+import { EntityVisibility } from '../dtos';
 import { Content, DefaultContent, FeedItem, GuestFeedItem } from '../schemas';
+import { projectionContent } from './get-contents.aggregation';
 
 export class GetFeedContentsResponse {
   _id: Types.ObjectId;
@@ -38,8 +38,6 @@ export class GetGuestFeedContentsResponse {
   defaultFeeds: FeedItem[];
   guestFeeds: FeedItem[];
   casts: Content[];
-  engagements: CastcleMetric[];
-  authors: Author[];
 }
 
 export class GetFeedContentsParams {
@@ -63,7 +61,7 @@ export const pipelineOfGetGuestFeedContents = ({
   filtersDefault,
   filtersGuest,
   maxResults,
-}: GetGuestFeedContentsParams) => {
+}: GetGuestFeedContentsParams): PipelineStage[] => {
   return [
     {
       $sort: {
@@ -76,10 +74,9 @@ export const pipelineOfGetGuestFeedContents = ({
     {
       $unionWith: {
         coll: 'guestfeeditems',
-        pipeline: [{ $match: filtersGuest }, { $sort: { createdAt: 1 } }],
+        pipeline: [{ $match: filtersGuest }, { $sort: { score: -1 } }],
       },
     },
-    { $limit: maxResults },
     {
       $facet: {
         defaultFeeds: [
@@ -97,27 +94,26 @@ export const pipelineOfGetGuestFeedContents = ({
           {
             $addFields: { content: { $arrayElemAt: ['$content', 0] } },
           },
+          {
+            $addFields: { _id: 'default' },
+          },
         ],
         guestFeeds: [
           {
             $sort: {
-              createdAt: 1,
+              score: -1,
             },
           },
           {
             $match: { index: { $exists: false } },
           },
+          { $limit: maxResults },
           {
             $lookup: {
               from: 'contents',
               localField: 'content',
               foreignField: '_id',
               as: 'content',
-            },
-          },
-          {
-            $match: {
-              $expr: { $gt: [{ $size: '$content' }, 0] },
             },
           },
           {
@@ -133,6 +129,7 @@ export const pipelineOfGetGuestFeedContents = ({
               ],
             },
           },
+          { $limit: maxResults },
           {
             $lookup: {
               from: 'contents',
@@ -141,144 +138,16 @@ export const pipelineOfGetGuestFeedContents = ({
               as: 'content',
             },
           },
-          { $replaceWith: { $arrayElemAt: ['$content', 0] } },
-        ],
-        engagements: [
-          {
-            $lookup: {
-              from: 'engagements',
-              let: { contentId: '$content' },
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $and: [
-                        { $eq: ['$targetRef.$ref', 'content'] },
-                        { $eq: ['$targetRef.$id', '$$contentId'] },
-                      ],
-                    },
-                  },
-                },
-                {
-                  $group: {
-                    _id: '$targetRef.$id',
-                    likeCount: {
-                      $sum: {
-                        $cond: {
-                          if: { $eq: ['$type', EngagementType.Like] },
-                          then: 1,
-                          else: 0,
-                        },
-                      },
-                    },
-                    commentCount: {
-                      $sum: {
-                        $cond: {
-                          if: { $eq: ['$type', EngagementType.Comment] },
-                          then: 1,
-                          else: 0,
-                        },
-                      },
-                    },
-                    quoteCount: {
-                      $sum: {
-                        $cond: {
-                          if: { $eq: ['$type', EngagementType.Quote] },
-                          then: 1,
-                          else: 0,
-                        },
-                      },
-                    },
-                    recastCount: {
-                      $sum: {
-                        $cond: {
-                          if: { $eq: ['$type', EngagementType.Recast] },
-                          then: 1,
-                          else: 0,
-                        },
-                      },
-                    },
-                    // TODO: feature add metric reports
-                    // reportedCount: {
-                    //   $sum: {
-                    //     $cond: {
-                    //       if: { $eq: ['$type', 'reported'] },
-                    //       then: 1,
-                    //       else: 0,
-                    //     },
-                    //   },
-                    // },
-                  },
-                },
-              ],
-              as: 'engagements',
-            },
-          },
-          {
-            $unwind: {
-              path: '$engagements',
-            },
-          },
-          {
-            $replaceRoot: { newRoot: '$engagements' },
-          },
-        ],
-        authors: [
-          {
-            $lookup: {
-              from: 'users',
-              localField: 'author',
-              foreignField: '_id',
-              as: 'author',
-            },
-          },
-          {
-            $lookup: {
-              from: 'users',
-              localField: 'originalAuthor',
-              foreignField: '_id',
-              as: 'originalAuthor',
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              authors: { $addToSet: { $arrayElemAt: ['$author', 0] } },
-              originalAuthors: {
-                $addToSet: {
-                  $cond: {
-                    if: { $gt: [{ $size: '$originalAuthor' }, 0] },
-                    then: { $arrayElemAt: ['$originalAuthor', 0] },
-                    else: '$$REMOVE',
-                  },
-                },
-              },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              authors: { $concatArrays: ['$authors', '$originalAuthors'] },
-            },
-          },
-          { $unwind: '$authors' },
-          { $replaceWith: '$authors' },
-          {
-            $project: {
-              id: '$_id',
-              avatar: '$profile.images.avatar',
-              castcleId: '$displayId',
-              displayName: '$displayName',
-              type: '$type',
-              verified: '$verified',
-            },
-          },
+          { $replaceWith: { $arrayElemAt: ['$content', 0] } as any },
         ],
       },
     },
   ];
 };
-export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
+
+export const pipelineOfGetFeedContents = (
+  params: GetFeedContentsParams,
+): PipelineStage[] => {
   return [
     {
       $match: {
@@ -434,6 +303,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           dateDiff: new Date(
             new Date().getTime() - params.decayDays * 1000 * 86400,
           ),
+          visibility: EntityVisibility.Publish,
         },
         pipeline: [
           { $sort: { createdAt: -1 } },
@@ -441,6 +311,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             $match: {
               $expr: {
                 $and: [
+                  { $eq: ['$visibility', '$$visibility'] },
                   { $in: ['$author.id', '$$followings.followedUser'] },
                   {
                     $and: [
@@ -500,3 +371,37 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
     },
   ];
 };
+
+export const pipelineGetFeedDefaults = (): PipelineStage[] => [
+  { $sort: { index: 1 } },
+  {
+    $lookup: {
+      from: 'contents',
+      let: { contentId: '$content', visibility: EntityVisibility.Publish },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ['$_id', '$$contentId'] },
+                { $eq: ['$visibility', '$$visibility'] },
+              ],
+            },
+          },
+        },
+        {
+          $project: projectionContent(),
+        },
+      ],
+      as: 'content',
+    },
+  },
+  {
+    $unwind: {
+      path: '$content',
+    },
+  },
+  {
+    $replaceRoot: { newRoot: '$content' },
+  },
+];

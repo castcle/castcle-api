@@ -21,9 +21,9 @@
  * or have any questions.
  */
 
+import { CastcleTracingModule } from '@castcle-api/core';
 import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Mailer } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
 import { FirebaseModule } from 'nestjs-firebase';
@@ -31,6 +31,7 @@ import { ContentConsumer } from './consumers/content.consumer';
 import { NotificationConsumer } from './consumers/notification.consumer';
 import { ReportingConsumer } from './consumers/reporting.consumer';
 import { UserConsumer } from './consumers/user.consumer';
+import { VerifyEmailConsumer } from './consumers/verify-email.consumer';
 
 @Module({
   imports: [
@@ -47,11 +48,12 @@ import { UserConsumer } from './consumers/user.consumer';
     }),
   ],
   providers: [
-    Mailer,
     ContentConsumer,
+    Mailer,
     NotificationConsumer,
     ReportingConsumer,
     UserConsumer,
+    VerifyEmailConsumer,
   ],
 })
 export class BackgroundModule {}

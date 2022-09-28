@@ -28,7 +28,8 @@ export type SuggestContentItem = {
     name: 'following-cast' | 'following-like' | 'trending' | 'default';
     user?: string[]; //userId
   };
-  called?: boolean;
+  author: string;
+  calledAt?: boolean;
 };
 
 export type SuggestUserItem = {
@@ -44,4 +45,10 @@ export type PersonalizeAdsItem = {
   user?: string;
   content?: string;
   score: number;
+};
+
+export type ContentFlowItem = {
+  illegalClass: boolean;
+  illegalSubject?: string;
+  illegalMessage?: string;
 };

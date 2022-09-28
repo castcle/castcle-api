@@ -21,69 +21,71 @@
  * or have any questions.
  */
 
-import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { ReportingIllegal } from '@castcle-api/database';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import {
   Body,
+  CacheInterceptor,
   Get,
   HttpCode,
   HttpStatus,
   Post,
   Query,
   Req,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { CredentialGuard } from '../guards/credential.guard';
-import {
-  PermissionGuard,
-  RequiredPermissions,
-} from '../guards/permisson.guard';
-import { HeaderBackofficeInterceptor } from '../interceptors/header-backoffice.interceptor';
+import { BackofficeAuth } from '../decorators';
+import { RequiredPermissions } from '../guards/permission.guard';
 import { Permission } from '../models/authentication.enum';
 import { GetReportingQuery, UpdateIllegal } from '../models/reporting.dto';
 import { Staff } from '../schemas/staff.schema';
 import { ReportingService } from '../services/reporting.service';
 
-@CastcleControllerV2({ path: 'backoffices' })
+@CastcleController({ path: 'v2/backoffices' })
 export class ReportingController {
   constructor(private reportingService: ReportingService) {}
 
-  @UseInterceptors(HeaderBackofficeInterceptor)
-  @UseGuards(CredentialGuard, PermissionGuard)
-  @RequiredPermissions(Permission.Manage)
+  @UseInterceptors(CacheInterceptor)
+  @BackofficeAuth()
+  @RequiredPermissions(Permission.Read)
   @Get('reporting')
   getReporting(@Query() query: GetReportingQuery) {
     return this.reportingService.getReporting(query);
   }
 
-  @UseInterceptors(HeaderBackofficeInterceptor)
-  @UseGuards(CredentialGuard, PermissionGuard)
-  @RequiredPermissions(Permission.Manage)
+  @BackofficeAuth()
+  @RequiredPermissions(Permission.Update)
   @Post('reporting/not-illegal')
   @HttpCode(HttpStatus.NO_CONTENT)
   updateNotIllegal(
     @Req() { $payload }: FastifyRequest & { $payload: Staff },
     @Body() body: UpdateIllegal,
   ) {
-    return this.reportingService.updateNotIllegal(body, $payload);
+    return this.reportingService.updateIllegal(
+      body,
+      $payload,
+      ReportingIllegal.NOT_ILLEGAL,
+    );
   }
 
-  @UseInterceptors(HeaderBackofficeInterceptor)
-  @UseGuards(CredentialGuard, PermissionGuard)
-  @RequiredPermissions(Permission.Manage)
+  @BackofficeAuth()
+  @RequiredPermissions(Permission.Update)
   @Post('reporting/illegal')
   @HttpCode(HttpStatus.NO_CONTENT)
   updateIllegal(
     @Req() { $payload }: FastifyRequest & { $payload: Staff },
     @Body() body: UpdateIllegal,
   ) {
-    return this.reportingService.updateIllegal(body, $payload);
+    return this.reportingService.updateIllegal(
+      body,
+      $payload,
+      ReportingIllegal.ILLEGAL,
+    );
   }
 
-  @UseInterceptors(HeaderBackofficeInterceptor)
-  @UseGuards(CredentialGuard, PermissionGuard)
-  @RequiredPermissions(Permission.Manage)
+  @BackofficeAuth()
+  @RequiredPermissions(Permission.Update)
   @Post('reporting/auto-delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   updateAutoDelete(@Req() { $payload }: FastifyRequest & { $payload: Staff }) {

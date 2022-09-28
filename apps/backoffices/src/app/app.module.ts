@@ -21,53 +21,57 @@
  * or have any questions.
  */
 
+import { CastcleHealthyModule, CastcleTracingModule } from '@castcle-api/core';
+import { DatabaseModule } from '@castcle-api/database';
 import {
-  BackofficeDatabaseModule,
-  CampaignService,
-  NotificationServiceV2,
-  QueueName,
-} from '@castcle-api/database';
-import { CastcleBullModule } from '@castcle-api/environments';
-import { CastcleHealthyModule } from '@castcle-api/healthy';
-import { CastcleTracingModule } from '@castcle-api/tracing';
+  CastcleBackofficeMongooseModule,
+  CastcleBullModule,
+  CastcleCacheModule,
+} from '@castcle-api/environments';
 import { Mailer } from '@castcle-api/utils/clients';
-import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
+import { AdsController } from './controllers/ads.controller';
 import { AirdropsController } from './controllers/airdrops.controller';
 import { AuthenticationController } from './controllers/authentication.controller';
 import { CampaignController } from './controllers/campaign.controller';
+import { MetaDataController } from './controllers/metadata.controller';
 import { ReportingController } from './controllers/reporting.controller';
+import { UsersController } from './controllers/users.controller';
 import { BackOfficeMongooseForFeatures } from './schemas';
-import { AirdropsService } from './services/airdrops.service';
+import { AirdropService } from './services/airdrop.service';
 import { AuthenticationService } from './services/authentication.service';
 import { CampaignBackofficeService } from './services/campaign.service';
+import { MetadataBackofficeService } from './services/metadata.service';
 import { ReportingService } from './services/reporting.service';
+import { UserBackofficeService } from './services/users.service';
+
 @Module({
   imports: [
-    BackofficeDatabaseModule,
     BackOfficeMongooseForFeatures,
-    BullModule.registerQueue(
-      { name: QueueName.CAMPAIGN },
-      { name: QueueName.NOTIFICATION },
-    ),
+    CastcleBackofficeMongooseModule,
     CastcleBullModule,
+    CastcleCacheModule,
     CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
     CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
+    DatabaseModule,
   ],
   controllers: [
+    AdsController,
     AirdropsController,
     AuthenticationController,
     CampaignController,
+    MetaDataController,
     ReportingController,
+    UsersController,
   ],
   providers: [
-    AirdropsService,
+    AirdropService,
     AuthenticationService,
     CampaignBackofficeService,
-    CampaignService,
-    ReportingService,
-    NotificationServiceV2,
     Mailer,
+    MetadataBackofficeService,
+    ReportingService,
+    UserBackofficeService,
   ],
 })
 export class AppModule {}

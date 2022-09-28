@@ -58,7 +58,7 @@ class NotificationDocument extends CastcleBase {
   replyRef: Types.ObjectId;
 
   @Prop({ type: SchemaTypes.ObjectId, index: true })
-  adsRef: Types.ObjectId;
+  advertiseId: Types.ObjectId;
 
   @Prop({ type: SchemaTypes.ObjectId, index: true })
   profileRef: Types.ObjectId;
@@ -119,7 +119,7 @@ NotificationSchema.methods.toNotificationPayload = function ({
     commentId: this.commentRef,
     contentId: this.contentRef,
     replyId: this.replyRef,
-    advertiseId: this.adsRef,
+    advertiseId: this.advertiseId,
     profileId: this.profileRef,
     systemId: this.systemRef,
     createdAt: this.createdAt,

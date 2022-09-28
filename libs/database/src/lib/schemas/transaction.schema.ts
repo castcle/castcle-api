@@ -21,59 +21,45 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { WalletType } from '../models';
-import { CastcleBase } from './base.schema';
+import { SchemaFactory } from '@nestjs/mongoose';
+import { Model, Schema } from 'mongoose';
+import { TransactionStatus, WalletType } from '../models';
+import { ExternalWithdraw, TransactionDocument } from './transaction.document';
 
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class MicroTransaction {
-  @Prop({ index: true, ref: 'Account', type: SchemaTypes.ObjectId })
-  account?: string;
+export type TransactionStaticMethods = Model<TransactionDocument>;
 
-  @Prop({ index: true, ref: 'User', type: SchemaTypes.ObjectId })
-  user?: string;
-
-  @Prop({ type: String })
-  type: WalletType;
-
-  @Prop({ type: SchemaTypes.Decimal128 })
-  value?: number;
+export interface TransactionMethods {
+  hasExternalWithdrawal(): boolean;
+  getExternalWithdrawals(): ExternalWithdraw[];
+  markFailed(failureMessage: string): this;
+  markVerified(): this;
 }
 
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class TItem {
-  @Prop({ index: true })
-  caccountNo: string;
+export type Transaction = TransactionDocument & TransactionMethods;
 
-  @Prop({ type: SchemaTypes.Decimal128 })
-  value: number;
-}
+export const TransactionSchema = SchemaFactory.createForClass(
+  TransactionDocument,
+) as Schema<TransactionDocument, TransactionStaticMethods, TransactionMethods>;
 
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class TLedger {
-  @Prop({ type: Object })
-  debit: TItem;
+TransactionSchema.methods.hasExternalWithdrawal = function (this: Transaction) {
+  return this.to.some(({ type }) => type === WalletType.EXTERNAL_WITHDRAW);
+};
 
-  @Prop({ type: Object })
-  credit: TItem;
-}
+TransactionSchema.methods.getExternalWithdrawals = function (
+  this: Transaction,
+) {
+  return this.to.filter(
+    ({ type }) => type === WalletType.EXTERNAL_WITHDRAW,
+  ) as ExternalWithdraw[];
+};
 
-const MicroTransactionSchema = SchemaFactory.createForClass(MicroTransaction);
+TransactionSchema.methods.markFailed = function (
+  this: Transaction,
+  failureMessage: string,
+) {
+  return this.set({ status: TransactionStatus.FAILED, failureMessage });
+};
 
-@Schema({ timestamps: true })
-export class Transaction extends CastcleBase {
-  @Prop({ type: MicroTransactionSchema, index: true })
-  from?: MicroTransaction;
-
-  @Prop({ type: [MicroTransactionSchema], index: true })
-  to?: MicroTransaction[];
-
-  @Prop({ type: Object })
-  data?: any;
-
-  @Prop({ type: Array })
-  ledgers?: TLedger[];
-}
-
-export const TransactionSchema = SchemaFactory.createForClass(Transaction);
+TransactionSchema.methods.markVerified = function (this: Transaction) {
+  return this.set({ status: TransactionStatus.VERIFIED });
+};

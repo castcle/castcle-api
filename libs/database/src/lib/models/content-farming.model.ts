@@ -21,39 +21,66 @@
  * or have any questions.
  */
 
+import { Environment } from '@castcle-api/environments';
 import { ContentFarming } from '../schemas';
+import { ContentFarmingStatus } from './content-farming.enum';
+import { PublicContentResponse } from './content.model';
 
 export type ContentFarmingCDF = {
   contentId: string;
   contentFarmings: ContentFarming[];
 };
 
+export class GetFarmingCountPayload {
+  contentId: string;
+  farmAmount: number;
+}
 export class ContentFarmingResponse {
-  'id': string;
-  'number': number;
-  'balance': {
-    farmed: number;
-    available: number;
-    total: number;
-    farming: number;
-  } = {
-    farmed: 0,
-    available: 0,
-    total: 0,
-    farming: 0,
+  id: string;
+  number: number;
+  content?: PublicContentResponse;
+  balance: {
+    farmed: string;
+    available: string;
+    farming: string;
+    total: string;
   };
-  'status': string;
+  status: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  farmedAt?: Date;
+
   constructor(
     contentFarming: ContentFarming,
-    currentBalance: number,
-    lockedBalance: number,
+    totalBalance: string,
+    farmBalance: string,
+    availableBalance: string,
     farmNo: number,
+    contentPayload?: PublicContentResponse,
+    farmingBalance?: string,
   ) {
-    //this.number
-    this.id = contentFarming.id;
+    this.id = contentFarming?.id ?? null;
     this.number = farmNo;
-    this.balance.available = currentBalance;
-    this.balance.total = currentBalance + lockedBalance;
-    this.status = contentFarming.status;
+    this.content = contentPayload;
+    this.balance = {
+      available: availableBalance,
+      total: totalBalance,
+      farming: farmingBalance
+        ? farmingBalance
+        : Number(Number(totalBalance) * Environment.DISTRIBUTE_FARMING).toFixed(
+            Environment.DECIMALS_FLOAT,
+          ),
+      farmed: farmBalance,
+    };
+    this.status = contentFarming?.status
+      ? contentFarming?.status === ContentFarmingStatus.Farmed && farmNo
+        ? ContentFarmingStatus.Available
+        : contentFarming?.status
+      : farmNo > Environment.FARMING_LIMIT
+      ? ContentFarmingStatus.Limit
+      : ContentFarmingStatus.Available;
+    this.createdAt = contentFarming?.createdAt ?? null;
+    this.updatedAt = contentFarming?.updatedAt;
+    this.farmedAt = contentFarming?.endedAt;
   }
 }

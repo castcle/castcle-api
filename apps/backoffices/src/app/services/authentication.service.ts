@@ -1,20 +1,25 @@
+import { CastcleRegExp, Password, Token } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
 import { Mailer } from '@castcle-api/utils/clients';
-import { CastcleRegExp, Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { DateTime } from 'luxon';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { customAlphabet } from 'nanoid';
-import { AccessTokenPayload, StaffDto } from '../models/authentication.dto';
+import {
+  AccessTokenPayload,
+  ChangePasswordDto,
+  StaffDto,
+} from '../models/authentication.dto';
 import { StaffStatus } from '../models/authentication.enum';
 import { StaffDocument } from '../schemas/staff.schema';
 
 @Injectable()
 export class AuthenticationService {
   constructor(
-    @InjectModel('Staff') public staffModel: Model<StaffDocument>,
+    @InjectModel('Staff', Environment.BACKOFFICE_DB_DATABASE_NAME)
+    public staffModel: Model<StaffDocument>,
     private mailService: Mailer,
   ) {}
 
@@ -100,7 +105,7 @@ export class AuthenticationService {
 
   async resetPassword(id: string) {
     const password = this.generatePassword();
-    const staff = await this.findStaff({ _id: Types.ObjectId(id) });
+    const staff = await this.findStaff({ _id: new Types.ObjectId(id) });
     if (!staff) throw new CastcleException('STAFF_NOT_FOUND');
 
     staff.password = password.hash;
@@ -113,7 +118,9 @@ export class AuthenticationService {
   }
 
   async removeToken(staffId: string) {
-    const findStaff = await this.findStaff({ _id: Types.ObjectId(staffId) });
+    const findStaff = await this.findStaff({
+      _id: new Types.ObjectId(staffId),
+    });
     await findStaff.set('accessToken', undefined).save();
   }
 
@@ -123,9 +130,24 @@ export class AuthenticationService {
 
   async deleteStaff(staffId: string) {
     const { deletedCount } = await this.staffModel
-      .deleteOne({ _id: Types.ObjectId(staffId) })
+      .deleteOne({ _id: new Types.ObjectId(staffId) })
       .exec();
 
     if (deletedCount === 0) throw new CastcleException('STAFF_NOT_FOUND');
+  }
+
+  async changePassword(staffId: string, changePassword: ChangePasswordDto) {
+    const findStaff = await this.findStaff({
+      _id: new Types.ObjectId(staffId),
+    });
+
+    if (!findStaff) throw new CastcleException('STAFF_NOT_FOUND');
+
+    if (!Password.verify(changePassword.oldPassword, findStaff.password))
+      throw new CastcleException('INVALID_PASSWORD');
+
+    findStaff.password = Password.hash(changePassword.newPassword);
+
+    await findStaff.save();
   }
 }

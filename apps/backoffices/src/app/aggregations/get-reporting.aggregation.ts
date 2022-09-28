@@ -22,17 +22,29 @@
  */
 
 import { Reporting } from '@castcle-api/database';
-import { FilterQuery } from 'mongoose';
+import { FilterQuery, Types } from 'mongoose';
 
 class GetReportingFilter {
   type?: string[];
   status?: string[];
+  sinceId?: string;
+  untilId?: string;
+  maxResults?: number;
 }
 const filterReporting = (filter?: GetReportingFilter) => {
   const query: FilterQuery<Reporting> = {};
   if (filter?.type) query.type = { $in: filter.type } as any;
   if (filter?.status) query.status = { $in: filter.status } as any;
-
+  if (filter.sinceId) {
+    query._id = {
+      $gt: new Types.ObjectId(filter.sinceId),
+    };
+  }
+  if (filter.untilId) {
+    query._id = {
+      $lt: new Types.ObjectId(filter.untilId),
+    };
+  }
   return query;
 };
 export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
@@ -48,10 +60,11 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
         {
           $group: {
             _id: '$payload._id',
+            reportingId: { $first: '$_id' },
             reportBy: { $addToSet: '$by' },
             status: { $first: '$status' },
             type: { $first: '$type' },
-            user: { $addToSet: '$user' },
+            user: { $first: '$user' },
             createdAt: { $first: '$createdAt' },
             updatedAt: { $first: '$updatedAt' },
           },
@@ -60,9 +73,12 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
           $sort: { createdAt: -1 },
         },
         {
+          $limit: filter.maxResults,
+        },
+        {
           $project: {
-            _id: 0,
-            id: '$_id',
+            _id: '$reportingId',
+            payloadId: '$_id',
             reportBy: 1,
             status: 1,
             type: 1,
@@ -101,10 +117,57 @@ export const pipelineOfGetReporting = (filter?: GetReportingFilter) => [
         },
         {
           $project: {
-            _id: 0,
             id: '$_id',
             message: 1,
-            payload: 1,
+            payload: {
+              _id: '$payload._id',
+              contentId: '$payload._id',
+              authorId: '$payload.author.id',
+              payload: '$payload.payload',
+              type: '$payload.type',
+              visibility: '$vpayload.isibility',
+              metrics: {
+                likeCount: '$payload.engagements.like.count',
+                commentCount: '$payload.engagements.comment.count',
+                recastCount: '$payload.engagements.recast.count',
+                quoteCount: '$payload.engagements.quote.count',
+                farmCount: { $ifNull: ['$payload.engagements.farm.count', 0] },
+              },
+              originalPost: {
+                $cond: [
+                  {
+                    $ne: [{ $ifNull: ['$payload.originalPost', null] }, null],
+                  },
+                  {
+                    _id: '$payload.originalPost._id',
+                    contentId: '$payload.originalPost._id',
+                    authorId: '$payload.originalPost.author.id',
+                    payload: '$payload.originalPost.payload',
+                    type: '$payload.originalPost.type',
+                    visibility: '$payload.originalPost.visibility',
+                    metrics: {
+                      likeCount: '$payload.originalPost.engagements.like.count',
+                      commentCount:
+                        '$payload.originalPost.engagements.comment.count',
+                      recastCount:
+                        '$payload.originalPost.engagements.recast.count',
+                      quoteCount:
+                        '$payload.originalPost.engagements.quote.count',
+                      farmCount: '$payload.originalPost.engagements.farm.count',
+                    },
+                    createdAt: '$payload.originalPost.createdAt',
+                    updatedAt: '$payload.originalPost.updatedAt',
+                  },
+                  null,
+                ],
+              },
+              reportedStatus: '$payload.reportedStatus',
+              reportedSubject: '$payload.reportedSubject',
+              isQuote: '$payload.isQuote',
+              isRecast: '$payload.isRecast',
+              createdAt: '$payload.createdAt',
+              updatedAt: '$payload.updatedAt',
+            },
             createdAt: 1,
             updatedAt: 1,
             type: 1,

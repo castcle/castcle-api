@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { TransformStringToEnum } from '@castcle-api/utils/commons';
+import { TransformStringToEnum } from '@castcle-api/common';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { SearchType } from '../models';
 import { PaginationQuery } from './pagination.dto';

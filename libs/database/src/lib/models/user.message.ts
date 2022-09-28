@@ -28,3 +28,9 @@ export interface UserMessage {
     followedId?: any;
   };
 }
+
+export class VerifyEmailMessage {
+  hostUrl: string;
+  toEmail: string;
+  accountId: string;
+}

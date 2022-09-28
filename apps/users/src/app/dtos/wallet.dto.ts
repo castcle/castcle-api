@@ -36,12 +36,6 @@ export class WalletResponse {
 
 export class WalletHistoryQueryDto {
   @IsNotEmpty()
-  @IsEnum([
-    TransactionFilter.AIRDROP_REFERAL,
-    TransactionFilter.CONTENT_FARMING,
-    TransactionFilter.DEPOSIT_SEND,
-    TransactionFilter.SOCIAL_REWARD,
-    TransactionFilter.WALLET_BALANCE,
-  ])
+  @IsEnum(TransactionFilter)
   filter: TransactionFilter;
 }

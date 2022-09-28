@@ -21,11 +21,10 @@
  * or have any questions.
  */
 
-import { CastcleImage } from '@castcle-api/utils/aws';
 import {
   TransformSortStringToSortObject,
   TransformStringToArrayOfStrings,
-} from '@castcle-api/utils/commons';
+} from '@castcle-api/common';
 import {
   IsEnum,
   IsMongoId,
@@ -34,39 +33,15 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ContentType, ReportingStatus, UserType } from '../models';
-import { Content, Engagement } from '../schemas';
+import { ContentType, UserType } from '../models';
 import {
-  Author,
   BlogPayload,
   ImagePayload,
-  Link,
-  Metrics,
   Participates,
-  ReferencedCast,
   ShortPayload,
 } from './content.dto';
 import { PaginationQuery } from './pagination.dto';
 import { GetUserParam } from './user.dto';
-
-export class CastPayload {
-  id: string;
-  authorId: string;
-  type: ContentType;
-  message: string;
-  photo: {
-    cover?: CastcleImage;
-    contents: CastcleImage[];
-  };
-  link: Link[];
-  referencedCasts?: ReferencedCast;
-  metrics: Metrics;
-  participate: Participates;
-  reportedStatus?: ReportingStatus;
-  reportedSubject?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export class ResponseParticipate {
   user: {
@@ -76,18 +51,6 @@ export class ResponseParticipate {
     type: UserType;
   };
   participate: Participates;
-}
-
-export class GetCastDto {
-  contents: Content[];
-  calledContents?: Content[];
-  newContents?: Content[];
-  casts?: Content[];
-  authors?: Author[];
-  engagements?: Engagement[];
-  metrics?: Metrics[];
-  engagementsOriginal?: Engagement[];
-  metricsOriginal?: Metrics[];
 }
 
 export class GetContentDto {
@@ -139,4 +102,21 @@ export class GetContentQuery extends PaginationQuery {
   @IsObject()
   @TransformSortStringToSortObject()
   sortBy?: string;
+}
+
+export class GetFarmingParam {
+  @IsNotEmpty()
+  @IsMongoId()
+  userId: string;
+
+  @IsNotEmpty()
+  @IsMongoId()
+  contentId: string;
+}
+
+export class GetContentParam {
+  @IsString()
+  @IsMongoId()
+  @IsNotEmpty()
+  contentId: string;
 }

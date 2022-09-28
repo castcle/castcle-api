@@ -40,13 +40,11 @@ export const getCacheModuleOptions = (): CacheModuleOptions => ({
   host: Environment.REDIS_CACHE_HOST,
   port: Environment.REDIS_CACHE_PORT,
   password: Environment.REDIS_CACHE_PASSWORD,
-  ttl: 1000,
+  ttl: 10,
 });
 
 export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
   uri: Environment.DB_URI,
-  useCreateIndex: true,
-  useFindAndModify: false,
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -54,8 +52,6 @@ export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
 export const getMongooseBackofficeModuleOptions =
   (): MongooseModuleOptions => ({
     uri: Environment.BACKOFFICE_DB_URI,
-    useCreateIndex: true,
-    useFindAndModify: false,
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
@@ -63,8 +59,6 @@ export const getMongooseBackofficeModuleOptions =
 export const getMongooseBackofficeAppModuleOptions =
   (): MongooseModuleOptions => ({
     uri: Environment.BACKOFFICE_APP_DB_URI,
-    useCreateIndex: true,
-    useFindAndModify: false,
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });

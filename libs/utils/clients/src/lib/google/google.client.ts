@@ -20,15 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
 import { lastValueFrom, map } from 'rxjs';
 @Injectable()
 export class GoogleClient {
-  private logger = new CastLogger(GoogleClient.name);
+  private logger = new CastcleLogger(GoogleClient.name);
   private oauthClient = new google.auth.OAuth2(
     Environment.GOOGLE_CLIENT_ID,
     Environment.GOOGLE_SECRET,

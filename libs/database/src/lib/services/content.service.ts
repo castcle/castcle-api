@@ -20,9 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger, CastcleRegExp } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
-import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
@@ -59,12 +58,9 @@ import {
   UserType,
 } from '../models';
 import {
-  Account,
   Comment,
   Content,
   Engagement,
-  FeedItem,
-  GuestFeedItem,
   Relationship,
   Revision,
   User,
@@ -80,7 +76,7 @@ import { HashtagService } from './hashtag.service';
 /** @deprecated */
 @Injectable()
 export class ContentService {
-  private logger = new CastLogger(ContentService.name);
+  private logger = new CastcleLogger(ContentService.name);
   private transporter = createTransport({
     host: Environment.SMTP_HOST,
     port: Environment.SMTP_PORT,
@@ -92,25 +88,17 @@ export class ContentService {
   });
 
   constructor(
-    @InjectModel('Account')
-    public _accountModel: Model<Account>,
-    @InjectModel('Credential')
-    public _credentialModel: Model<Credential>,
     @InjectModel('User')
-    public _userModel: Model<User>,
+    private _userModel: Model<User>,
     @InjectModel('Content')
-    public _contentModel: Model<Content>,
+    private _contentModel: Model<Content>,
     @InjectModel('Revision')
-    public _revisionModel: Model<Revision>,
+    private _revisionModel: Model<Revision>,
     @InjectModel('Engagement')
-    public _engagementModel: Model<Engagement>,
+    private _engagementModel: Model<Engagement>,
     @InjectModel('Comment')
-    public _commentModel: Model<Comment>,
-    @InjectModel('FeedItem')
-    public _feedItemModel: Model<FeedItem>,
-    public hashtagService: HashtagService,
-    @InjectModel('GuestFeedItem')
-    public _guestFeedItemModel: Model<GuestFeedItem>,
+    private _commentModel: Model<Comment>,
+    private hashtagService: HashtagService,
     @InjectModel('Relationship')
     private relationshipModel: Model<Relationship>,
     @InjectQueue(QueueName.CONTENT)
@@ -267,8 +255,8 @@ export class ContentService {
   getRecastContent = (originalPostId: string, authorId: string) => {
     return this._contentModel
       .findOne({
-        'author.id': Types.ObjectId(authorId),
-        'originalPost._id': Types.ObjectId(originalPostId),
+        'author.id': new Types.ObjectId(authorId),
+        'originalPost._id': new Types.ObjectId(originalPostId),
         isRecast: true,
       })
       .exec();
@@ -373,7 +361,8 @@ export class ContentService {
     options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS,
   ) => {
     let findFilter: FilterQuery<Content> = {
-      'author.id': typeof userId === 'string' ? Types.ObjectId(userId) : userId,
+      'author.id':
+        typeof userId === 'string' ? new Types.ObjectId(userId) : userId,
       visibility: EntityVisibility.Publish,
     };
     if (options.type) findFilter.type = options.type;
@@ -779,7 +768,7 @@ export class ContentService {
     const result = comment.save();
     if (comment.hashtags)
       await this.hashtagService.removeFromTags(comment.hashtags);
-    this._updateCommentCounter(comment);
+    await this._updateCommentCounter(comment);
     return result;
   };
 
@@ -1070,7 +1059,7 @@ Message: ${message}`,
     untilId?: string,
   ) => {
     let filter: FilterQuery<Content> = {
-      'originalPost._id': Types.ObjectId(originalPostId),
+      'originalPost._id': new Types.ObjectId(originalPostId),
     };
     const totalDocument = await this._contentModel
       .countDocuments(filter)
@@ -1079,14 +1068,14 @@ Message: ${message}`,
       filter = {
         ...filter,
         'author.id': {
-          $gt: Types.ObjectId(sinceId),
+          $gt: new Types.ObjectId(sinceId),
         },
       };
     } else if (untilId) {
       filter = {
         ...filter,
         'author.id': {
-          $lt: Types.ObjectId(untilId),
+          $lt: new Types.ObjectId(untilId),
         },
       };
     }
@@ -1118,12 +1107,6 @@ Message: ${message}`,
       : [];
 
     users.forEach((author) => {
-      const authorRelationship = relationships.find(
-        ({ followedUser, user }) =>
-          String(user) === String(author.id) &&
-          String(followedUser) === String(viewer?.id),
-      );
-
       const getterRelationship = relationships.find(
         ({ followedUser, user }) =>
           String(followedUser) === String(author.id) &&
@@ -1131,7 +1114,6 @@ Message: ${message}`,
       );
 
       author.blocked = Boolean(getterRelationship?.blocking);
-      author.blocking = Boolean(authorRelationship?.blocking);
       author.followed = Boolean(getterRelationship?.following);
     });
   }
@@ -1185,7 +1167,7 @@ Message: ${message}`,
       type: 'like',
       targetRef: {
         $ref: 'content',
-        $id: Types.ObjectId(contentId),
+        $id: new Types.ObjectId(contentId),
       },
     };
     const totalDocument = await this._engagementModel

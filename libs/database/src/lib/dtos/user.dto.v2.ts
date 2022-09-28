@@ -20,8 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { TransformStringToKeyword } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { TransformStringToKeyword } from '@castcle-api/utils/commons';
 import {
   IsEmail,
   IsEnum,

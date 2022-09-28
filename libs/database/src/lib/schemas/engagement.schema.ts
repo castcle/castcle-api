@@ -52,8 +52,13 @@ export class Engagement extends CastcleBase {
   type: string;
 
   /** for recast or quote */
-  @Prop({ type: SchemaTypes.ObjectId })
+  @Prop({ type: SchemaTypes.ObjectId, index: true })
   itemId?: any;
 }
 
 export const EngagementSchema = SchemaFactory.createForClass(Engagement);
+
+EngagementSchema.index(
+  { targetRef: -1, user: -1, visibility: -1 },
+  { background: true },
+);

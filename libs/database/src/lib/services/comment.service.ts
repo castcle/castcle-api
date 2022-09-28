@@ -204,7 +204,7 @@ export class CommentService {
     ]);
     return comments.map((comment) => {
       const revisionCount = revisions.filter(
-        ({ objectRef }) => String(objectRef.$id) === String(comment._id),
+        ({ objectRef }) => String(objectRef.oid) === String(comment._id),
       ).length;
 
       const commentReplies = replies.filter(({ targetRef }) => {
@@ -268,7 +268,7 @@ export class CommentService {
 
     return comments.map((comment) => {
       const revisionCount = revisions.filter(
-        ({ objectRef }) => String(objectRef.$id) === String(comment._id),
+        ({ objectRef }) => String(objectRef.oid) === String(comment._id),
       ).length;
 
       const commentReplies = replies.filter(({ targetRef }) => {

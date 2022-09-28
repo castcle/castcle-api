@@ -21,7 +21,6 @@
  * or have any questions.
  */
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { RemoveLeadingZero } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform, Type } from 'class-transformer';
 import {
@@ -29,7 +28,7 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
-  IsMobilePhone,
+  IsMongoId,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -38,7 +37,6 @@ import {
 } from 'class-validator';
 import {
   AuthenticationProvider,
-  OtpObjective,
   OwnerVerification,
   PublicVerification,
   SocialProvider,
@@ -46,13 +44,17 @@ import {
   UserImage,
   UserMobile,
   UserType,
-  Wallet,
 } from '../models';
+import { CastcleId } from '../utils/validates';
 import { CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 import { Meta } from './response.dto';
 
-class UserImageDto {
+export class UserWallet {
+  balance: number;
+}
+
+export class UserImageDto {
   @IsOptional()
   @IsString()
   avatar?: string;
@@ -141,7 +143,7 @@ export class SocialLinks {
   website?: string;
 }
 
-class Counter {
+export class Counter {
   @ApiProperty()
   count: number;
 }
@@ -204,13 +206,10 @@ export class UserResponseDto {
   blocked: boolean;
 
   @ApiProperty()
-  blocking: boolean;
-
-  @ApiProperty()
   passwordNotSet: boolean;
 
   @ApiProperty()
-  wallet: Wallet;
+  wallet: UserWallet;
 
   @ApiProperty()
   mobile: UserMobile;
@@ -235,7 +234,7 @@ export class UserResponseDto {
 
 type LinkedSocials = Partial<Record<AuthenticationProvider, LinkedSocial>>;
 
-class LinkedSocial {
+export class LinkedSocial {
   socialId: string;
 }
 
@@ -277,6 +276,7 @@ export class PageDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
+  @CastcleId()
   castcleId: string;
 
   @IsString()
@@ -318,9 +318,6 @@ export class PageResponseDto {
 
   @ApiProperty()
   blocked: boolean;
-
-  @ApiProperty()
-  blocking: boolean;
 
   @ApiProperty()
   updatedAt: string;
@@ -437,15 +434,22 @@ export class GetUserParam {
   isMe = () => this.userId === 'me';
 }
 
-export class RemoveFarmParam extends GetUserParam {
+export class RemoveFarmParam {
   @ApiProperty()
-  @IsString()
+  @IsNotEmpty()
+  @IsMongoId()
+  userId: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsMongoId()
   farmingId: string;
 }
 
 export class UpdateUserDtoV2 {
   @IsOptional()
   @IsString()
+  @CastcleId()
   castcleId?: string;
 
   @IsOptional()
@@ -494,21 +498,6 @@ export class TargetIdParam extends GetUserParam {
   targetCastcleId: string;
 }
 
-export class UpdateMobileDto {
-  @IsEnum([OtpObjective.VERIFY_MOBILE])
-  objective: OtpObjective;
-
-  @IsString()
-  refCode: string;
-
-  @IsString()
-  countryCode: string;
-
-  @IsMobilePhone()
-  @RemoveLeadingZero()
-  mobileNumber: string;
-}
-
 export class PublicUserResponse {
   id: string;
   castcleId: string;
@@ -523,7 +512,6 @@ export class PublicUserResponse {
   followers: Counter;
   following: Counter;
   followed?: boolean;
-  blocking?: boolean;
   blocked?: boolean;
   contact: ContactDto;
   casts: number;
@@ -535,7 +523,7 @@ export class OwnerResponse extends PublicUserResponse {
   verified: OwnerVerification;
   canUpdateCastcleId: boolean;
   passwordNotSet: boolean;
-  wallet?: Wallet;
+  wallet?: UserWallet;
   mobile?: UserMobile;
   linkSocial?: LinkedSocials;
   syncSocial?: SyncSocials;

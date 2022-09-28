@@ -22,11 +22,15 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { EntityVisibility } from '../dtos';
 import { NetworkType } from '../models';
-import { CastcleBase } from './base.schema';
+import { BaseSchema } from './base.schema';
 
 @Schema({ timestamps: true })
-export class Network extends CastcleBase {
+export class Network extends BaseSchema {
+  @Prop({ type: String, default: EntityVisibility.Publish })
+  visibility: EntityVisibility;
+
   @Prop()
   name: string;
 
@@ -34,10 +38,13 @@ export class Network extends CastcleBase {
   type: NetworkType;
 
   @Prop()
-  rpcUrl: string;
+  fee?: string;
 
   @Prop()
   chainId: string;
+
+  @Prop()
+  tokenAddress: string;
 
   @Prop()
   blockExplorerUrl?: string;

@@ -270,6 +270,16 @@ export const DefaultErrors = {
     code: '3028',
     message: 'This email has been verified.',
   },
+  AD_NOT_FOUND: {
+    statusCode: '400',
+    code: '3028',
+    message: 'Advertisement not found',
+  },
+  ACTION_CANNOT_BE_COMPLETED: {
+    statusCode: '400',
+    code: '3029',
+    message: 'Action cannot be completed',
+  },
   USER_OR_PAGE_NOT_FOUND: {
     statusCode: '404',
     code: '4001',
@@ -358,12 +368,17 @@ export const DefaultErrors = {
   CONTENT_FARMING_LIMIT: {
     statusCode: '400',
     code: '5010',
-    message: 'You have reach your farming limit, please wait 24hrs',
+    message: 'You have reach your farming limit',
   },
   QUOTE_IS_EXIST: {
     statusCode: '400',
     code: '5011',
     message: 'You already said that',
+  },
+  CAN_NOT_FARMING_YOUR_CAST: {
+    statusCode: '400',
+    code: '5012',
+    message: "You can't farm your cast",
   },
   NOTIFICATION_NOT_FOUND: {
     statusCode: '400',
@@ -450,5 +465,25 @@ export const DefaultErrors = {
     statusCode: '400',
     code: '8013',
     message: 'Reporting status not found. Please try again.',
+  },
+  ACCOUNT_DISABLED: {
+    statusCode: '403',
+    code: '8014',
+    message: 'Your account has been disabled for violating our terms.',
+  },
+  AD_RUNNING_CAN_NOT_DELETE: {
+    statusCode: '400',
+    code: '8015',
+    message: `The ads is running, can't be deleted.`,
+  },
+  AD_RUNNING_CAN_NOT_CANCEL: {
+    statusCode: '400',
+    code: '8016',
+    message: `The ads is running, can't be cancel.`,
+  },
+  RECEIVED_AMOUNT_GT_ZERO: {
+    statusCode: '400',
+    code: '8017',
+    message: `Received amount should be greater than zero`,
   },
 };

@@ -20,10 +20,20 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import {
+  CastcleLogger,
+  CastcleQRCode,
+  LocalizationLang,
+} from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
+import {
+  AVATAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS,
+  Downloader,
+  Image,
+} from '@castcle-api/utils/aws';
 import { Mailer } from '@castcle-api/utils/clients';
-import { CastcleQRCode, LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
@@ -40,6 +50,7 @@ import {
 } from '../aggregations';
 import {
   CastcleQueryOptions,
+  CastcleQueueAction,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
   GetFollowQuery,
@@ -53,31 +64,34 @@ import {
   QRCodeImageSize,
   ReportUserDto,
   ResponseDto,
+  SocialPageDto,
   SortDirection,
-  UpdateMobileDto,
+  SyncSocialDtoV2,
+  UpdateModelUserDto,
   UserField,
   UserResponseDto,
 } from '../dtos';
 import {
   AccountActivationType,
-  CampaignType,
   MetadataType,
   QueueName,
   ReportingAction,
   ReportingMessage,
   ReportingStatus,
   ReportingType,
+  UserMessage,
   UserType,
 } from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, User } from '../schemas';
+import { getSocialPrefix } from '../utils/common';
 import { AnalyticService } from './analytic.service';
-import { CampaignService } from './campaign.service';
 import { NotificationServiceV2 } from './notification.service.v2';
+import { SocialSyncServiceV2 } from './social-sync.service.v2';
 
 @Injectable()
 export class UserServiceV2 {
-  private logger = new CastLogger(UserServiceV2.name);
+  private logger = new CastcleLogger(UserServiceV2.name);
 
   constructor(
     @InjectModel('Relationship')
@@ -86,12 +100,14 @@ export class UserServiceV2 {
     private userModel: Model<User>,
     @InjectQueue(QueueName.REPORTING)
     private reportingQueue: Queue<ReportingMessage>,
+    @InjectQueue(QueueName.USER)
+    private userQueue: Queue<UserMessage>,
     private analyticService: AnalyticService,
-    private campaignService: CampaignService,
+    private download: Downloader,
     private mailerService: Mailer,
     private notificationService: NotificationServiceV2,
     private repository: Repository,
-    private mailer: Mailer,
+    private socialSyncService: SocialSyncServiceV2,
   ) {}
 
   getUser = async (userId: string) => {
@@ -100,6 +116,18 @@ export class UserServiceV2 {
       visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
     });
     if (!user) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
+    return user;
+  };
+
+  getUserByAccount = (accountId: Types.ObjectId) => {
+    return this.repository.findUser({ accountId });
+  };
+
+  getUserOnly = async (userId: string) => {
+    const user = await this.repository.findUser({
+      _id: userId,
+      visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+    });
     return user;
   };
 
@@ -200,6 +228,8 @@ export class UserServiceV2 {
 
     if (!followedUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
+    if (followedUser.id === user.id) throw new CastcleException('FORBIDDEN');
+
     await user.follow(followedUser);
     await this.notificationService.notifyToUser(
       {
@@ -227,37 +257,67 @@ export class UserServiceV2 {
 
     if (!blockUser) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
+    if (blockUser.id === user.id) throw new CastcleException('FORBIDDEN');
+
     const session = await this.relationshipModel.startSession();
     await session.withTransaction(async () => {
-      await this.repository.updateRelationship(
-        { user: user._id, followedUser: blockUser._id },
-        {
-          $setOnInsert: {
-            user: user._id,
-            followedUser: blockUser._id,
-            visibility: EntityVisibility.Publish,
-            blocked: false,
+      const [followed, follower] = await Promise.all([
+        this.repository.findRelationships({
+          userId: user._id,
+          followedUser: blockUser._id,
+          following: true,
+        }),
+        this.repository.findRelationships({
+          userId: blockUser._id,
+          followedUser: user._id,
+          following: true,
+        }),
+      ]);
+
+      if (followed.length) {
+        user.followedCount--;
+        blockUser.followerCount--;
+      }
+
+      if (follower.length) {
+        user.followerCount--;
+        blockUser.followedCount--;
+      }
+
+      await Promise.all([
+        user.save({ session }),
+        blockUser.save({ session }),
+        this.repository.updateRelationship(
+          { user: user._id, followedUser: blockUser._id },
+          {
+            $setOnInsert: {
+              user: user._id,
+              followedUser: blockUser._id,
+              visibility: EntityVisibility.Publish,
+              blocked: false,
+            },
+            $set: { blocking: true, following: false },
           },
-          $set: { blocking: true, following: false },
-        },
-        { upsert: true, session },
-      );
-      await this.repository.updateRelationship(
-        { followedUser: user._id, user: blockUser._id },
-        {
-          $setOnInsert: {
-            followedUser: user._id,
-            user: blockUser._id,
-            visibility: EntityVisibility.Publish,
-            following: false,
-            blocking: false,
+          { upsert: true, session },
+        ),
+        this.repository.updateRelationship(
+          { followedUser: user._id, user: blockUser._id },
+          {
+            $setOnInsert: {
+              followedUser: user._id,
+              user: blockUser._id,
+              visibility: EntityVisibility.Publish,
+              following: false,
+              blocking: false,
+            },
+            $set: { blocked: true },
           },
-          $set: { blocked: true },
-        },
-        { upsert: true, session },
-      );
+          { upsert: true, session },
+        ),
+      ]);
+      await session.commitTransaction();
+      await session.endSession();
     });
-    session.endSession();
   }
 
   async unblockUser(user: User, targetCastcleId: string) {
@@ -293,7 +353,7 @@ export class UserServiceV2 {
           { session },
         );
       } else {
-        await this.repository.removeRelationship(
+        await this.repository.deleteRelationship(
           { _id: blockerRelation._id },
           { session },
         );
@@ -310,13 +370,13 @@ export class UserServiceV2 {
           { session },
         );
       } else {
-        await this.repository.removeRelationship(
+        await this.repository.deleteRelationship(
           { _id: blockedRelation._id },
           { session },
         );
       }
     });
-    session.endSession();
+    await session.endSession();
   }
 
   async getBlockedLookup(
@@ -417,62 +477,6 @@ export class UserServiceV2 {
     ]);
   }
 
-  async updateMobile(
-    account: Account,
-    { objective, refCode, countryCode, mobileNumber }: UpdateMobileDto,
-    ip: string,
-  ) {
-    if (account.isGuest) throw new CastcleException('INVALID_ACCESS_TOKEN');
-
-    const otp = await this.repository.findOtp({
-      objective,
-      receiver: countryCode + mobileNumber,
-    });
-
-    if (!otp?.isVerify) {
-      throw new CastcleException('INVALID_REF_CODE');
-    }
-    if (!otp.isValid()) {
-      await otp.updateOne({ isVerify: false, retry: 0 });
-      throw new CastcleException('EXPIRED_OTP');
-    }
-    if (otp.refCode !== refCode) {
-      await otp.failedToVerify().save();
-      throw otp.exceededMaxRetries()
-        ? new CastcleException('OTP_USAGE_LIMIT_EXCEEDED')
-        : new CastcleException('INVALID_REF_CODE');
-    }
-
-    await Promise.all([
-      otp.markCompleted().save(),
-      account.set({ mobile: { countryCode, number: mobileNumber } }).save(),
-      this.userModel.updateMany(
-        { ownerAccount: account._id },
-        { 'verified.mobile': true },
-      ),
-      this.analyticService.trackMobileVerification(
-        ip,
-        account.id,
-        countryCode,
-        mobileNumber,
-      ),
-    ]);
-
-    try {
-      await this.campaignService.claimCampaignsAirdrop(
-        account._id,
-        CampaignType.VERIFY_MOBILE,
-      );
-
-      await this.campaignService.claimCampaignsAirdrop(
-        String(account.referralBy),
-        CampaignType.FRIEND_REFERRAL,
-      );
-    } catch (error: unknown) {
-      this.logger.error(error, `updateMobile:claimAirdrop:error`);
-    }
-  }
-
   async updateEmail(
     account: Account,
     user: User,
@@ -527,7 +531,7 @@ export class UserServiceV2 {
   }
 
   async getUserByKeyword(
-    { userFields, ...query }: GetKeywordQuery,
+    { userFields, maxResults, ...query }: GetKeywordQuery,
     requestedBy: User,
   ) {
     const blocking = await this.getUserRelationships(requestedBy, true);
@@ -535,6 +539,7 @@ export class UserServiceV2 {
     const users = await this.repository.getPublicUsers({
       requestedBy: requestedBy,
       filter: { excludeRelationship: blocking, ...query },
+      queryOptions: { limit: maxResults, sort: { createdAt: -1 } },
       expansionFields: userFields,
     });
 
@@ -576,14 +581,14 @@ export class UserServiceV2 {
 
     const followingUsersId = userRelation.flatMap(({ _id, followedUser }) => {
       return {
-        userId: followedUser[0]?._id,
+        id: followedUser[0]?._id,
         relationshipId: _id,
       };
     });
 
     const users = await this.repository.getPublicUsers({
       requestedBy: viewer,
-      filter: { _id: followingUsersId.map((f) => f.userId) },
+      filter: { _id: followingUsersId.map((f) => f.id) },
       expansionFields: followQuery.userFields,
     });
 
@@ -623,14 +628,14 @@ export class UserServiceV2 {
 
     const followingUsersId = userRelation.flatMap(({ _id, user }) => {
       return {
-        userId: user[0]?._id,
+        id: user[0]?._id,
         relationshipId: _id,
       };
     });
 
     const users = await this.repository.getPublicUsers({
       requestedBy: viewer,
-      filter: { _id: followingUsersId.map((f) => f.userId) },
+      filter: { _id: followingUsersId.map((f) => f.id) },
       expansionFields: followQuery.userFields,
     });
 
@@ -643,13 +648,13 @@ export class UserServiceV2 {
   }
 
   mergeRelationUser(
-    followingIds,
+    followingIds: { id: string; relationshipId: string }[],
     users,
   ): (PageResponseDto | UserResponseDto)[] {
     const relationUsers = [];
     followingIds.forEach((follower) => {
       const user = users.find(
-        (user) => String(user.id) === String(follower.userId),
+        (user) => String(user.id) === String(follower.id),
       );
 
       if (user) {
@@ -797,4 +802,173 @@ export class UserServiceV2 {
       },
     );
   };
+
+  async createPageAndSyncSocial(user: User, socialPageDto: SyncSocialDtoV2) {
+    this.logger.log(`Start create sync social.`);
+    this.logger.log(JSON.stringify(socialPageDto));
+
+    let castcleId = '';
+    const socialPage = new SocialPageDto();
+    if (socialPageDto.userName && socialPageDto.displayName) {
+      castcleId = socialPageDto.userName;
+      socialPage.displayName = socialPageDto.displayName;
+    } else if (socialPageDto.userName) {
+      castcleId = socialPageDto.userName;
+      socialPage.displayName = socialPageDto.userName;
+    } else if (socialPageDto.displayName) {
+      castcleId = socialPageDto.displayName;
+      socialPage.displayName = socialPageDto.displayName;
+    } else {
+      const genId = getSocialPrefix(
+        socialPageDto.socialId,
+        socialPageDto.provider,
+      );
+      socialPage.displayName = castcleId = genId;
+    }
+
+    socialPage.castcleId = await this.repository.suggestCastcleId(
+      `@${castcleId}`,
+    );
+
+    if (socialPageDto.avatar) {
+      this.logger.log(`download avatar from ${socialPageDto.avatar}`);
+      const imgAvatar = await this.download.getImageFromUrl(
+        socialPageDto.avatar,
+      );
+
+      this.logger.log('upload avatar to s3');
+      const avatar = await Image.upload(imgAvatar, {
+        filename: `page-avatar-${socialPage.castcleId}`,
+        addTime: true,
+        sizes: AVATAR_SIZE_CONFIGS,
+        subpath: `page_${socialPage.castcleId}`,
+      });
+
+      socialPage.avatar = avatar.image;
+      this.logger.log('Upload avatar');
+    }
+
+    if (socialPageDto.cover) {
+      this.logger.log(`download avatar from ${socialPageDto.cover}`);
+      const imgCover = await this.download.getImageFromUrl(socialPageDto.cover);
+
+      this.logger.log('upload cover to s3');
+      const cover = await Image.upload(imgCover, {
+        filename: `page-cover-${socialPage.castcleId}`,
+        addTime: true,
+        sizes: COMMON_SIZE_CONFIGS,
+        subpath: `page_${socialPage.castcleId}`,
+      });
+      socialPage.cover = cover.image;
+      this.logger.log('Suggest Cover');
+    }
+
+    socialPage.overview = socialPageDto.overview;
+    if (socialPageDto.link) {
+      socialPage.links = { [socialPageDto.provider]: socialPageDto.link };
+    }
+
+    this.logger.log('Create new page');
+    const page = await this.repository.createUser({
+      ownerAccount: user.ownerAccount,
+      type: UserType.PAGE,
+      displayId: socialPage.castcleId,
+      displayName: socialPage.displayName,
+      profile: {
+        overview: socialPage.overview,
+        images: {
+          avatar: socialPage.avatar,
+          cover: socialPage.cover,
+        },
+        socials: {
+          facebook: socialPage.links?.facebook,
+          twitter: socialPage.links?.twitter,
+          youtube: socialPage.links?.youtube,
+          medium: socialPage.links?.medium,
+        },
+      },
+    });
+
+    this.logger.log('Create sync social');
+    await this.socialSyncService.sync(page, {
+      socialId: socialPageDto.socialId,
+      provider: socialPageDto.provider,
+      userName: socialPageDto.userName,
+      displayName: socialPageDto.displayName,
+      avatar: socialPageDto.avatar,
+      active: (socialPageDto.active ??= true),
+      autoPost: (socialPageDto.autoPost ??= true),
+      authToken: socialPageDto.authToken,
+    });
+
+    this.logger.log(`get page data.`);
+
+    const pageResponse = await this.getPublicUser(user, page.id);
+
+    return { ...pageResponse, socialSyncs: true };
+  }
+
+  async updateUser(
+    user: User,
+    { images, links, contact, ...updateUserDto }: UpdateModelUserDto,
+  ) {
+    if (!user.profile) user.profile = {};
+    if (updateUserDto.castcleId && updateUserDto.castcleId !== user.displayId) {
+      user.displayIdUpdatedAt = new Date();
+      user.displayId = updateUserDto.castcleId;
+    }
+    if (updateUserDto.displayName) user.displayName = updateUserDto.displayName;
+
+    if (
+      updateUserDto.overview !== undefined &&
+      updateUserDto.overview !== null
+    ) {
+      user.profile.overview = updateUserDto.overview;
+    }
+
+    if (updateUserDto.dob) user.profile.birthdate = new Date(updateUserDto.dob);
+
+    if (images) {
+      if (!user.profile.images) user.profile.images = {};
+      if (images.avatar) user.profile.images.avatar = images.avatar;
+      if (images.cover) user.profile.images.cover = images.cover;
+    }
+
+    if (links) {
+      if (!user.profile.socials) user.profile.socials = {};
+      const socialNetworks = ['facebook', 'medium', 'twitter', 'youtube'];
+      socialNetworks.forEach((social) => {
+        if (links[social]) user.profile.socials[social] = links[social];
+        if (links.website)
+          user.profile.websites = [
+            {
+              website: links.website,
+              detail: links.website,
+            },
+          ];
+      });
+    }
+    if (!user.contact) user.contact = {};
+    if (contact?.countryCode) user.contact.countryCode = contact?.countryCode;
+    if (contact?.email) user.contact.email = contact?.email;
+    if (contact?.phone) user.contact.phone = contact?.phone;
+    user.set(updateUserDto);
+    user.markModified('profile');
+    user.markModified('contact');
+    console.debug('saving dto', updateUserDto);
+    console.debug('saving website', user.profile.websites);
+    console.debug('saving user', user);
+
+    await this.userQueue.add(
+      {
+        id: user._id,
+        action: CastcleQueueAction.UpdateProfile,
+      },
+      {
+        removeOnComplete: true,
+      },
+    );
+
+    return user.save();
+  }
 }

@@ -20,8 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import * as mongoose from 'mongoose';
-import { Types } from 'mongoose';
+import { PipelineStage, Types } from 'mongoose';
 import { EntityVisibility, QueryOption, SortBy } from '../dtos';
 import { Relationship, User } from '../schemas';
 
@@ -55,7 +54,7 @@ export type GetUserRelationResponseCount = {
 
 export const pipelineOfUserRelationMentions = (
   params: GetUserRelationParams,
-) => {
+): PipelineStage[] => {
   return [
     {
       $match: {
@@ -90,19 +89,19 @@ const filterId = (queryOption: QueryOption) => {
   if (queryOption.sinceId) {
     return {
       _id: {
-        $gt: mongoose.Types.ObjectId(queryOption.sinceId),
+        $gt: new Types.ObjectId(queryOption.sinceId),
       },
     };
   } else if (queryOption.untilId) {
     return {
       _id: {
-        $lt: mongoose.Types.ObjectId(queryOption.untilId),
+        $lt: new Types.ObjectId(queryOption.untilId),
       },
     };
   }
 };
 
-const sorting = (sortBy?: SortBy) => {
+const sorting = (sortBy?: SortBy): Record<string, 1 | -1> => {
   const direction = sortBy?.type === 'asc' ? 1 : -1;
   return {
     [sortBy?.field]: direction,
@@ -117,7 +116,7 @@ const filterType = (userType?: string) => {
     };
 };
 
-const userFollowQuery = (params: GetUserRelationParams) => {
+const userFollowQuery = (params: GetUserRelationParams): PipelineStage[] => {
   return [
     {
       $lookup: {
@@ -146,7 +145,7 @@ const userFollowQuery = (params: GetUserRelationParams) => {
 
 export const pipelineOfUserRelationFollowers = (
   params: GetUserRelationParams,
-) => {
+): PipelineStage[] => {
   return [...userFollowQuery(params), ...[{ $limit: params.limit }]];
 };
 

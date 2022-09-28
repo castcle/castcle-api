@@ -20,6 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { CreatedUser, TestingModule } from '@castcle-api/testing';
+import { Downloader } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
   GoogleClient,
@@ -30,48 +33,39 @@ import {
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   AnalyticService,
   AuthenticationServiceV2,
-  CampaignService,
   CommentServiceV2,
   ContentService,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService,
   NotificationServiceV2,
-  UserService,
+  SocialSyncServiceV2,
+  UserServiceV2,
 } from '../database.module';
 import { NotificationSource, NotificationType } from '../dtos';
-import { MockUserService } from '../mocks';
-import { MockUserDetail } from '../mocks/user.mocks';
 import { ContentType, QueueName } from '../models';
 import { Comment, Content } from '../schemas';
 
 describe('CommentServiceV2', () => {
-  let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: CommentServiceV2;
   let comment: Comment;
   let content: Content;
   let contentService: ContentService;
-  let generateUser: MockUserService;
-  let mocksUsers: MockUserDetail[];
+  let mocksUsers: CreatedUser[];
   let notifyService: NotificationServiceV2;
   let reply: Comment;
   let repository: Repository;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
         CacheModule.register(),
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
         HttpModule,
@@ -81,13 +75,12 @@ describe('CommentServiceV2', () => {
         CommentServiceV2,
         ContentService,
         HashtagService,
-        MockUserService,
-        NotificationService,
         NotificationServiceV2,
         Repository,
-        UserService,
+        UserServiceV2,
+        { provide: SocialSyncServiceV2, useValue: {} },
+        { provide: Downloader, useValue: {} },
         { provide: AnalyticService, useValue: {} },
-        { provide: CampaignService, useValue: {} },
         { provide: FacebookClient, useValue: {} },
         { provide: GoogleClient, useValue: {} },
         { provide: Mailer, useValue: {} },
@@ -105,16 +98,27 @@ describe('CommentServiceV2', () => {
           provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
+        {
+          provide: getQueueToken(QueueName.VERIFY_EMAIL),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.REPORTING),
+          useValue: { add: jest.fn() },
+        },
       ],
-    }).compile();
+    });
 
     contentService = moduleRef.get(ContentService);
     service = moduleRef.get(CommentServiceV2);
     repository = moduleRef.get(Repository);
     notifyService = moduleRef.get(NotificationServiceV2);
-    generateUser = moduleRef.get(MockUserService);
 
-    mocksUsers = await generateUser.generateMockUsers(3);
+    mocksUsers = await Promise.all([
+      moduleRef.createUser(),
+      moduleRef.createUser(),
+      moduleRef.createUser(),
+    ]);
 
     const user = mocksUsers[0].user;
     content = await contentService.createContentFromUser(user, {
@@ -130,6 +134,10 @@ describe('CommentServiceV2', () => {
     await contentService.replyComment(user, comment, {
       message: 'nice #baby',
     });
+  });
+
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   describe('#convertCommentToCommentResponse', () => {
@@ -203,12 +211,16 @@ describe('CommentServiceV2', () => {
   describe('#deleteComment()', () => {
     it('should remove a reply from comment', async () => {
       const user = mocksUsers[0].user;
-      const preComment = await service.commentModel
+      const preComment = await moduleRef
+        .getModel('Comment')
         .findById(comment._id)
         .exec();
       expect(preComment.engagements.comment.count).toEqual(1);
       await service.deleteComment(comment);
-      const postReply = await service.commentModel.findById(comment._id).exec();
+      const postReply = await moduleRef
+        .getModel('Comment')
+        .findById(comment._id)
+        .exec();
       expect(postReply).toBeNull();
       const comments = await service.getCommentsByContentId(user, content._id, {
         maxResults: 5,
@@ -242,7 +254,7 @@ describe('CommentServiceV2', () => {
         mocksUsers[1].user,
         mocksUsers[1].account,
       );
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await moduleRef.getModel('Engagement').findOne({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'comment',
@@ -265,7 +277,7 @@ describe('CommentServiceV2', () => {
         mocksUsers[1].user,
         mocksUsers[1].account,
       );
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await moduleRef.getModel('Engagement').findOne({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'comment',
@@ -280,9 +292,9 @@ describe('CommentServiceV2', () => {
       );
     });
     afterAll(async () => {
-      await service._engagementModel.deleteMany({});
-      await contentService._contentModel.deleteMany({});
-      await contentService._commentModel.deleteMany({});
+      await moduleRef.getModel('Engagement').deleteMany({});
+      await moduleRef.getModel('Content').deleteMany({});
+      await moduleRef.getModel('Comment').deleteMany({});
     });
   });
   describe('#unlikeCommentCast', () => {
@@ -359,7 +371,7 @@ describe('CommentServiceV2', () => {
         mocksUsers[1].user,
       );
 
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await moduleRef.getModel('Engagement').findOne({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'comment',
@@ -399,7 +411,7 @@ describe('CommentServiceV2', () => {
         mocksUsers[2].user,
       );
 
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await moduleRef.getModel('Engagement').findOne({
         user: mocksUsers[2].user._id,
         targetRef: {
           $ref: 'comment',
@@ -438,7 +450,7 @@ describe('CommentServiceV2', () => {
         reply._id,
         mocksUsers[1].user,
       );
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await moduleRef.getModel('Engagement').findOne({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'comment',
@@ -480,7 +492,7 @@ describe('CommentServiceV2', () => {
         reply._id,
         mocksUsers[2].user,
       );
-      const engagement = await service._engagementModel.findOne({
+      const engagement = await moduleRef.getModel('Engagement').findOne({
         user: mocksUsers[2].user._id,
         targetRef: {
           $ref: 'comment',
@@ -507,9 +519,5 @@ describe('CommentServiceV2', () => {
         String(reply._id),
       );
     });
-  });
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
   });
 });

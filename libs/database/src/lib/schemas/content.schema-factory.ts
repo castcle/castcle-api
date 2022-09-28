@@ -44,6 +44,7 @@ const engagementNameMap = {
   quote: 'quoteCast',
   recast: 'recasted',
   seen: 'seen',
+  farm: 'farm',
 };
 
 type ContentEngagement =
@@ -136,6 +137,7 @@ export const toUnsignedContentPayloadItem = (
   content: ContentDocument,
   engagements: Engagement[] = [],
   metrics?: CastcleMetric,
+  isUserFarming = false,
 ) => {
   const engage = engagements.filter(
     (engagement) =>
@@ -156,12 +158,24 @@ export const toUnsignedContentPayloadItem = (
           commentCount: metrics.commentCount,
           quoteCount: metrics.quoteCount,
           recastCount: metrics.recastCount,
+          farmCount:
+            content.farming?.reduce(
+              (farmCountTotal, { farmAmount }) =>
+                (farmCountTotal += Number(farmAmount)),
+              0,
+            ) | 0,
         }
       : {
           likeCount: content.engagements?.like?.count | 0,
           commentCount: content.engagements?.comment?.count | 0,
           quoteCount: content.engagements?.quote?.count | 0,
           recastCount: content.engagements?.recast?.count | 0,
+          farmCount:
+            content.farming?.reduce(
+              (farmCountTotal, { farmAmount }) =>
+                (farmCountTotal += Number(farmAmount)),
+              0,
+            ) | 0,
         },
     participate: {
       liked: engage.some(({ type }) => type === EngagementType.Like),
@@ -169,6 +183,7 @@ export const toUnsignedContentPayloadItem = (
       quoted: engage.some(({ type }) => type === EngagementType.Quote),
       recasted: engage.some(({ type }) => type === EngagementType.Recast),
       reported: engage?.some(({ type }) => type === EngagementType.Report),
+      farming: isUserFarming,
     },
 
     createdAt: isString(content.createdAt)
@@ -266,12 +281,14 @@ export const ContentSchemaFactory = (
   ContentSchema.pre('save', function (next) {
     this.revisionCount = this.revisionCount ? this.revisionCount + 1 : 1;
     if (!this.visibility) this.visibility = EntityVisibility.Publish;
+
     if (!this.engagements) {
       this.engagements = {
         like: { count: 0, refs: [] },
         comment: { count: 0, refs: [] },
         recast: { count: 0, refs: [] },
         quote: { count: 0, refs: [] },
+        farm: { count: 0, refs: [] },
       };
     }
 
@@ -280,7 +297,7 @@ export const ContentSchemaFactory = (
 
   ContentSchema.post('save', async function (doc, next) {
     await new revisionModel({
-      objectRef: { $ref: 'content', $id: Types.ObjectId(doc._id) },
+      objectRef: { $ref: 'content', $id: new Types.ObjectId(doc._id) },
       payload: doc,
     }).save();
 

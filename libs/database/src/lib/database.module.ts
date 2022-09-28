@@ -22,24 +22,25 @@
  */
 
 import {
-  CastcleBackofficeMongooseModule,
   CastcleBullModule,
   CastcleCacheModule,
   CastcleMongooseModule,
-  Environment,
 } from '@castcle-api/environments';
+import { Downloader } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
+import { JwtModule, JwtService } from '@nestjs/jwt';
+import {
+  AsyncModelFactory,
+  ModelDefinition,
+  MongooseModule,
+  getModelToken,
+} from '@nestjs/mongoose';
 import { QueueName } from './models';
 import { Repository } from './repositories';
 import {
-  AccountActivationSchema,
-  AccountAuthenIdSchema,
-  AccountDeviceSchema,
-  AccountReferralSchema,
   AccountSchemaFactory,
   AdsCampaignSchema,
   AdsPlacementSchema,
@@ -49,7 +50,6 @@ import {
   CommentSchemaFactory,
   ContentFarmingSchema,
   ContentSchemaFactory,
-  CredentialSchema,
   DefaultContentSchema,
   DsContentReachSchema,
   EngagementSchemaFactory,
@@ -73,9 +73,7 @@ import {
 import { FeedItemV2Schema } from './schemas/feed-item-v2.schema';
 import { AdsService } from './services/ads.service';
 import { AnalyticService } from './services/analytic.service';
-import { AuthenticationService } from './services/authentication.service';
 import { AuthenticationServiceV2 } from './services/authentication.service.v2';
-import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
 import { CommentServiceV2 } from './services/comment.service.v2';
 import { ContentService } from './services/content.service';
@@ -83,164 +81,95 @@ import { ContentServiceV2 } from './services/content.service.v2';
 import { DataService } from './services/data.service';
 import { HashtagService } from './services/hashtag.service';
 import { MetadataServiceV2 } from './services/metadata.service.v2';
-import { NotificationService } from './services/notification.service';
 import { NotificationServiceV2 } from './services/notification.service.v2';
 import { RankerService } from './services/ranker.service';
-import { SearchService } from './services/search.service';
 import { SearchServiceV2 } from './services/search.service.v2';
 import { SocialSyncService } from './services/social-sync.service';
 import { SocialSyncServiceV2 } from './services/social-sync.service.v2';
 import { SuggestionServiceV2 } from './services/suggestion.service.v2';
 import { TAccountService } from './services/taccount.service';
-import { UserService } from './services/user.service';
 import { UserServiceV2 } from './services/user.service.v2';
-import { UxEngagementService } from './services/uxengagement.service';
 import { WalletShortcutService } from './services/wallet-shortcut.service';
-
 import {
   createCastcleMeta,
   getRelationship,
   getSocialPrefix,
 } from './utils/common';
 
-export const MongooseForFeatures = (connectionName?: string) =>
-  MongooseModule.forFeature(
-    [
-      { name: 'AccountActivation', schema: AccountActivationSchema },
-      { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
-      { name: 'AccountDevice', schema: AccountDeviceSchema },
-      { name: 'AccountReferral', schema: AccountReferralSchema },
-      { name: 'AdsCampaign', schema: AdsCampaignSchema },
-      { name: 'AdsPlacement', schema: AdsPlacementSchema },
-      { name: 'Analytic', schema: AnalyticSchema },
-      { name: 'CAccount', schema: CAccountSchema },
-      { name: 'Campaign', schema: CampaignSchema },
-      { name: 'ContentFarming', schema: ContentFarmingSchema },
-      { name: 'DefaultContent', schema: DefaultContentSchema },
-      { name: 'DsContentReach', schema: DsContentReachSchema },
-      { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
-      { name: 'Hashtag', schema: HashtagSchema },
-      { name: 'Metadata', schema: MetadataSchema },
-      { name: 'Network', schema: NetworkSchema },
-      { name: 'Notification', schema: NotificationSchema },
-      { name: 'Otp', schema: OtpSchema },
-      { name: 'Queue', schema: QueueSchema },
-      { name: 'Reporting', schema: ReportingSchema },
-      { name: 'UxEngagement', schema: UxEngagementSchema },
-      { name: 'WalletShortcut', schema: WalletShortcutSchema },
-    ],
-    connectionName,
-  );
-
-export const MongooseAsyncFeatures = (connectionName?: string) =>
-  MongooseModule.forFeatureAsync(
-    [
-      { name: 'Credential', useFactory: () => CredentialSchema },
-      { name: 'FeedItem', useFactory: () => FeedItemSchema },
-      { name: 'FeedItemV2', useFactory: () => FeedItemV2Schema },
-      { name: 'Relationship', useFactory: () => RelationshipSchema },
-      { name: 'Revision', useFactory: () => RevisionSchema },
-      { name: 'SocialSync', useFactory: () => SocialSyncSchema },
-      { name: 'Transaction', useFactory: () => TransactionSchema },
-      {
-        name: 'Comment',
-        useFactory: CommentSchemaFactory,
-        inject: [getModelToken('Revision')],
-      },
-      {
-        name: 'Content',
-        useFactory: ContentSchemaFactory,
-        inject: [
-          getModelToken('Revision'),
-          getModelToken('FeedItemV2'),
-          getModelToken('User'),
-          getModelToken('Relationship'),
-        ],
-      },
-      {
-        name: 'Account',
-        useFactory: AccountSchemaFactory,
-        inject: [getModelToken('Credential'), getModelToken('User')],
-      },
-      {
-        name: 'User',
-        useFactory: UserSchemaFactory,
-        inject: [
-          getModelToken('Relationship'),
-          getModelToken('SocialSync'),
-          getModelToken('Transaction'),
-        ],
-      },
-      {
-        name: 'Engagement',
-        useFactory: EngagementSchemaFactory,
-        inject: [
-          getModelToken('Content'),
-          getModelToken('Comment'),
-          getModelToken('FeedItemV2'),
-        ],
-      },
-    ],
-    connectionName,
-  );
-
-const providers = [
-  AdsService,
-  AnalyticService,
-  AuthenticationService,
-  AuthenticationServiceV2,
-  CampaignService,
-  CommentService,
-  CommentServiceV2,
-  ContentService,
-  ContentServiceV2,
-  DataService,
-  HashtagService,
-  MetadataServiceV2,
-  NotificationService,
-  NotificationServiceV2,
-  RankerService,
-  Repository,
-  SearchService,
-  SearchServiceV2,
-  SocialSyncService,
-  SocialSyncServiceV2,
-  SuggestionServiceV2,
-  TAccountService,
-  UserService,
-  UserServiceV2,
-  UxEngagementService,
-  WalletShortcutService,
+const modelDefinitions: ModelDefinition[] = [
+  { name: 'AdsCampaign', schema: AdsCampaignSchema },
+  { name: 'AdsPlacement', schema: AdsPlacementSchema },
+  { name: 'Analytic', schema: AnalyticSchema },
+  { name: 'cAccount', schema: CAccountSchema },
+  { name: 'Campaign', schema: CampaignSchema },
+  { name: 'ContentFarming', schema: ContentFarmingSchema },
+  { name: 'DefaultContent', schema: DefaultContentSchema },
+  { name: 'DsContentReach', schema: DsContentReachSchema },
+  { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
+  { name: 'Hashtag', schema: HashtagSchema },
+  { name: 'Metadata', schema: MetadataSchema },
+  { name: 'Network', schema: NetworkSchema },
+  { name: 'Notification', schema: NotificationSchema },
+  { name: 'Otp', schema: OtpSchema },
+  { name: 'Queue', schema: QueueSchema },
+  { name: 'Reporting', schema: ReportingSchema },
+  { name: 'UxEngagement', schema: UxEngagementSchema },
+  { name: 'WalletShortcut', schema: WalletShortcutSchema },
 ];
 
-const exportProviders = [
-  AdsService,
-  AnalyticService,
-  AuthenticationService,
-  AuthenticationServiceV2,
-  CampaignService,
-  CommentService,
-  CommentServiceV2,
-  ContentService,
-  ContentServiceV2,
-  DataService,
-  HashtagService,
-  MetadataServiceV2,
-  NotificationService,
-  NotificationServiceV2,
-  RankerService,
-  Repository,
-  SearchService,
-  SearchServiceV2,
-  SocialSyncService,
-  SocialSyncServiceV2,
-  SuggestionServiceV2,
-  TAccountService,
-  UserService,
-  UserServiceV2,
-  UxEngagementService,
-  WalletShortcutService,
+const asyncModelDefinitions: AsyncModelFactory[] = [
+  { name: 'FeedItem', useFactory: () => FeedItemSchema },
+  { name: 'FeedItemV2', useFactory: () => FeedItemV2Schema },
+  { name: 'Relationship', useFactory: () => RelationshipSchema },
+  { name: 'Revision', useFactory: () => RevisionSchema },
+  { name: 'SocialSync', useFactory: () => SocialSyncSchema },
+  { name: 'Transaction', useFactory: () => TransactionSchema },
+  {
+    name: 'Comment',
+    useFactory: CommentSchemaFactory,
+    inject: [getModelToken('Revision')],
+  },
+  {
+    name: 'Content',
+    useFactory: ContentSchemaFactory,
+    inject: [
+      getModelToken('Revision'),
+      getModelToken('FeedItemV2'),
+      getModelToken('User'),
+      getModelToken('Relationship'),
+    ],
+  },
+  {
+    name: 'Account',
+    useFactory: AccountSchemaFactory,
+    imports: [JwtModule],
+    inject: [JwtService],
+  },
+  {
+    name: 'User',
+    useFactory: UserSchemaFactory,
+    inject: [
+      getModelToken('Relationship'),
+      getModelToken('SocialSync'),
+      getModelToken('Transaction'),
+    ],
+  },
+  {
+    name: 'Engagement',
+    useFactory: EngagementSchemaFactory,
+    inject: [
+      getModelToken('Content'),
+      getModelToken('Comment'),
+      getModelToken('FeedItemV2'),
+    ],
+  },
 ];
+
+export const MongooseForFeatures = () =>
+  MongooseModule.forFeature(modelDefinitions);
+
+export const MongooseAsyncFeatures = () =>
+  MongooseModule.forFeatureAsync(asyncModelDefinitions);
 
 @Module({
   imports: [
@@ -248,54 +177,75 @@ const exportProviders = [
     CastcleCacheModule,
     CastcleMongooseModule,
     BullModule.registerQueue(
-      { name: QueueName.CAMPAIGN },
       { name: QueueName.CONTENT },
+      { name: QueueName.NEW_TRANSACTION },
       { name: QueueName.NOTIFICATION },
       { name: QueueName.REPORTING },
       { name: QueueName.USER },
+      { name: QueueName.VERIFY_EMAIL },
     ),
     HttpModule,
+    JwtModule,
     MongooseForFeatures(),
     MongooseAsyncFeatures(),
     UtilsClientsModule,
   ],
-  providers,
-  exports: exportProviders,
+  providers: [
+    AdsService,
+    AnalyticService,
+    AuthenticationServiceV2,
+    CommentService,
+    CommentServiceV2,
+    ContentService,
+    ContentServiceV2,
+    DataService,
+    Downloader,
+    HashtagService,
+    MetadataServiceV2,
+    NotificationServiceV2,
+    RankerService,
+    Repository,
+    SearchServiceV2,
+    SocialSyncService,
+    SocialSyncServiceV2,
+    SuggestionServiceV2,
+    TAccountService,
+    UserServiceV2,
+    WalletShortcutService,
+  ],
+  exports: [
+    AdsService,
+    AnalyticService,
+    AuthenticationServiceV2,
+    BullModule,
+    CommentService,
+    CommentServiceV2,
+    ContentService,
+    ContentServiceV2,
+    DataService,
+    JwtModule,
+    HashtagService,
+    MetadataServiceV2,
+    MongooseModule,
+    NotificationServiceV2,
+    RankerService,
+    Repository,
+    SearchServiceV2,
+    SocialSyncService,
+    SocialSyncServiceV2,
+    SuggestionServiceV2,
+    TAccountService,
+    UserServiceV2,
+    UtilsClientsModule,
+    WalletShortcutService,
+  ],
 })
 export class DatabaseModule {}
-
-@Module({
-  imports: [
-    CastcleBullModule,
-    CastcleCacheModule,
-    CastcleBackofficeMongooseModule,
-    BullModule.registerQueue(
-      { name: QueueName.CAMPAIGN },
-      { name: QueueName.CONTENT },
-      { name: QueueName.NOTIFICATION },
-      { name: QueueName.REPORTING },
-      { name: QueueName.USER },
-    ),
-    HttpModule,
-    MongooseForFeatures(Environment.DB_DATABASE_NAME),
-    MongooseAsyncFeatures(Environment.DB_DATABASE_NAME),
-    UtilsClientsModule,
-  ],
-  providers,
-  exports: [
-    ...exportProviders,
-    MongooseForFeatures(Environment.DB_DATABASE_NAME),
-    MongooseAsyncFeatures(Environment.DB_DATABASE_NAME),
-  ],
-})
-export class BackofficeDatabaseModule {}
 
 export {
   AdsService,
   AnalyticService,
-  AuthenticationService,
   AuthenticationServiceV2,
-  CampaignService,
   CommentService,
   CommentServiceV2,
   ContentService,
@@ -306,18 +256,14 @@ export {
   getSocialPrefix,
   HashtagService,
   MetadataServiceV2,
-  NotificationService,
   NotificationServiceV2,
   RankerService,
   Repository,
-  SearchService,
   SearchServiceV2,
   SocialSyncService,
   SocialSyncServiceV2,
   SuggestionServiceV2,
   TAccountService,
-  UserService,
   UserServiceV2,
-  UxEngagementService,
   WalletShortcutService,
 };

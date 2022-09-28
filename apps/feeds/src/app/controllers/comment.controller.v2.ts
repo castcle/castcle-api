@@ -20,26 +20,28 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleLogger } from '@castcle-api/common';
 import {
   CommentServiceV2,
   ContentService,
+  GetCommentSourceParam,
+  GetContentParam,
   PaginationQuery,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
   CastcleAuth,
-  CastcleControllerV2,
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Get, Param, Query } from '@nestjs/common';
 import { isMongoId } from 'class-validator';
 
-@CastcleControllerV2({ path: 'contents' })
+@CastcleController({ path: 'v2/contents' })
 export class CommentControllerV2 {
-  private logger = new CastLogger(CommentControllerV2.name);
+  private logger = new CastcleLogger(CommentControllerV2.name);
   constructor(
     private commentService: CommentServiceV2,
     private contentService: ContentService,
@@ -53,12 +55,11 @@ export class CommentControllerV2 {
   @CastcleAuth(CacheKeyName.Comments)
   @Get(':contentId/comments')
   async getAllComment(
-    @Param('contentId') contentId: string,
+    @Param() { contentId }: GetContentParam,
     @Auth() authorizer: Authorizer,
     @Query() query: PaginationQuery,
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
-    this.validateId(contentId);
     const content = await this.contentService.getContentById(contentId);
     if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
     return this.commentService.getCommentsByContentId(
@@ -71,16 +72,14 @@ export class CommentControllerV2 {
   @CastcleAuth(CacheKeyName.Comments)
   @Get(':contentId/comments/:sourceCommentId/reply')
   async getAllReplyComment(
-    @Param('contentId') contentId: string,
-    @Param('sourceCommentId') commentId: string,
+    @Param() { contentId }: GetContentParam,
+    @Param() { sourceCommentId: commentId }: GetCommentSourceParam,
     @Auth() authorizer: Authorizer,
     @Query() query: PaginationQuery,
   ) {
     this.logger.log(
       `Start get all reply comment from content: ${contentId} and comment: ${commentId}`,
     );
-    this.validateId(contentId);
-    this.validateId(commentId);
     const content = await this.contentService.getContentById(contentId);
     if (!content) throw new CastcleException('CONTENT_NOT_FOUND');
     return this.commentService.getReplyCommentsByCommentId(
@@ -93,16 +92,14 @@ export class CommentControllerV2 {
   @CastcleAuth(CacheKeyName.Comments)
   @Get(':contentId/comments/:sourceCommentId')
   async getCommentLookup(
-    @Param('contentId') contentId: string,
-    @Param('sourceCommentId') commentId: string,
+    @Param() { contentId }: GetContentParam,
+    @Param() { sourceCommentId: commentId }: GetCommentSourceParam,
     @Auth() authorizer: Authorizer,
     @Query() query: PaginationQuery,
   ) {
     this.logger.log(
       `Start lookup comment from content: ${contentId} and comment: ${commentId}`,
     );
-    this.validateId(contentId);
-    this.validateId(commentId);
     const content = await this.contentService.getContentById(contentId);
     const commentResult = await this.commentService.getCommentById(
       authorizer.user,

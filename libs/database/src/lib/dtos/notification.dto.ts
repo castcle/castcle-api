@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { TransformStringToEnum } from '@castcle-api/common';
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { TransformStringToEnum } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Types } from 'mongoose';
@@ -67,6 +67,8 @@ export enum NotificationLandingPage {
   Cast = 'cast',
   Comment = 'comment',
   Follower = 'follower',
+  Profile = 'profile',
+  Ads = 'ads',
 }
 
 export enum SoundDeviceDefault {
@@ -155,6 +157,7 @@ export interface CreateNotification {
   type: NotificationType;
   sourceUserId?: Types.ObjectId;
   contentRef?: Types.ObjectId;
+  advertiseId?: Types.ObjectId;
   profileRef?: Types.ObjectId;
   commentRef?: Types.ObjectId;
   replyRef?: Types.ObjectId;

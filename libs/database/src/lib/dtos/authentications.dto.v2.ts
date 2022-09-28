@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { CastcleRegExp, RemoveLeadingZero } from '@castcle-api/utils/commons';
+import { RemoveLeadingZero } from '@castcle-api/common';
 import { Transform } from 'class-transformer';
 import {
   IsEmail,
@@ -30,9 +30,9 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  Matches,
 } from 'class-validator';
 import { AuthenticationProvider, OtpObjective } from '../models';
+import { CastcleId, PasswordPattern } from '../utils/validates';
 import { AcceptPlatform } from './common.dto';
 
 export class LoginWithEmailDto {
@@ -49,7 +49,7 @@ export class RegisterWithEmailDto {
   email: string;
 
   @IsString()
-  @Matches(CastcleRegExp.PASSWORD_PATTERN)
+  @PasswordPattern()
   password: string;
 
   @IsString()
@@ -58,6 +58,7 @@ export class RegisterWithEmailDto {
 
   @IsString()
   @IsNotEmpty()
+  @CastcleId()
   castcleId: string;
 
   @IsOptional()
@@ -91,7 +92,7 @@ export class RequestOtpForChangingPasswordDto {
   email: string;
 
   @IsString()
-  @Matches(CastcleRegExp.PASSWORD_PATTERN)
+  @PasswordPattern()
   password: string;
 }
 
@@ -166,7 +167,7 @@ export class ChangePasswordDto {
   email: string;
 
   @IsString()
-  @Matches(CastcleRegExp.PASSWORD_PATTERN)
+  @PasswordPattern()
   newPassword: string;
 }
 

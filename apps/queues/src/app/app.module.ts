@@ -21,48 +21,32 @@
  * or have any questions.
  */
 
-import {
-  CampaignService,
-  DatabaseModule,
-  MongooseAsyncFeatures,
-  MongooseForFeatures,
-  QueueName,
-} from '@castcle-api/database';
-import {
-  CastcleBullModule,
-  CastcleMongooseModule,
-} from '@castcle-api/environments';
-import { CastcleTracingModule } from '@castcle-api/tracing';
-import { BullModule } from '@nestjs/bull';
+import { CastcleTracingModule } from '@castcle-api/core';
+import { DatabaseModule } from '@castcle-api/database';
+import { CastcleBullModule } from '@castcle-api/environments';
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminScheduler } from './admin-action.scheduler';
-import { CampaignConsumer } from './campaign.consumer';
-import { CampaignScheduler } from './campaign.scheduler';
 import { ContentFarmingScheduler } from './content-farming.sheduler';
+import { ExternalWithdrawer } from './external-withdrawal/processor';
+import { ContentReachScheduler } from './schedulers/content-reach/scheduler';
+import { TransactionVerifier } from './transaction-verifier/processor';
 
 @Module({
   imports: [
     CastcleBullModule,
-    CastcleMongooseModule,
+    CastcleBullModule.registerQueue({ name: 'external-withdrawal' }),
     CastcleTracingModule.forRoot({ serviceName: 'queues' }),
     DatabaseModule,
-    BullModule.registerQueue(
-      { name: QueueName.CONTENT },
-      { name: QueueName.CAMPAIGN },
-      { name: QueueName.NOTIFICATION },
-    ),
-    MongooseAsyncFeatures(),
-    MongooseForFeatures(),
     ScheduleModule.forRoot(),
   ],
   controllers: [],
   providers: [
     AdminScheduler,
-    CampaignConsumer,
-    CampaignScheduler,
-    CampaignService,
+    ContentReachScheduler,
     ContentFarmingScheduler,
+    ExternalWithdrawer,
+    TransactionVerifier,
   ],
 })
 export class AppModule {}

@@ -21,8 +21,20 @@
  * or have any questions.
  */
 
-import { OwnerResponse } from '@castcle-api/database';
+import {
+  ContentServiceV2,
+  ContentType,
+  OwnerResponse,
+  PublicContentResponse,
+  Transaction,
+  TransactionStatus,
+  TransactionType,
+  User,
+  WalletType,
+} from '@castcle-api/database';
+import { getModelToken } from '@nestjs/mongoose';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { Model, Types } from 'mongoose';
 import * as supertest from 'supertest';
 
 export const app = (): NestFastifyApplication => global.__APP__;
@@ -49,7 +61,7 @@ export const registerUser = async (name = Date.now().toString()) => {
       Platform: 'CastcleOS',
     })
     .send({
-      castcleId: `${name}.castcle`,
+      castcleId: `@${name}_castcle`,
       displayName: name,
       email: `${name}@castcle.com`,
       password: 'n+4H&uME63gKv[=',
@@ -65,4 +77,44 @@ export const registerUser = async (name = Date.now().toString()) => {
     profile: OwnerResponse;
     pages: OwnerResponse[];
   };
+};
+
+export const createContent = async (userId: string) => {
+  const user: User = await app()
+    .get(getModelToken('User'))
+    .findById(userId)
+    .exec();
+
+  const { payload: contentPayload } = await app()
+    .get(ContentServiceV2)
+    .createContent(
+      {
+        type: ContentType.Short,
+        payload: {
+          message: `content ${Date.now().toString()}`,
+        },
+        castcleId: user.displayId,
+      },
+      user,
+    );
+
+  return contentPayload as PublicContentResponse;
+};
+
+export const topUp = async (userId: string, amount: number) => {
+  return app()
+    .get<Model<Transaction>>(getModelToken('Transaction'))
+    .create({
+      from: {
+        type: WalletType.EXTERNAL_DEPOSIT,
+        value: amount,
+      },
+      to: {
+        type: WalletType.PERSONAL,
+        value: amount,
+        user: new Types.ObjectId(userId),
+      },
+      status: TransactionStatus.VERIFIED,
+      type: TransactionType.DEPOSIT,
+    });
 };

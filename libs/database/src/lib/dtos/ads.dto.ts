@@ -24,16 +24,23 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEnum,
+  IsMongoId,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
-import { AdsBidType, AdsObjective, FilterInterval } from '../models';
+import {
+  AdsBidType,
+  AdsBoostType,
+  AdsObjective,
+  AdsPaymentMethod,
+  FilterInterval,
+} from '../models';
 import { AdsCampaign } from '../schemas';
 import { ContentPayloadItem } from './content.dto';
 import { PaginationQuery } from './pagination.dto';
-import { PageResponseDto } from './user.dto';
+import { PublicUserResponse } from './user.dto';
 
 export class AdsAuctionAggregateDto {
   campaign: AdsCampaign;
@@ -46,12 +53,11 @@ export class AdsRequestDto {
   @ApiProperty()
   campaignName: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @ApiProperty()
   campaignMessage: string;
 
-  @IsEnum([AdsObjective.Engagement, AdsObjective.Reach])
+  @IsEnum(AdsObjective)
   @IsNotEmpty()
   @ApiProperty()
   objective: AdsObjective;
@@ -91,43 +97,99 @@ export class AdsRequestDto {
   castcleId?: string;
 }
 
-export class AdsCampaignResponseDto {
-  'campaignName': string;
-  'campaignMessage': string;
-  'campaignCode': string;
-  'objective': string;
-  'dailyBudget': number;
-  'dailyBidType': AdsBidType;
-  'dailyBidValue': number;
-  'duration': number;
-  'adStatus': string;
-  'boostStatus': string;
-  'boostType': 'page' | 'content';
-  'payload': ContentPayloadItem | PageResponseDto;
-  'statistics': AdsCampaignStatisticResponse;
-  'engagement': any;
-  'createdAt': Date;
-  'updatedAt': Date;
+export class AdsResponse {
+  id: string;
+  campaignName: string;
+  campaignMessage?: string;
+  campaignCode: string;
+  objective: string;
+  dailyBudget: number;
+  dailyBidType: AdsBidType;
+  dailyBidValue: number;
+  duration: number;
+  adStatus: string;
+  boostStatus: string;
+  boostType: AdsBoostType;
+  payload: ContentPayloadItem | PublicUserResponse;
+  statistics: AdsCampaignStatisticResponse;
+  engagement: any;
+  createdAt: Date;
+  updatedAt: Date;
+  startAt?: Date;
+  endedAt?: Date;
 }
 
 export class AdsCampaignStatisticResponse {
-  'budgetSpent': number;
-  'dailySpent': number;
-  'impression': {
+  budgetSpent: number;
+  dailySpent: number;
+  impression: {
     organic: number;
     paid: number;
   };
-  'reach': {
+  reach: {
     organic: number;
     paid: number;
   };
-  'CPM': number;
+  CPM: number;
 }
+
 export class AdsQuery extends PaginationQuery {
+  @IsOptional()
+  @IsString()
+  timezone? = '+00:00';
+
   @IsOptional()
   @IsEnum(FilterInterval)
   filter?: FilterInterval;
-  @IsOptional()
+}
+
+export class GetAdsParams {
+  @IsNotEmpty()
+  @IsMongoId()
+  adsId: string;
+}
+
+export class AdsDto {
   @IsString()
-  timezone = '+00:00';
+  @IsNotEmpty()
+  campaignName: string;
+
+  @IsOptional()
+  campaignMessage: string;
+
+  @IsEnum(AdsObjective)
+  @IsNotEmpty()
+  objective: AdsObjective;
+
+  @IsNumber()
+  @IsNotEmpty()
+  dailyBudget: number;
+
+  @IsEnum(AdsBidType)
+  @IsNotEmpty()
+  dailyBidType: AdsBidType;
+
+  @IsNumber()
+  @IsOptional()
+  dailyBidValue?: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  duration: number;
+
+  @IsNotEmpty()
+  @IsEnum(AdsPaymentMethod)
+  paymentMethod: AdsPaymentMethod;
+}
+
+export class AdsCastDto extends AdsDto {
+  @IsNotEmpty()
+  @IsMongoId()
+  contentId: string;
+}
+
+export class AdsUserDto extends AdsDto {
+  @IsNotEmpty()
+  @IsString()
+  castcleId: string;
 }

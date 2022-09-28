@@ -21,12 +21,11 @@
  * or have any questions.
  */
 
+import { CastcleMongooseModule } from '@castcle-api/environments';
+import { CreatedUser, TestingModule } from '@castcle-api/testing';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   CommentService,
   MongooseAsyncFeatures,
@@ -34,21 +33,15 @@ import {
 } from '../database.module';
 import { EntityVisibility, SortDirection } from '../dtos';
 import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
-import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import { ContentType, QueueName } from '../models';
-import { Account, Comment, Content, Credential, User } from '../schemas';
-import { AuthenticationService } from './authentication.service';
+import { Comment, Content, User } from '../schemas';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
-import { UserService } from './user.service';
 
 describe('ContentService', () => {
-  let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: ContentService;
   let commentService: CommentService;
-  let userService: UserService;
-  let authService: AuthenticationService;
   let user: User;
   let author: Author;
   /**
@@ -104,27 +97,20 @@ describe('ContentService', () => {
       },
     },
   ];
-  let result: {
-    accountDocument: Account;
-    credentialDocument: Credential;
-  };
   let hashtagContent: Content;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    moduleRef = await Test.createTestingModule({
+    moduleRef = await TestingModule.createWithDb({
       imports: [
         CacheModule.register(),
-        MongooseModule.forRoot(mongod.getUri()),
+        CastcleMongooseModule,
         MongooseAsyncFeatures(),
         MongooseForFeatures(),
       ],
       providers: [
-        AuthenticationService,
         ContentService,
         CommentService,
         HashtagService,
-        UserService,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -134,28 +120,12 @@ describe('ContentService', () => {
           useValue: { add: jest.fn() },
         },
       ],
-    }).compile();
+    });
 
     service = moduleRef.get<ContentService>(ContentService);
     commentService = moduleRef.get(CommentService);
-    userService = moduleRef.get<UserService>(UserService);
-    authService = moduleRef.get<AuthenticationService>(AuthenticationService);
-    result = await authService.createAccount({
-      deviceUUID: 'test12354',
-      languagesPreferences: ['th', 'th'],
-      header: {
-        platform: 'ios',
-      },
-      device: 'ifong',
-    });
-    //sign up to create actual account
-    await authService.signupByEmail(result.accountDocument, {
-      displayId: 'sp',
-      displayName: 'sp002',
-      email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567',
-    });
-    user = await userService.getUserFromCredential(result.credentialDocument);
+    const created = await moduleRef.createUser({ castcleId: 'castcle' });
+    user = created.user;
     author = new Author({
       id: user.id,
       type: 'page',
@@ -166,9 +136,8 @@ describe('ContentService', () => {
     });
   });
 
-  afterAll(async () => {
-    await moduleRef.close();
-    await mongod.stop();
+  afterAll(() => {
+    return moduleRef.close();
   });
 
   describe('#createContentFromUser', () => {
@@ -203,7 +172,7 @@ describe('ContentService', () => {
         payload: shortPayload,
         castcleId: user.displayId,
       });
-      const hashtags = await service.hashtagService.getAll();
+      const hashtags = await moduleRef.get(HashtagService).getAll();
       expect(hashtags.length).toEqual(2);
       expect(['cool', 'yo']).toContain(hashtags[0].tag);
       expect(['cool', 'yo']).toContain(hashtags[1].tag);
@@ -261,7 +230,7 @@ describe('ContentService', () => {
         payload: shortPayload,
         castcleId: user.displayId,
       });
-      const hashtags = await service.hashtagService.getAll();
+      const hashtags = await moduleRef.get(HashtagService).getAll();
       const sompopTag = hashtags.find((ht) => ht.tag === 'sompop');
       expect(sompopTag).toBeDefined();
       expect(sompopTag.score).toEqual(1);
@@ -287,7 +256,7 @@ describe('ContentService', () => {
     });
     it('should be able to decrease hashtag Score ', async () => {
       await service.deleteContentFromId(hashtagContent._id);
-      const hashtags = await service.hashtagService.getAll();
+      const hashtags = await moduleRef.get(HashtagService).getAll();
       expect(hashtags[0].score).toEqual(0);
       expect(hashtags[1].score).toEqual(0);
       expect(hashtags[2].score).toEqual(0);
@@ -339,7 +308,7 @@ describe('ContentService', () => {
         payload: shortPayload2,
         castcleId: user.displayId,
       });
-      await new service._feedItemModel({
+      await new (moduleRef.getModel('FeedItem'))({
         calledAt: new Date(),
         viewer: user.ownerAccount,
         content: content._id,
@@ -349,7 +318,8 @@ describe('ContentService', () => {
     it('should update total like Count after call', async () => {
       const likeResult = await service.likeContent(content, user);
       expect(likeResult).toBeDefined();
-      const engagement = await service._engagementModel
+      const engagement = await moduleRef
+        .getModel('Engagement')
         .findById(likeResult._id)
         .exec();
       //console.log('newly engagement', engagement);
@@ -366,7 +336,8 @@ describe('ContentService', () => {
       expect(postContent.engagements['like'].count).toEqual(1);
     });
     it('should showup in feedItem', async () => {
-      const feedItems = await service._feedItemModel
+      const feedItems = await moduleRef
+        .getModel('FeedItem')
         .find({
           content: content._id,
         })
@@ -390,7 +361,8 @@ describe('ContentService', () => {
         expect(postContent.engagements['like'].count).toEqual(0);
       });
       it('should unlike on feedItems too', async () => {
-        const feedItems = await service._feedItemModel
+        const feedItems = await moduleRef
+          .getModel('FeedItem')
           .find({
             content: content._id,
           })
@@ -404,23 +376,15 @@ describe('ContentService', () => {
   });
   describe('#recastContent/#quoteContent', () => {
     const users: User[] = [];
-
     let contentA: Content;
+
     beforeAll(async () => {
-      //create user  create content
       for (let i = 0; i < userInfo.length; i++) {
-        const createAccResult = await authService.createAccount(
-          userInfo[i].accountRequirement,
-        );
-        await authService.signupByEmail(
-          createAccResult.accountDocument,
-          userInfo[i].signupRequirement,
-        );
-        users[i] = await userService.getUserFromCredential(
-          createAccResult.credentialDocument,
-        );
+        const created = await moduleRef.createUser({
+          castcleId: userInfo[i].signupRequirement.displayId,
+        });
+        users[i] = await created.user;
       }
-      //userA create a content
       contentA = await service.createContentFromUser(users[0], {
         payload: {
           message: 'hello world',
@@ -484,18 +448,11 @@ describe('ContentService', () => {
     });
     describe('Comment Features', () => {
       let contentA: Content;
-      let userA: User;
       let rootComment: Comment;
       let replyComment: Comment;
       beforeAll(async () => {
-        //console.log('before comment features');
-        const account = await authService.getAccountFromEmail(
-          userInfo[0].signupRequirement.email,
-        );
-        userA = await authService._userModel
-          .findOne({ ownerAccount: account._id })
-          .exec();
-        contentA = await service.createContentFromUser(userA, {
+        const created = await moduleRef.createUser();
+        contentA = await service.createContentFromUser(created.user, {
           payload: {
             message: 'hi',
           } as ShortPayload,
@@ -510,7 +467,8 @@ describe('ContentService', () => {
             message: 'Hello #hello',
           });
           expect(contentA.engagements.comment.count).toEqual(0);
-          const findResult = await service._commentModel
+          const findResult = await moduleRef
+            .getModel('Comment')
             .find({ targetRef: { $id: contentA._id, $ref: 'content' } })
             .exec();
           expect(findResult.length).toEqual(1);
@@ -529,7 +487,7 @@ describe('ContentService', () => {
           expect(postContent.engagements.comment.count).toEqual(1);
         });
         it('should create hashtag', async () => {
-          const hashtags = await service.hashtagService.getAll();
+          const hashtags = await moduleRef.get(HashtagService).getAll();
           const helloTag = hashtags.find((ht) => ht.tag === 'hello');
           expect(helloTag.score).toEqual(1);
         });
@@ -537,14 +495,16 @@ describe('ContentService', () => {
       describe('#replyComment()', () => {
         it('should create a document in comment collection', async () => {
           ////console.log(createResult)
-          const postComment = await service._commentModel
+          const postComment = await moduleRef
+            .getModel('Comment')
             .findById(rootComment._id)
             .exec();
           expect(postComment.engagements.comment.count).toEqual(0);
           const replyResult = await service.replyComment(user, rootComment, {
             message: 'nice #baby',
           });
-          const findResult = await service._commentModel
+          const findResult = await moduleRef
+            .getModel('Comment')
             .find({ targetRef: { $id: rootComment._id, $ref: 'comment' } })
             .exec();
           expect(findResult.length).toEqual(1);
@@ -560,12 +520,13 @@ describe('ContentService', () => {
           replyComment = findResult[0];
         });
         it('should create hashtag ', async () => {
-          const hashtags = await service.hashtagService.getAll();
+          const hashtags = await moduleRef.get(HashtagService).getAll();
           const babyTag = hashtags.find((ht) => ht.tag === 'baby');
           expect(babyTag.score).toEqual(1);
         });
         it('should increase engagement.comment of comment', async () => {
-          const postComment = await service._commentModel
+          const postComment = await moduleRef
+            .getModel('Comment')
             .findById(rootComment._id)
             .exec();
           expect(postComment.engagements.comment.count).toEqual(1);
@@ -578,19 +539,21 @@ describe('ContentService', () => {
             message: 'cool',
           });
           expect(postComment.message).toEqual('cool');
-          const postRootComment = await service._commentModel
+          const postRootComment = await moduleRef
+            .getModel('Comment')
             .findById(rootComment._id)
             .exec();
           expect(postRootComment.message).toEqual('cool');
         });
         it('should not effect the comment counter', async () => {
-          const postComment = await service._commentModel
+          const postComment = await moduleRef
+            .getModel('Comment')
             .findById(rootComment._id)
             .exec();
           expect(postComment.engagements.comment.count).toEqual(1);
         });
         it('should update comment score', async () => {
-          const hashtags = await service.hashtagService.getAll();
+          const hashtags = await moduleRef.get(HashtagService).getAll();
           const helloTag = hashtags.find((ht) => ht.tag === 'hello');
           expect(helloTag.score).toEqual(0);
         });
@@ -598,14 +561,16 @@ describe('ContentService', () => {
       describe('#likeComment()', () => {
         it('should update engagement.like of comment', async () => {
           await service.likeComment(user, rootComment);
-          const postComment = await service._commentModel
+          const postComment = await moduleRef
+            .getModel('Comment')
             .findById(rootComment._id)
             .exec();
           expect(postComment.engagements.like.count).toEqual(1);
         });
         it('should not effected by double like', async () => {
           await service.likeComment(user, rootComment);
-          const postComment = await service._commentModel
+          const postComment = await moduleRef
+            .getModel('Comment')
             .findById(rootComment._id)
             .exec();
           expect(postComment.engagements.like.count).toEqual(1);
@@ -614,14 +579,16 @@ describe('ContentService', () => {
       describe('#unlikeComment()', () => {
         it('should update engagement.like of comment', async () => {
           await service.unlikeComment(user, rootComment);
-          const postComment = await service._commentModel
+          const postComment = await moduleRef
+            .getModel('Comment')
             .findById(rootComment._id)
             .exec();
           expect(postComment.engagements.like.count).toEqual(0);
         });
         it('should not effected by double like', async () => {
           await service.unlikeComment(user, rootComment);
-          const postComment = await service._commentModel
+          const postComment = await moduleRef
+            .getModel('Comment')
             .findById(rootComment._id)
             .exec();
           expect(postComment.engagements.like.count).toEqual(0);
@@ -629,12 +596,14 @@ describe('ContentService', () => {
       });
       describe('#deleteComment()', () => {
         it('should remove a reply from comment', async () => {
-          const preComment = await service._commentModel
+          const preComment = await moduleRef
+            .getModel('Comment')
             .findById(rootComment._id)
             .exec();
           expect(preComment.engagements.comment.count).toEqual(1);
           await service.deleteComment(replyComment);
-          const postReply = await service._commentModel
+          const postReply = await moduleRef
+            .getModel('Comment')
             .findById(replyComment._id)
             .exec();
           expect(postReply.visibility).toEqual(EntityVisibility.Deleted);
@@ -645,7 +614,8 @@ describe('ContentService', () => {
           expect(comments.meta.resultCount).toEqual(1);
           expect(comments.payload[0].reply.length).toEqual(0);
           //expect reply engagement = 0
-          const postComment = await service._commentModel
+          const postComment = await moduleRef
+            .getModel('Comment')
             .findById(rootComment._id)
             .exec();
           expect(postComment.engagements.comment.count).toEqual(0);
@@ -711,7 +681,7 @@ describe('ContentService', () => {
       await service.reportContent(user, content, reportingMessage);
 
       const reportedContent = await service.getContentFromId(content._id);
-      const engagements = await service._engagementModel.find({
+      const engagements = await moduleRef.getModel('Engagement').find({
         user: user._id,
         targetRef: { $ref: 'content', $id: content._id },
       });
@@ -726,14 +696,10 @@ describe('ContentService', () => {
 
   describe('#deleteContentFromOriginalAndAuthor()', () => {
     let contentA: Content;
-    let mockUsers: MockUserDetail[] = [];
-    beforeAll(async () => {
-      mockUsers = await generateMockUsers(2, 0, {
-        userService: userService,
-        accountService: authService,
-      });
+    let mockUsers: CreatedUser[] = [];
 
-      //userA create a content
+    beforeAll(async () => {
+      mockUsers = await moduleRef.createUsers(2);
       contentA = await service.createContentFromUser(mockUsers[0].user, {
         payload: {
           message: 'hello world',
@@ -797,14 +763,9 @@ describe('ContentService', () => {
 
   describe('#deleteContentFromOriginalAndAuthor', () => {
     let contentA: Content;
-    let mockUsers: MockUserDetail[] = [];
+    let mockUsers: CreatedUser[] = [];
     beforeAll(async () => {
-      mockUsers = await generateMockUsers(2, 0, {
-        userService: userService,
-        accountService: authService,
-      });
-
-      //userA create a content
+      mockUsers = await moduleRef.createUsers(2);
       contentA = await service.createContentFromUser(mockUsers[0].user, {
         payload: {
           message: 'hello world',
@@ -831,14 +792,10 @@ describe('ContentService', () => {
 
   describe('#getContentFromOriginalPost', () => {
     let contentA: Content;
-    let mockUsers: MockUserDetail[] = [];
-    beforeAll(async () => {
-      mockUsers = await generateMockUsers(5, 0, {
-        userService: userService,
-        accountService: authService,
-      });
+    let mockUsers: CreatedUser[] = [];
 
-      //userA create a content
+    beforeAll(async () => {
+      mockUsers = await moduleRef.createUsers(5);
       contentA = await service.createContentFromUser(mockUsers[0].user, {
         payload: {
           message: 'hello world',
@@ -917,14 +874,11 @@ describe('ContentService', () => {
 
   describe('#getEngagementFromUser', () => {
     let content: Content | Content[];
-    let mockUsers: MockUserDetail[];
+    let mockUsers: CreatedUser[];
     let engagement: any;
-    beforeAll(async () => {
-      mockUsers = await generateMockUsers(2, 0, {
-        userService: userService,
-        accountService: authService,
-      });
 
+    beforeAll(async () => {
+      mockUsers = await moduleRef.createUsers(2);
       content = await service.createContentFromUser(mockUsers[0].user, {
         payload: {
           message: 'hello world',
@@ -932,7 +886,7 @@ describe('ContentService', () => {
         type: ContentType.Short,
         castcleId: user.displayId,
       });
-      await new service._engagementModel({
+      await new (moduleRef.getModel('Engagement'))({
         type: 'like',
         user: mockUsers[1].user._id,
         account: mockUsers[1].user.ownerAccount,
@@ -942,16 +896,15 @@ describe('ContentService', () => {
         },
         visibility: EntityVisibility.Publish,
       }).save();
-    });
-
-    it('should get engagement with userId', async () => {
       engagement = await service.getEngagementFromUser(
         mockUsers[1].user._id,
         null,
         null,
         100,
       );
+    });
 
+    it('should get engagement with userId', async () => {
       expect(engagement.total).toEqual(1);
       expect(engagement.items).toHaveLength(1);
       expect(String(engagement.items[0].user)).toBe(
@@ -981,9 +934,11 @@ describe('ContentService', () => {
     });
 
     afterAll(() => {
-      service._userModel.deleteMany({});
-      service._contentModel.deleteMany({});
-      service._engagementModel.deleteMany({});
+      return Promise.all([
+        moduleRef.getModel('User').deleteMany({}),
+        moduleRef.getModel('Content').deleteMany({}),
+        moduleRef.getModel('Engagement').deleteMany({}),
+      ]);
     });
   });
 });

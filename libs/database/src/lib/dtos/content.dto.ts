@@ -20,9 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { TransformStringToEnum } from '@castcle-api/common';
 import { Configs } from '@castcle-api/environments';
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { TransformStringToEnum } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import {
@@ -53,14 +53,17 @@ export class Metrics {
   commentCount: number;
   quoteCount: number;
   recastCount: number;
+  farmCount: number;
 }
 
 export class Participates {
+  _id?: string;
   liked: boolean;
   commented: boolean;
   quoted: boolean;
   recasted: boolean;
   reported: boolean;
+  farming?: boolean;
 }
 
 export class Url {
@@ -163,19 +166,16 @@ export class Author {
 
   toIncludeUser = ({
     blocked,
-    blocking,
     followed,
   }: Partial<IncludeUser> = {}): IncludeUser => ({
     ...this,
     blocked,
-    blocking,
     followed,
   });
 }
 
 export class IncludeUser extends Author {
   blocked?: boolean;
-  blocking?: boolean;
   followed?: boolean;
 }
 

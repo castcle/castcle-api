@@ -21,9 +21,9 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { SocialProvider, SocialSyncService } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -33,7 +33,7 @@ import { Youtube } from '../models';
 @Injectable()
 export class YoutubeSubscriptionsService {
   private readonly HUB_URL = 'http://pubsubhubbub.appspot.com';
-  private readonly logger = new CastLogger(YoutubeSubscriptionsService.name);
+  private readonly logger = new CastcleLogger(YoutubeSubscriptionsService.name);
 
   constructor(
     private readonly httpService: HttpService,

@@ -23,7 +23,7 @@
 import {
   TransformStringToEnum,
   TransformStringToKeyword,
-} from '@castcle-api/utils/commons';
+} from '@castcle-api/common';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { KeywordType, SearchType } from '../models';
 import { PaginationQuery } from './pagination.dto';
@@ -40,4 +40,9 @@ export class GetSearchQuery extends PaginationQuery {
   @IsString()
   @TransformStringToEnum(SearchType)
   contentType?: SearchType;
+}
+
+export class GetRecentFeedQuery extends PaginationQuery {
+  @IsOptional()
+  nextToken?: string;
 }

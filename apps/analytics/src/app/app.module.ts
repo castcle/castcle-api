@@ -21,13 +21,13 @@
  * or have any questions.
  */
 
+import { CastcleHealthyModule, CastcleTracingModule } from '@castcle-api/core';
 import { DatabaseModule } from '@castcle-api/database';
-import { CastcleHealthyModule } from '@castcle-api/healthy';
-import { CastcleTracingModule } from '@castcle-api/tracing';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
-import { EngagementController } from './controllers/engagement.controller';
-import { LinksController } from './controllers/links.controller';
+import { EngagementController } from './engagements/engagement.controller';
+import { EngagementService } from './engagements/engagement.service';
+import { LinksController } from './links/links.controller';
 
 @Module({
   imports: [
@@ -37,6 +37,6 @@ import { LinksController } from './controllers/links.controller';
     UtilsInterceptorsModule,
   ],
   controllers: [EngagementController, LinksController],
-  providers: [],
+  providers: [EngagementService],
 })
 export class AppModule {}

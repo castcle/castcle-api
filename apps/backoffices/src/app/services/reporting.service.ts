@@ -21,10 +21,13 @@
  * or have any questions.
  */
 
+import { CastcleLogger, LocalizationLang } from '@castcle-api/common';
 import {
   Content,
   ContentServiceV2,
   EntityVisibility,
+  GetContentPayload,
+  Meta,
   NotificationServiceV2,
   NotificationSource,
   NotificationType,
@@ -33,13 +36,11 @@ import {
   ReportingType,
   Repository,
   ResponseDto,
-  User,
   UserType,
 } from '@castcle-api/database';
-import { Configs } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { Cache } from 'cache-manager';
 import { DateTime } from 'luxon';
 import { Types } from 'mongoose';
 import { pipelineOfGetReporting } from '../aggregations';
@@ -53,23 +54,56 @@ import { Staff } from '../schemas/staff.schema';
 
 @Injectable()
 export class ReportingService {
-  private logger = new CastLogger(ReportingService.name);
+  private logger = new CastcleLogger(ReportingService.name);
   constructor(
     private repository: Repository,
     private notificationService: NotificationServiceV2,
     private contentService: ContentServiceV2,
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
   ) {}
 
+  private async reduceFollows(userId: string, increase?: number) {
+    const follower = await this.repository.findRelationships({
+      followedUser: userId as any,
+      following: true,
+    });
+
+    const followed = await this.repository.findRelationships({
+      userId: userId as any,
+      followedUser: follower.map(({ user }) => user),
+      following: true,
+    });
+
+    await Promise.all([
+      this.repository.updateUsers(
+        {
+          _id: follower.map(({ user }) => user as any),
+          visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+        },
+        { $inc: { followedCount: increase } },
+      ),
+      this.repository.updateUsers(
+        {
+          _id: followed.map(({ followedUser }) => followedUser as any),
+          visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+        },
+        { $inc: { followerCount: increase } },
+      ),
+    ]);
+  }
+
   private checkingStatusActive(status: ReportingStatus) {
-    switch (status) {
-      case ReportingStatus.REVIEWING:
-        return ReportingStatus.DONE;
-
-      case ReportingStatus.APPEAL:
-        return ReportingStatus.CLOSED;
-
-      default:
-        return;
+    if (status === ReportingStatus.REVIEWING) {
+      return ReportingStatus.DONE;
+    } else if (
+      status === ReportingStatus.DONE ||
+      status === ReportingStatus.APPEAL ||
+      status === ReportingStatus.NOT_APPEAL
+    ) {
+      return ReportingStatus.CLOSED;
+    } else {
+      return;
     }
   }
 
@@ -81,6 +115,7 @@ export class ReportingService {
     const reportUserIds = reportedBy.map(({ user }) => user);
     const payloadIds = reportedBy.map(({ payload }) => payload._id);
 
+    console.log(reportedBy, payloadIds);
     const users = await this.repository.findUsers({
       _id: [...userIds, ...reportUserIds, ...payloadIds],
       visibility: [
@@ -89,24 +124,27 @@ export class ReportingService {
         EntityVisibility.Deleted,
       ],
     });
+
+    const contents = await this.repository.aggregationContentsV2({
+      _id: [...payloadIds],
+      maxResults: 999,
+      visibility: [
+        EntityVisibility.Publish,
+        EntityVisibility.Illegal,
+        EntityVisibility.Deleted,
+      ],
+    });
+
     return Promise.all(
       reportings.map(async (reporting) => {
-        const content =
-          reporting.type === ReportingType.CONTENT
-            ? await this.repository.findContent({
-                _id: reporting.id,
-                visibility: [
-                  EntityVisibility.Illegal,
-                  EntityVisibility.Publish,
-                  EntityVisibility.Deleted,
-                ],
-              })
-            : undefined;
+        const content = contents.find(
+          (content) => String(content._id) === String(reporting.payloadId),
+        );
 
-        const user = users?.find((user) => user.id === String(reporting.user));
+        const user = users.find((user) => user.id === String(reporting.user));
 
         return {
-          id: reporting.id,
+          id: reporting.payloadId,
           status: reporting.status,
           type: reporting.type,
           user: {
@@ -115,35 +153,39 @@ export class ReportingService {
           },
           content: content
             ? {
-                ...this.contentService.toCastPayload({ content }),
+                ...this.contentService.toContentPublishPayload(content),
                 visibility: content?.visibility,
               }
             : undefined,
-          reportBy: reporting.reportBy.map((id) => {
+          reportBy: reporting.reportBy.map((reportByUserId) => {
             const payloadReportBy = reportedBy.find(
-              ({ type, user }) =>
-                type === reporting.type && String(user) === String(id),
+              ({ user, payload }) =>
+                String(payload._id) === String(reporting.payloadId) &&
+                String(user) === String(reportByUserId),
             );
 
-            const reportUser = users?.find(
-              (user) => user.id === String(payloadReportBy?.payload?._id),
+            const reportedUser = users.find(
+              (reportUser) =>
+                reportUser.id === String(payloadReportBy?.payload?._id),
             );
 
-            const reportByUser = users?.find(
-              (user) => user.id === String(payloadReportBy?.user),
+            const reportedByUser = users.find(
+              (reportUser) => reportUser.id === String(payloadReportBy?.user),
             );
 
             return {
               id: payloadReportBy?.id,
-              user: reportByUser?.toPublicResponse(),
+              user: reportedByUser?.toPublicResponse(),
               subject: payloadReportBy?.subject,
               message: payloadReportBy?.message,
               payload:
                 reporting.type === ReportingType.USER
-                  ? reportUser?.toPublicResponse()
-                  : this.contentService.toCastPayload({
-                      content: payloadReportBy?.payload as Content,
-                    }),
+                  ? reportedUser?.toPublicResponse()
+                  : payloadReportBy?.payload
+                  ? this.contentService.toContentOwnerPayload(
+                      payloadReportBy.payload as GetContentPayload,
+                    )
+                  : undefined,
               createdAt: payloadReportBy?.createdAt,
               updatedAt: payloadReportBy?.updatedAt,
             };
@@ -156,126 +198,136 @@ export class ReportingService {
   }
 
   async getReporting(query?: GetReportingQuery) {
-    this.logger.log(
-      `#pipelineOfGetReporting::${JSON.stringify(
-        pipelineOfGetReporting(query),
-      )}`,
-    );
+    const pipelines = pipelineOfGetReporting(query);
 
+    this.logger.log(`#pipelineOfGetReporting::${JSON.stringify(pipelines)}`);
     const [payloadReporting] = await this.repository.aggregateReporting(
-      pipelineOfGetReporting(query),
+      pipelines,
     );
-
-    if (!payloadReporting)
-      return {
-        payload: [],
-      };
 
     return ResponseDto.ok({
       payload: await this.toPayloadReportings(payloadReporting),
+      meta: Meta.fromDocuments(payloadReporting.reportings),
     });
   }
 
-  async updateNotIllegal(body: UpdateIllegal, staff: Staff) {
+  async updateIllegal(
+    body: UpdateIllegal,
+    staff: Staff,
+    action: ReportingIllegal,
+  ) {
     const query = {
-      payloadId: Types.ObjectId(body.id),
+      payloadId: new Types.ObjectId(body.id),
       type: body.type as ReportingType,
-      status: undefined,
+      status: [
+        ReportingStatus.REVIEWING,
+        ReportingStatus.ILLEGAL,
+        ReportingStatus.APPEAL,
+        ReportingStatus.NOT_APPEAL,
+        ReportingStatus.DONE,
+      ],
     };
 
     if (staff.role === StaffRole.EDITOR)
       query.status = [ReportingStatus.APPEAL, ReportingStatus.REVIEWING];
 
     const reportings = await this.repository.findReportings(query);
+
     if (!reportings.length) throw new CastcleException('REPORTING_NOT_FOUND');
 
-    await Promise.all(
-      reportings.map(async (reporting) => {
-        if (reporting.status === ReportingStatus.CLOSED) return;
-        reporting.status = ReportingStatus.CLOSED;
-        (reporting.actionBy ??= []).push({
-          firstName: staff.firstName,
-          lastName: staff.lastName,
-          email: staff.email,
-          action: ReportingIllegal.NOT_ILLEGAL,
-          status: ReportingStatus.CLOSED,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-        reporting.markModified('actionBy');
-        await reporting.save();
+    const targetReporting =
+      body.type === ReportingType.USER
+        ? await this.repository.findUser({
+            _id: new Types.ObjectId(body.id) as any,
+            visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+          })
+        : await this.repository.findContent({
+            _id: new Types.ObjectId(body.id) as any,
+            visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+          });
 
-        reporting.type === ReportingType.USER
-          ? await this.repository.updateUser(
-              {
-                _id: reporting.payload._id,
-                visibility: EntityVisibility.Illegal,
-              },
-              {
-                $set: { visibility: EntityVisibility.Publish },
-                $unset: { reportedStatus: 1, reportedSubject: 1 },
-              },
-            )
-          : await this.repository.updateContent(
-              {
-                _id: reporting.payload._id,
-                visibility: EntityVisibility.Illegal,
-              },
-              {
-                $set: { visibility: EntityVisibility.Publish },
-                $unset: { reportedStatus: 1, reportedSubject: 1 },
-              },
-            );
+    if (!targetReporting)
+      throw new CastcleException(
+        body.type === ReportingType.USER
+          ? 'USER_OR_PAGE_NOT_FOUND'
+          : 'CONTENT_NOT_FOUND',
+      );
 
-        const userOwner = await this.repository.findUser({
-          _id: reporting.user as any,
-          visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
-        });
+    const userOwner = await this.repository.findUser({
+      _id:
+        body.type === ReportingType.USER
+          ? targetReporting.id
+          : (targetReporting as Content).author.id,
+      visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
+    });
 
-        const accountOwner = await this.repository.findAccount({
-          _id: userOwner?.ownerAccount,
-        });
+    if (!userOwner) throw new CastcleException('USER_OR_PAGE_NOT_FOUND');
 
-        await this.notificationService.notifyToUser(
-          {
-            source:
-              userOwner.type === UserType.PEOPLE
-                ? NotificationSource.Profile
-                : NotificationSource.Page,
-            sourceUserId: undefined,
-            type: NotificationType.NotIllegal,
-            profileRef:
-              reporting.type === ReportingType.USER
-                ? reporting.payload._id
-                : undefined,
-            contentRef:
-              reporting.type === ReportingType.CONTENT
-                ? reporting.payload._id
-                : undefined,
-            account: userOwner.ownerAccount,
-            read: false,
-          },
-          userOwner,
-          accountOwner?.preferences?.languages[0] ?? Configs.DefaultLanguage,
+    const accountOwner = await this.repository.findAccount({
+      _id: userOwner?.ownerAccount,
+    });
+
+    if (!accountOwner) throw new CastcleException('REQUEST_URL_NOT_FOUND');
+
+    if (action === ReportingIllegal.ILLEGAL) {
+      targetReporting.visibility =
+        targetReporting.visibility === EntityVisibility.Publish
+          ? EntityVisibility.Illegal
+          : EntityVisibility.Deleted;
+
+      if (targetReporting.reportedStatus === ReportingStatus.ILLEGAL)
+        targetReporting.reportedStatus = ReportingStatus.CLOSED;
+
+      if (!targetReporting.reportedStatus)
+        targetReporting.reportedStatus = ReportingStatus.ILLEGAL;
+
+      targetReporting.reportedSubject = body.subjectByAdmin;
+      if (targetReporting.visibility === EntityVisibility.Illegal) {
+        if (body.type === ReportingType.CONTENT) {
+          --userOwner.casts;
+          await this.repository.updateCastByReCastORQuote(
+            body.id,
+            EntityVisibility.Illegal,
+            -1,
+          );
+        } else {
+          await this.reduceFollows(targetReporting.id, -1);
+        }
+      } else {
+        await this.repository.deleteAllContent(targetReporting.id);
+        if (body.type === ReportingType.USER)
+          await this.repository.deleteUser(targetReporting.id);
+      }
+    } else {
+      targetReporting.visibility = EntityVisibility.Publish;
+      const unsetFields = {
+        reportedStatus: 1,
+        reportedSubject: 1,
+      };
+      if (body.type === ReportingType.CONTENT) {
+        userOwner.casts++;
+        await this.repository.updateContent(
+          { _id: targetReporting._id, visibility: EntityVisibility.Illegal },
+          { $unset: unsetFields },
         );
-      }),
-    );
-  }
+        await this.repository.updateCastByReCastORQuote(
+          body.id,
+          EntityVisibility.Publish,
+          1,
+        );
+      } else {
+        await this.repository.updateUser(
+          { _id: targetReporting._id, visibility: EntityVisibility.Illegal },
+          { $unset: unsetFields },
+        );
+        await this.reduceFollows(targetReporting.id, 1);
+      }
+    }
 
-  async updateIllegal(body: UpdateIllegal, staff: Staff) {
-    const query = {
-      payloadId: Types.ObjectId(body.id),
-      type: body.type as ReportingType,
-      status: undefined,
-    };
-
-    if (staff.role === StaffRole.EDITOR)
-      query.status = [ReportingStatus.APPEAL, ReportingStatus.REVIEWING];
-
-    const reportings = await this.repository.findReportings(query);
-    if (!reportings.length) throw new CastcleException('REPORTING_NOT_FOUND');
-
-    await Promise.all(
+    await Promise.all([
+      this.cacheManager.reset(),
+      userOwner.save(),
+      targetReporting.save(),
       reportings.map(async (reporting) => {
         const status = this.checkingStatusActive(reporting.status);
         if (!status && reporting.status === ReportingStatus.CLOSED) return;
@@ -284,89 +336,42 @@ export class ReportingService {
           firstName: staff.firstName,
           lastName: staff.lastName,
           email: staff.email,
-          action: ReportingIllegal.ILLEGAL,
+          action: action,
           status: status,
+          message: body.messageByAdmin,
           subject: body.subjectByAdmin,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
         reporting.markModified('actionBy');
         await reporting.save();
-
-        const contentReporting =
-          reporting.type === ReportingType.USER
-            ? await this.repository.findUser({
-                _id: reporting.payload._id,
-                visibility: [
-                  EntityVisibility.Illegal,
-                  EntityVisibility.Publish,
-                ],
-              })
-            : await this.repository.findContent({
-                _id: reporting.payload._id,
-                visibility: [
-                  EntityVisibility.Illegal,
-                  EntityVisibility.Publish,
-                ],
-              });
-
-        contentReporting.visibility =
-          contentReporting.visibility === EntityVisibility.Publish
-            ? EntityVisibility.Illegal
-            : EntityVisibility.Deleted;
-
-        if (contentReporting.reportedStatus === ReportingStatus.ILLEGAL)
-          contentReporting.reportedStatus = ReportingStatus.CLOSED;
-
-        if (!contentReporting.reportedStatus)
-          contentReporting.reportedStatus = ReportingStatus.ILLEGAL;
-
-        contentReporting.reportedSubject = body.subjectByAdmin;
-
-        await contentReporting.save();
-
-        const userOwner =
-          reporting.type === ReportingType.USER
-            ? (contentReporting as User)
-            : await this.repository.findUser({
-                _id: reporting.user as any,
-                visibility: [
-                  EntityVisibility.Publish,
-                  EntityVisibility.Illegal,
-                ],
-              });
-
-        const accountOwner = await this.repository.findAccount({
-          _id: userOwner?.ownerAccount,
-        });
-
-        await this.notificationService.notifyToUser(
-          {
-            source:
-              userOwner.type === UserType.PEOPLE
-                ? NotificationSource.Profile
-                : NotificationSource.Page,
-            sourceUserId: undefined,
-            type:
-              status === ReportingStatus.DONE
-                ? NotificationType.IllegalDone
-                : NotificationType.IllegalClosed,
-            profileRef:
-              reporting.type === ReportingType.USER
-                ? reporting.payload._id
-                : undefined,
-            contentRef:
-              reporting.type === ReportingType.CONTENT
-                ? reporting.payload._id
-                : undefined,
-            account: userOwner.ownerAccount,
-            read: false,
-          },
-          userOwner,
-          accountOwner?.preferences?.languages[0] ?? Configs.DefaultLanguage,
-        );
       }),
-    );
+      this.notificationService.notifyToUser(
+        {
+          source:
+            userOwner.type === UserType.PEOPLE
+              ? NotificationSource.Profile
+              : NotificationSource.Page,
+          sourceUserId: undefined,
+          type:
+            action === ReportingIllegal.ILLEGAL
+              ? targetReporting.visibility === EntityVisibility.Illegal
+                ? NotificationType.IllegalDone
+                : NotificationType.IllegalClosed
+              : NotificationType.NotIllegal,
+          profileRef:
+            body.type === ReportingType.USER ? targetReporting._id : undefined,
+          contentRef:
+            body.type === ReportingType.CONTENT
+              ? targetReporting._id
+              : undefined,
+          account: userOwner.ownerAccount,
+          read: false,
+        },
+        userOwner,
+        accountOwner?.preferences?.languages[0] || LocalizationLang.English,
+      ),
+    ]);
   }
 
   async updateAutoDelete(staff: Staff) {
@@ -396,9 +401,18 @@ export class ReportingService {
       }),
     ]);
 
-    if (!(users.length || contents.length)) return;
+    if (!(users.length && contents.length)) return;
+
+    const checkUnique = (inputList: any[]) =>
+      [...new Set(inputList.map((item) => JSON.stringify(item)))].map((item) =>
+        JSON.parse(item),
+      );
+
+    const uniqueUsers = checkUnique(users);
+    const uniqueContents = checkUnique(contents);
 
     await Promise.all([
+      this.cacheManager.reset(),
       this.repository.updateReportings(
         {
           payloadId: [
@@ -423,9 +437,11 @@ export class ReportingService {
           },
         },
       ),
-      users.map(async (user) => {
+      uniqueUsers.map(async (user) => {
         user.visibility = EntityVisibility.Deleted;
         await user.save();
+
+        await this.repository.deleteUser(user.id);
 
         const accountOwner = await this.repository.findAccount({
           _id: user?.ownerAccount,
@@ -444,12 +460,14 @@ export class ReportingService {
             read: false,
           },
           user,
-          accountOwner?.preferences?.languages[0] ?? Configs.DefaultLanguage,
+          accountOwner?.preferences?.languages[0] || LocalizationLang.English,
         );
       }),
-      contents.map(async (content) => {
+      uniqueContents.map(async (content) => {
         content.visibility = EntityVisibility.Deleted;
         await content.save();
+
+        await this.repository.deleteAllContent(content.id);
 
         const userOwner = await this.repository.findUser({
           _id: content.author.id,
@@ -472,7 +490,7 @@ export class ReportingService {
             read: false,
           },
           userOwner,
-          accountOwner?.preferences?.languages[0] ?? Configs.DefaultLanguage,
+          accountOwner?.preferences?.languages[0] || LocalizationLang.English,
         );
       }),
     ]);

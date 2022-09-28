@@ -21,17 +21,18 @@
  * or have any questions.
  */
 
+import { CastcleLocalization, CastcleLogger } from '@castcle-api/common';
 import { Configs, Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { CastcleImage } from '@castcle-api/utils/aws';
-import { CastcleDate, CastcleLocalization } from '@castcle-api/utils/commons';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
+import { Types } from 'mongoose';
 import { pipelineNotificationBadge } from '../aggregations';
 import {
   AndroidMessagePriority,
   CreateNotification,
+  EntityVisibility,
   NotificationLandingPage,
   NotificationPayloadDto,
   NotificationQuery,
@@ -41,21 +42,21 @@ import {
   PushNotificationPayload,
   SoundDeviceDefault,
 } from '../dtos';
-import { NotificationMessage, QueueName, UserType } from '../models';
+import { NotificationMessageV2, QueueName, UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Notification, User } from '../schemas';
 
 @Injectable()
 export class NotificationServiceV2 {
-  #logger = new CastLogger(NotificationServiceV2.name);
+  #logger = new CastcleLogger(NotificationServiceV2.name);
 
   constructor(
     @InjectQueue(QueueName.NOTIFICATION)
-    private notificationQueue: Queue<NotificationMessage>,
+    private notificationQueue: Queue<NotificationMessageV2>,
     private repository: Repository,
   ) {}
 
-  private checkNotify = (notificationData: CreateNotification) => {
+  checkNotify = (notificationData: Pick<CreateNotification, 'type'>) => {
     switch (notificationData.type) {
       case NotificationType.Like:
         return Environment.NOTIFY_LIKE == '1';
@@ -85,19 +86,39 @@ export class NotificationServiceV2 {
     if (
       (type === NotificationType.Like &&
         targetRef === NotificationRef.Content) ||
-      type === NotificationType.Recast ||
-      type === NotificationType.Quote
+      [
+        NotificationType.Farm,
+        NotificationType.Quote,
+        NotificationType.Recast,
+      ].some((ref) => ref === type)
     ) {
       return NotificationLandingPage.Cast;
     } else if (
       (type === NotificationType.Like &&
         targetRef === NotificationRef.Comment) ||
-      type === NotificationType.Comment ||
-      type === NotificationType.Reply
+      [NotificationType.Reply, NotificationType.Comment].some(
+        (ref) => ref === type,
+      )
     ) {
       return NotificationLandingPage.Comment;
     } else if (type === NotificationType.Follow) {
       return NotificationLandingPage.Follower;
+    } else if (
+      [
+        NotificationType.IllegalClosed,
+        NotificationType.IllegalDone,
+        NotificationType.NotIllegal,
+      ].some((ref) => ref === type)
+    ) {
+      if (targetRef === NotificationRef.Content)
+        return NotificationLandingPage.Cast;
+      return NotificationLandingPage.Profile;
+    } else if (
+      [NotificationType.AdsApprove, NotificationType.AdsDecline].some(
+        (ref) => ref === type,
+      )
+    ) {
+      return NotificationLandingPage.Ads;
     } else {
       return;
     }
@@ -194,12 +215,12 @@ export class NotificationServiceV2 {
     }
   };
 
-  private generateMessage = async (
+  generateMessage = async (
     notify: Notification,
     requestedBy: User,
     language: string,
   ) => {
-    const userSort = [];
+    const userSort: User[] = [];
 
     if (
       [
@@ -219,22 +240,24 @@ export class NotificationServiceV2 {
       const users = await this.repository.findUsers({
         _id: reverseUserIds,
       });
+      const emptyUser: Types.ObjectId[] = [];
 
       users.forEach((user) => {
         const index = reverseUserIds.indexOf(user._id);
         if (index > -1) {
           userSort[index] = user;
-          reverseUserIds.splice(index, 1);
+        } else {
+          emptyUser.push(user._id);
         }
       });
 
       this.#logger.log('Check user not exists.');
 
-      if (reverseUserIds.length) {
+      if (emptyUser.length) {
         await this.repository.updateNotification(
           { _id: notify._id },
           {
-            $pull: { sourceUserId: { $in: reverseUserIds } },
+            $pull: { sourceUserId: { $in: emptyUser } },
           },
         );
         this.#logger.log('Check user empty at notification.');
@@ -244,14 +267,21 @@ export class NotificationServiceV2 {
 
         if (notifyUserEmpty && !notifyUserEmpty?.sourceUserId?.length) {
           await notifyUserEmpty.remove();
-          return;
+          return {
+            message: '',
+            user: undefined,
+            haveUser: 0,
+          };
         }
       }
 
-      if (!userSort.length) return;
+      if (!userSort.length)
+        return {
+          message: '',
+          user: undefined,
+          haveUser: 0,
+        };
     }
-
-    if (!requestedBy) return;
 
     const displayNames = userSort.map((user) => user.displayName);
 
@@ -270,7 +300,7 @@ export class NotificationServiceV2 {
     };
   };
 
-  private prepareNotification = (
+  prepareNotification = (
     notify: Notification,
     account: Account,
     message: string,
@@ -279,9 +309,7 @@ export class NotificationServiceV2 {
     haveUsers?: number,
   ) => {
     return {
-      notification: {
-        body: message,
-      },
+      notification: { body: message },
       android: {
         priority: AndroidMessagePriority.HIGH,
         notification: {
@@ -296,16 +324,22 @@ export class NotificationServiceV2 {
         sound: SoundDeviceDefault.Default,
         'mutable-content': 1,
       },
-      payload: this.toNotificationPayload(
-        notify,
-        message,
-        this.checkNotificationTypePage(
-          notify.type,
-          notify.commentRef ? NotificationRef.Comment : NotificationRef.Content,
-        ),
-        user,
-        haveUsers,
-      ) as any,
+      payload: <PushNotificationPayload>(
+        this.toNotificationPayload(
+          notify,
+          message,
+          this.checkNotificationTypePage(
+            notify.type,
+            notify.commentRef
+              ? NotificationRef.Comment
+              : notify.contentRef
+              ? NotificationRef.Content
+              : undefined,
+          ),
+          user,
+          haveUsers,
+        )
+      ),
       firebaseTokens: account?.devices.map((item) => item.firebaseToken),
     };
   };
@@ -316,7 +350,7 @@ export class NotificationServiceV2 {
     landingPage: string,
     user?: User,
     haveUsers?: number,
-  ) => {
+  ): PushNotificationPayload => {
     return {
       message,
       landingPage,
@@ -329,12 +363,12 @@ export class NotificationServiceV2 {
       commentId: String(notify.commentRef),
       contentId: String(notify.contentRef),
       replyId: String(notify.replyRef),
-      advertiseId: String(notify.adsRef),
+      advertiseId: String(notify.advertiseId),
       profileId: String(notify.profileRef),
       systemId: String(notify.systemRef),
       createdAt: notify.createdAt.toISOString(),
       updatedAt: notify.updatedAt.toISOString(),
-    } as PushNotificationPayload;
+    };
   };
 
   private toNotificationResponse = (
@@ -360,7 +394,7 @@ export class NotificationServiceV2 {
       commentId: notify.commentRef,
       contentId: notify.contentRef,
       replyId: notify.replyRef,
-      advertiseId: notify.adsRef,
+      advertiseId: notify.advertiseId,
       profileId: notify.profileRef,
       systemId: notify.systemRef,
       createdAt: notify.createdAt,
@@ -382,7 +416,7 @@ export class NotificationServiceV2 {
         ...{ account: account._id },
       },
       {
-        sort: { createdAt: -1, updatedAt: -1 },
+        sort: { updatedAt: -1 },
         limit: maxResults,
       },
     );
@@ -441,6 +475,7 @@ export class NotificationServiceV2 {
         const userOwner = notify?.user
           ? await this.repository.findUser({
               _id: notify.user._id,
+              visibility: [EntityVisibility.Publish, EntityVisibility.Illegal],
             })
           : null;
 
@@ -450,18 +485,22 @@ export class NotificationServiceV2 {
           language,
         );
 
-        return this.toNotificationResponse(
-          notify,
-          message,
-          this.checkNotificationTypePage(
-            notify.type,
-            notify.commentRef
-              ? NotificationRef.Comment
-              : NotificationRef.Content,
-          ),
-          user,
-          haveUser,
-        );
+        if (message) {
+          return this.toNotificationResponse(
+            notify,
+            message,
+            this.checkNotificationTypePage(
+              notify.type,
+              notify.commentRef
+                ? NotificationRef.Comment
+                : notify.contentRef
+                ? NotificationRef.Content
+                : undefined,
+            ),
+            user,
+            haveUser,
+          );
+        }
       }),
     );
 
@@ -469,118 +508,14 @@ export class NotificationServiceV2 {
   };
 
   notifyToUser = async (
-    { sourceUserId, read, ...notificationData }: CreateNotification,
+    createNotification: CreateNotification,
     requestedBy: User,
     language: string,
   ) => {
-    this.#logger.log('Check user action notify.');
-    if (String(sourceUserId) === String(requestedBy._id)) return;
-
-    this.#logger.log('Check configuration notify to user.');
-    if (!this.checkNotify(notificationData)) return;
-
-    const filters = {
-      ...notificationData,
-      ...{
-        contentRef: notificationData.contentRef ?? { $exists: false },
-        commentRef: notificationData.commentRef ?? { $exists: false },
-        replyRef: notificationData.replyRef ?? { $exists: false },
-        profileRef: notificationData.profileRef ?? { $exists: false },
-      },
-    };
-
-    this.#logger.log(`Check interval time follow user.`);
-
-    if (notificationData.type === NotificationType.Follow) {
-      const haveNotify = await this.repository.findNotification(filters, {
-        sort: { createdAt: -1 },
-      });
-
-      const intervalFollow = CastcleDate.checkIntervalNotify(
-        haveNotify?.createdAt,
-        Number(Environment.NOTIFY_FOLLOW_INTERVAL),
-      );
-      if (!intervalFollow) return;
-    }
-
-    if (
-      [
-        NotificationType.Tag,
-        NotificationType.Follow,
-        NotificationType.IllegalDone,
-        NotificationType.IllegalClosed,
-        NotificationType.NotIllegal,
-      ].some((type) => type === notificationData.type)
-    ) {
-      await this.repository.createNotification({
-        ...notificationData,
-        ...{ user: requestedBy._id },
-        read,
-        sourceUserId,
-      });
-    } else {
-      const updateNotify = await this.repository.updateNotification(
-        filters,
-        {
-          $set: { read, user: requestedBy._id },
-          $setOnInsert: notificationData,
-          $addToSet: { sourceUserId },
-        },
-        {
-          upsert: true,
-        },
-      );
-
-      if (!updateNotify.nModified && !updateNotify.upserted) return;
-    }
-
-    this.#logger.log('Insert data into notification is done.');
-
-    const notify = await this.repository.findNotification(filters, {
-      sort: { createdAt: -1 },
-    });
-
-    this.#logger.log('Get devices by account.');
-
-    const account = await this.repository.findAccount({
-      _id: notificationData.account._id,
-    });
-
-    if (!account?.devices) return;
-
-    this.#logger.log('Generate notification message.');
-
-    const { message, user, haveUser } = await this.generateMessage(
-      notify,
+    await this.notificationQueue.add({
+      createNotification,
       requestedBy,
       language,
-    );
-    this.#logger.log('Generate notification message is done.');
-
-    if (!message) return;
-
-    this.#logger.log('Send notification message.', JSON.stringify(message));
-
-    const badgeCounts = await this.repository.findNotificationCount({
-      user: requestedBy._id,
-      account: requestedBy.ownerAccount,
-      read: false,
     });
-
-    await this.notificationQueue.add(
-      this.prepareNotification(
-        notify,
-        account,
-        message,
-        badgeCounts,
-        user,
-        haveUser,
-      ),
-      {
-        removeOnComplete: true,
-      },
-    );
-
-    return notify;
   };
 }

@@ -30,7 +30,7 @@ import {
 } from '@castcle-api/database';
 import { TwilioChannel } from '@castcle-api/utils/clients';
 import { getModelToken } from '@nestjs/mongoose';
-import { app, registerUser, request } from '../utils.spec';
+import { app, registerUser, request, topUp } from '../utils.spec';
 
 export const testSendTransaction = () =>
   describe('wallets/:userId/send/confirm', () => {
@@ -91,8 +91,7 @@ export const testSendTransaction = () =>
               'transaction.chainId must be a string',
               'transaction.address should not be empty',
               'transaction.address must be a string',
-              'transaction.amount must be a positive number',
-              'transaction.amount must be a number conforming to the specified constraints',
+              'transaction.amount should be number string',
               'verification.email must be a non-empty object',
               'verification.email.email must be an email',
               'verification.email.otp must be a string',
@@ -295,11 +294,7 @@ export const testSendTransaction = () =>
           chainId: 'internal',
           visibility: EntityVisibility.Publish,
         }),
-        app().get(TAccountService).topUp({
-          type: WalletType.PERSONAL,
-          value: 1,
-          userId: user.profile.id,
-        }),
+        topUp(user.profile.id, 1),
       ]);
 
       await request()
@@ -350,11 +345,7 @@ export const testSendTransaction = () =>
           chainId: 'internal',
           visibility: EntityVisibility.Publish,
         }),
-        app().get(TAccountService).topUp({
-          type: WalletType.PERSONAL,
-          value: 1,
-          userId: user.profile.id,
-        }),
+        topUp(user.profile.id, 1),
       ]);
 
       await request()
@@ -429,11 +420,7 @@ export const testSendTransaction = () =>
           chainId: 'internal',
           visibility: EntityVisibility.Publish,
         }),
-        app().get(TAccountService).topUp({
-          type: WalletType.PERSONAL,
-          value: 1,
-          userId: user.profile.id,
-        }),
+        topUp(user.profile.id, 1),
       ]);
 
       await request()
@@ -467,7 +454,7 @@ export const testSendTransaction = () =>
         .expect(({ body }) => {
           expect(body.message).toBeUndefined();
         })
-        .expect(204);
+        .expect(201);
 
       await expect(
         app()
@@ -507,16 +494,13 @@ export const testSendTransaction = () =>
           ]),
         app().get(getModelToken('Network')).create({
           name: 'Castcle Mainnet',
-          type: NetworkType.MAINNET,
-          rpc: 'castcle.com',
+          type: NetworkType.EXTERNAL,
+          fee: '0.5',
           chainId: 'castcle',
+          tokenAddress: '0xCONTRACT_TOKEN_ADDRESS',
           visibility: EntityVisibility.Publish,
         }),
-        app().get(TAccountService).topUp({
-          type: WalletType.PERSONAL,
-          value: 1,
-          userId: user.profile.id,
-        }),
+        topUp(user.profile.id, 1),
       ]);
 
       await request()
@@ -549,8 +533,13 @@ export const testSendTransaction = () =>
         })
         .expect(({ body }) => {
           expect(body.message).toBeUndefined();
+          expect(body.network._id).toBeDefined();
+          expect(body.network.type).toEqual(NetworkType.EXTERNAL);
+          expect(body.amount.total).toEqual('1.00000000');
+          expect(body.amount.received).toEqual('0.50000000');
+          expect(body.amount.fee).toEqual('0.50000000');
         })
-        .expect(204);
+        .expect(201);
 
       await expect(
         app()

@@ -41,7 +41,9 @@ import {
   ],
   exports: [BullModule],
 })
-export class CastcleBullModule {}
+export class CastcleBullModule {
+  static registerQueue = BullModule.registerQueue;
+}
 
 @Module({
   imports: [
@@ -56,7 +58,7 @@ export class CastcleCacheModule {}
 @Module({
   imports: [
     MongooseModule.forRootAsync({
-      useFactory: () => getMongooseModuleOptions(),
+      useFactory: getMongooseModuleOptions,
     }),
   ],
   exports: [MongooseModule],
@@ -66,12 +68,11 @@ export class CastcleMongooseModule {}
 @Module({
   imports: [
     MongooseModule.forRootAsync({
-      useFactory: () => getMongooseBackofficeModuleOptions(),
-      connectionName: Environment.BACKOFFICE_DB_DATABASE_NAME,
+      useFactory: getMongooseBackofficeAppModuleOptions,
     }),
     MongooseModule.forRootAsync({
-      useFactory: () => getMongooseBackofficeAppModuleOptions(),
-      connectionName: Environment.DB_DATABASE_NAME,
+      useFactory: getMongooseBackofficeModuleOptions,
+      connectionName: Environment.BACKOFFICE_DB_DATABASE_NAME,
     }),
   ],
   exports: [MongooseModule],

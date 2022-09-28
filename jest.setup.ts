@@ -1,7 +1,6 @@
 jest.setTimeout(20_000);
 
 jest.mock('bull');
-jest.mock('dotenv', () => ({ config: () => true }));
 jest.mock('libs/environments/src/lib/factories', () => ({
   getBullModuleOptions: () => ({ redis: {} }),
   getCacheModuleOptions: () => ({ store: 'memory', ttl: 1000 }),
@@ -22,13 +21,20 @@ jest.mock('libs/environments/src/lib/factories', () => ({
   }),
 }));
 
-jest.mock('libs/logger/src/lib/logger', () => ({
-  CastLogger: jest.fn(() => ({
+jest.mock('libs/common/src/lib/logger', () => ({
+  CastcleLogger: jest.fn(() => ({
+    debug: jest.fn(),
     error: jest.fn(),
     log: jest.fn(),
     time: jest.fn(),
     timeEnd: jest.fn(),
     warn: jest.fn(),
+  })),
+}));
+
+jest.mock('libs/utils/clients/src/lib/ip-api/client', () => ({
+  IpAPI: jest.fn(() => ({
+    getGeolocation: jest.fn(),
   })),
 }));
 
@@ -44,4 +50,4 @@ jest.mock('nodemailer', () => ({
 
 jest.mock('twitter-api-v2');
 
-global.process.env = { NODE_ENV: global.process.env.NODE_ENV };
+process.env = { NODE_ENV: global.process.env.NODE_ENV };

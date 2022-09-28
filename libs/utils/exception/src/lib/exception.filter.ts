@@ -21,15 +21,15 @@
  * or have any questions.
  */
 
+import { CastcleLogger } from '@castcle-api/common';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
 import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { CastcleException } from './exception';
 
 @Catch(CastcleException)
 export class CastcleExceptionFilter implements ExceptionFilter {
-  private logger = new CastLogger(CastcleExceptionFilter.name);
+  private logger = new CastcleLogger(CastcleExceptionFilter.name);
 
   catch(exception: CastcleException, host: ArgumentsHost) {
     this.logger.error(exception);
