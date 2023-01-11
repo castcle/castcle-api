@@ -67,7 +67,7 @@
     "cache-manager-redis-store": "^2.0.0",
     "castcle-cdf": "^0.0.0",
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.13.2",
+    "class-validator": "^0.14.0",
     "ethers": "^5.7.1",
     "fastify": "^4.5.2",
     "fastify-swagger": "^5.2.0",
